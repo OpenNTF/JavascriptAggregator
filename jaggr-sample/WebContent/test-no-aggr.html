@@ -1,0 +1,25 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<html dir="ltr">
+<head>
+<title>Test</title>
+<style type="text/css">
+	body, html { font-family:helvetica,arial,sans-serif; font-size:90%; }
+    .claro table.dijitCalendarContainer { margin: 25px auto; } 
+    #formatted { text-align: center; }
+</style>
+
+<script src="js/loaderConfig.js"></script>
+<script src="../dojo/dojo.js"></script>
+</head>
+<body class="claro">
+    <div data-dojo-type="dijit.Calendar" data-dojo-props="onChange:function(){dojo.byId('formatted').innerHTML=dojo.date.locale.format(arguments[0], {formatLength: 'full', selector:'date'})}">
+    </div>
+    <p id="formatted">
+    </p>
+</body>
+</html>

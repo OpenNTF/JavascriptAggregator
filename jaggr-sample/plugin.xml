@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<plugin>
+	<extension point="org.eclipse.equinox.http.registry.servlets">
+		<servlet alias="/testaggr" class="com.ibm.jaggr.service.impl.AggregatorImpl" load-on-startup="true">
+			<!-- No scheme on the URI means the resource is located 
+			     in the same resource bundle as this file -->
+			<init-param name="config" value="testaggr-config.js"/>
+		</servlet>
+	</extension>
+	<extension point="org.eclipse.equinox.http.registry.resources">
+        <resource
+              alias="/testaggr/res"
+              base-name="/WebContent"/>
+     </extension>
+</plugin>

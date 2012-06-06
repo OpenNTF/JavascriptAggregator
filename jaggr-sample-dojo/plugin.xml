@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<plugin>
+	<extension point="org.eclipse.equinox.http.registry.resources">
+        <resource
+              alias="/testaggr/dojo"
+              base-name="/WebContent/dojo-release-1.7.2-src/dojo"/>
+        <resource
+              alias="/testaggr/dijit"
+              base-name="/WebContent/dojo-release-1.7.2-src/dijit"/>
+        <resource
+              alias="/testaggr/dojox"
+              base-name="/WebContent/dojo-release-1.7.2-src/dojox"/>
+     </extension>
+</plugin>

@@ -1,0 +1,210 @@
+/*
+ * Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+ * Available via Academic Free License >= 2.1 OR the modified BSD license.
+ * see: http://dojotoolkit.org/license for details
+ */
+
+package com.ibm.jaggr.service.impl.resource;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Enumeration;
+
+import org.eclipse.core.runtime.Platform;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+
+import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.service.resource.IResourceVisitor;
+import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.service.util.PathUtil;
+
+public class BundleResource implements IResource {
+	URI uri;
+	String symname = null;
+	
+	public BundleResource(URI uri, BundleContext context) {
+		this.uri = uri;
+		Bundle bundle = null;
+		if (!uri.getScheme().equals("bundleresource") && !uri.getScheme().equals("bundleentry")) { //$NON-NLS-1$ //$NON-NLS-2$
+			throw new IllegalArgumentException(uri.toString());
+		}
+		String host = uri.getHost();
+		try {
+			int bundleid = Integer.parseInt(host.split("[\\-\\.]")[0]); //$NON-NLS-1$
+			bundle = context.getBundle(bundleid);
+		} catch (NumberFormatException ignore) {
+		}
+		if (bundle != null) {
+			this.symname = bundle.getSymbolicName();
+		}
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#getURI()
+	 */
+	@Override
+	public URI getURI() {
+		return uri;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#exists()
+	 */
+	@Override
+	public boolean exists() {
+		return lastModified() != 0;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#lastModified()
+	 */
+	@Override
+	public long lastModified() {
+		long lastmod = 0L;
+		try {
+			lastmod = getURI().toURL().openConnection().getLastModified();
+		} catch (IOException ignore) {}
+		return lastmod;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#getReader()
+	 */
+	@Override
+	public Reader getReader() throws IOException {
+		return new InputStreamReader(uri.toURL().openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#getInputStream()
+	 */
+	@Override
+	public InputStream getInputStream() throws IOException {
+		return uri.toURL().openConnection().getInputStream();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#walkTree(com.ibm.jaggr.service.resource.IResourceVisitor)
+	 */
+	@Override
+	public void walkTree(IResourceVisitor visitor) throws IOException {
+		if (!exists() || symname == null) {
+			throw new IOException(uri.toString());
+		}
+		Bundle bundle = Platform.getBundle(symname);
+		recurse(bundle, uri.getPath(), visitor, ""); //$NON-NLS-1$
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#asVisitorResource()
+	 */
+	@Override
+	public Resource asVisitorResource() throws IOException {
+		Resource resource = null;
+		if (!exists()) {
+			throw new IOException(uri.toString());
+		}
+		try {
+			resource = new VisitorResource(uri.toURL());
+		} catch (IOException e) {
+			throw e;
+		} catch (Exception e) {
+			throw new IOException(e);
+		}
+		return resource;
+	}
+	
+	/**
+	 * Internal method for recursing sub directories.
+	 * 
+	 * @param file
+	 *            The file object
+	 * @param visitor
+	 *            The {@link IResourceVisitor} to call for non-folder resources
+	 * @throws IOException
+	 */
+	private void recurse(Bundle bundle, String path, IResourceVisitor visitor, String relPathName) throws IOException {
+		Enumeration<?> entries = bundle.findEntries(path, "*", false); //$NON-NLS-1$
+		if (entries != null) {
+			while (entries.hasMoreElements()) {
+				URL child = (URL)entries.nextElement();
+				String childPath = child.getPath();
+				String temp = childPath;
+				if (temp.endsWith("/")) { //$NON-NLS-1$
+					temp = temp.substring(0, temp.length()-1);
+				}
+				int idx = temp.lastIndexOf("/"); //$NON-NLS-1$
+				String childName = temp.substring(idx+1);
+				String relPath = relPathName
+					+ (relPathName.length() == 0 ? "" : "/") //$NON-NLS-1$ //$NON-NLS-2$
+					+ childName;
+				boolean result = visitor.visitResource(
+						new VisitorResource(child), relPath);
+				if (result && child.getPath().endsWith("/")) { //$NON-NLS-1$
+					recurse(bundle, childPath, visitor, relPath);
+				}
+			}
+		}
+	}
+	
+	private static class VisitorResource implements IResourceVisitor.Resource {
+
+		URL url;
+		long lastModified;
+		
+		private VisitorResource(URL url) throws IOException {
+			this.url = url;
+			this.lastModified = url.openConnection().getLastModified();
+		}
+		
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#isFolder()
+		 */
+		@Override
+		public boolean isFolder() {
+			return url.getPath().endsWith("/"); //$NON-NLS-1$
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.modules.ResourceVisitor.Resource#getURI()
+		 */
+		@Override
+		public URI getURI() {
+			URI uri = null;
+			try {
+				uri = PathUtil.url2uri(url);
+			} catch (URISyntaxException ignore) {}
+			return uri;
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.modules.ResourceVisitor.Resource#lastModified()
+		 */
+		@Override
+		public long lastModified() {
+			return lastModified;
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.modules.ResourceVisitor.Resource#getReader()
+		 */
+		@Override
+		public Reader getReader() throws IOException {
+			return new InputStreamReader(url.openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
+		}
+		
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#getInputStream()
+		 */
+		@Override
+		public InputStream getInputStream() throws IOException {
+			return url.openConnection().getInputStream();
+		}
+	}
+}

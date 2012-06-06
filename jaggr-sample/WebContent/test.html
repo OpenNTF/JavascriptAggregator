@@ -1,0 +1,78 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<html dir="ltr">
+<head>
+<title>Test</title>
+<style type="text/css">
+	body, html { font-family:helvetica,arial,sans-serif; font-size:90%; }
+    .claro table.dijitCalendarContainer { margin: 25px auto; } 
+    #formatted { text-align: center; }
+</style>
+
+<script type="text/javascript">
+(function() {
+	var href = location.href,
+		isDebugLoader = /[&?]debugLoader=1/.test(href),
+		modules = [
+			"js/loaderConfig",	// Our loader config
+			"combo/loaderExt",  // The aggregator loader extension code
+			"dojo/dojo"			// The loader
+		],
+		params = {
+			expandRequire: 1,
+			exportNames: 1,
+			required: "combo/featureCookie" // required module that will be loaded
+											// along with all of it's nested dependencies
+		},
+		features = {
+			"dojo-error-api" : isDebugLoader,
+			"dojo-trace-api" : isDebugLoader,
+			"host-rhino" : 0,
+			"host-node" : 0,
+			"dojo-sniff" : 0,
+			"dojo-test-sniff" : 0,
+			"host-browser" : 1,
+		},
+		i = 0;
+	
+	// copy selected params from URL
+	for (var s in {optimize:0,expandRequire:0,showFilenames:0,noCache:0,exportNames:0,debugLoader:0}) {
+		var regex = new RegExp("[&?]"+s+"=([^&]*)","i");
+		var result = regex.exec(href) || [];
+		if (result.length > 1) {
+			params[s] = result[1];
+		}
+	}
+	// write out the script tag to use the aggregator to load our modules
+	document.write('<script src="../../testaggr?modules=');
+	for (var s in modules) {
+		document.write((i++ ? "," : "") + encodeURIComponent(modules[s]));
+	}
+	for (var s in params) {
+		document.write("&" + s + "=" + encodeURIComponent(params[s]));
+	}
+	i = 0;
+	document.write("&has=");
+	for (var s in features) {
+		document.write((i++ ? ";" : "") + (features[s] ? "" : "!") + s);
+	}
+	document.write('"><'+'/script>');
+})();
+</script>
+<style type="text/css">
+	.movable { cursor: hand; }
+</style>
+</head>
+<body class="claro">
+	<div data-dojo-type="dijit.layout.TabContainer" style="width: 100%; height: 400px;">
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Calendar" selected="true"></div>
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Color Palette"></div>
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Editor"></div>
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Chart"></div>
+    </div>
+</body>
+</html>

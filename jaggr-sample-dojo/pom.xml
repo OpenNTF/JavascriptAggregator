@@ -1,0 +1,151 @@
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.ibm.jaggr</groupId>
+  <artifactId>jaggr-sample-dojo</artifactId>
+  <version>1.0.0-SNAPSHOT</version>
+  <packaging>bundle</packaging>
+  
+  <name>jaggr-sample-dojo</name>
+  <description>Javascript Aggregation Service Sample Dojo Files</description>
+  <url>https://github.com/jaggr-project/jaggr</url>
+
+  <dependencyManagement>
+  	<dependencies>
+  	</dependencies>
+  </dependencyManagement>
+  <properties>
+    <bundle.symbolicName>com.ibm.jaggr.sample.dojo</bundle.symbolicName>
+    <bundle.namespace>com.ibm.jaggr.sample.dojo</bundle.namespace>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>
+
+  <issueManagement>
+  	<system>github</system>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </issueManagement>
+  <inceptionYear>2011</inceptionYear>
+  <scm>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </scm>
+  <organization>
+  	<name>IBM</name>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </organization>
+  <build>
+  	<resources>
+      <resource>
+        <directory>.</directory>
+        <includes>
+          <include>plugin.xml</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>.</directory>
+        <includes>
+          <include>WebContent/**</include>
+        </includes>
+      </resource>
+    </resources>
+  	<plugins>
+  		<plugin>
+  			<groupId>org.apache.felix</groupId>
+  			<artifactId>maven-bundle-plugin</artifactId>
+  			<version>2.3.7</version>
+  			<extensions>true</extensions>
+  			<configuration>
+  				<manifestLocation>META-INF</manifestLocation>
+  				<instructions>
+  					<Bundle-Name>jaggr-sample-dojo</Bundle-Name>
+		            <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
+		            <Require-Bundle>org.eclipse.core.runtime,org.eclipse.equinox.http.registry</Require-Bundle>
+		            <Import-Package>
+		            	javax.servlet;version="[2,4)",
+		            	*
+		            </Import-Package>
+				</instructions>
+  			</configuration>
+  		</plugin>
+  		<plugin>
+  			<groupId>org.apache.maven.plugins</groupId>
+  			<artifactId>maven-surefire-plugin</artifactId>
+  			<version>2.12</version>
+  			<configuration>
+          		<skipTests>true</skipTests>
+        	</configuration>
+  		</plugin>
+  		<plugin>
+  			<groupId>com.github.goldin</groupId>
+  			<artifactId>copy-maven-plugin</artifactId>
+  			<version>0.2.5</version>
+				<executions>
+			        <execution>
+			            <id>fetch dojo</id>
+			            <phase>prepare-package</phase>
+			            <goals>
+			                <goal>copy</goal>
+			            </goals>
+			            <configuration>
+			            	<resources>
+			            		<resource>
+			            			<runIf>{{ !new File("WebContent", "dojo-release-1.7.0-src" ).isDirectory() }}</runIf>
+								    <targetPath>WebContent</targetPath>
+								    <file>http://download.dojotoolkit.org/release-1.7.0/dojo-release-1.7.0-src.zip</file>
+								    <zipEntries>
+									    <zipEntry>dojo-release-1.7.0-src/dojo/**</zipEntry>
+									    <zipEntry>dojo-release-1.7.0-src/dojox/**</zipEntry>
+									    <zipEntry>dojo-release-1.7.0-src/dijit/**</zipEntry>
+								    </zipEntries>
+								    <unpack>true</unpack>
+								    <preservePath>true</preservePath>
+								</resource>
+			            	</resources>
+			            </configuration>
+		            </execution>
+	            </executions>
+  		</plugin>
+        <plugin>
+	      <artifactId>maven-clean-plugin</artifactId>
+	      <version>2.5</version>
+	      <configuration>
+	        <filesets>
+	          <fileset>
+	            <directory>.</directory>
+	            <includes>
+	              <include>WebContent/**</include>
+	            </includes>
+	            <followSymlinks>false</followSymlinks>
+	          </fileset>
+	        </filesets>
+	      </configuration>
+	    </plugin>
+  	  </plugins>
+  </build>
+  <dependencies>
+    <dependency>
+    	<groupId>javax.servlet</groupId>
+    	<artifactId>javax.servlet-api</artifactId>
+    	<version>3.0.1</version>
+    	<scope>provided</scope>
+    </dependency>
+    <dependency>
+    	<groupId>org.eclipse.core</groupId>
+    	<artifactId>runtime</artifactId>
+    	<version>3.3.100-v20070530</version>
+    	<type>jar</type>
+    	<scope>provided</scope>
+    </dependency>
+    <dependency>
+    	<groupId>org.eclipse</groupId>
+    	<artifactId>osgi</artifactId>
+    	<version>3.3.0-v20070530</version>
+    	<scope>provided</scope>
+    </dependency>
+  </dependencies>
+</project>

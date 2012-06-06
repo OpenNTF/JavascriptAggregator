@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<plugin>
+   <extension-point 
+   		id="resourcefactory" 
+   		name="Asynchronous Module Definition (AMD) Aggregator Resource Factory" 
+   		schema="schema/resourcefactory.exsd"/>
+   		
+   <extension-point 
+   		id="modulebuilder" 
+   		name="Asynchronous Module Definition (AMD) Aggregator Module Builder" 
+   		schema="schema/modulebuilder.exsd"/>
+   		
+   <extension-point 
+   		id="httptransport" 
+   		name="Asynchronous Module Definition (AMD) HTTP Transport" 
+   		schema="schema/httptransport.exsd"/>
+   		
+   <extension
+   		id="default.resourcefactories" 
+   		point="com.ibm.jaggr.service.resourcefactory">
+   		<factory scheme="file"
+   			class="com.ibm.jaggr.service.impl.resource.FileResourceFactory"/>
+   		<factory scheme="bundleentry" 
+   			class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
+   		<factory scheme="bundleresource"
+   			class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
+   		<factory scheme="namedbundleresource"
+   			class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
+   </extension>
+   
+   <extension
+   		id="default.modulebuilders" 
+   		point="com.ibm.jaggr.service.modulebuilder">
+   		<builder extension="js" 
+   			class="com.ibm.jaggr.service.impl.modulebuilder.i18n.I18nModuleBuilder"/>
+   		<builder extension="js" 
+   			class="com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder"/>
+   		<builder extension="css"
+   			class="com.ibm.jaggr.service.impl.modulebuilder.css.CSSModuleBuilder"/>
+   		<builder extension="*"
+   			class="com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder"/>
+   </extension>
+   
+   <extension
+   		id="dojo.httptransport"
+   		point="com.ibm.jaggr.service.httptransport">
+   		<transport path="combo"
+   		    class="com.ibm.jaggr.service.impl.transport.DojoHttpTransport"/>
+   </extension>
+</plugin>

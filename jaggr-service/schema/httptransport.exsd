@@ -1,0 +1,143 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!--
+  Copyright (c) 2004-2012, The Dojo Foundation All Rights Reserved.
+  Available via Academic Free License >= 2.1 OR the modified BSD license.
+  see: http://dojotoolkit.org/license for details
+-->
+<schema targetNamespace="com.ibm.jaggr.service" xmlns="http://www.w3.org/2001/XMLSchema">
+<annotation>
+      <appinfo>
+         <meta.schema plugin="com.ibm.jaggr.service" id="httptransport" name="HTTP Transport"/>
+      </appinfo>
+      <documentation>
+         This extension provides the HTTP Transport mechanism for the AMD Aggregator.  The Http Transport is the component that provides the AMD loader extension JavaScript on the client along with the server side code that parses the client requests into interface defined data structures.
+      </documentation>
+   </annotation>
+
+   <element name="extension">
+      <annotation>
+         <appinfo>
+            <meta.element />
+         </appinfo>
+      </annotation>
+      <complexType>
+         <sequence>
+            <element ref="transport"/>
+         </sequence>
+         <attribute name="point" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="id" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="name" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="transport">
+      <complexType>
+         <sequence minOccurs="0" maxOccurs="unbounded">
+            <element ref="init-param"/>
+         </sequence>
+         <attribute name="class" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The name of the class that implements the IHttpTransport interface
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="path" type="string" use="required">
+            <annotation>
+               <documentation>
+                  AMD module path to transport resources as specified on the client
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="init-param">
+      <complexType>
+         <attribute name="name" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="value" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="since"/>
+      </appinfo>
+      <documentation>
+         1.0.0
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="examples"/>
+      </appinfo>
+      <documentation>
+         &lt;p&gt;
+&lt;pre&gt;
+   &lt;extension
+     id=&quot;default.httptransport&quot;
+     point=&quot;com.ibm.jaggr.service.httptransport&quot;&gt;
+     &lt;transport name=&quot;default&quot;
+         class=&quot;com.ibm.jaggr.service.impl.transport.HttpTransportImpl&quot;/&gt;
+   &lt;/extension&gt;
+&lt;/pre&gt;
+&lt;p&gt;
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="apiinfo"/>
+      </appinfo>
+      <documentation>
+         Extension callback objects implement the 
+         com.ibm.jaggr.service.transport.IHttpTransport
+         interface.
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="implementation"/>
+      </appinfo>
+      <documentation>
+         [Enter information about supplied implementation of this extension point.]
+      </documentation>
+   </annotation>
+
+
+</schema>
