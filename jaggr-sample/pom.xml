@@ -14,8 +14,16 @@
   
   <name>jaggr-sample</name>
   <description>Javascript Aggregation Service Sample</description>
-  <url>https://github.com/jaggr-project/jaggr</url>
-
+  <url>http://projects.openntf.org/projects/jaggr</url>
+  <inceptionYear>2011</inceptionYear>
+  <scm>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </scm>
+  <organization>
+  	<name>IBM</name>
+  	<url>http://www.ibm.com</url>
+  </organization>
+  
   <developers>
     <developer>
       <name>Chuck Dumont</name>
@@ -28,29 +36,18 @@
       <organization>IBM</organization>
     </developer>
   </developers>
+  
+  <issueManagement>
+  	<system>github</system>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </issueManagement>
 
-  <dependencyManagement>
-  	<dependencies>
-  	</dependencies>
-  </dependencyManagement>
   <properties>
     <bundle.symbolicName>com.ibm.jaggr.sample</bundle.symbolicName>
     <bundle.namespace>com.ibm.jaggr.sample</bundle.namespace>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
-
-  <issueManagement>
-  	<system>github</system>
-  	<url>https://github.com/jaggr-project/jaggr</url>
-  </issueManagement>
-  <inceptionYear>2011</inceptionYear>
-  <scm>
-  	<url>https://github.com/jaggr-project/jaggr</url>
-  </scm>
-  <organization>
-  	<name>IBM</name>
-  	<url>https://github.com/jaggr-project/jaggr</url>
-  </organization>
+  
   <build>
   	<resources>
       <resource>

@@ -14,8 +14,16 @@
   
   <name>jaggr-sample-dojo</name>
   <description>Javascript Aggregation Service Sample Dojo Files</description>
-  <url>https://github.com/jaggr-project/jaggr</url>
-
+  <url>http://projects.openntf.org/projects/jaggr</url>
+  <inceptionYear>2011</inceptionYear>
+  <scm>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </scm>
+  <organization>
+  	<name>IBM</name>
+  	<url>http://www.ibm.com</url>
+  </organization>
+  
   <developers>
     <developer>
       <name>Chuck Dumont</name>
@@ -29,28 +37,17 @@
     </developer>
   </developers>
 
-  <dependencyManagement>
-  	<dependencies>
-  	</dependencies>
-  </dependencyManagement>
+  <issueManagement>
+  	<system>github</system>
+  	<url>https://github.com/jaggr-project/jaggr</url>
+  </issueManagement>
+  
   <properties>
     <bundle.symbolicName>com.ibm.jaggr.sample.dojo</bundle.symbolicName>
     <bundle.namespace>com.ibm.jaggr.sample.dojo</bundle.namespace>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
-  <issueManagement>
-  	<system>github</system>
-  	<url>https://github.com/jaggr-project/jaggr</url>
-  </issueManagement>
-  <inceptionYear>2011</inceptionYear>
-  <scm>
-  	<url>https://github.com/jaggr-project/jaggr</url>
-  </scm>
-  <organization>
-  	<name>IBM</name>
-  	<url>https://github.com/jaggr-project/jaggr</url>
-  </organization>
   <build>
   	<resources>
       <resource>
