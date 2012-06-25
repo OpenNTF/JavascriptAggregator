@@ -17,8 +17,6 @@ import com.ibm.jaggr.service.module.IModule;
 
 /**
  * The aggregator cache is the repository for cached module builds and layers.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface ICache extends Serializable, Cloneable {
 

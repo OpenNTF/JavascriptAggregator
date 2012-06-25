@@ -60,8 +60,6 @@ import com.ibm.jaggr.service.util.TypeUtil;
 /**
  * Implements common functionality useful for all Http Transport implementation
  * and defines abstract methods that subclasses need to implement
- * 
- * @author chuckd@us.ibm.com
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
@@ -420,8 +418,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * the {@code toString) method (used in generating layer cache keys) so 
 	 * that we can return the folded module name list (allowing for more
 	 * compact cache keys).
-	 * 
-	 * @author chuckd@us.ibm.com
 	 */
 	protected static class ModuleList extends LinkedList<String> {
 		private static final long serialVersionUID = 1520863743688358581L;

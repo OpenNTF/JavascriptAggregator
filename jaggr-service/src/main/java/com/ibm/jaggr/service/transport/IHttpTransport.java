@@ -21,8 +21,6 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
  * <p>
  * This interface also provides the AMD loader extension JavaScript used to
  * format and send the requests to the aggregator.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IHttpTransport extends IExtensionInitializer {
 

@@ -18,8 +18,6 @@ import java.io.Reader;
  * may improperly recognize comment start and end tokens inside regular
  * expressions.  It does the job for what we need, though, which is removing
  * comments from CSS and server-side JSON files.  
- * 
- * @author chuckd@us.ibm.com
  */
 public class CommentStrippingReader extends Reader {
 	PushbackReader reader;

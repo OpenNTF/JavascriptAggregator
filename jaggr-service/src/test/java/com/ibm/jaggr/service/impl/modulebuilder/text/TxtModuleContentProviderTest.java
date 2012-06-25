@@ -30,10 +30,6 @@ import com.ibm.jaggr.service.impl.resource.FileResource;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
-/**s
- * @author chuckd@us.ibm.com
- *
- */
 public class TxtModuleContentProviderTest extends EasyMock {
 
 	File tmpdir = null;

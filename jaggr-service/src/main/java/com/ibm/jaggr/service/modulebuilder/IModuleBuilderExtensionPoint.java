@@ -9,8 +9,6 @@ package com.ibm.jaggr.service.modulebuilder;
 /**
  * This interface defines constants for the {@code modulebuilder} extension
  * point
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IModuleBuilderExtensionPoint {
 

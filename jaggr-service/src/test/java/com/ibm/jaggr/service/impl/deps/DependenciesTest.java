@@ -38,10 +38,6 @@ import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.test.TestUtils;
 
-/**
- * @author chuckd@us.ibm.com
- *
- */
 public class DependenciesTest extends EasyMock {
 
 	File tmpdir = null;

@@ -51,10 +51,6 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
 
-/**
- * @author chuckd@us.ibm.com
- *
- */
 public class LayerTest extends EasyMock {
 
 	static File tmpdir = null;

@@ -14,8 +14,6 @@ import java.util.Collection;
 /**
  * A reader that will escape characters from another reader's stream by
  * preceding them with a back slash '\' character.
- * 
- * @author chuckd@us.ibm.com
  */
 public class CharacterEscapingReader extends PushbackReader {
 	boolean escaped;

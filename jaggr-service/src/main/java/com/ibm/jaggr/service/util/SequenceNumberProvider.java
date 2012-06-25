@@ -10,8 +10,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Simple class to provide an ever increasing sequence number.
- * 
- * @author chuckd@us.ibm.com
  */
 public class SequenceNumberProvider {
 	

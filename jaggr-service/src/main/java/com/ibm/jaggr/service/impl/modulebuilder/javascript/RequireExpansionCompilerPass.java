@@ -35,8 +35,6 @@ import com.ibm.jaggr.service.util.PathUtil;
  * include nested dependencies.  Nested dependencies for modules specified in
  * the require list are obtained from the {@link IDepTreeNode} object passed
  * in the constructor.
- * 
- * @author chuckd@us.ibm.com
  */
 public class RequireExpansionCompilerPass implements CompilerPass {
 	 

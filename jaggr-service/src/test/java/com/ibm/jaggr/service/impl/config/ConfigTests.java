@@ -33,9 +33,6 @@ import com.ibm.jaggr.service.util.PathUtil;
  * set this by specifying the following JVM args:
  * 
  * -Dosgi.instance.area=file:/c:/domino/data/domino/workspace/
- *
- * @author chuckd@us.ibm.com
- *
  */
 public class ConfigTests {
 	

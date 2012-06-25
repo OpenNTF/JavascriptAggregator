@@ -60,10 +60,6 @@ import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
 
-/**
- * @author chuckd@us.ibm.com
- *
- */
 public class JsModuleContentProviderTest extends EasyMock {
 	
 	File tmpdir = null;
@@ -439,8 +435,6 @@ public class JsModuleContentProviderTest extends EasyMock {
 	
 	/**
 	 * Tester class that extends JavaScriptModuleBuilder to expose protected methods for testing
-	 * 
-	 * @author chuckd@us.ibm.com
 	 */
 	private static class JsModuleTester extends ModuleImpl {
 		private static final long serialVersionUID = 1L;

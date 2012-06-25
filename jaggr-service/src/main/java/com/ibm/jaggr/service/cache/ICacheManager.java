@@ -24,7 +24,6 @@ import com.ibm.jaggr.service.options.IOptions;
  * <li>Provides utility methods for asynchronously creating and deleting cache files</li>
  * <li>Provides access to the {@link ICache} object</li>
  * </ul>
- * @author chuckd@us.ibm.com
  */
 public interface ICacheManager {
     

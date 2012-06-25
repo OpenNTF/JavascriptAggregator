@@ -133,8 +133,6 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * inlinedImageExcludeList.</dd>
  * </dl>
  * </blockquote>
- * 
- * @author chuckd@us.ibm.com
  */
 public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IShutdownListener, IConfigListener {
 

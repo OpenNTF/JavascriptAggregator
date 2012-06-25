@@ -21,8 +21,6 @@ import com.ibm.jaggr.service.util.PathUtil;
 
 /**
  * Collection of utility classes used for processing Dependency trees
- * 
- * @author chuckd@us.ibm.com
  */
 public class DepUtils {
 

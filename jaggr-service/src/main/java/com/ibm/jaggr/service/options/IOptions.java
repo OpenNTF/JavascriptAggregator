@@ -29,8 +29,6 @@ import com.ibm.jaggr.service.IAggregator;
  * registered using the IOptions interface during bundle activation for the
  * aggregator bundle. Calls to {@link IAggregator#getOptions()} return this
  * single instance of the options object.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IOptions {
 

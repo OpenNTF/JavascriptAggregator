@@ -63,9 +63,6 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * and module builds differ according to the requested compilation level and has-filtering
  * conditions.  The requested compilation level and has-filtering conditions are 
  * specified as attributes in the http request when calling {@link #build}.
- *   
- * @author chuckd@us.ibm.com
- *
  */
 public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, IRequestListener, IShutdownListener {
 	private static final Logger log = Logger.getLogger(JavaScriptModuleBuilder.class.getName());

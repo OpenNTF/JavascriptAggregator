@@ -16,6 +16,19 @@
   <description>Javascript Aggregation Service</description>
   <url>https://github.com/jaggr-project/jaggr</url>
 
+  <developers>
+    <developer>
+      <name>Chuck Dumont</name>
+      <email>chuckd@us.ibm.com</email>
+      <organization>IBM</organization>
+    </developer>
+    <developer>
+      <name>Dan Dumont</name>
+      <email>ddumont@us.ibm.com</email>
+      <organization>IBM</organization>
+    </developer>
+  </developers>
+  
   <dependencyManagement>
   	<dependencies>
   	</dependencies>

@@ -14,8 +14,6 @@ import java.util.Set;
 /**
  * Convenience class for defining all of the features passed to the aggregator.
  * Provides methods to determine if they exist, and if they are true or false.
- * 
- * @author ddumont
  */
 public class Features {
 	public static final Features emptyFeatures;

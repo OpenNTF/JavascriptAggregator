@@ -9,8 +9,6 @@ package com.ibm.jaggr.service.resource;
 /**
  * This interface defines constants for the {@code resourcefactory} extension
  * point
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IResourceFactoryExtensionPoint {
 

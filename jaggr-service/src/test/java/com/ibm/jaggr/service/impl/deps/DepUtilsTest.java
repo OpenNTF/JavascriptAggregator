@@ -24,10 +24,6 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
-/**
- * @author chuckd@us.ibm.com
- *
- */
 public class DepUtilsTest {
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.impl.deps.DepUtils#removeRedundantPaths(java.util.Collection)}.

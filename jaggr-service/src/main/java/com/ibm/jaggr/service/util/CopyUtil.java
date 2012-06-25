@@ -20,8 +20,6 @@ import org.apache.commons.io.input.ReaderInputStream;
 /**
  * Versions of stream copy utils that also close the streams when
  * the copy is done.
- * 
- * @author chuckd@us.ibm.com
  */
 public class CopyUtil {
 

@@ -11,8 +11,6 @@ package com.ibm.jaggr.service.deps;
  * of change events, register the implementing class as an OSGi service,
  * specifying the servlet name under the <code>name</code> property in 
  * the service properties.
- *  
- * @author chuckd@us.ibm.com
  */
 public interface IDependenciesListener {
 	/**

@@ -23,8 +23,6 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
 
 /**
  * An implementation of {@link IResource} for File resources
- * 
- * @author chuckd@us.ibm.com
  */
 public class FileResource implements IResource {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());
@@ -180,8 +178,6 @@ public class FileResource implements IResource {
 	 * {@link File#listFiles()} as soon as Java 7 is available for use, in order
 	 * to improve startup performance when validating a previously serialized
 	 * dependency tree.
-	 * 
-	 * @author chuckd@us.ibm.com
 	 */
 	private static class VisitorResource implements IResourceVisitor.Resource {
 

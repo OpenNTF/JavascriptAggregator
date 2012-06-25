@@ -27,8 +27,6 @@ import com.ibm.jaggr.service.util.Features;
  * declared dependencies, plus all of the nested dependencies obtained by
  * including the dependencies of the explicitly dependent modules, plus their
  * dependencies, and so on.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IDependencies {
 	/**

@@ -41,8 +41,6 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 /**
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
- * 
- * @author chuckd@us.ibm.com
  */
 public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());

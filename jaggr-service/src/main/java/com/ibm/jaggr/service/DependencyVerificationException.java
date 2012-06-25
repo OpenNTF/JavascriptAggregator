@@ -13,8 +13,6 @@ import java.io.IOException;
  * it detects that the dependency list of a module has changed from
  * what was used to generate the dependency graph and development
  * mode is enabled
- * 
- * @author chuckd@us.ibm.com
  */
 public class DependencyVerificationException extends IOException {
 	private static final long serialVersionUID = 824963277533958913L;

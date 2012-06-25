@@ -46,9 +46,6 @@ import com.ibm.jaggr.service.util.PathUtil;
  * corresponds to the name in the dependency list at the same index and
  * represents a reference to the {@code DepTreeNode} in the same tree for the
  * named dependency.
- * 
- * @author chuckd@us.ibm.com
- * 
  */
 public class DepTreeNode implements Cloneable, Serializable {
 	private static final long serialVersionUID = 5598497628602046531L;

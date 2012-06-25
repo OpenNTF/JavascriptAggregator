@@ -19,8 +19,6 @@ import com.ibm.jaggr.service.util.Features;
  * Custom Compiler pass for Google Closure compiler to do has trimming.  Must be called before
  * the optimizaton pass since we rely on the optimizer to remove dead branches resulting from 
  * the replacement of has-conditionals with TRUE or FALSE nodes.
- * 
- * @author chuckd@us.ibm.com
  */
 public class HasFilteringCompilerPass implements CompilerPass {
 	

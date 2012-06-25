@@ -46,8 +46,6 @@ import com.ibm.jaggr.service.util.Features;
  * to resolve relative paths specified in <code>paths</code> and
  * <code>packages</code>. It is <b>NOT</b> scanned for modules when building the
  * dependency graph.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IConfig {
 
