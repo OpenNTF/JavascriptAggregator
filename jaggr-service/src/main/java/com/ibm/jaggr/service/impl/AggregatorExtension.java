@@ -20,6 +20,8 @@ import com.ibm.jaggr.service.transport.IHttpTransportExtensionPoint;
 
 /**
  * Implementation  for {@link IAggregatorExtension} interface.
+ * 
+ * @author chuckd@us.ibm.com
  */
 class AggregatorExtension  implements IAggregatorExtension {
 	private String extensionPointId;

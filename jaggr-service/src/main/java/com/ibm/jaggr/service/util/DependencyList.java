@@ -20,6 +20,8 @@ import com.ibm.jaggr.service.deps.IDependencies;
 
 /**
  * Container class for the set of expanded dependencies for a list of modules. 
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class DependencyList {
 	static final Logger log = Logger.getLogger(DependencyList.class.getName());

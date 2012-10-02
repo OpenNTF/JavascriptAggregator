@@ -12,6 +12,8 @@ package com.ibm.jaggr.service.options;
  * The listener registration should specify a filter using the name property 
  * with the value obtained by calling {@link IOptions#getName()} for the 
  * options object who's changes you want to track.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IOptionsListener {
 	/**

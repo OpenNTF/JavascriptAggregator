@@ -107,7 +107,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		}
 	}
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#getBuild(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getBuild(javax.servlet.http.HttpServletRequest)}.
 	 * @throws ExecutionException 
 	 * @throws InterruptedException 
 	 * @throws ClassNotFoundException 
@@ -244,7 +244,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#getName()}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getName()}.
 	 * @throws URISyntaxException 
 	 */
 	@Test
@@ -254,7 +254,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#clear()}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#clear()}.
 	 * @throws IOException 
 	 * @throws ExecutionException 
 	 * @throws InterruptedException 
@@ -277,7 +277,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#clear(com.ibm.jaggr.service.cache.ICacheManager, int)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#clear(com.ibm.jaggr.service.cache.ICacheManager, int)}.
 	 * @throws IOException 
 	 * @throws InterruptedException 
 	 * @throws ExecutionException 
@@ -321,7 +321,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#toString()}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#toString()}.
 	 * @throws Exception 
 	 */
 	@Test
@@ -353,7 +353,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#s_generateCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#s_generateCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
 	 * @throws IOException 
 	 */
 	@Test
@@ -394,7 +394,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#getCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
 	 */
 	@Test
 	public void testGetCacheKey() {
@@ -403,7 +403,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#isHasFiltering(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isHasFiltering(javax.servlet.http.HttpServletRequest)}.
 	 * @throws IOException 
 	 */
 	@Test
@@ -416,7 +416,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#isExplodeRequires(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isExplodeRequires(javax.servlet.http.HttpServletRequest)}.
 	 * @throws IOException 
 	 */
 	@Test

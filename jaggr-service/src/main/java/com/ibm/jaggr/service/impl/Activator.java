@@ -85,8 +85,9 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 
 		if (options.isDevelopmentMode() && log.isLoggable(Level.WARNING)) {
 			log.warning(Messages.Activator_1);
+		} else if (options.isDebugMode() && log.isLoggable(Level.WARNING)) {
+			log.warning(Messages.Activator_2);
 		}
-	
 	}
 
 	/* (non-Javadoc)

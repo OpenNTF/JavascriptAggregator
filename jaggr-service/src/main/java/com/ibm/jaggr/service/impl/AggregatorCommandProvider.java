@@ -20,7 +20,6 @@ import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.wink.json4j.JSONException;
-import org.apache.wink.json4j.JSONObject;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.osgi.framework.console.CommandInterpreter;
 import org.osgi.framework.BundleContext;
@@ -30,7 +29,6 @@ import org.osgi.framework.ServiceReference;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.util.ConsoleService;
 import com.ibm.jaggr.service.util.Features;
 
@@ -322,26 +320,26 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 
-	private void doGetOptionsCmd(CommandInterpreter ci) {
-		ServiceReference ref = getBundleContext().getServiceReference(IOptions.class.getName());
+	private void doGetOptionsCmd(CommandInterpreter ci) throws InvalidSyntaxException {
+		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			try {
-				IOptions options = (IOptions)getBundleContext().getService(ref);
-				ci.println(options.getOptionsMap().toString());
+				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
+				ci.println(aggregator.getOptions().getOptionsMap().toString());
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
 		}
 	}
 	
-	private void doSetOptionCmd(CommandInterpreter ci) throws IOException {
-		ServiceReference ref = getBundleContext().getServiceReference(IOptions.class.getName());
+	private void doSetOptionCmd(CommandInterpreter ci) throws IOException, InvalidSyntaxException {
+		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			try {
-				IOptions options = (IOptions)getBundleContext().getService(ref);
+				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 				String name = ci.nextArgument();
 				String value = ci.nextArgument();
-				options.setOption(name, value);
+				aggregator.getOptions().setOption(name, value);
 				ci.println(
 					MessageFormat.format(
 						value == null ? 
@@ -361,9 +359,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
-				aggregator.getCacheManager().clearCache();
-				JSONObject json = new JSONObject(aggregator.getConfig().toString());
-				ci.println(json.toString(true));
+				ci.println(aggregator.getConfig().toString());
 			} finally {
 				getBundleContext().ungetService(ref);
 			}

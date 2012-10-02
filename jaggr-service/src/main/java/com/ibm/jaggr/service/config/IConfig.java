@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.mozilla.javascript.Scriptable;
+
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
@@ -20,15 +22,15 @@ import com.ibm.jaggr.service.util.Features;
  * This interface encapsulates an aggregator configuration. An aggregator
  * configuration specifies the AMD module paths, packages and aliases that are
  * used by an application, by relating module ids to server resource URIs. The
- * configuration is specified using a JSON file who's structure and format
- * closely mirrors the client side AMD loader config JSON, except that instead
+ * configuration is specified using a JavaScript file who's structure and format
+ * closely mirrors the client side AMD loader config JavaScript, except that instead
  * of relating module ids to resource on the web, it relates module ids to
  * resource on the server.
  * <p>
- * The static JSON configuration file is specified by the <code>config</code>
+ * The static JavaScript configuration file is specified by the <code>config</code>
  * init-param in the servlet definition.
  * <p>
- * In addition to data specified in a static JSON file, applications may
+ * In addition to data specified in a static JavaScript file, applications may
  * optionally modify the configuration at runtime by registering an
  * implementation of {@link IConfigModifier} as an OSGi service with the
  * <code>name</code> parameter set to the aggregator name.
@@ -46,6 +48,8 @@ import com.ibm.jaggr.service.util.Features;
  * to resolve relative paths specified in <code>paths</code> and
  * <code>packages</code>. It is <b>NOT</b> scanned for modules when building the
  * dependency graph.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IConfig {
 
@@ -137,9 +141,9 @@ public interface IConfig {
 	 * require list expansion unless the {@code depsIncludeBaseUrl} config param
 	 * is specified with a value of true.
 	 * 
-	 * @return The base URI
+	 * @return The base location
 	 */
-	public URI getBase();
+	public Location getBase();
 
 	/**
 	 * Returns the path mappings for module names to resource URIs specified by
@@ -148,7 +152,7 @@ public interface IConfig {
 	 * 
 	 * @return The paths map
 	 */
-	public Map<String, URI> getPaths();
+	public Map<String, Location> getPaths();
 
 	/**
 	 * Returns the packages specified by the {@code packages} config param.
@@ -249,6 +253,10 @@ public interface IConfig {
 	 * read from the current config, and if the values don't match, then the
 	 * de-serialized data is discarded and the caches and dependency maps are
 	 * deleted and rebuilt.
+	 * <p>
+	 * The value of this string is also used for the client-side cacheBust
+	 * property in the loader extension combo config if it is not specified
+	 * by the client.
 	 * 
 	 * @return The value of the {@code cacheBust} config param
 	 */
@@ -265,24 +273,15 @@ public interface IConfig {
 	public URI locateModuleResource(String mid);
 
 	/**
-	 * Returns an ordered mapping of module ids to resource URIs for all of the
-	 * <code>paths</code> and defined in this config.
+	 * Returns an ordered mapping of module ids to resource locations for all of the
+	 * <code>packages</code> locations defined in this config. 
 	 * 
-	 * @return The defined paths
+	 * @return The defined package Locations
 	 */
-	public Map<String, URI> getPathURIs();
+	public Map<String, Location> getPackageLocations();
 
 	/**
-	 * Returns an ordered mapping of module ids to resource URIs for all of the
-	 * <code>packages</code> and defined in this config. The entries include
-	 * URIs defined by both package location and package main properties.
-	 * 
-	 * @return The defined package URIs
-	 */
-	public Map<String, URI> getPackageURIs();
-
-	/**
-	 * Returns the last-modified date of the config JSON file at the time that
+	 * Returns the last-modified date of the config JavaScript file at the time that
 	 * it was read in order to produce this config object.
 	 * 
 	 * @return The last-modified date
@@ -290,68 +289,47 @@ public interface IConfig {
 	public long lastModified();
 
 	/**
-	 * Returns the URI for the config JSON file from which this config was read.
+	 * Returns the URI for the config JavaScript file from which this config was read.
 	 * 
-	 * @return The config JSON URI
+	 * @return The config JavaScript URI
 	 */
 	public URI getConfigUri();
 
 	/**
-	 * Returns a clone of the raw config data from the config JSON, after the
+	 * Returns the raw config data as an instance of {@link Scriptable}, after the
 	 * config has been modified by any {@link IConfigModifier} services that
 	 * have been registered for the aggregator that this config is associated
-	 * with.
+	 * with, and after any string substitutions have been performed.
 	 * <p>
-	 * The returned object is a deep clone, so changes to any element in the
-	 * returned data will not affect the properties of this object.
-	 * <p>
-	 * In the returned object, JavaScript objects are represented using
-	 * <code>{@link Map}&lt;{@link String},
-	 * {@link Object}&gt;</code>, JavaScript arrays are represented using
-	 * <code>{@link List}&lt;{@link Object}&gt;</code>. JavaScript regular
-	 * expressions and JavaScript functions are represented using a JSON proxy
-	 * object as shown in the examples below. JavaScript booleans, numbers and
-	 * strings are represented as {@link Boolean}, {@link Double} and
-	 * {@link String}, respectively.
-	 * <p>
-	 * JSON proxy objects are used to represent JavaScript object types that
-	 * don't have a natural representation in Java. Following are examples of
-	 * JSON proxy objects for JavaScript functions and regular expressions.
-	 * <ul>
-	 * <li>
-	 * <code>{"$$JSONProxy$$":"regexp","regexp":'/^(.*)\\/foo\\/(.*)$/i"}</code>
-	 * </li>
-	 * <li>
-	 * <code>{"$$JSONProxy$$":"function", "function":"function($0, $1, $2){return $1+'/bar/'+$2;}"}</code>
-	 * </li>
-	 * </ul>
-	 * <p>
-	 * JSON proxy objects are used only in the raw config returned by this
-	 * method. They are not needed in the original config definition since it is
-	 * processed by a JavaScript interpreter that fully supports the JavaScript
-	 * language. They are used for the raw config JSON in order to avoid
-	 * exposing internal types used by the interpreter, and to make it easier
-	 * for config modifiers to manipulate the config.
-	 * <p>
-	 * Raw config objects are serializable, and the
-	 * {@link Object#equals(Object)} method may be used to compare one config
-	 * with another to determine if they represent the same config data.
+	 * The returned {@link Scriptable} is sealed, so it may not be modified.
 	 * 
 	 * @return The raw config data for this config object
 	 * @see IConfigModifier
 	 */
-	public Map<String, Object> getRawConfig();
+	public Scriptable getRawConfig();
+	
+	/**
+	 * Returns the stringized source code representation of the {@link Scriptable}
+	 * returned by {@link #getRawConfig()}.  Changes in this string may be used to
+	 * track config changes.  This method is preferable to using {@link #lastModified()}
+	 * because external factors besides the config file (such as changes in the 
+	 * values of string substitution variables) may result in config changes.
+	 * 
+	 * @return The stringized JavaScript source representation of the current config
+	 */
+	@Override
+	public String toString();
 
 	/**
 	 * Resolves a module id by applying the following mappings in the indicated
 	 * order.
 	 * <ul>
 	 * <li>
+	 * Call any alias resolvers to resolve module name aliases</li>
+	 * <li>
 	 * If the module id specifies a has plugin and the has feature(s) are
 	 * contained in the feature set provided in the request, then evaluate the
 	 * has plugin expression to obtain the mapped module id.</li>
-	 * <li>
-	 * Call any alias resolvers to resolve module name aliases</li>
 	 * <li>
 	 * If the module id matches a package name, then map to the package main
 	 * module id.</li>
@@ -411,6 +389,94 @@ public interface IConfig {
 		 */
 		public Object getReplacement();
 	}
+	
+	/**
+	 * Class for a resource location.
+	 * <p>
+	 * Server-side paths and package locations may optionally specify an
+	 * override location in addition to the primary location for resources.
+	 * Override locations are specified in the server-side AMD config file by
+	 * specifying the path or package location value using a two-element array
+	 * instead of a string, with the first element specifying the primary
+	 * location and the second element specifying the override location.
+	 * Override locations are provided to support easier customization/patching
+	 * of applciations by allowing resource modifications to be deployed to a
+	 * customization folder on the server, avoiding the need to patch an
+	 * application by modifying the application bundle or jar.
+	 */
+	public class Location {
+		
+		final private URI primary, override;
+		
+		public Location(URI loc) {
+			primary = loc;
+			override = null;
+		}
+		
+		public Location(URI primary, URI override) {
+			this.primary = primary;
+			this.override = override;
+		}
+		
+		/**
+		 * Returns the primary URI for this location. The primary URI is the
+		 * value of the path or package location property if the property is
+		 * specified as a string, or the first element of the propery value if
+		 * the value is specified as an array.
+		 * 
+		 * @return The primary URI for this location
+		 */
+		public URI getPrimary() { return primary; }
+		
+		/**
+		 * Returns the override URI for this location.  The override URI is the
+		 * second element of the array when the path or package location is 
+		 * specified as an array, or null if the array has less than two element
+		 * or the value is specified as a string.
+		 * 
+		 * @return the override URI for this location
+		 */
+		public URI getOverride() { return override; }
+		
+		/* (non-Javadoc)
+		 * @see java.lang.Object#equals(java.lang.Object)
+		 */
+		@Override
+		public boolean equals(Object other) {
+			if (other == null || !(other instanceof Location)) return false;
+			Location otherLoc = (Location)other;
+			return primary.equals(otherLoc.primary) && 
+				   (override == null && otherLoc.override == null ||  
+				   override != null && otherLoc.override != null && override.equals(otherLoc.override)); 
+		}
+		
+		/**
+		 * Like {@link URI#resolve(String)}, but resolves both the primary and override URIs of the
+		 * location objects.
+		 *  
+		 * @param loc
+		 * @return The resolved Location object
+		 */
+		public Location resolve(Location loc) {
+			URI resultPrimary = primary.resolve(loc.primary);
+			URI resultOverride = null;
+			if (override != null && loc.override != null) {
+				resultOverride = override.resolve(loc.override);
+			} else if (override != null && loc.override == null && !loc.primary.isAbsolute()) {
+				resultOverride = override.resolve(loc.primary);
+			} else if (override == null && loc.override != null) {
+				resultOverride = primary.resolve(loc.override);
+			}
+			return new Location(resultPrimary, resultOverride);
+		}
+		
+		@Override
+		public String toString() {
+			if (override == null) return primary.toString();
+			StringBuffer sb = new StringBuffer('[');
+			return sb.append(primary).append(",").append(override).append("]").toString();
+		}
+	}
 
 	/**
 	 * Interface for a server-side AMD module package. The definition of
@@ -436,22 +502,26 @@ public interface IConfig {
 		 * 
 		 * @return The package location on the server
 		 */
-		public URI getLocation();
+		public Location getLocation();
+		
 
 		/**
-		 * Returns value of the {@code main} propery of the package.
+		 * Returns resolved value of the {@code main} propery of the package.
 		 * <p>
 		 * The main module is returned when someone does a require for the
-		 * package. The default value is {@code ./main}, so it needs to be specified only if it
-		 * differs from the default. Note that unlike {@code location}, which specifies
-		 * the URI to a resource on the server, main specifies a module id that
-		 * is mapped to a server resource using the defined paths and packages.
-		 * It may specify a relative module id, in which case it is combined
-		 * with the package name, or a non-relative module id, in which case it
-		 * is used as specified.
+		 * package. The default config value is {@code ./main}, so it needs to
+		 * be specified only if it differs from the default. Note that unlike
+		 * {@code location}, which specifies the URI to a resource on the
+		 * server, main specifies a module id that is mapped to a server
+		 * resource using the defined paths and packages. The value returned by
+		 * this method is the resolved module id obtained by combining the
+		 * package name with the value specified for the main property in the
+		 * config JavaScript if the main property is relative, or the value of the
+		 * main property if it is non-relative.
 		 * 
-		 * @return The value of the {@code main} property of the package, or 
-		 * {@code ./main} if no main property is specified.
+		 * @return The resolved value of the {@code main} property of the
+		 *         package, or {@code <package-name>/main} if no main property
+		 *         is specified.
 		 */
 		public String getMain();
 	}

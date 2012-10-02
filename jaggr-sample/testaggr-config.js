@@ -10,19 +10,18 @@
 	packages: [
 		{
 			name: 'dojo',
-			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.7.0-src/dojo'
+			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.8.0-src/dojo'
 		},
 		{
 			name: 'dijit',
-			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.7.0-src/dijit'
+			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.8.0-src/dijit'
 		},
 		{
 			name: 'dojox',
-			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.7.0-src/dojox'
+			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.8.0-src/dojox'
 		}
 	],
 	paths: {
-		'dojo/dojo' : 'dojo-patched/dojo'	// http://bugs.dojotoolkit.org/ticket/14198 
 	},
 	
 	depsIncludeBaseUrl: true,		// include baseUrl in scan for dependencies

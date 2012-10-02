@@ -11,6 +11,8 @@ package com.ibm.jaggr.service.config;
  * of config events, register the implementing class as an OSGi service,
  * specifying the servlet name under the <code>name</code> property in 
  * the service properties.
+ *  
+ * @author chuckd@us.ibm.com
  */
 public interface IConfigListener {
 	/**
@@ -20,11 +22,9 @@ public interface IConfigListener {
 	 * 
 	 * @param config
 	 *            The new config object. In order to detect and react to config
-	 *            changes (e.g. clearing the aggregator cache), you can save the
-	 *            value returned from {@link IConfig#getRawConfig()} and compare
-	 *            it with the value returned in subsequent configLoaded events
-	 *            using {@link Object#equals(Object)}. Raw config objects are
-	 *            serializable, and so may be persisted across server restarts.
+	 *            changes, you can save the value returned from
+	 *            {@link IConfig#toString()} and compare it with the value
+	 *            returned in subsequent configLoaded events.
 	 * @param sequence
 	 *            The sequence number. Notifications for different listener
 	 *            events (options, config, dependencies) that have the same

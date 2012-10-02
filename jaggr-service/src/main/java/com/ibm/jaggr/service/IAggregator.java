@@ -21,7 +21,9 @@ import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.executors.IExecutors;
+import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
@@ -40,6 +42,8 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * When servicing requests, a reference to the aggregator may be obtained from
  * the request attribute named {@link #AGGREGATOR_REQATTRNAME}. It may also be
  * obtained from the session context attributes using the same name.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IAggregator {
 
@@ -276,4 +280,32 @@ public interface IAggregator {
 	 */
 	public IModule newModule(String mid, URI uri);
 
+	/**
+	 * Factory method for ILayerCache
+	 * 
+	 * @return the new ILayerCache instance
+	 */
+	public ILayerCache newLayerCache();
+	
+	/**
+	 * Factory method for IModuleCache
+	 * 
+	 * @return the new IModuleCache instance
+	 */
+	public IModuleCache newModuleCache();
+
+	/**
+	 * Performs substitution of variable names of the form ${name} with the values
+	 * defined in java system properties, or with the value returned by a registered
+	 * variable resolver that implements the interface {@link IVariableResolver}.
+	 * Variable resolvers are registered in the OSGi service registry.  If more than
+	 * one resolver is registered, the first one that returns a value for the variable
+	 * will be used.  If no value is found for a variable, then the variable
+	 * identifier is unmodified in the returned string.
+	 * 
+	 * @param str The string for which variables should be substituted
+	 * @return The input string with variables of the form ${name} replaced with
+	 * the variable values.
+	 */
+	public String substituteProps(String str);
 }

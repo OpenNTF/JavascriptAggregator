@@ -25,6 +25,8 @@ import java.util.Iterator;
  * This reader will frequently return less than the number of bytes (including
  * zero bytes) than was requested as a result of transitioning between input
  * sources. Only a return value of -1 indicates that no more data is available.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class AggregationReader extends Reader {
 

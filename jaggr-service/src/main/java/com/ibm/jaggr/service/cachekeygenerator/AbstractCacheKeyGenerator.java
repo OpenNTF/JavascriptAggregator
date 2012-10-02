@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletRequest;
  * <p>
  * Implements default cache key generator behavior for module builders that d
  * don't need provisional cache key generators and don't need combine logic.
+ * 
+ * @author chuckd@us.ibm.com
  */
 @SuppressWarnings("serial")
 public abstract class AbstractCacheKeyGenerator implements
@@ -25,13 +27,8 @@ public abstract class AbstractCacheKeyGenerator implements
 	@Override
 	public abstract String generateKey(HttpServletRequest request);
 	
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.ibm.jaggr.service.modules.Module.CacheKeyGenerator#
-	 * combine
-	 * (com.ibm.jaggr.service.modules.Module.CacheKeyGenerator)
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator)
 	 */
 	@Override
 	public ICacheKeyGenerator combine(ICacheKeyGenerator other) {

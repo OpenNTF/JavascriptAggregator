@@ -14,7 +14,9 @@ import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
  * Interface for a registered aggregator extension.  An {@link Iterable} of
  * {@code IAggregatorExtension} objects is returned by the method
  * {@link IAggregator#getResourceFactoryExtensions()} and 
- * {@link IAggregator#getModuleBuilderExtensions()},
+ * {@link IAggregator#getModuleBuilderExtensions()}, 
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IAggregatorExtension {
 	/**

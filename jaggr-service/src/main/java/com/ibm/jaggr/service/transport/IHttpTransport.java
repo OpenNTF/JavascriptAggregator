@@ -12,6 +12,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.service.resource.IResourceFactory;
 
 /**
  * Instances of IHttpTransport are responsible for parsing the HTTP request to
@@ -21,6 +23,8 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
  * <p>
  * This interface also provides the AMD loader extension JavaScript used to
  * format and send the requests to the aggregator.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IHttpTransport extends IExtensionInitializer {
 
@@ -174,6 +178,13 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * shown in the following example:
 	 * <p>
 	 * <code>urlProcessors.push(function(url) {return url+'&foo=bar'});</code>
+	 * <p>
+	 * The mechanism by which the loader extension JavaScript is delivered to 
+	 * the client is outside the scope of this interface.  A typical implementation
+	 * will register an {@link IResourceFactory} which returns an {@link IResource}
+	 * object that will deliver the loader extension JavaScript when the AMD module
+	 * which has been mapped to the resource URI for the loader extension JavaScript
+	 * is requested.  
 	 * 
 	 * @param contribution
 	 *            The JavaScript being contributed.

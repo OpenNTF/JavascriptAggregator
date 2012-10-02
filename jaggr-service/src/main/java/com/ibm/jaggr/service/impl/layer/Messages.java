@@ -11,6 +11,8 @@ import org.eclipse.osgi.util.NLS;
 public class Messages extends NLS {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.layer.messages"; //$NON-NLS-1$
 	public static String LayerImpl_1;
+	public static String LayerImpl_2;
+	public static String LayerImpl_3;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,18 +25,24 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.InitParams;
+import com.ibm.jaggr.service.InitParams.InitParam;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
+import com.ibm.jaggr.service.impl.layer.LayerCacheImpl;
+import com.ibm.jaggr.service.impl.module.ModuleCacheImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
+import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
@@ -150,17 +158,28 @@ public class TestUtils {
 	}
 
 	public static IAggregator createMockAggregator() throws Exception {
-		return createMockAggregator(null, null);
+		return createMockAggregator(null, null, null);
 	}
 	
+	public static IAggregator createMockAggregator(
+			Ref<IConfig> configRef,
+			File workingDirectory) throws Exception {
+		
+		return createMockAggregator(configRef, workingDirectory, null);
+	}
 
 	public static IAggregator createMockAggregator(
-			Ref<IConfig> configRef, 
-			File workingDirectory) throws IOException, JSONException {
+			Ref<IConfig> configRef,
+			File workingDirectory,
+			List<InitParam> initParams) throws IOException, JSONException {
 
-		IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
+		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
 		IOptions options = new OptionsImpl(null, "test", false);
 		options.setOption(IOptions.DELETE_DELAY, "0");
+		if (initParams == null) {
+			initParams = new LinkedList<InitParam>();
+		}
+		final InitParams aggInitParams = new InitParams(initParams);
 		boolean createConfig = (configRef == null);
 		if (workingDirectory == null) {
 			workingDirectory = new File(System.getProperty("java.io.tmpdir"));
@@ -191,8 +210,28 @@ public class TestUtils {
 				}
 			}).anyTimes();
 		}
+		EasyMock.expect(mockAggregator.substituteProps((String)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
+			public String answer() throws Throwable {
+				return (String)EasyMock.getCurrentArguments()[0];
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.newLayerCache()).andAnswer(new IAnswer<ILayerCache>() {
+			public ILayerCache answer() throws Throwable {
+				return new LayerCacheImpl(mockAggregator);
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.newModuleCache()).andAnswer(new IAnswer<IModuleCache>() {
+			public IModuleCache answer() throws Throwable {
+				return new ModuleCacheImpl();
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.getInitParams()).andAnswer(new IAnswer<InitParams>() {
+			public InitParams answer() throws Throwable {
+				return aggInitParams;
+			}
+		}).anyTimes();
 		EasyMock.replay(mockAggregator);
-		cacheMgrRef.set(new CacheManagerImpl(mockAggregator));
+		cacheMgrRef.set(new CacheManagerImpl(mockAggregator, 0));
 		//((IOptionsListener)cacheMgrRef.get()).optionsUpdated(options, 1);
 		if (createConfig) {
 			configRef.set(new ConfigImpl(mockAggregator, workingDirectory.toURI(), "{}"));
@@ -240,7 +279,26 @@ public class TestUtils {
 				return executorsRef.get();
 			}
 		}).anyTimes();
-
+		EasyMock.expect(mockAggregator.newLayerCache()).andAnswer(new IAnswer<ILayerCache>() {
+			public ILayerCache answer() throws Throwable {
+				return new LayerCacheImpl(mockAggregator);
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.newModuleCache()).andAnswer(new IAnswer<IModuleCache>() {
+			public IModuleCache answer() throws Throwable {
+				return new ModuleCacheImpl();
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.substituteProps((String)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
+			public String answer() throws Throwable {
+				return (String)EasyMock.getCurrentArguments()[0];
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.getInitParams()).andAnswer(new IAnswer<InitParams>() {
+			public InitParams answer() throws Throwable {
+				return aggInitParams;
+			}
+		}).anyTimes();
 		return mockAggregator;
 	}
 	

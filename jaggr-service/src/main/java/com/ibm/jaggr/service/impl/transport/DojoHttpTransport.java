@@ -10,10 +10,8 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -24,12 +22,15 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
 import org.eclipse.core.runtime.Status;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.config.IConfig.Location;
 import com.ibm.jaggr.service.impl.Activator;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.AggregationResource;
@@ -41,6 +42,8 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 /**
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
@@ -58,11 +61,21 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     static String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
     static String dojoTextPluginName = "text"; //$NON-NLS-1$
     static String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
+    static URI dojoPluginUri;
+
+    static {
+    	try {
+    		dojoPluginUri = new URI("./"+dojoTextPluginName);
+    	} catch (URISyntaxException e) {
+    		// Should never happen
+    		throw new RuntimeException(e);
+    	}
+    }
 
     private String pluginUniqueId = ""; //$NON-NLS-1$
     private URI comboUri;
+
     private List<String[]> clientConfigAliases = new LinkedList<String[]>();
-    
     
     /**
      * Property accessor for the comboUriStr property
@@ -263,40 +276,72 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 * and sets up the client-side config aliases to be set in 
 	 * {@link #contributeLoaderExtensionJavaScript(String)}.
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
-	public void modifyConfig(IAggregator aggregator, Map<String, Object> config) {
+	public void modifyConfig(IAggregator aggregator, Scriptable config) {
 		// let the superclass do its thing
 		super.modifyConfig(aggregator, config);
 		
 		// Get the server-side config properties we need to start with
-		Map<String, String> paths = (Map<String, String>)config.get(IConfig.PATHS_CONFIGPARAM);
-		List<Object> packages = (List<Object>)config.get(IConfig.PACKAGES_CONFIGPARAM);
-		List<Object> aliases = (List<Object>)config.get(IConfig.ALIASES_CONFIGPARAM);
+		Object pathsObj = config.get(IConfig.PATHS_CONFIGPARAM, config);
+		Object packagesObj = config.get(IConfig.PACKAGES_CONFIGPARAM, config);
+		Object aliasesObj = config.get(IConfig.ALIASES_CONFIGPARAM, config);
 		
+		Scriptable paths = (pathsObj != null && pathsObj instanceof Scriptable) ? (Scriptable)pathsObj : null;
+		Scriptable packages = (packagesObj != null && packagesObj instanceof Scriptable) ? (Scriptable)packagesObj : null;
+		Scriptable aliases = (aliasesObj != null && aliasesObj instanceof Scriptable) ? (Scriptable)aliasesObj : null;
 		// Get the URI for the location of the dojo package on the server
-		String dojoLocUriStr = null;
+		IConfig.Location dojoLoc = null;
 		if (packages != null) {
-			for (Object pkgObj : packages) {
-				Map<String, String> pkg = (Map<String, String>)pkgObj;
-				if (dojo.equals(pkg.get(IConfig.PKGNAME_CONFIGPARAM))) {
-					dojoLocUriStr = pkg.get(IConfig.PKGLOCATION_CONFIGPARAM);
-					if (dojoLocUriStr == null) {
-						dojoLocUriStr = ""; //$NON-NLS-1$
+			for (Object id : packages.getIds()) {
+				if (!(id instanceof Number)) {
+					continue;
+				}
+				Number i = (Number)id;
+				Object pkgObj = packages.get((Integer)i, packages);
+				if (pkgObj instanceof Scriptable) {
+					Scriptable pkg = (Scriptable)pkgObj;
+					if (dojo.equals(pkg.get(IConfig.PKGNAME_CONFIGPARAM, pkg).toString())) {
+						try {
+							Object dojoLocObj = pkg.get(IConfig.PKGLOCATION_CONFIGPARAM, pkg);
+							if (dojoLoc == Scriptable.NOT_FOUND) {
+								dojoLoc = new IConfig.Location(new URI("."), null); //$NON-NLS-1$
+							} else if (dojoLocObj instanceof Scriptable) {
+								Scriptable values = (Scriptable)dojoLocObj;
+								String str = Context.toString(values.get(0, values));
+								if (!str.endsWith("/")) str += '/';
+								URI primary = new URI(str).normalize(), override = null;
+								Object obj = values.get(1, values);
+								if (obj != Scriptable.NOT_FOUND) {
+									str = Context.toString(obj);
+									if (!str.endsWith("/")) str += '/';
+									try {
+										override = new URI(str).normalize();
+									} catch (URISyntaxException ignore) {}
+								}
+								dojoLoc = new Location(primary, override);
+							} else {
+								String str = Context.toString(dojoLocObj);
+								if (!str.endsWith("/")) str += '/';
+								dojoLoc = new Location(new URI(str).normalize());
+							}
+						} catch (URISyntaxException e) {
+							if (log.isLoggable(Level.WARNING)) {
+								log.log(Level.WARNING, e.getMessage(), e);
+							}
+						}
 					}
-					break;
 				}
 			}
 		}
 		// Bail if we can't find dojo
-		if (dojoLocUriStr == null) {
+		if (dojoLoc == null) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.warning(Messages.DojoHttpTransport_0);
 			}
 			return;
 		}
 		
-		if (paths != null && paths.get(dojoTextPluginFullPath) != null) {
+		if (paths != null && paths.get(dojoTextPluginFullPath, paths) != Scriptable.NOT_FOUND) {
 			// if config overrides dojo/text, then bail
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(Messages.DojoHttpTransport_2,
@@ -305,56 +350,75 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			return;
 		}
 
-		// Create the paths and aliases config properties if necessary
-		if (paths == null) {
-			config.put(IConfig.PATHS_CONFIGPARAM, new HashMap<String, String>());
-			paths = (Map<String, String>)config.get(IConfig.PATHS_CONFIGPARAM);
-		}
-		if (aliases == null) {
-			config.put(IConfig.ALIASES_CONFIGPARAM, new ArrayList<Object>());
-			aliases = (List<Object>)config.get(IConfig.ALIASES_CONFIGPARAM);
-		}
-
-		// Specify paths entry to map dojo/text to our text plugin proxy
-		if (log.isLoggable(Level.INFO)) {
-			log.info(MessageFormat.format(
-					Messages.DojoHttpTransport_3,
-					new Object[]{dojoTextPluginFullPath, textPluginProxyUriStr}
-			));
-		}
-		paths.put(dojoTextPluginFullPath, textPluginProxyUriStr);
+		Context context = Context.enter();
+		try {
+			// Create the paths and aliases config properties if necessary
+			if (paths == null) {
+				config.put(IConfig.PATHS_CONFIGPARAM, config, context.newObject(config));
+				paths = (Scriptable)config.get(IConfig.PATHS_CONFIGPARAM, paths);
+			}
+			if (aliases == null) {
+				config.put(IConfig.ALIASES_CONFIGPARAM, config, context.newArray(config, 0));
+				aliases = (Scriptable)config.get(IConfig.ALIASES_CONFIGPARAM, paths);
+			}
+	
+			// Specify paths entry to map dojo/text to our text plugin proxy
+			if (log.isLoggable(Level.INFO)) {
+				log.info(MessageFormat.format(
+						Messages.DojoHttpTransport_3,
+						new Object[]{dojoTextPluginFullPath, textPluginProxyUriStr}
+				));
+			}
 		
-		// Specify paths entry to map the dojo text plugin alias name to the original
-		// dojo text plugin
-		String dojoTextPluginUriStr = dojoLocUriStr + 
-				(dojoLocUriStr.length() == 0 || dojoLocUriStr.endsWith("/") ? "" : "/") + dojoTextPluginName; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-		if (log.isLoggable(Level.INFO)) {
-			log.info(MessageFormat.format(
-					Messages.DojoHttpTransport_3,
-					new Object[]{dojoTextPluginAliasFullPath, dojoTextPluginUriStr}
-			));
+			paths.put(dojoTextPluginFullPath, paths, textPluginProxyUriStr);
+			
+			// Specify paths entry to map the dojo text plugin alias name to the original
+			// dojo text plugin
+			Scriptable dojoTextPluginPath = context.newArray(config, 2);
+			URI primary = dojoLoc.getPrimary(), override = dojoLoc.getOverride(); 
+			primary = primary.resolve(dojoPluginUri);
+			if (override != null) {
+				override = override.resolve(dojoPluginUri);
+			}
+			dojoTextPluginPath.put(0, dojoTextPluginPath, primary.toString());
+			if (override != null) {
+				dojoTextPluginPath.put(1, dojoTextPluginPath, override.toString());
+			}
+			if (log.isLoggable(Level.INFO)) {
+				log.info(MessageFormat.format(
+						Messages.DojoHttpTransport_3,
+						new Object[]{dojoTextPluginAliasFullPath, Context.toString(dojoTextPluginPath)}
+				));
+			}
+			paths.put(dojoTextPluginAliasFullPath, paths, dojoTextPluginPath);
+			
+			// Specify an alias mapping for the static alias used
+			// by the proxy module to the name which includes the path dojo/ so that
+			// relative module ids in dojo/text will resolve correctly.
+			// 
+			// We need this in the server-side config so that the server can follow
+			// module dependencies from the plugin proxy
+			if (log.isLoggable(Level.INFO)) {
+				log.info(MessageFormat.format(
+						Messages.DojoHttpTransport_4,
+						new Object[]{dojoTextPluginAlias, dojoTextPluginAliasFullPath}
+				));
+			}
+			Scriptable alias = context.newArray(config, 3);
+			alias.put(0, alias, dojoTextPluginAlias);
+			alias.put(1, alias, dojoTextPluginAliasFullPath);
+			// Not easy to determine the size of an array using Scriptable
+			int max = -1;
+			for (Object id : aliases.getIds()) {
+				if (id instanceof Number) max = Math.max(max, (Integer)((Number)id));
+			}
+			aliases.put(max+1, aliases, alias);
+		} finally {
+			Context.exit();
 		}
-		paths.put(dojoTextPluginAliasFullPath, dojoTextPluginUriStr);
-		
-		// Specify an alias mapping for the static alias used
-		// by the proxy module to the name which includes the path dojo/ so that
-		// relative module ids in dojo/text will resolve correctly.
-		// 
-		// We need this in the server-side config so that the server can follow
-		// module dependencies from the plugin proxy
-		if (log.isLoggable(Level.INFO)) {
-			log.info(MessageFormat.format(
-					Messages.DojoHttpTransport_4,
-					new Object[]{dojoTextPluginAlias, dojoTextPluginAliasFullPath}
-			));
-		}
-		List<String> alias = new ArrayList<String>(2);
-		alias.add(0, dojoTextPluginAlias);
-		alias.add(1, dojoTextPluginAliasFullPath);
-		aliases.add(alias);
 		
 		// Add alias definitions to be specified in client-side config
-		getClientConfigAliases().add(new String[]{alias.get(0), alias.get(1)});
+		getClientConfigAliases().add(new String[]{dojoTextPluginAlias, dojoTextPluginAliasFullPath});
 		// Add alias mapping for aggregator text plugin alias used in the text plugin proxy
 		// to the actual aggregator text plugin name as determined from the module builder
 		// definitions

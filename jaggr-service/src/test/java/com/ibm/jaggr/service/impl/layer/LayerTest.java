@@ -24,8 +24,10 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,12 +35,14 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.LimitExceededException;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
@@ -125,7 +129,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("unchecked")
@@ -135,7 +139,7 @@ public class LayerTest extends EasyMock {
 		// Request a single module
 		Collection<String> modules = Arrays.asList(new String[]{"p1/a"}); 
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		LayerImpl layer = new LayerImpl();
+		LayerImpl layer = newLayerImpl();
 		layer.setReportCacheInfo(true);
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		Writer writer = new StringWriter();
@@ -152,7 +156,7 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		layer = new LayerImpl();
+		layer = newLayerImpl();
 		layer.setReportCacheInfo(true);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
@@ -171,7 +175,7 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		modules = Arrays.asList(new String[]{"p1/b","p1/a","p1/hello.txt"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		layer = new LayerImpl();
+		layer = newLayerImpl();
 		layer.setReportCacheInfo(true);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
@@ -291,14 +295,14 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#deleteCached(com.ibm.jaggr.service.cache.ICacheManager, int)}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#deleteCached(com.ibm.jaggr.service.cache.ICacheManager, int)}.
 	 */
 	@Test
 	public void testDeleteCached() throws Exception {
 		// Request a single module
 		Collection<String> modules = Arrays.asList(new String[]{"p1/a"});
 		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		LayerImpl layer = new LayerImpl();
+		LayerImpl layer = newLayerImpl();
 		layer.setReportCacheInfo(true);
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		Writer writer = new StringWriter();
@@ -336,7 +340,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
@@ -345,7 +349,7 @@ public class LayerTest extends EasyMock {
 		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		LayerImpl layer = new LayerImpl();
+		LayerImpl layer = newLayerImpl();
 		long testLastMod = layer.getLastModified(mockRequest);
 		assertTrue(lastMod == testLastMod);
 		lastMod = new Date().getTime();
@@ -361,14 +365,14 @@ public class LayerTest extends EasyMock {
 
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#toString()}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#toString()}.
 	 */
 	@Test
 	public void testToString() throws Exception {
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDMODULES_REQATTRNAME,
 				Arrays.asList(new String[]{"p1/b", "p1/a"}));
-		LayerImpl layer = new LayerImpl();
+		LayerImpl layer = newLayerImpl();
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		in.close();
 		String s = layer.toString();
@@ -377,7 +381,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getHasMapFromRequest(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#getHasMapFromRequest(javax.servlet.http.HttpServletRequest)}.
 	 * @throws ServletException 
 	 */
 	/* TODO: Move this to HttpTransportImplTest
@@ -416,7 +420,7 @@ public class LayerTest extends EasyMock {
 	}
 	*/
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.service.config.IConfig)}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.service.config.IConfig)}.
 	 */
 	@Test
 	public void testGetResourceURI() {
@@ -431,15 +435,42 @@ public class LayerTest extends EasyMock {
 
 	}
 
+	@Test
+	public void testLimits() throws Exception {
+		// Request a single module
+		Collection<String> modules = Arrays.asList(new String[]{"p1/a"}); 
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		LayerImpl layer = new LayerImpl("", new AtomicInteger(9), 10);
+		InputStream in = layer.getInputStream(mockRequest, mockResponse);
+		in.close();
+		// Request the same layer with different option which will result in a new layer build
+		// added to the cache and busting the limit.
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
+		boolean exceptionCaught = false;
+		try {
+			layer.getInputStream(mockRequest, mockResponse);
+		} catch(LimitExceededException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+	}
+	
 	@SuppressWarnings("serial")
 	class TestLayerImpl extends LayerImpl { 
+		TestLayerImpl() {
+			super("", new AtomicInteger(0), -1);
+		}
 		public IModule newModule(HttpServletRequest request, String mid) {
 			return super.newModule(request, mid);
 		}
 	};
 	
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getHasConditionsFromRequest(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.service.layer.impl.LayerImpl#getHasConditionsFromRequest(javax.servlet.http.HttpServletRequest)}.
 	 * @throws ServletException 
 	 */
 	/* TODO: Move this to HttpTransportImplTest
@@ -471,4 +502,9 @@ public class LayerTest extends EasyMock {
 		assertNull(LayerImpl.getHasConditionsFromRequest(request));
 	}
 	*/
+	static private LayerImpl newLayerImpl() {
+		LayerImpl result = new LayerImpl("", new AtomicInteger(0), -1);
+		return result;
+	}
+
 }

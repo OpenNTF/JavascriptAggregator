@@ -26,6 +26,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
 /**
  * This class specializes JavaScriptModuleBuilder for text modules.  Text modules are returned as 
  * javascript modules wrapped in a define() statement.
+
+ * @author chuckd@us.ibm.com
  */
 public class TextModuleBuilder implements IModuleBuilder {
 	

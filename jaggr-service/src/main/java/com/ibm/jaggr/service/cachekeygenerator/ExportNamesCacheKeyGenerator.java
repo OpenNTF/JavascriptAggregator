@@ -14,6 +14,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
 /**
  * Simple cache key generator for export names option. Used by multiple
  * builders.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public final class ExportNamesCacheKeyGenerator extends
 		AbstractCacheKeyGenerator {

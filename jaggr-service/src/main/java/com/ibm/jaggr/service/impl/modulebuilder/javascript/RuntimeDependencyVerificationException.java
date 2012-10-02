@@ -15,6 +15,8 @@ import com.ibm.jaggr.service.DependencyVerificationException;
  * inherits from RuntimeException.  Instances of this exception are
  * caught by the JavaScript module builder which in turn throws 
  * {@link DependencyVerificationException}.
+ *  
+ * @author chuckd@us.ibm.com
  */
 public class RuntimeDependencyVerificationException extends RuntimeException {
 	private static final long serialVersionUID = 824963277533958913L;

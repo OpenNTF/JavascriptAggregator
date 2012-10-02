@@ -52,7 +52,4 @@ public class GenericServiceTracker<T> extends ServiceTracker {
 	public T waitForService(long arg0) throws InterruptedException {
 		return (T) super.waitForService(arg0);
 	}
-	
-	
-
 }

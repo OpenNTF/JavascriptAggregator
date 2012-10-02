@@ -16,6 +16,8 @@ import com.ibm.jaggr.service.resource.IResourceFactory;
  * this interface will be called in the
  * {@link #initialize(IAggregator, IAggregatorExtension, IExtensionRegistrar)} 
  * initialize method immediately after the extension has been created.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IExtensionInitializer {
 

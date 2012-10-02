@@ -17,11 +17,13 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -36,16 +38,10 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.wink.json4j.JSONArray;
-import org.apache.wink.json4j.JSONException;
-import org.apache.wink.json4j.JSONObject;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
-import org.mozilla.javascript.NativeArray;
-import org.mozilla.javascript.NativeJavaObject;
-import org.mozilla.javascript.NativeObject;
-import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 import org.osgi.framework.BundleContext;
@@ -72,18 +68,15 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/** regular expression for detecting if a plugin name is the has! plugin */
 	static final Pattern HAS_PATTERN = Pattern.compile("(^|\\/)has$"); //$NON-NLS-1$
 	
-	static final String JSON_PROXY_EYECATCHER = "$$JSONProxy$$"; //$NON-NLS-1$
-	static final String JSON_PROXY_REGEXP = "regexp"; //$NON-NLS-1$
-	static final String JSON_PROXY_FUNCTION = "function"; //$NON-NLS-1$
-
 	private final IAggregator aggregator;
-	private final Map<String, Object> rawConfig;
+	private final Scriptable rawConfig;
+	private String strConfig;
 	private final long lastModified;
 	private final URI configUri;
 
-	private URI base;
+	private Location base;
 	private Map<String, IPackage> packages;
-	private Map<String, URI> paths;
+	private Map<String, Location> paths;
 	private List<IAlias> aliases;
 	private List<String> deps;
 	private boolean depsIncludeBaseUrl;
@@ -92,46 +85,80 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private String notice;
 	private String cacheBust;
 	private Scriptable sharedScope;
+	
 	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
+	
+	private static class ConfigContextFactory extends ContextFactory {
+		@Override
+		protected boolean hasFeature(Context context, int feature) {
+			if (feature == Context.FEATURE_DYNAMIC_SCOPE || feature == Context.FEATURE_TO_STRING_AS_SOURCE) {
+				return true;
+			}
+			return super.hasFeature(context, feature);
+		}
+	}
+	
+	static {
+		ContextFactory.initGlobal(new ConfigContextFactory());
+	}
 	
 	public ConfigImpl(IAggregator aggregator) throws IOException {
 		this.aggregator = aggregator;
+		Context.enter();
 	
 		try { 
 			configUri = loadConfigUri();
-			lastModified = configUri.toURL().openConnection().getLastModified();
+			URLConnection connection = configUri.toURL().openConnection();
+			lastModified = connection.getLastModified();
 
-			rawConfig = loadConfigJSON();
+			rawConfig = loadConfig(connection.getInputStream());
 			
 			// Call config modifiers to allow them to update the config
 			// before we parse it.
 			callConfigModifiers(rawConfig);
 			
+			// Seal the config object and the shared scope to prevent changes
+			((ScriptableObject)rawConfig).sealObject();
+			((ScriptableObject)sharedScope).sealObject();
+			
 			init();
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
+		} finally {
+			Context.exit();
 		}
 	}
 
-	public ConfigImpl(IAggregator aggregator, URI configUri, String configJson) throws IOException, JSONException {
-		lastModified = -1;
-		this.configUri = configUri;
-		this.aggregator = aggregator;
-		this.rawConfig = loadConfigJSON(configJson);
-		init();
+	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript) throws IOException {
+		Context.enter();
+		try {
+			lastModified = -1;
+			this.configUri = configUri;
+			this.aggregator = aggregator;
+			this.rawConfig = loadConfig(configScript);
+			init();
+		} finally {
+			Context.exit();
+		}
 	}
 	
-	public ConfigImpl(IAggregator aggregator, URI configUri, Map<String, Object> rawConfig) throws IOException {
-		lastModified = -1;
-		this.configUri = configUri;
-		this.aggregator = aggregator;
-		this.rawConfig = rawConfig;
-		init();
+	public ConfigImpl(IAggregator aggregator, URI configUri, Scriptable rawConfig) throws IOException {
+		Context.enter();
+		try {
+			lastModified = -1;
+			this.configUri = configUri;
+			this.aggregator = aggregator;
+			this.rawConfig = rawConfig;
+			init();
+		} finally {
+			Context.exit();
+		}
 	}
 	
 	protected void init() throws IOException {
 		try { 
 			registerServices();
+			strConfig = Context.toString(rawConfig);
 			base = loadBaseURI(rawConfig);
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
 			paths = Collections.unmodifiableMap(loadPaths(rawConfig));
@@ -170,7 +197,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @see com.ibm.jaggr.service.config.IConfig#getBase()
 	 */
 	@Override
-	public URI getBase() {
+	public Location getBase() {
 		return base;
 	}
 	
@@ -186,7 +213,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @see com.ibm.jaggr.service.config.IConfig#getPaths()
 	 */
 	@Override
-	public Map<String, URI> getPaths() {
+	public Map<String, Location> getPaths() {
 		return Collections.unmodifiableMap(paths);
 	}
 
@@ -249,79 +276,20 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getRawConfig()
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
-	public Map<String, Object> getRawConfig() {
-		// return a copy of the raw config so that it can't be
-		// modified by the caller.
-		JSONObject result = null;
-		try {
-			result = new JSONObject(rawConfig.toString());
-		} catch (JSONException e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			}
-			throw new RuntimeException(e);
-		}
-		return result;
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.config.IConfig#getPathURIs()
-	 */
-	@Override
-	public Map<String, URI> getPathURIs() {
-		Map<String, URI> result = new LinkedHashMap<String, URI>();
-		try {
-			for (Entry<String, URI> entry : getPaths().entrySet()) {
-				result.put(entry.getKey(), entry.getValue());
-			}
-			// Remove .js extension from any paths
-			for (Entry<String, URI> entry : result.entrySet()) {
-				URI value = entry.getValue();
-				if (value.getPath().endsWith(".js")) { //$NON-NLS-1$
-					entry.setValue(new URI(value.getPath().substring(0, value.getPath().length()-3)));
-				}
-				entry.setValue(value);
-			}
-		} catch (URISyntaxException e) {
-			log.log(Level.SEVERE, e.getMessage(), e);
-		}
-		return result;
+	public Scriptable getRawConfig() {
+		return rawConfig;
 	}
 	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getPackageURIs()
 	 */
 	@Override
-	public Map<String, URI> getPackageURIs() {
-		Map<String, URI> result = new LinkedHashMap<String, URI>();
-		try {
-			for (Entry<String, IPackage>entry : getPackages().entrySet()) {
-				IPackage pkg = entry.getValue();
-				result.put(pkg.getName(), pkg.getLocation());
-				String main = pkg.getMain();
-				URI uri = locateModuleResource(main);
-				if (uri != null) {
-					result.put(main, uri);
-				} else {
-					if (log.isLoggable(Level.WARNING)) {
-						log.warning(MessageFormat.format(
-								Messages.ConfigImpl_1, new Object[]{main}
-						));
-					}
-				}
-			}
-			// Remove .js extension from any paths
-			for (Entry<String, URI> entry : result.entrySet()) {
-				URI value = entry.getValue();
-				if (value.getPath().endsWith(".js")) { //$NON-NLS-1$
-					entry.setValue(new URI(value.getPath().substring(0, value.getPath().length()-3)));
-				}
-				entry.setValue(value);
-			}
-		} catch (URISyntaxException e) {
-			log.log(Level.SEVERE, e.getMessage(), e);
+	public Map<String, Location> getPackageLocations() {
+		Map<String, Location> result = new LinkedHashMap<String, Location>();
+		for (Entry<String, IPackage>entry : getPackages().entrySet()) {
+			IPackage pkg = entry.getValue();
+			result.put(pkg.getName(), pkg.getLocation());
 		}
 		return result;
 	}
@@ -332,22 +300,22 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public URI locateModuleResource(String mid) { 
-		URI location = null;
+		Location location = null;
 		String remainder = null;
 		
-		// If the module is a package name, then resolve to the packag main id
-		if (getPackages().containsKey(mid)) {
-			mid = getPackages().get(mid).getMain();
-		} 
 		// Now see if mid matches exactly a path
-		if (location == null && getPaths().containsKey(mid)) {
+		if (getPaths().containsKey(mid)) {
 			location = getPaths().get(mid);
 		}
+		// If the module is a package name, then resolve to the packag main id
+		if (location == null && getPackages().containsKey(mid)) {
+			mid = getPackages().get(mid).getMain();
+		} 
 		if (location == null) {
 			// Still no match.  Iterate through the paths and packages looking
 			// for an entry that matches part of the module id
 			String prefix = ""; //$NON-NLS-1$
-			for (Map.Entry<String, URI> entry : getPaths().entrySet()) {
+			for (Map.Entry<String, Location> entry : getPaths().entrySet()) {
 				if (mid.startsWith(entry.getKey()) && entry.getKey().length() > prefix.length()) {
 					if (entry.getKey().endsWith("/") || mid.charAt(entry.getKey().length()) == '/') { //$NON-NLS-1$
 						prefix = entry.getKey();
@@ -369,37 +337,59 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				if (remainder.startsWith("/")) { //$NON-NLS-1$
 					remainder = remainder.substring(1);
 				}
+				// Check for illegal relative path. Throws exception if an
+				// attempt is made to use relitive path components to go 
+				// outside the path defined by the entry.
+				PathUtil.normalizePaths(prefix, new String[]{remainder});
 			} else {
+				// Check for illegal relative path. Throws exception if an
+				// attempt is made to use relitive path components to go 
+				// outside the path defined by the base url.
+				PathUtil.normalizePaths("", new String[]{mid});
 				// not match.  Return a URI relative to the config base URI
-				location = getBase().resolve(mid);
+				Location base = getBase();
+				location = new Location(
+					base.getPrimary().resolve(mid),
+					base.getOverride() == null ? null : base.getOverride().resolve(mid)
+				);
 			}
 		}
-		
+		URI result = null;
 		try {
-			if (remainder != null) {
-				// Resolve the URI location and remainder parts
-				if (!location.getPath().endsWith("/")) { //$NON-NLS-1$
-					location = new URI(location.getScheme(), location.getHost(), 
-							           location.getPath() + "/", location.getFragment()); //$NON-NLS-1$
-				}
-				location = location.resolve(remainder);
-			}
-			
-			// add .js extension if resource uri has no extension
-			String path = location.getPath();
-			int idx = path.lastIndexOf("/"); //$NON-NLS-1$
-			String fname = (idx != -1) ? path.substring(idx+1) : path;
-			if (!fname.contains(".")) { //$NON-NLS-1$
-				location = new URI(location.getScheme(), location.getHost(), 
-						path + ".js", location.getFragment()); //$NON-NLS-1$
-			}
-			
+			URI override = toResourceUri(location.getOverride(), remainder);
+			result = (override != null && aggregator.newResource(override).exists()) ?
+				override : toResourceUri(location.getPrimary(), remainder);
 		} catch (URISyntaxException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
 			}
 		}
-		return location;
+		return result;
+	}
+	
+	protected URI toResourceUri(URI uri, String remainder) throws URISyntaxException {
+		if (uri == null) {
+			return null;
+		}
+		if (remainder != null) {
+			// Resolve the URI location and remainder parts
+			if (!uri.getPath().endsWith("/")) { //$NON-NLS-1$
+				uri = new URI(uri.getScheme(), uri.getAuthority(),
+						           uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
+			}
+			uri = uri.resolve(remainder);
+		}
+		
+		// add .js extension if resource uri has no extension
+		String path = uri.getPath();
+		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
+		String fname = (idx != -1) ? path.substring(idx+1) : path;
+		if (!fname.contains(".")) { //$NON-NLS-1$
+			uri = new URI(uri.getScheme(), uri.getAuthority(), 
+					path + ".js", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
+		}
+		return uri;
+		
 	}
 
 	/* (non-Javadoc)
@@ -412,6 +402,24 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Set<String> dependentFeatures,
 			StringBuffer sb) {
 		
+		String aliased = null;
+		try {
+			aliased = resolveAliases(mid, features, dependentFeatures, sb);
+		} catch (Exception e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+		if (aliased != null && aliased != mid) {
+			if (sb != null) {
+				sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
+						Messages.ConfigImpl_6,
+						new Object[]{mid}
+				));
+			}
+			mid = aliased;
+		}
+
 		int idx = mid.indexOf("!"); //$NON-NLS-1$
 		if (idx != -1 && HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
 			Set<String> depFeatures = new HashSet<String>();
@@ -448,24 +456,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				}
 			}
 		}
-		String aliased = null;
-		try {
-			aliased = resolveAlias(mid, features, dependentFeatures, sb);
-		} catch (Exception e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			}
-		}
-		if (aliased != null && aliased != mid) {
-			if (sb != null) {
-				sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
-						Messages.ConfigImpl_6,
-						new Object[]{mid}
-				));
-			}
-			mid = aliased;
-		}
-
 		// check for package name and replace with the package's main module id
 		IPackage pkg = packages.get(mid);
 		if (pkg != null) {
@@ -479,7 +469,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * Applies alias mappings to the specified name and returns the result
 	 * 
 	 * @param name
-	 *            The module name to map
+	 *            The module name to map.  May specify plugins
 	 * @param features
 	 *            Features that are defined in the request
 	 * @param dependentFeatures
@@ -500,7 +490,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * 
 	 * @see IAliasResolver
 	 */
-	protected String resolveAlias(
+	protected String resolveAliases(
 			String name, 
 			Features features, 
 			Set<String> dependentFeatures,
@@ -509,8 +499,23 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		if (name == null || name.length() == 0) {
 			return name;
 		}
+		
+		final Pattern plugins1 = Pattern.compile("[!?:]");
+		final Pattern plugins2 = Pattern.compile("[^!?:]*");
+		
 		String result = name;
 		if (getAliases() != null) {
+			if (plugins1.matcher(name).find()) {
+				// If the module id specifies a plugin, then process each part individually
+				Matcher m = plugins2.matcher(name);
+				StringBuffer sbResult = new StringBuffer();
+				while (m.find()) {
+					String replacement = resolveAliases(m.group(0), features, dependentFeatures, sb);
+					m.appendReplacement(sbResult, replacement);
+				}
+				m.appendTail(sbResult);
+				return sbResult.toString();
+			}
 			for (IAlias alias : getAliases()) {
 				String nameToMatch = (result != null) ? result : name;
 				Object pattern = alias.getPattern();
@@ -525,7 +530,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						Object replacement = alias.getReplacement();
 						if (replacement instanceof String) {
 							result = m.replaceAll((String)replacement);
-						} else if (replacement instanceof Script){
+						} else if (replacement instanceof Function){
 							// replacement is a javascript function.  
 							Context cx = Context.enter();
 							try {
@@ -534,8 +539,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 							    threadScope.setParentScope(null);
 							    HasFunction hasFn = newHasFunction(threadScope, features);
 								ScriptableObject.putProperty(threadScope, "has", hasFn); //$NON-NLS-1$
-								((Script)replacement).exec(cx, threadScope);
-								Function fn = (Function)ScriptableObject.getProperty(threadScope, "fn"); //$NON-NLS-1$
 								StringBuffer sbResult = new StringBuffer();
 								while (m.find()) {
 									ArrayList<Object> groups = new ArrayList<Object>(m.groupCount()+1);
@@ -543,7 +546,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 									for (int i = 0; i < m.groupCount(); i++) {
 										groups.add(m.group(i+1));
 									}
-									String r = (String)fn.call(cx, threadScope, null, groups.toArray()).toString();
+									String r = (String)((Function)replacement).call(cx, threadScope, null, groups.toArray()).toString();
 									m.appendReplacement(sbResult, r);
 									dependentFeatures.addAll(hasFn.getDependentFeatures());
 								}
@@ -561,7 +564,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 	
 	/**
-	 * Initializes and returns the URI to the server-side config JSON
+	 * Initializes and returns the URI to the server-side config JavaScript
 	 * 
 	 * @return The config URI
 	 * @throws URISyntaxException
@@ -580,98 +583,52 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);
 			}
-			configUri = PathUtil.url2uri(configUrl);
+			// Use newResource to convert the bundleresource uri into a file uri if the
+			// platform supports it.  File uri's are more stable across server restarts
+			// than bundleresource uri's.
+			URL bundleRoot = getAggregator().getBundleContext().getBundle().getResource("/");
+			configUri = aggregator.newResource(PathUtil.url2uri(bundleRoot)).getURI().resolve(configName);
 		}
 		return configUri;
 	}
 	
 	/**
 	 * Initializes and returns the base URI specified by the "baseUrl" property
-	 * in the server-side config JSON
+	 * in the server-side config JavaScript
 	 * 
 	 * @param cfg
-	 *            the parsed config JSON
+	 *            the parsed config JavaScript
 	 * @return the base URI
 	 * @throws URISyntaxException
 	 */
-	protected URI loadBaseURI(Map<String, Object> cfg) throws URISyntaxException  {
-		String baseUrlStr = (String)cfg.get(BASEURL_CONFIGPARAM);
-		URI base = null;
-		if (baseUrlStr == null) {
-			base = getConfigUri().resolve("."); //$NON-NLS-1$
+	protected Location loadBaseURI(Scriptable cfg) throws URISyntaxException  {
+		Object baseObj = cfg.get(BASEURL_CONFIGPARAM, cfg);
+		Location result;
+		if (baseObj == Scriptable.NOT_FOUND) {
+			result = new Location(getConfigUri().resolve(".")); //$NON-NLS-1$
 		} else {
-			if (!baseUrlStr.endsWith("/")) //$NON-NLS-1$
-				baseUrlStr += "/"; //$NON-NLS-1$
-			baseUrlStr = substituteProps(baseUrlStr);
-			base = new URI(baseUrlStr).normalize();
-			if (!base.isAbsolute()) {
-				base = getConfigUri().resolve(base);
-			}
-		}
-		// Convert to resource based uri
-		return getAggregator().newResource(base).getURI();
-	}
-
-	protected Object toJSONType(Context cx, Object value) throws JSONException {
-		Object result = value;
-		if (value instanceof ScriptableObject) {
-			ScriptableObject scriptable = (ScriptableObject)value;
-			String type = scriptable.getClassName();
-			if ("RegExp".equals(type)) {  //$NON-NLS-1$
-				JSONObject json = new JSONObject();
-				json.put(JSON_PROXY_EYECATCHER, JSON_PROXY_REGEXP);
-				json.put(JSON_PROXY_REGEXP, Context.toString(value));
-				result = json;
-			} else if ("Function".equals(type)) { //$NON-NLS-1$
-				JSONObject json = new JSONObject();
-				json.put(JSON_PROXY_EYECATCHER, JSON_PROXY_FUNCTION);
-				json.put(JSON_PROXY_FUNCTION, Context.toString(value));
-				result = json;
-			} else if (value instanceof NativeObject) {
-				result = new JSONObject();
-				addJSONObject(cx, (JSONObject)result, (NativeObject)value);
-			} else if (value instanceof NativeArray) {
-				result = new JSONArray();
-				addJSONArray(cx, (JSONArray)result, (NativeArray)value);
-			} else {
-				result = Context.toString(value);
-			}
-		} else if (value instanceof NativeJavaObject) {
-			return ((NativeJavaObject)value).unwrap();
-			
+			Location loc = loadLocation(baseObj, true);
+			Location configLoc = new Location(getConfigUri(), loc.getOverride() != null ? getConfigUri() : null);
+			result = configLoc.resolve(loc);
 		}
 		return result;
 	}
-	protected void addJSONObject(Context cx, JSONObject jsonObj, NativeObject map) throws JSONException {
-		for (Object key : map.getAllIds()) {
-			Object value = map.get((String)key, map);
-			jsonObj.put(key, toJSONType(cx, value));
-		}
-	}
 	
-	protected void addJSONArray(Context cx, JSONArray jsonAry, NativeArray ary) throws JSONException {
-		for (int i = 0; i < ary.getLength(); i++) {
-			jsonAry.add(toJSONType(cx, ary.get(i, ary)));
-		}
-	}
-	
-	protected Map<String, Object> loadConfigJSON() throws MalformedURLException, IOException {
-		Reader reader = new InputStreamReader(getConfigUri().toURL().openStream());
+	protected Scriptable loadConfig(InputStream in) throws MalformedURLException, IOException {
+		Reader reader = new InputStreamReader(in);
 		StringWriter writer = new StringWriter();
-		CopyUtil.copy(reader, writer);
-		return loadConfigJSON(writer.toString());
+		CopyUtil.copy(reader, writer);		// closes the streams
+		return loadConfig(writer.toString());
 	}
 	/**
-	 * Loads the config JSON and returns the parsed config in a Map
+	 * Loads the config JavaScript and returns the parsed config in a Map
 	 * 
 	 * @return the parsed config in a properties map
 	 * @throws IOException
-	 * @throws JSONException 
 	 */
-	@SuppressWarnings("unchecked")
-	protected Map<String, Object> loadConfigJSON(String configJson) throws IOException {
-		Map<String, Object> result = null;
+	protected Scriptable loadConfig(String configScript) throws IOException {
 		Context cx = Context.enter();
+		Scriptable config;
 		try {
 			sharedScope = cx.initStandardObjects();
 
@@ -692,45 +649,58 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			    }
 				ScriptableObject.putProperty(sharedScope, "initParams", jsInitParams); //$NON-NLS-1$
 			}
+
+			// set up bundle manifest headers property
+			if (aggregator.getBundleContext() != null) {
+				@SuppressWarnings("unchecked")
+				Dictionary<String, String> headers = (Dictionary<String, String>)aggregator.getBundleContext().getBundle().getHeaders();
+			    Scriptable jsHeaders = cx.newObject(sharedScope);
+				Enumeration<String> keys = headers.keys();
+				while (keys.hasMoreElements()) {
+					String key = keys.nextElement();
+			    	Object value = Context.javaToJS(headers.get(key), sharedScope);
+				    ScriptableObject.putProperty(jsHeaders, key, value);
+				}
+				ScriptableObject.putProperty(sharedScope, "headers", jsHeaders); //$NON-NLS-1$
+			}
+			
 			// set up console object
 			Console console = newConsole();
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 			
-			cx.evaluateString(sharedScope, "var config = " + configJson, getConfigUri().toString(), 1, null); //$NON-NLS-1$
-			Object config = sharedScope.get("config", sharedScope); //$NON-NLS-1$
+			cx.evaluateString(sharedScope, "var config = " + aggregator.substituteProps(configScript), getConfigUri().toString(), 1, null); //$NON-NLS-1$
+			config = (Scriptable)sharedScope.get("config", sharedScope); //$NON-NLS-1$
 			if (config == Scriptable.NOT_FOUND) {
 				System.out.println("config is not defined."); //$NON-NLS-1$
-			} else {
-				result = new JSONObject();
-				addJSONObject(cx, (JSONObject)result, (NativeObject)config);
 			}
-		} catch (JSONException e) {
-			throw new IOException(e);
 		} finally {
 			Context.exit();
 		}
-		return result;
+		return config;
 	}
 	
 	/**
 	 * Initializes and returns the map of packages based on the information in
-	 * the server-side config JSON
+	 * the server-side config JavaScript
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the package map
 	 * @throws URISyntaxException
 	 */
-	@SuppressWarnings("unchecked")
-	protected Map<String, IPackage> loadPackages(Map<String, Object> cfg) throws URISyntaxException {
-		List<Object> obj = (List<Object>)cfg.get(PACKAGES_CONFIGPARAM);
+	protected Map<String, IPackage> loadPackages(Scriptable cfg) throws URISyntaxException {
+		Object obj = cfg.get(PACKAGES_CONFIGPARAM, cfg);
 		Map<String, IPackage> packages = new HashMap<String, IPackage>();
-		if (obj != null) {
-			for (Object pkgobj : obj) {
-				IPackage p = newPackage(pkgobj); 
-				if (!packages.containsKey(p.getName())) {
-					packages.put(p.getName(), p);
+		if (obj instanceof Scriptable) {
+			for (Object id : ((Scriptable)obj).getIds()) {
+				if (id instanceof Number) {
+					Number i = (Number)id;
+					Object pkg = ((Scriptable)obj).get((Integer)i, (Scriptable)obj);
+					IPackage p = newPackage(pkg); 
+					if (!packages.containsKey(p.getName())) {
+						packages.put(p.getName(), p);
+					}
 				}
 			}
 		}
@@ -739,30 +709,23 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	
 	/**
 	 * Initializes and returns the map of paths based on the information in the
-	 * server-side config JSON
+	 * server-side config JavaScript
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the map of path-name/path-URI pairs
 	 * @throws URISyntaxException
 	 */
-	@SuppressWarnings("unchecked")
-	protected Map<String, URI> loadPaths(Map<String, Object> cfg) throws URISyntaxException {
-		Map<String, Object> pathlocs = (Map<String, Object>)cfg.get(PATHS_CONFIGPARAM);
-		Map<String, URI> paths = new HashMap<String, URI>();
-		if (pathlocs != null) {
-			for (Object key : pathlocs.keySet()) {
-				String name = (String)key;
+	protected Map<String, Location> loadPaths(Scriptable cfg) throws URISyntaxException {
+		Object pathlocs = cfg.get(PATHS_CONFIGPARAM, cfg);
+		Map<String, Location> paths = new HashMap<String, Location>();
+		if (pathlocs instanceof Scriptable) {
+			for (Object key : ((Scriptable)pathlocs).getIds()) {
+				String name = Context.toString(key);
 				
-				if (!paths.containsKey(name)) {
-					String location = substituteProps((String)pathlocs.get(name).toString());
-					URI uri = new URI(location);
-					if (!uri.isAbsolute()) {
-						uri = getBase().resolve(uri);
-					} else {
-						uri = uri.normalize();
-					}
-					paths.put(name, uri);
+				if (!paths.containsKey(name) && key instanceof String) {
+					Location location = loadLocation(((Scriptable)pathlocs).get(name, (Scriptable)pathlocs), false);
+					paths.put(name, getBase().resolve(location));
 				}
 			}
 		}
@@ -771,26 +734,30 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	
 	/**
 	 * Initializes and returns the list of aliases defined in the server-side
-	 * config JSON
+	 * config JavaScript
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the list of aliases
 	 * @throws IOException 
 	 */
-	@SuppressWarnings("unchecked")
-	protected List<IAlias> loadAliases(Map<String, Object> cfg) throws IOException {
-		List<Object> aliasList = (List<Object>)cfg.get(ALIASES_CONFIGPARAM);
+	protected List<IAlias> loadAliases(Scriptable cfg) throws IOException {
+		Object aliasList = cfg.get(ALIASES_CONFIGPARAM, cfg);
 		List<IAlias> aliases = new LinkedList<IAlias>();
-		if (aliasList != null) {
-			for (Object entry : aliasList) {
-				if (entry instanceof List<?> && ((List<?>)entry).size() == 2) {
-					List<?> vec = (List<?>)entry;
-					Object pattern = vec.get(0);
-					if (pattern instanceof Map) {
-						Map<String, String> patMap = (Map<String, String>)pattern;
-						if (JSON_PROXY_REGEXP.equals(patMap.get(JSON_PROXY_EYECATCHER))) {
-							String regexlit = patMap.get(JSON_PROXY_REGEXP);
+		if (aliasList instanceof Scriptable) {
+			for (Object id : ((Scriptable)aliasList).getIds()) {
+				if (id instanceof Number) {
+					Number i = (Number)id;
+					Object entry = ((Scriptable)aliasList).get((Integer)i, (Scriptable)aliasList);
+					if (entry instanceof Scriptable) {
+						Scriptable vec = (Scriptable)entry;
+						Object pattern = vec.get(0, vec);
+						Object replacement = vec.get(1, vec);
+						if (pattern == Scriptable.NOT_FOUND || replacement == Scriptable.NOT_FOUND) {
+							throw new IllegalArgumentException(Context.toString(entry));
+						}
+						if (pattern instanceof Scriptable && "RegExp".equals(((Scriptable)pattern).getClassName())) {
+							String regexlit = Context.toString(pattern);
 							String regex = regexlit.substring(1, regexlit.lastIndexOf("/")); //$NON-NLS-1$
 							String flags = regexlit.substring(regexlit.lastIndexOf("/")+1); //$NON-NLS-1$
 							int options = 0;
@@ -798,21 +765,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								options |= Pattern.CASE_INSENSITIVE;
 							}
 							pattern = Pattern.compile(regex, options);
+						} else {
+							pattern = Context.toString(pattern);
 						}
-					}
-					Object replacement = vec.get(1);
-					if (replacement instanceof Map) {
-						Map<String, String> repMap = (Map<String, String>)replacement;
-						if (JSON_PROXY_FUNCTION.equals(repMap.get(JSON_PROXY_EYECATCHER))) {
-							Context cx = Context.enter();
-							try {
-								replacement = cx.compileString("fn=" + repMap.get(JSON_PROXY_FUNCTION), "", 1, null); //$NON-NLS-1$ //$NON-NLS-2$
-							} finally {
-								Context.exit();
-							}
+						if (!(replacement instanceof Scriptable) || !"Function".equals(((Scriptable)replacement).getClassName())) {
+							replacement = Context.toString(replacement);
 						}
+						aliases.add(newAlias(pattern, replacement));
 					}
-					aliases.add(newAlias(pattern, replacement));
 				}
 			}
 		}
@@ -821,22 +781,21 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	
 	/**
 	 * Initializes and returns the list of module dependencies specified in the
-	 * server-side config JSON.
+	 * server-side config JavaScript.
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the list of module dependencies
 	 */
-	protected List<String> loadDeps(Map<String, Object> cfg) {
-		@SuppressWarnings("unchecked")
-		List<Object> depsList = (List<Object>)cfg.get(DEPS_CONFIGPARAM);
+	protected List<String> loadDeps(Scriptable cfg) {
+		Object depsList = cfg.get(DEPS_CONFIGPARAM, cfg);
 		List<String> deps = new LinkedList<String>();
-		if (depsList != null) {
-			for (Object entry : depsList) {
-				if (entry instanceof String) {
-					deps.add((String)entry);
-				} else {
-					throw new IllegalArgumentException(entry.toString());
+		if (depsList instanceof Scriptable) {
+			for (Object id : ((Scriptable)depsList).getIds()) {
+				if (id instanceof Number) {
+					Number i = (Number)id;
+					Object entry = ((Scriptable)depsList).get((Integer)i, (Scriptable)depsList);
+					deps.add(Context.toString(entry));
 				}
 			}
 		}
@@ -845,24 +804,20 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	/**
 	 * Initializes and returns the expires time from the server-side
-	 * config JSON
+	 * config JavaScript
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the expires time
 	 */
-	protected int loadExpires(Map<String, Object> cfg) {
+	protected int loadExpires(Scriptable cfg) {
 		int expires = 0;
-		Object oExpires = cfg.get(EXPIRES_CONFIGPARAM);
-		if (oExpires != null) {
-			if (oExpires instanceof Number) {
-				expires = ((Number)oExpires).intValue();
-			} else if (oExpires instanceof String) {
-				try {
-					expires = Integer.parseInt((String)oExpires);
-				} catch (NumberFormatException ignore) {
-					throw new IllegalArgumentException(EXPIRES_CONFIGPARAM+"="+oExpires); //$NON-NLS-1$
-				}
+		Object oExpires = cfg.get(EXPIRES_CONFIGPARAM, cfg);
+		if (oExpires != Scriptable.NOT_FOUND) {
+			try {
+				expires = Integer.parseInt(Context.toString(oExpires));
+			} catch (NumberFormatException ignore) {
+				throw new IllegalArgumentException(EXPIRES_CONFIGPARAM+"="+oExpires); //$NON-NLS-1$
 			}
 		}
 		return expires;
@@ -874,13 +829,17 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * when building the module dependency mappings.  The default is false.
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return true if files and folder under the base directory should be
 	 *         scanned
 	 */
-	protected boolean loadDepsIncludeBaseUrl(Map<String, Object> cfg) {
-		return TypeUtil.asBoolean(cfg.get(
-				DEPSINCLUDEBASEURL_CONFIGPARAM), false);
+	protected boolean loadDepsIncludeBaseUrl(Scriptable cfg) {
+		boolean result = false;
+		Object value = cfg.get(DEPSINCLUDEBASEURL_CONFIGPARAM, cfg);
+		if (value != Scriptable.NOT_FOUND) {
+			result = TypeUtil.asBoolean(Context.toString(value), false);
+		}
+		return result;
 	}
 
 	/**
@@ -889,29 +848,32 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * evaluating has conditionals in javascript code.  The default is false.
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return True if un-specified features should be treated as false.
 	 */
-	protected boolean loadCoerceUndefinedToFalse(Map<String, Object> cfg) {
-		
-		return TypeUtil.asBoolean(cfg.get(
-			COERCEUNDEFINEDTOFALSE_CONFIGPARAM), false);
+	protected boolean loadCoerceUndefinedToFalse(Scriptable cfg) {
+		boolean result = false;
+		Object value = cfg.get(COERCEUNDEFINEDTOFALSE_CONFIGPARAM, cfg);
+		if (value != Scriptable.NOT_FOUND) {
+			result = TypeUtil.asBoolean(Context.toString(value), false);
+		}
+		return result;
 	}
 	
 	/**
 	 * Initializes and returns the notice string specified by the {@code notice}
-	 * property in the server-side config JSON.
+	 * property in the server-side config JavaScript.
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the {@code notice} property value
 	 * @throws URISyntaxException 
 	 */
-	protected String loadNotice(Map<String, Object> cfg) throws IOException, URISyntaxException {
+	protected String loadNotice(Scriptable cfg) throws IOException, URISyntaxException {
 		String notice = null;
-		String noticeUriStr = (String)cfg.get(NOTICE_CONFIGPARAM);
-		if (noticeUriStr != null) {
-			noticeUriStr = substituteProps(noticeUriStr);
+		Object noticeObj = cfg.get(NOTICE_CONFIGPARAM, cfg);
+		if (noticeObj != Scriptable.NOT_FOUND) {
+			String noticeUriStr = Context.toString(noticeObj);
 			URI noticeUri = new URI(noticeUriStr).normalize();
 			if (!noticeUri.isAbsolute()) {
 				noticeUri = getConfigUri().resolve(noticeUri);
@@ -931,16 +893,66 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		return notice;
 	}
 	
+	protected Location loadLocation(Object locObj, boolean isFolder) throws URISyntaxException {
+		Location result;
+		if (locObj instanceof Scriptable) {
+			Scriptable values = (Scriptable)locObj;
+			Object obj = values.get(0, values);
+			if (obj == Scriptable.NOT_FOUND) {
+				throw new IllegalArgumentException(Context.toString(locObj));
+			}
+			String str = Context.toString(obj);
+			if (isFolder && !str.endsWith("/")) {  //$NON-NLS-1$
+				str += "/"; //$NON-NLS-1$
+			}
+			URI primary = new URI(str).normalize(), override = null;
+			obj = values.get(1, values);
+			Object extra = values.get(2, values);
+			if (extra != Scriptable.NOT_FOUND) {
+				throw new IllegalArgumentException(Context.toString(locObj));
+			}
+			if (obj != Scriptable.NOT_FOUND) {
+				str = Context.toString(obj);
+				if (isFolder && !str.endsWith("/")) {  //$NON-NLS-1$
+					str += "/"; //$NON-NLS-1$
+				}
+				try {
+					override = new URI(str).normalize();
+				} catch (URISyntaxException e) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.warning(MessageFormat.format(
+								Messages.ConfigImpl_5,
+								new Object[]{str, e.getMessage()}
+						));
+					}
+				}
+			}
+			result = new Location(primary, override);
+		} else {
+			String str = Context.toString(locObj);
+			if (isFolder && !str.endsWith("/")) {  //$NON-NLS-1$
+				str += "/"; //$NON-NLS-1$
+			}
+			result = new Location(new URI(str).normalize());
+		}
+		return result;
+	}
 	/**
 	 * Initializes and returns the string specified by the {@code cacheBust}
-	 * property in the server-side config JSON.
+	 * property in the server-side config JavaScript.
 	 * 
 	 * @param cfg
-	 *            The parsed config JSON as a properties map
+	 *            The parsed config JavaScript as a properties map
 	 * @return the {@code cacheBust} property value
 	 */
-	protected String loadCacheBust(Map<String, Object> cfg) {
-		return (String)cfg.get(CACHEBUST_CONFIGPARAM);
+	protected String loadCacheBust(Scriptable cfg) {
+		String result = null;
+		Object value = cfg.get(CACHEBUST_CONFIGPARAM, cfg);
+		if (value != Scriptable.NOT_FOUND) {
+			result = Context.toString(value);
+		}
+		return result;
+		
 	}
 	
 	/**
@@ -948,14 +960,15 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * modify the raw config before config properties are evaluated.
 	 * 
 	 * @param rawConfig
-	 *            A map of the top level properties in the config JSON. Lower
+	 *            A map of the top level properties in the config JavaScript. Lower
 	 *            level javascript arrays are represented as
 	 *            {@code List<Object>} and lower level javascript objects
 	 *            are represented as {@code Map<String, Object>}.
 	 */
-	protected void callConfigModifiers(Map<String, Object> rawConfig) {
+	protected void callConfigModifiers(Scriptable rawConfig) {
 		ServiceReference[] refs = null;
 		BundleContext bundleContext = getAggregator().getBundleContext();
+		if (bundleContext == null) return;
 		try {
 			refs = bundleContext
 					.getServiceReferences(IConfigModifier.class.getName(),
@@ -985,35 +998,12 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 	}
 
-	/**
-	 * Substitues patterns of the form ${system.property} with the value of 
-	 * the specified system property.  Returns the modified string.
-	 * 
-	 * @param str The input string
-	 * @return The modified string
-	 */
-	public String substituteProps(String str) {
-		StringBuffer buf = new StringBuffer();
-		final Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}"); //$NON-NLS-1$
-		Matcher matcher = pattern.matcher(str);
-	    while ( matcher.find() ) {
-	    	String propName = matcher.group(1);
-	    	String propValue = System.getProperty(propName);
-	    	if (propValue != null)
-	    		matcher.appendReplacement(buf, propValue);
-	    	else
-	    		matcher.appendReplacement(buf, "\\${"+propName+"}"); //$NON-NLS-1$ //$NON-NLS-2$
-	    }
-	    matcher.appendTail(buf);
-	    return buf.toString();
-	}
-
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
-		return rawConfig.toString();
+		return strConfig;
 	}
 	
 	/* (non-Javadoc)
@@ -1086,37 +1076,27 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	protected class Package implements IPackage {
 
 		private final String name;
-		private final URI location;
+		private final Location location;
 		private final String main;
 
 		public Package(Object obj) throws URISyntaxException {
 			// Defaults
-			String locpath = null;
 			String main = null;
-			String name = null;
-			if (obj instanceof Map<?, ?>) {
-				Map<?, ?> data = (Map<?, ?>)obj;
-				name = (String)data.get(PKGNAME_CONFIGPARAM);
-				locpath = substituteProps((String) data.get(PKGLOCATION_CONFIGPARAM));
-				if (data.containsKey(PKGMAIN_CONFIGPARAM))
-					main = substituteProps((String)data.get(PKGMAIN_CONFIGPARAM));
-			} else if (obj instanceof String) {
-				name = locpath = (String)obj;
+			if (obj instanceof Scriptable) {
+				Scriptable data = (Scriptable)obj;
+				Object nameObj = data.get(PKGNAME_CONFIGPARAM, data);
+				if (nameObj == Scriptable.NOT_FOUND) {
+					throw new IllegalArgumentException(Context.toString(obj));
+				}
+				name = Context.toString(nameObj);
+				location = getBase().resolve(loadLocation(data.get(PKGLOCATION_CONFIGPARAM, data), true));
+				Object mainObj = data.get(PKGMAIN_CONFIGPARAM, data);
+				if (mainObj != Scriptable.NOT_FOUND) {
+					main = Context.toString(mainObj);
+				}
 			} else {
 				throw new IllegalArgumentException(obj.toString());
 			}
-			this.name = name;
-			
-			if (!locpath.endsWith("/"))  //$NON-NLS-1$
-				locpath += "/"; //$NON-NLS-1$
-			
-			URI location = new URI(locpath);
-			if (!location.isAbsolute()) {
-				location = getBase().resolve(location);
-			} else {
-				location = location.normalize();
-			}
-			this.location = location;
 			
 			if (main == null) {
 				main = PKGMAIN_DEFAULT;
@@ -1144,7 +1124,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		 * @see com.ibm.jaggr.service.config.IConfig.IPackage#getLocation()
 		 */
 		@Override
-		public URI getLocation() {
+		public Location getLocation() {
 			return location;
 		}
 
@@ -1162,17 +1142,17 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		private final Object pattern;
 		private final Object replacement;
 		
-		public Alias(/* String | Pattern */Object pattern, /* String | Scriptable */Object replacement) {
+		public Alias(/* String | Pattern */Object pattern, /* String | Function */Object replacement) {
 			// validate arguments
 			if (!(pattern instanceof String) && !(pattern instanceof Pattern)) {
-				throw new IllegalArgumentException(pattern.toString());
+				throw new IllegalArgumentException(Context.toString(pattern));
 			}
-			if (!(replacement instanceof String) && !(replacement instanceof Script)) {
-				throw new IllegalArgumentException(replacement.toString());
+			if (!(replacement instanceof String) && !(replacement instanceof Function)) {
+				throw new IllegalArgumentException(Context.toString(replacement));
 			}
 			// replacement can be a Script only if pattern is a regular expression
 			if ((pattern instanceof String) && !(replacement instanceof String)) {
-				throw new IllegalArgumentException(replacement.toString());
+				throw new IllegalArgumentException(Context.toString(replacement));
 			}
 			this.pattern = pattern;
 			this.replacement = replacement;
@@ -1196,6 +1176,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		
 	}
+	
 	
 	/**
 	 * This class implements the JavaScript has function object used by the Rhino interpreter when

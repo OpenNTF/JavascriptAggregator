@@ -8,10 +8,12 @@ package com.ibm.jaggr.service.impl.deps;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -34,35 +36,42 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IShutdownListener;
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.config.IConfig.Location;
 import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.IDependenciesListener;
+import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.service.options.IOptionsListener;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
 import com.ibm.jaggr.service.util.ConsoleService;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.SequenceNumberProvider;
 
-public class DependenciesImpl implements IDependencies, IConfigListener, IShutdownListener {
+public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
     
     private ServiceRegistration configUpdateListener;
+    private ServiceRegistration optionsUpdateListener;
 	private ServiceRegistration shutdownListener;
 	private BundleContext bundleContext;
 	private String servletName;
 	private long depsLastModified = -1;
-	private IConfig config = null;
+	private long initStamp;
 	private String rawConfig = null;
     private DepTreeRoot depTree = null;
 	private CountDownLatch initialized;
 	private boolean processingDeps = false;
+	private boolean validate = false;
+	private String cacheBust = null;
 	
 	private IAggregator aggregator = null;
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 	
-	public DependenciesImpl(IAggregator aggregator) {
+	public DependenciesImpl(IAggregator aggregator, long stamp) {
 		this.aggregator = aggregator;
+		this.initStamp = stamp;
 		Properties dict;
 		bundleContext = aggregator.getBundleContext();
 		servletName = aggregator.getName();
@@ -87,8 +96,21 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IShutdo
 					dict
 			);
 			
+			// register the config change listener service.
+			dict = new Properties();
+			dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			optionsUpdateListener = bundleContext.registerService(
+					IOptionsListener.class.getName(), 
+					this, 
+					dict
+			);
+
 			if (aggregator.getConfig() != null) {
 				configLoaded(aggregator.getConfig(), 1);
+			}
+			
+			if (aggregator.getOptions() != null) {
+				optionsUpdated(aggregator.getOptions(), 1);
 			}
 		}
 	}
@@ -125,19 +147,30 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IShutdo
 
 	@Override
 	public void validateDeps(boolean clean) {
+		if (aggregator.getConfig() == null) {
+			validate = true;
+			return;
+		}
 		processDeps(true, clean, SequenceNumberProvider.incrementAndGetSequenceNumber());
 	}
 
 	@Override
 	public synchronized void configLoaded(IConfig config, long sequence) {
-		if (config == null || processingDeps) {
-			return;
+		String previousRawConfig = rawConfig;
+		rawConfig = config.toString();
+		
+		if (previousRawConfig == null || !previousRawConfig.equals(rawConfig)) {
+			processDeps(validate, false, sequence);
+			validate = false;
 		}
-		String rawConfig = null;
-		rawConfig = config.getRawConfig().toString();
-		if (this.rawConfig == null || !rawConfig.equals(this.rawConfig)) {
-			this.rawConfig = rawConfig;
-			this.config = config;
+	}
+
+	@Override
+	public synchronized void optionsUpdated(IOptions options, long sequence) {
+		String previousCacheBust = cacheBust;
+		cacheBust = options.getCacheBust();
+		if (sequence > 1 && cacheBust != previousCacheBust && rawConfig != null) {
+			// Cache bust property has been updated subsequent to server startup
 			processDeps(false, false, sequence);
 		}
 	}
@@ -147,6 +180,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IShutdo
 		this.aggregator = null;
 		shutdownListener.unregister();
 		configUpdateListener.unregister();
+		optionsUpdateListener.unregister();
 	}
 	
 	@Override
@@ -155,7 +189,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IShutdo
 	}
 	
 	private synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
-		if (config == null || processingDeps) {
+		if (aggregator.getConfig() == null || processingDeps) {
 			return;
 		}
 		final ExecutorService executor = Executors.newSingleThreadExecutor();
@@ -172,50 +206,76 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IShutdo
 					try {
 						// Map of path names to URIs for locations to be scanned for js files 
 						final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> packageURIs = config.getPackageURIs();
-						final Map<String, URI> pathURIs = config.getPathURIs();
-						final Set<URI> uris = new HashSet<URI>();
+						final Map<String, URI> packageURIs = new LinkedHashMap<String, URI>(); 
+						final Map<String, URI> pathURIs = new LinkedHashMap<String, URI>();
+						final Map<String, URI> packageOverrideURIs = new LinkedHashMap<String, URI>();
+						final Map<String, URI> pathOverrideURIs = new LinkedHashMap<String, URI>();
 						
 						// Add top level files and folders in the location specified by baseUrl
 						// unless disabled by servlet init-param
 						IConfig config = getAggregator().getConfig();
 						if (config.isDepsIncludeBaseUrl()) {
-							URI base = config.getBase();
+							Location base = config.getBase();
 							if (base != null) {
-								IResource baseres = getAggregator().newResource(base);
-								if (baseres.exists()) {
-									baseres.walkTree(new IResourceVisitor() {
-										public boolean visitResource(IResourceVisitor.Resource resource,
-												String name) throws IOException {
-											if (name.startsWith(".")) { //$NON-NLS-1$
-												return false;
+								List<IResource> list = new ArrayList<IResource>(2);
+								list.add(getAggregator().newResource(base.getPrimary()));
+								if (base.getOverride() != null) {
+									list.add(getAggregator().newResource(base.getOverride()));
+								}
+								for (IResource baseres : list) {
+									if (baseres.exists()) {
+										baseres.walkTree(new IResourceVisitor() {
+											public boolean visitResource(IResourceVisitor.Resource resource,
+													String name) throws IOException {
+												if (name.startsWith(".")) { //$NON-NLS-1$
+													return false;
+												}
+												URI uri = resource.getURI();
+												if (resource.isFolder()) {
+													baseURIs.put(name, uri);
+												} else 	if (name.endsWith(".js")) { //$NON-NLS-1$
+													baseURIs.put(name.substring(0, name.length()-3), uri);
+												}
+												return false;		// don't recurse
 											}
-											URI uri = resource.getURI();
-											if (resource.isFolder()) {
-												baseURIs.put(name, uri);
-											} else 	if (name.endsWith(".js")) { //$NON-NLS-1$
-												baseURIs.put(name.substring(0, name.length()-3), uri);
-											}
-											return false;		// don't recurse
-										}
-									});
+										});
+									}
 								}
 							}
 						}
-						uris.addAll(baseURIs.values());
-						uris.addAll(packageURIs.values());
-						uris.addAll(pathURIs.values());
+						for (Map.Entry<String, Location> entry  : config.getPackageLocations().entrySet()) {
+							packageURIs.put(entry.getKey(), entry.getValue().getPrimary());
+							if (entry.getValue().getOverride() != null) {
+								packageOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
+							}
+						}
+						for (Map.Entry<String, Location> entry  : config.getPaths().entrySet()) {
+							pathURIs.put(entry.getKey(), entry.getValue().getPrimary());
+							if (entry.getValue().getOverride() != null) {
+								pathOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
+							}
+						}
+						
+						Collection<URI> paths = new LinkedList<URI>();
+						paths.addAll(baseURIs.values());
+						paths.addAll(packageURIs.values());
+						paths.addAll(pathURIs.values());
+						paths.addAll(packageOverrideURIs.values());
+						paths.addAll(pathOverrideURIs.values());
 						
 						DepTree deps = new DepTree(
-								uris,
+								paths,
 								getAggregator(),
+								initStamp,
 								clean, 
 								validate); 
 				
 						DepTreeRoot depTree = new DepTreeRoot(config);
 						deps.mapDependencies(depTree, bundleContext, baseURIs, config);
 						deps.mapDependencies(depTree, bundleContext, packageURIs, config);
+						deps.mapDependencies(depTree, bundleContext, packageOverrideURIs, config);
 						deps.mapDependencies(depTree, bundleContext, pathURIs, config);
+						deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
 						/*
 						 * For each module name in the dependency lists, try to resolve the name
 						 * to a reference to another node in the tree
@@ -329,4 +389,5 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IShutdo
 	private void releaseReadLock() {
 		rwl.readLock().unlock();
 	}
+
 }

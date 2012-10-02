@@ -33,7 +33,10 @@ public class PathUtil {
 	 * or contain any ".." path segments. When called, relative paths that start
 	 * with "." or ".." are relative to <code>ref</code>. In the returned array,
 	 * the strings in the <code>paths</code> array have been replaced with the
-	 * normalized path. Any paths that cannot be normalized are returned as is.
+	 * normalized path. Any paths that do not resolve relative to <code>ref</code> 
+	 * (for example, paths that begin with '/' or try to navigate out of the
+	 * top level path component specified by <code>ref</code> using '../' path
+	 * components) will result in an {@link IllegalArgumentException}.
 	 * 
 	 * @param ref
 	 *            The reference location for relative paths. May be a file or
@@ -42,6 +45,7 @@ public class PathUtil {
 	 *            The array of paths that are to be normalized. The paths are
 	 *            normalized in-place (i.e. each array element is replaced by
 	 *            the normalized path)
+	 * @throws IllegalArugmentException
 	 */
 	public static String[] normalizePaths(String ref, String[] paths) throws IllegalArgumentException {
 		List<String> result = new ArrayList<String>();
@@ -54,17 +58,19 @@ public class PathUtil {
 				plugin = PathUtil.normalize(refParts, path.substring(0, idx));
 				path = path.substring(idx+1);
 			}
-			path = (hasPattern.matcher(plugin).find()) ? 
-				new HasNode(path).normalize(ref).toString() :
-				PathUtil.normalize(refParts, path);
-
+			try {
+				path = (hasPattern.matcher(plugin).find()) ? 
+					new HasNode(path).normalize(ref).toString() :
+					PathUtil.normalize(refParts, path);
+			} catch(IllegalArgumentException e) {
+				throw new IllegalArgumentException(path);
+			}
 			result.add(plugin.length() == 0 ? path : plugin + "!" + path); //$NON-NLS-1$
 		}
 		return result.toArray(new String[result.size()]);
 	}
 
-	private static String normalize(List<String> refParts, String path) {
-		String originalPath = path;
+	private static String normalize(List<String> refParts, String path) throws IllegalArgumentException {
 		List<String> normalized = null;
 		
 		if (path.contains("!")) { //$NON-NLS-1$
@@ -77,8 +83,7 @@ public class PathUtil {
 		} else {
 			normalized = new ArrayList<String>();
 			if (path.startsWith("/")) { //$NON-NLS-1$
-				normalized.add(""); //$NON-NLS-1$
-				path = path.substring(1);
+				throw new IllegalArgumentException(path);
 			}
 		}
 		String[] pathParts = path.split("/"); //$NON-NLS-1$
@@ -88,9 +93,8 @@ public class PathUtil {
 				continue;
 			} else if (part.equals("..")) { //$NON-NLS-1$
 				if (normalized.size() < 1 || normalized.size() == 1 && normalized.get(0).equals("")) { //$NON-NLS-1$
-					// Illegal relative path.  Just copy it over unchanged
-					normalized = Arrays.asList(originalPath.split("/")); //$NON-NLS-1$
-					break;
+					// Illegal relative path. 
+					throw new IllegalArgumentException(path);
 				}
 				// back up one directory
 				normalized.remove(normalized.size()-1);
@@ -141,5 +145,30 @@ public class PathUtil {
 			url.getPath(), 
 			url.getQuery(), 
 			url.getRef());
+	}
+	
+	public static URI stripJsExtension(URI value) throws URISyntaxException {
+		if (value == null) {
+			return null;
+		}
+		return value.getPath().endsWith(".js") ?  //$NON-NLS-1$
+			new URI(
+				value.getScheme(),
+				value.getAuthority(), 
+				value.getPath().substring(0, value.getPath().length()-3), 
+				value.getQuery(), 
+				value.getFragment()
+			) : value;
+	}
+	
+	public static URI appendToPath(URI uri, String append) throws URISyntaxException {
+		return 
+			new URI(
+				uri.getScheme(),
+				uri.getAuthority(), 
+				uri.getPath() + append, 
+				uri.getQuery(), 
+				uri.getFragment()
+			);
 	}
 }

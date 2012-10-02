@@ -11,6 +11,7 @@ import org.eclipse.osgi.util.NLS;
 public class Messages extends NLS {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.messages"; //$NON-NLS-1$
 	public static String Activator_1;
+	public static String Activator_2;
 	public static String AggregatorCommandProvider_1;
 	public static String ExceptionResponse;
 	public static String DepVerificationFailed;
@@ -37,6 +38,7 @@ public class Messages extends NLS {
 	public static String CommandProvider_23;
 	public static String CommandProvider_26;
 	public static String ConfigModified;
+	public static String CustomOptionsFile;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

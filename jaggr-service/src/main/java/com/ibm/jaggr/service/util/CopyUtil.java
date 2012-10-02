@@ -20,21 +20,23 @@ import org.apache.commons.io.input.ReaderInputStream;
 /**
  * Versions of stream copy utils that also close the streams when
  * the copy is done.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class CopyUtil {
 
-	public static void copy(InputStream in, OutputStream out) throws IOException {
+	public static int copy(InputStream in, OutputStream out) throws IOException {
         try {
-        	IOUtils.copy(in, out);
+        	return IOUtils.copy(in, out);
         } finally {
         	try { out.close(); } catch (Exception ignore){};
         	try { in.close(); } catch (Exception ignore){};
         }
     }
 
-	public static void copy(Reader reader, Writer writer) throws IOException {
+	public static int copy(Reader reader, Writer writer) throws IOException {
 		try {
-			IOUtils.copy(reader, writer);
+			return IOUtils.copy(reader, writer);
 		} finally {
 			try { reader.close(); } catch (Exception ignore) {}
 			try { writer.close(); } catch (Exception ignore) {}

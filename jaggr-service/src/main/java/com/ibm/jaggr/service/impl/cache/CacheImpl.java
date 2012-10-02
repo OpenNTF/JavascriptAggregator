@@ -9,41 +9,30 @@ package com.ibm.jaggr.service.impl.cache;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Date;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import com.ibm.jaggr.service.cache.ICache;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.layer.ILayerCache;
+import com.ibm.jaggr.service.module.IModuleCache;
 
 public class CacheImpl implements ICache {
-	private static final long serialVersionUID = 3919790021174908549L;
-
+	private static final long serialVersionUID = 8499083762317350377L;
 	/// The caches
-    private ConcurrentMap<String, ILayer> _layerCache;
-	private ConcurrentMap<String, IModule> _moduleCache;
+    private ILayerCache _layerCache;
+	private IModuleCache _moduleCache;
 	
-	// The options associated with this cache instance
-    private volatile Map<String, String> _optionsMap;
-    
-	private volatile String _rawConfig;
-	
-	private volatile long _depsLastMod;
+	private Object _control;	// used by cache manager to control cache life span
 	
 	private final long _created;
 	
 	/**
 	 * @param initialSize The initial size of the cache
 	 */
-	public CacheImpl(int initialSize, String rawConfig, long depsLastMod, Map<String, String> options) {
-		_layerCache = new ConcurrentHashMap<String, ILayer>(initialSize);
-		_moduleCache = new ConcurrentHashMap<String, IModule>(initialSize);
-		_optionsMap = options;
-		_rawConfig = rawConfig;
-		_depsLastMod = depsLastMod;
+	public CacheImpl(ILayerCache layerCache, IModuleCache moduleCache, Object control) {
+		_layerCache = layerCache; 
+		_moduleCache = moduleCache;
+		_control = control;
+		
 		_created = new Date().getTime();
 	}
 	
@@ -51,7 +40,7 @@ public class CacheImpl implements ICache {
 	 * @return The ILayer cache
 	 */
 	@Override
-	public ConcurrentMap<String, ILayer> getLayers() {
+	public ILayerCache getLayers() {
 		return _layerCache;
 	}
 	
@@ -59,24 +48,8 @@ public class CacheImpl implements ICache {
 	 * @return The IModule cache
 	 */
 	@Override
-	public ConcurrentMap<String, IModule> getModules() {
+	public IModuleCache getModules() {
 		return _moduleCache;
-	}
-	
-	public Map<String, String> getOptionsMap() {
-		return _optionsMap;
-	}
-
-	/**
-	 * @return The last modified date of the cache wide dependencies for this
-	 *         cache (config file, expanded dependencies list). 
-	 */
-	public String getRawConfig() {
-		return _rawConfig;
-	}
-
-	public long getDepsLastModified() {
-		return _depsLastMod;
 	}
 	
 	@Override
@@ -84,16 +57,8 @@ public class CacheImpl implements ICache {
 		return _created;
 	}
 	
-	public void setOptionsMap(Map<String, String> optionsMap) {
-		_optionsMap = optionsMap;
-	}
-	
-	public void setRawConfig(String rawConfig) {
-		_rawConfig = rawConfig;
-	}
-	
-	public void setDepsLastModified(long depsLastMod) {
-		_depsLastMod = depsLastMod;
+	public Object getControlObj() {
+		return _control;
 	}
 	
 	/**
@@ -110,19 +75,8 @@ public class CacheImpl implements ICache {
 	public synchronized Object clone() throws CloneNotSupportedException {
 		
 		CacheImpl clone = (CacheImpl)super.clone();
-		// ConcurrentHashMap doesn't implement a clone method so create a clone by
-		// using the copy constructor.
-		clone._layerCache = new ConcurrentHashMap<String, ILayer>(_layerCache);
-		clone._moduleCache = new ConcurrentHashMap<String, IModule>(_moduleCache);
-		// The copy constructor for ConcurrentHashMap creates a shallow copy, so we
-		// we need to clone the individual values.  Keys don't need to be cloned since
-		// strings are immutable.
-		for (Map.Entry<String, ILayer> layer : clone.getLayers().entrySet()) {
-			layer.setValue((ILayer)layer.getValue().clone());
-		}
-		for (Map.Entry<String, IModule> module : clone.getModules().entrySet()) {
-			module.setValue((IModule)module.getValue().clone());
-		}
+		clone._layerCache = (ILayerCache)_layerCache.clone();
+		clone._moduleCache =(IModuleCache)_moduleCache.clone();
 		return clone;
 	}
 
@@ -139,24 +93,8 @@ public class CacheImpl implements ICache {
      */
     @Override
     public void dump(Writer writer, Pattern filter) throws IOException {
-    	String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
-    	for (Map.Entry<String, ILayer> entry : _layerCache.entrySet()) {
-    		if (filter != null) {
-    			Matcher m = filter.matcher(entry.getKey());
-    			if (!m.find())
-    				continue;
-    		}
-    		writer.append("ILayer key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
-    		writer.append(entry.getValue().toString()).append(linesep).append(linesep);
-    	}
-    	for (Map.Entry<String, IModule> entry : _moduleCache.entrySet()) {
-    		if (filter != null) {
-    			Matcher m = filter.matcher(entry.getKey());
-    			if (!m.find())
-    				continue;
-    		}
-    		writer.append("IModule key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
-    		writer.append(entry.getValue().toString()).append(linesep).append(linesep);
-    	}
+    	_layerCache.dump(writer, filter);
+    	_moduleCache.dump(writer, filter);
     }
+    
 }

@@ -17,7 +17,6 @@ import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -25,39 +24,31 @@ import java.util.Map;
 import java.util.Set;
 
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.util.Features;
 
 public class DepTreeNodeTests extends EasyMock {
-	IConfig config;
-	IAggregator mockAggregator = createNiceMock(IAggregator.class);
+	File tmpdir = null;
+	TestUtils.Ref<IConfig> configRef = new TestUtils.Ref<IConfig>(null);
+	IAggregator mockAggregator;
 	
 	@Before
 	public void setup() throws Exception {
-		expect(mockAggregator.newResource((URI)anyObject())).andAnswer(new IAnswer<IResource>() {
-			public IResource answer() throws Throwable {
-				return new FileResource((URI)getCurrentArguments()[0]);
-			}
-		}).anyTimes();
-		expect(mockAggregator.getConfig()).andAnswer(new IAnswer<IConfig>() {
-			public IConfig answer() throws Throwable {
-				return config;
-			}
-		}).anyTimes();
-		replay(mockAggregator);
-		config = new ConfigImpl(
+		tmpdir = Files.createTempDir();
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		EasyMock.replay(mockAggregator);
+		configRef.set(new ConfigImpl(
 				mockAggregator,
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
 				"{}"
-		);
+		));
 	}
 	
 	@Test
@@ -336,7 +327,7 @@ public class DepTreeNodeTests extends EasyMock {
 
 	@Test
 	public void testGetExpandedDependencies() throws IOException {
-		DepTreeRoot root = new DepTreeRoot(config);
+		DepTreeRoot root = new DepTreeRoot(configRef.get());
 		DepTreeNode pkg1 = root.createOrGet("pkg1");
 		DepTreeNode pkg2 = root.createOrGet("pkg2");
 		DepTreeNode a = pkg1.createOrGet("a");
@@ -367,7 +358,7 @@ public class DepTreeNodeTests extends EasyMock {
 		Features features = new Features();
 		features.put("feature", true);
 		
-		DepTreeRoot root = new DepTreeRoot(config);
+		DepTreeRoot root = new DepTreeRoot(configRef.get());
 		DepTreeNode pkg1 = root.createOrGet("pkg1");
 		DepTreeNode pkg2 = root.createOrGet("pkg2");
 		DepTreeNode a = pkg1.createOrGet("a");

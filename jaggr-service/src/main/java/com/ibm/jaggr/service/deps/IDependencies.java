@@ -20,13 +20,15 @@ import com.ibm.jaggr.service.util.Features;
 /**
  * This class encapsulates the dependency graph of a collection of AMD modules.
  * The modules included in the graph are those modules found when scanning the
- * locations returned by {@link IConfig#getPathURIs()} and
- * {@link IConfig#getPackageURIs()}. The dependencies of a module are those
+ * locations returned by {@link IConfig#getPaths()()} and
+ * {@link IConfig#getPackageLocations()}. The dependencies of a module are those
  * modules listed in the require list of the define() function call within the
  * module. The expanded dependencies for a module include the explicitly
  * declared dependencies, plus all of the nested dependencies obtained by
  * including the dependencies of the explicitly dependent modules, plus their
  * dependencies, and so on.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IDependencies {
 	/**
@@ -105,7 +107,7 @@ public interface IDependencies {
 	
 	/**
 	 * Validates the dependency graph by scanning the directories returned by
-	 * {@link IConfig#getPathURIs()} and {@link IConfig#getPackageURIs()}
+	 * {@link IConfig#getPaths()} and {@link IConfig#getPackageLocations()}
 	 * looking for new/changed/removed files and updating the dependency graph,
 	 * including the dependency graph last-modified timestamp, as needed.
 	 * 

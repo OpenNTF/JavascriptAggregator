@@ -50,10 +50,11 @@ import com.ibm.jaggr.service.util.PathUtil;
  * {@link DepTreeNode} which maps module references to the exploded module
  * dependencies (the dependencies declared in the module, plus nested
  * dependencies) for the module.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class DepTree implements Serializable {
-
-	private static final long serialVersionUID = -1528362581957191878L;
+	private static final long serialVersionUID = 5453343490025146049L;
 
 	static final Logger log = Logger.getLogger(DepTree.class.getName());
 
@@ -76,6 +77,10 @@ public class DepTree implements Serializable {
 	protected ConcurrentMap<URI, DepTreeNode> depMap = null;
 	
 	protected Object rawConfig;
+	
+	protected long stamp;
+	
+	protected String cacheBust;
 
 	private static final String DEPCACHE_DIRNAME = "deps"; //$NON-NLS-1$
 
@@ -95,6 +100,11 @@ public class DepTree implements Serializable {
 	 * @param paths
 	 *            Collection of URIs which specify the target resources
 	 *            to be scanned for javascript files.
+	 * @param aggregator
+	 *            The servlet instance for this object
+	 * @param stamp
+	 *            timestamp associated with external override/customization 
+	 *            resources that are check on every server restart                     
 	 * @param clean
 	 *            If true, then the dependency lists are generated from scratch
 	 *            rather than by de-serializing and then validating the cached
@@ -104,9 +114,12 @@ public class DepTree implements Serializable {
 	 *            file last-modified times.
 	 * @throws IOException
 	 */
-	public DepTree(Collection<URI> paths, IAggregator aggregator, boolean clean, boolean validateDeps) 
+	public DepTree(Collection<URI> paths, IAggregator aggregator, long stamp, boolean clean, boolean validateDeps) 
 	throws IOException {
+		this.stamp = stamp;
 		IConfig config = aggregator.getConfig();
+		rawConfig = config.toString();
+
 		File cacheDir = new File(aggregator.getWorkingDirectory(), DEPCACHE_DIRNAME);
 		File cacheFile = new File(cacheDir, CACHE_FILE);
 
@@ -124,8 +137,11 @@ public class DepTree implements Serializable {
 			try {
 				ObjectInputStream is = new ObjectInputStream(
 						new FileInputStream(cacheFile));
-				cached = (DepTree) is.readObject();
-				is.close();
+				try {
+					cached = (DepTree) is.readObject();
+				} finally {
+					try { is.close(); } catch (Exception ignore) {}
+				}
 			} catch (FileNotFoundException e) {
 				/*
 				 * Not an error. Just means that the cache file hasn't been
@@ -139,15 +155,19 @@ public class DepTree implements Serializable {
 			}
 		}
 		
-		rawConfig = config.getRawConfig();
 		// If the cacheBust config param has changed, then do a clean build
 		// of the dependencies.
 		if (cached != null) {
-			Map<?, ?> configData = (Map<?, ?>)rawConfig;
-			Map<?, ?> cachedConfigData = (Map<?, ?>)cached.rawConfig;
-			String cacheBust = (String)configData.get(IConfig.CACHEBUST_CONFIGPARAM);
-			String cachedCacheBust = (String)cachedConfigData.get(IConfig.CACHEBUST_CONFIGPARAM);
-			if (!StringUtils.equals(cacheBust, cachedCacheBust)) {
+			if (stamp == 0) {
+				// no init stamp provided.  Preserve the cached one.
+				stamp = cached.stamp;
+			}
+			if (stamp > cached.stamp) {
+				// init stamp has been updated.  Validate dependencies.
+				validateDeps = true;
+			}
+			cacheBust = aggregator.getOptions().getCacheBust();
+			if (!StringUtils.equals(cacheBust, cached.cacheBust)) {
 				if (log.isLoggable(Level.INFO)) {
 					log.info(Messages.DepTree_2);
 				}
@@ -156,10 +176,12 @@ public class DepTree implements Serializable {
 		}
 
 		/*
-		 * If we're not in development mode and we de-serialized a previously
-		 * saved dependency map, then go with that.
+		 * If we de-serialized a previously saved dependency map, then go with
+		 * that.
 		 */
-		if (cached != null && rawConfig.equals(cached.rawConfig) && !validateDeps && !clean) {
+		if (cached != null && 
+				rawConfig.equals(cached.rawConfig) &&
+				!validateDeps && !clean) {
 			depMap = cached.depMap;
 			return;
 		}
@@ -310,9 +332,11 @@ public class DepTree implements Serializable {
 		// Serialize the map to the cache directory
 		ObjectOutputStream os;
 		os = new ObjectOutputStream(new FileOutputStream(cacheFile));
-		os.writeObject(this);
-		os.close();
-
+		try { 
+			os.writeObject(this);
+		} finally {
+			try { os.close(); } catch (Exception ignore) {}
+		}
 		msg = MessageFormat.format(
 				Messages.DepTree_7,
 				new Object[]{aggregator.getName()}
@@ -390,9 +414,7 @@ public class DepTree implements Serializable {
 					// won't happen, but the language requires us to handle it.
 					e.printStackTrace();
 				}
-				target.removeAll();
-				target.addAll(temp.getChildren().values());
-				target.setDependencies(source.getDepArray(), source.lastModified(), source.lastModifiedDep());
+				target.overlay(temp);
 			}
 		}
 

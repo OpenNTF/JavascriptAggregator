@@ -13,6 +13,8 @@ import java.net.URI;
 
 /**
  * Defines the interface for a resource visitor called by the tree walker.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IResourceVisitor {
 

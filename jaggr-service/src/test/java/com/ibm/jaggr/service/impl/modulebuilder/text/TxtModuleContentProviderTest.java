@@ -44,7 +44,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		replay(mockRequest);
 	}
 	/**
-	 * @throws java.lang.ExceptionOs
+	 * @throws java.lang.Exception
 	 */
 	@After
 	public void tearDown() throws Exception {
@@ -55,7 +55,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder#getCacheKey(javax.servlet.http.HttpServletRequest, java.util.Set)}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getCacheKey(javax.servlet.http.HttpServletRequest, java.util.Set)}.
 	 */
 	@Test
 	public void testGetCacheKeyGenerator() {
@@ -71,7 +71,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder#getJSSource()}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getJSSource()}.
 	 * @throws IOException 
 	 */
 	@Test

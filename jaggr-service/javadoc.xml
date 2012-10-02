@@ -4,10 +4,31 @@
   Available via Academic Free License >= 2.1 OR the modified BSD license.
   see: http://dojotoolkit.org/license for details
 -->
+<!-- ***************************************************************** -->
+<!-- This ANT script is intended to be run within eclipse.  To run,    -->
+<!-- right-click on this file in Package Explorer and select Run As->  -->
+<!-- Ant Build..., and in the JRE tab select "Run in the same JRE as   -->
+<!-- the workspace", then click on Run.                                -->
+<!-- ***************************************************************** -->
 <project default="javadoc">
-    <target name="javadoc">
-        <javadoc access="public" author="false" classpath="C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\lib\commons-logging-1.0.4.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.core.runtime_3.6.0.v20100505.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.core.runtime.compatibility.registry_3.3.0.v20100520\runtime_registry_compatibility.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.equinox.registry_3.5.0.v20100503.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.core.contenttype_3.4.100.v20100505-1235.jar;C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\lib\compiler.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.osgi_3.6.2.R36x_v20110210.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.equinox.preferences_3.3.0.v20100503.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.equinox.app_1.3.1.R36x_v20100803.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.core.jobs_3.5.1.R36x_v20100824.jar;C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\lib\commons-io-2.0.1.jar;C:\Program Files (x86)\eclipse\plugins\javax.servlet_2.5.0.v200910301333.jar;C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\lib\wink-json4j-1.1.3-incubating.jar;C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\lib\commons-lang-2.3.jar;C:\Program Files (x86)\eclipse\plugins\org.eclipse.equinox.common_3.6.0.v20100503.jar" destdir="C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\doc" nodeprecated="false" nodeprecatedlist="false" noindex="false" nonavbar="false" notree="false" packagenames="com.ibm.jaggr.service.cachekeygenerator,com.ibm.jaggr.service.transport,com.ibm.jaggr.service.options,com.ibm.jaggr.service.modulebuilder,com.ibm.jaggr.service,com.ibm.jaggr.service.layer,com.ibm.jaggr.service.executors,com.ibm.jaggr.service.config,com.ibm.jaggr.service.cache,com.ibm.jaggr.service.util,com.ibm.jaggr.service.deps,com.ibm.jaggr.service.module,com.ibm.jaggr.service.resource,com.ibm.jaggr.service.readers" source="1.6" sourcepath="C:\snaps\socmail\aggregator\lwp\amd.aggregator.osgi\eclipse\plugins\com.ibm.jaggr.service\src" splitindex="true" use="true" version="true">
+	<target name="javadoc">
+        <javadoc access="public" 
+        	     author="false" 
+        	     classpath="${eclipse.home}/plugins/*;lib/*" 
+        	     destdir="doc" 
+        	     nodeprecated="false" 
+        	     nodeprecatedlist="false" 
+        	     noindex="false" 
+        	     nonavbar="false" 
+        	     notree="false" 
+        	     packagenames="com.ibm.jaggr.service,com.ibm.jaggr.service.cachekeygenerator,com.ibm.jaggr.service.transport,com.ibm.jaggr.service.options,com.ibm.jaggr.service.modulebuilder,com.ibm.jaggr.service,com.ibm.jaggr.service.layer,com.ibm.jaggr.service.executors,com.ibm.jaggr.service.config,com.ibm.jaggr.service.cache,com.ibm.jaggr.service.util,com.ibm.jaggr.service.deps,com.ibm.jaggr.service.module,com.ibm.jaggr.service.resource,com.ibm.jaggr.service.readers" 
+        	     source="1.6" 
+        	     sourcepath="src/main/java/" 
+        	     splitindex="true" 
+        	     use="true" 
+        	     version="true">
             <link href="http://publib.boulder.ibm.com/infocenter/wasinfo/v8r0/topic/com.ibm.websphere.web2mobile.json.help/javadoc"/>
+        	<link href="http://www-archive.mozilla.org/rhino/apidocs"/>
             <link href="http://java.sun.com/javase/6/docs/api/"/>
         </javadoc>
     </target>

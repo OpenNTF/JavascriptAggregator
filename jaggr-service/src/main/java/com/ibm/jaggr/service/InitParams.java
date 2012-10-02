@@ -10,8 +10,10 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
+import java.util.List;
 
 import com.ibm.jaggr.service.InitParams.InitParam;
+import com.ibm.jaggr.service.options.IOptions;
 
 /**
  * Wrapper class for aggregator init-params.
@@ -19,6 +21,8 @@ import com.ibm.jaggr.service.InitParams.InitParam;
  * Init params are specified with the init-param attribute in the servlet
  * element of the {@code org.eclipse.equinox.http.registry.servlets}
  * extension point.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class InitParams implements Iterable<InitParam>{
 
@@ -47,11 +51,24 @@ public class InitParams implements Iterable<InitParam>{
 	 * defining servlet, then the config URI may specify a relative path
 	 */
 	public static final String CONFIG_INITPARAM = "config"; //$NON-NLS-1$
+	/**
+	 * Name of the servlet init-param that specifies the filename of the java properties
+	 * file containing the aggregator options (see {@link IOptions}).  If not 
+	 * specified, then the aggregator will look for options properties in the file
+	 * aggregator.properties in the home directory of the user that started the 
+	 * aggregator.
+	 */
+	public static final String OPTIONS_INITPARAM = "options"; //$NON-NLS-1$
+	/**
+	 * Name of the servlet init-param that specifies the maximum number of 
+	 * entries allowed in the layer cache.
+	 */
+	public static final String MAXLAYERCACHEENTRIES_INITPARAM = "maxlayercacheentries"; //$NON-NLS-1$ 
 	
 	/**
 	 * The init-params 
 	 */
-	private Iterable<InitParam> initParams;
+	private List<InitParam> initParams;
 	/**
 	 * Init params are name/value pairs 
 	 */
@@ -71,16 +88,16 @@ public class InitParams implements Iterable<InitParam>{
 	}
 	
 	/**
-	 * Constructor from an {@code Iterable}
+	 * Constructor from a {@code List}
 	 * 
 	 * @param initParams
 	 */
-	public InitParams(Iterable<InitParam> initParams) {
+	public InitParams(List<InitParam> initParams) {
 		this.initParams = initParams;
 	}
 	
 	/**
-	 * Returns a collection of the values for the init-param(s) with the
+	 * Returns a list of the values for the init-param(s) with the
 	 * specified name, or an empty collection if there are no init-params with
 	 * the specified name.
 	 * 
@@ -89,8 +106,8 @@ public class InitParams implements Iterable<InitParam>{
 	 * @return the collection of values for the init-params with the specified
 	 *         name
 	 */
-	public Collection<String> getValues(String name) {
-		Collection<String> result = new LinkedList<String>();
+	public List<String> getValues(String name) {
+		List<String> result = new LinkedList<String>();
 		for (InitParam initParam : initParams) {
 			if (initParam.getName().equals(name)) {
 				result.add(initParam.getValue());

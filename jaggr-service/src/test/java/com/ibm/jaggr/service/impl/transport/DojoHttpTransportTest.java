@@ -10,7 +10,6 @@ import java.io.File;
 import java.net.URI;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 
 import junit.framework.Assert;
 
@@ -21,6 +20,8 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
@@ -61,7 +62,7 @@ public class DojoHttpTransportTest {
 			}
 		}).anyTimes();
 		EasyMock.replay(mockAggregator);
-		String config = "{packages:[{name:\"dojo\", location:\"namedbundleresource://com.ibm.jaggr.service.sample.dojo.1.7.resources/WebContent/dojo\"}]}";
+		String config = "{packages:[{name:\"dojo\", location:\"namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo\"}]}";
 		URI tmpDir = new File(System.getProperty("java.io.tmpdir")).toURI();
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		final URI comboUri = new URI(DojoHttpTransport.comboUriStr);
@@ -72,21 +73,23 @@ public class DojoHttpTransportTest {
 				return super.getClientConfigAliases();
 			}
 		};
-		Map<String, Object> rawConfig = cfg.getRawConfig();
+		Context.enter();
+		Scriptable rawConfig = cfg.getRawConfig();
+		IConfig modifiedConfig;
 		transport.modifyConfig(mockAggregator, rawConfig);
-		System.out.println(rawConfig);
-		
+		System.out.println(Context.toString(rawConfig));
 		// verify config has the changes we expect
-		IConfig modifiedConfig = new ConfigImpl(
+		modifiedConfig = new ConfigImpl(
 				mockAggregator, 
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
-				rawConfig.toString());
+				rawConfig);
 		Assert.assertEquals(3, modifiedConfig.getPaths().size());
-		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.service.sample.dojo.1.7.resources/WebContent/dojo/text",
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).toString());
+		Assert.assertEquals("namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo/text",
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
+		Assert.assertNull(modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getOverride());
 		Assert.assertEquals(DojoHttpTransport.textPluginProxyUriStr,
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).toString());
-		Assert.assertEquals(comboUri, modifiedConfig.getPaths().get("combo"));
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
+		Assert.assertEquals(comboUri, modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
 		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, modifiedConfig.getAliases().get(0).getPattern());
 		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, modifiedConfig.getAliases().get(0).getReplacement());
@@ -98,6 +101,33 @@ public class DojoHttpTransportTest {
 		Assert.assertEquals(DojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
 		
+		// make sure overrides are handled properly
+		config = "{packages:[{name:\"dojo\", location:[\"namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo\"]}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		rawConfig = cfg.getRawConfig();
+		transport.modifyConfig(mockAggregator, rawConfig);
+		modifiedConfig = new ConfigImpl(
+				mockAggregator, 
+				new File(System.getProperty("java.io.tmpdir")).toURI(),
+				rawConfig);
+		System.out.println(Context.toString(rawConfig));
+		IConfig.Location loc = modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath);
+		Assert.assertEquals("namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo/text", loc.getPrimary().toString());
+		Assert.assertNull(loc.getOverride());
+
+		config = "{packages:[{name:\"dojo\", location:[\"namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo\", \"file:/c:/customizations/dojo\"]}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		rawConfig = cfg.getRawConfig();
+		transport.modifyConfig(mockAggregator, rawConfig);
+		modifiedConfig = new ConfigImpl(
+				mockAggregator, 
+				new File(System.getProperty("java.io.tmpdir")).toURI(),
+				rawConfig);
+		System.out.println(Context.toString(rawConfig));
+		loc = modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath);
+		Assert.assertEquals("namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo/text", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/customizations/dojo/text", loc.getOverride().toString());
+		
 		// No dojo package in config
 		transport.getClientConfigAliases().clear();
 		cfg = new ConfigImpl(mockAggregator, tmpDir, "{}");
@@ -106,11 +136,11 @@ public class DojoHttpTransportTest {
 		modifiedConfig = new ConfigImpl(
 				mockAggregator, 
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
-				rawConfig.toString());
-		System.out.println(rawConfig);
+				rawConfig);
+		System.out.println(Context.toString(rawConfig));
 		Assert.assertEquals(1, modifiedConfig.getPaths().size());
 		Assert.assertEquals(0, modifiedConfig.getAliases().size());
-		Assert.assertEquals(comboUri, modifiedConfig.getPaths().get("combo"));
+		Assert.assertEquals(comboUri, modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals(0, transport.getClientConfigAliases().size());
 		
 		// More that one text module builder.  Make sure last one is used
@@ -125,15 +155,15 @@ public class DojoHttpTransportTest {
 		modifiedConfig = new ConfigImpl(
 				mockAggregator, 
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
-				rawConfig.toString());
-		System.out.println(rawConfig);
+				rawConfig);
+		System.out.println(Context.toString(rawConfig));
 		Assert.assertEquals(3, modifiedConfig.getPaths().size());
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
-		Assert.assertEquals(comboUri, modifiedConfig.getPaths().get("combo"));
-		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.service.sample.dojo.1.7.resources/WebContent/dojo/text",
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).toString());
+		Assert.assertEquals(comboUri, modifiedConfig.getPaths().get("combo").getPrimary());
+		Assert.assertEquals("namedbundleresource://com.ibm.servlets.amd.dojo.1.7.resources/WebContent/dojo/text",
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
 		Assert.assertEquals(DojoHttpTransport.textPluginProxyUriStr,
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).toString());
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(2, transport.getClientConfigAliases().size());
 		alias = transport.getClientConfigAliases().get(0);
 		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, alias[0]);
@@ -141,6 +171,7 @@ public class DojoHttpTransportTest {
 		alias = transport.getClientConfigAliases().get(1);
 		Assert.assertEquals(DojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
+		Context.exit();
 	}
 
 }

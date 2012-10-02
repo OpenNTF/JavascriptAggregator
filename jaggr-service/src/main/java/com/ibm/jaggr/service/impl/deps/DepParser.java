@@ -24,6 +24,8 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
  * function. The dependency information thus obtained is used to update the
  * dependency array in the provided {@link DepTreeNode} and the node's
  * last-modified times are updated as well.
+ * 
+ * @author chuckd@us.ibm.com
  */
 final class DepParser implements Callable<URI> {
 	static {

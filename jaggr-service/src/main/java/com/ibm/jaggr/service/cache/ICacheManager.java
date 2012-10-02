@@ -24,6 +24,7 @@ import com.ibm.jaggr.service.options.IOptions;
  * <li>Provides utility methods for asynchronously creating and deleting cache files</li>
  * <li>Provides access to the {@link ICache} object</li>
  * </ul>
+ * @author chuckd@us.ibm.com
  */
 public interface ICacheManager {
     
@@ -54,8 +55,22 @@ public interface ICacheManager {
 	/**
 	 * Utility method to create a cache file on an asynchronous thread.
 	 * 
+	 * @param fileName
+	 *            The filename of the cache file.  The cache file with the
+	 *            specified name will be created in the cache directory.  The 
+	 *            filename may not include a path component
+	 * @param content
+	 *            The {@link InputStream} to read the file contents from
+	 * @param callback
+	 *            The completion callback
+	 */
+	public void createNamedCacheFileAsync(String fileName, InputStream content, CreateCompletionCallback callback);
+	
+	/**
+	 * Utility method to create a cache file on an asynchronous thread.
+	 * 
 	 * @param fileNamePrefix
-	 *            A prefix string to include in the file name
+	 *            The prefix to use for the generated file name
 	 * @param content
 	 *            The {@link InputStream} to read the file contents from
 	 * @param callback
@@ -66,8 +81,22 @@ public interface ICacheManager {
 	/**
 	 * Utility method to create a cache file on an asynchronous thread.
 	 * 
+	 * @param filename
+	 *            The filename of the cache file.  The cache file with the
+	 *            specified name will be created in the cache directory.  The 
+	 *            filename may not include a path component
+	 * @param content
+	 *            The {@link Reader} to read the file contents from
+	 * @param callback
+	 *            The completion callback
+	 */
+	public void createNamedCacheFileAsync(String filename, Reader content, CreateCompletionCallback callback);
+
+	/**
+	 * Utility method to create a cache file on an asynchronous thread.
+	 * 
 	 * @param fileNamePrefix
-	 *            A prefix string to include in the file name
+	 *            The prefix to use for the generated file name
 	 * @param content
 	 *            The {@link Reader} to read the file contents from
 	 * @param callback

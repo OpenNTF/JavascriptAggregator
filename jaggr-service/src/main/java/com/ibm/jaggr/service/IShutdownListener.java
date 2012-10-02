@@ -13,6 +13,8 @@ import javax.servlet.http.HttpServlet;
  * notification, register the implementing class as an OSGi service, specifying
  * the name of the aggregator under the <code>name</code> property in the
  * service properties.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IShutdownListener {
 

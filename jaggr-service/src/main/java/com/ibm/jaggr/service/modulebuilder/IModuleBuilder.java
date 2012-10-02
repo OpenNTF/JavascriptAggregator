@@ -10,8 +10,8 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.IRequestListener;
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
+import com.ibm.jaggr.service.IRequestListener;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
@@ -68,6 +68,8 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * directly since this operation is not thread-safe. Instead, module builders
  * may set properties in the ConcurrentMap which may be retrieved from the
  * request attribute named {@link IAggregator#CONCURRENTMAP_REQATTRNAME}.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IModuleBuilder {
 

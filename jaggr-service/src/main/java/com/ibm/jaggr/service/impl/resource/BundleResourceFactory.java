@@ -51,7 +51,7 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 				URL fileUrl = null;
 				try {
 					fileUrl = converter.toFileURL(uri.toURL());
-					result = getAggregator().newResource(fileUrl.toURI());
+					result = getAggregator().newResource(PathUtil.url2uri(fileUrl));
 				} catch (FileNotFoundException e) {
 					if (log.isLoggable(Level.FINE)) {
 						log.log(Level.FINE, uri.toString(), e);

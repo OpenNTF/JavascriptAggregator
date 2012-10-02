@@ -17,6 +17,7 @@ import java.io.OutputStreamWriter;
 import java.io.Serializable;
 import java.io.Writer;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -34,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.Deflater;
@@ -43,6 +45,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.InitParams;
+import com.ibm.jaggr.service.LimitExceededException;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
@@ -51,7 +55,9 @@ import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.layer.ILayer;
+import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.BuildListReader;
@@ -63,6 +69,7 @@ import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.TypeUtil;
+
 
 /**
  * A LayerImpl is a collection of LayerBuild objects that are composed using the same
@@ -112,7 +119,7 @@ public class LayerImpl implements ILayer {
 	private transient AtomicBoolean _validateLastModified = new AtomicBoolean(true);
 	
 	/** The map of key/builds for this layer. */
-	private ConcurrentMap<String, CacheEntry> _layerBuilds = null;
+	ConcurrentMap<String, CacheEntry> _layerBuilds = null;
 	
 	/** 
 	 * Flag to indicate that addition information used unit tests should be added to the
@@ -121,11 +128,35 @@ public class LayerImpl implements ILayer {
 	private transient boolean _isReportCacheInfo = false;
 	
 	/**
+	 * Reference to the counter for the total number of layer build cache 
+	 * entries in all cached layers.  The counter is maintained in the ILayerCache
+	 * object that references this layer.
+	 */
+	private final AtomicInteger _numCachedEntriesRef;
+	
+	/**
+	 * The total maximum number of of layer cache entries allowed. 
+	 */
+	private final int _maxNumCachedEntries;
+	
+	private final String _cacheKey;
+	
+	/**
 	 * @param moduleList The folded module list as specified in the request
 	 */
-	public LayerImpl() {
+	public LayerImpl(String cacheKey, AtomicInteger numCachedEntriesRef, int maxNumCachedEntries) {
+		_cacheKey = cacheKey;
+		_numCachedEntriesRef = numCachedEntriesRef;
+		_maxNumCachedEntries  = maxNumCachedEntries;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.layer.ILayer#getKey()
+	 */
+	@Override
+	public String getKey() {
+		return _cacheKey;
+	}
 	/**
 	 * @param isReportCacheInfo
 	 */
@@ -144,13 +175,16 @@ public class LayerImpl implements ILayer {
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
 		ICacheManager mgr = aggr.getCacheManager();
-		boolean ignoreCached = options.isDevelopmentMode() &&
+		boolean ignoreCached = (options.isDevelopmentMode() || options.isDebugMode()) &&
 				TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOCACHE_REQATTRNAME));
         Map<String, ICacheKeyGenerator> cacheKeyGenerators;
         ConcurrentMap<String, CacheEntry> layerBuilds, oldLayerBuilds = null;
         InputStream result;
         long lastModified = getLastModified(request);
 
+        if (isLogLevelFiner) { 
+        	log.log(Level.FINER, "Request = " + request.getQueryString());
+        }
         if (ignoreCached) {
         	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
         }
@@ -183,6 +217,9 @@ public class LayerImpl implements ILayer {
         	for (Map.Entry<String, CacheEntry> entry : oldLayerBuilds.entrySet()) {
         		entry.getValue().delete(mgr);
         	}
+        	// Update counter
+       		_numCachedEntriesRef.addAndGet(-oldLayerBuilds.size());
+        	oldLayerBuilds.clear();
         }
         
         // Creata a cache key.
@@ -218,7 +255,7 @@ public class LayerImpl implements ILayer {
 		// value is null, then the newEntry was successfully added to the map, otherwise the 
 		// existing entry is returned in the buildReader and newEntry was not added.
 		if (!ignoreCached && key != null) {
-			existingEntry = layerBuilds.putIfAbsent(key, newEntry);
+			existingEntry = putIfAbsent(layerBuilds, key, newEntry);
 		}
 		if (!ignoreCached && existingEntry != null 
 			&& (result = existingEntry.tryGetInputStream(request, response)) != null) {
@@ -277,10 +314,10 @@ public class LayerImpl implements ILayer {
 	        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
 
 	        // Copy the data from the input stream to the output, compressing as we go.
-	        CopyUtil.copy(in, writer);
+	        int expandedSize = CopyUtil.copy(in, writer);
             
             // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
-            entry.setBytes(bos.toByteArray());
+            entry.setBytes(bos.toByteArray(), expandedSize);
         }
         
     	// if any of the readers included an error response, then don't cache the layer.
@@ -325,7 +362,7 @@ public class LayerImpl implements ILayer {
             	if (log.isLoggable(Level.FINE)) {
             		log.fine("Adding layer to cache with key: " + key); //$NON-NLS-1$
             	}
-        		CacheEntry oldEntry = layerBuilds.putIfAbsent(key, entry);
+        		CacheEntry oldEntry = putIfAbsent(layerBuilds, key, entry);
 	            // Write the file to disk only if the LayerBuild was successfully added to the cache,
         		// or if the current cache entry is the cache entry we're working onf
 	        	if (oldEntry == null || oldEntry == entry) {
@@ -350,7 +387,7 @@ public class LayerImpl implements ILayer {
 		boolean required = false;
 		List<Future<ModuleBuildReader>> futures = new LinkedList<Future<ModuleBuildReader>>(); 
 		
-        ConcurrentMap<String, IModule> moduleCache = aggr.getCacheManager().getCache().getModules();
+        IModuleCache moduleCache = aggr.getCacheManager().getCache().getModules();
         Map<String, String> moduleCacheInfo = null;
         if (_isReportCacheInfo) {
         	moduleCacheInfo = new HashMap<String, String>();
@@ -367,10 +404,12 @@ public class LayerImpl implements ILayer {
 			);
         }
         // If development mode is enabled, say so
-		if (options.isDevelopmentMode()) {
+		if (options.isDevelopmentMode() || options.isDebugMode()) {
 			futures.add(
 				new CompletedFuture<ModuleBuildReader>(
-					new ModuleBuildReader("/* " + Messages.LayerImpl_1 + " */\r\n") //$NON-NLS-1$ //$NON-NLS-2$
+					new ModuleBuildReader("/* " + //$NON-NLS-1$
+							(options.isDevelopmentMode() ? Messages.LayerImpl_1 : Messages.LayerImpl_2) +
+							" */\r\n") //$NON-NLS-1$ 
 				)
 			);
 		}
@@ -380,7 +419,7 @@ public class LayerImpl implements ILayer {
 		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
 			IModule module = moduleListEntry.getModule();
 			// Include the filename preamble if requested.
-			if (options.isDevelopmentMode() && TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))) {
+			if ((options.isDebugMode() || options.isDevelopmentMode()) && TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))) {
 				futures.add(
 					new CompletedFuture<ModuleBuildReader>(
 						new ModuleBuildReader(String.format(PREAMBLEFMT, module.getURI().toString()))
@@ -390,13 +429,6 @@ public class LayerImpl implements ILayer {
 			String cacheKey = new ModuleIdentifier(module.getModuleId()).getModuleName();
 			// Try to get the module from the module cache first
 			IModule cachedModule = null;
-			if (!ignoreCached) {
-				cachedModule = moduleCache.get(cacheKey);
-			}
-			if (moduleCacheInfo != null) {
-				moduleCacheInfo.put(cacheKey, (cachedModule != null) ? "hit" : "miss"); //$NON-NLS-1$ //$NON-NLS-2$
-			}
-			
 			IResource resource = module.getResource(aggr);
 			if (!resource.exists()) {
 				// Source file doesn't exist.
@@ -407,26 +439,23 @@ public class LayerImpl implements ILayer {
 				}
 				// NotFound modules are not cached.  If the module is in the cache (because a 
 				// source file has been deleted), then remove the cached module.
-				if (cachedModule != null) {
-		    		moduleCache.remove(cacheKey);
+	    		cachedModule = moduleCache.remove(cacheKey);
+	    		if (cachedModule != null) {
 		        	if (moduleCacheInfo != null) {
 		        		moduleCacheInfo.put(cacheKey, "remove"); //$NON-NLS-1$
 		        	}
-		    		cachedModule.clearCached(aggr.getCacheManager());
-				}
+		        	cachedModule.clearCached(aggr.getCacheManager());
+	    		}
 				// create a new NotFoundModule
 				module = new NotFoundModule(module.getModuleId(), module.getURI());
 		    	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 			} else {
-				if (cachedModule != null) {
-					module = cachedModule;
-				} else {
-					// add it to the module cache
-					moduleCache.put(cacheKey, module);
-		        	if (moduleCacheInfo != null) {
-		        		moduleCacheInfo.put(cacheKey, "add"); //$NON-NLS-1$
-		        	}
-				}
+				// add it to the module cache if not already there
+				cachedModule = moduleCache.putIfAbsent(cacheKey, module);
+	        	if (moduleCacheInfo != null) {
+    				moduleCacheInfo.put(cacheKey, (cachedModule != null) ? "hit" : "add"); //$NON-NLS-1$ //$NON-NLS-2$
+	        	}
+				module = cachedModule != null ? cachedModule : module;
 			}
 			ModuleList.ModuleListEntry.Type type = moduleListEntry.getType();
 			// Get the layer contribution from the transport
@@ -688,7 +717,8 @@ public class LayerImpl implements ILayer {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\nModified: ") //$NON-NLS-1$
 		  .append(new Date(_lastModified).toString()).append(linesep)
-		  .append("KeyGen: ").append(KeyGenUtil.toString(_cacheKeyGenerators.values())) //$NON-NLS-1$
+		  .append("KeyGen: ").append(
+				  _cacheKeyGenerators != null ? KeyGenUtil.toString(_cacheKeyGenerators.values()) : "null") //$NON-NLS-1$
 		  .append(linesep); //$NON-NLS-1$
 		Map<String, CacheEntry> layerBuilds = _layerBuilds;
 		if (layerBuilds != null) {
@@ -784,6 +814,62 @@ public class LayerImpl implements ILayer {
     	}
     	return result;
     }
+    
+	/**
+	 * Puts the built layer into the layerBuild cache if it isn't already there, otherwise returns
+	 * the existing entry matching the key.  If the cache already has the maximum number of 
+	 * entries, then throw an exception.
+	 * <p>
+	 * TODO: Implement LRU aging of stale cache entries instead of throwing an exception when 
+	 * we reach the cache size limit.
+	 * 
+	 * @param layerBuilds the cache
+	 * @param key the cache key
+	 * @param layerBuild the entry to add if not already in the cache
+	 * @return the existing entry if already in the cache, else null
+	 * @throws LimitExceededException
+	 */
+	protected CacheEntry putIfAbsent(ConcurrentMap<String, CacheEntry> layerBuilds, String key, CacheEntry layerBuild) throws LimitExceededException {
+		CacheEntry result = layerBuilds.get(key);
+		if (result != null) {
+			return result;
+		}
+		if (_maxNumCachedEntries < 0 || _numCachedEntriesRef.get() < _maxNumCachedEntries) {
+			result = layerBuilds.putIfAbsent(key, (LayerImpl.CacheEntry)layerBuild);
+			if (result == null) {
+				_numCachedEntriesRef.incrementAndGet();
+			};
+		} else {
+			throw new LimitExceededException(
+					MessageFormat.format(
+						Messages.LayerImpl_3,
+						new Object[]{_maxNumCachedEntries, InitParams.MAXLAYERCACHEENTRIES_INITPARAM}
+					)
+				);
+		}
+		return result;
+	}
+	
+    /**
+     * Returns the number of layer build cache entries for this layer
+     * 
+     * @return the number of entries in the layer build cache
+     */
+    protected int size() {
+    	ConcurrentMap<String, CacheEntry> layerBuilds = _layerBuilds;
+    	return layerBuilds != null ? layerBuilds.size() : 0;
+    }
+    
+    /**
+     * Static factory method for layer cache objects
+     * 
+     * @param aggregator the aggregator this layer cache belongs to
+     * @return a new layer cache
+     */
+	public static ILayerCache newLayerCache(IAggregator aggregator) {
+		return new LayerCacheImpl(aggregator);
+	}
+	
 	/**
 	 * Class to encapsulate operations on layer builds.  Uses {@link ExecutorService}
 	 * objects to asynchronously create and delete cache files.  ICache files are deleted
@@ -804,10 +890,11 @@ public class LayerImpl implements ILayer {
 	 * is done using cloned cache objects to avoid contention on synchronized locks that would 
 	 * need to be held during file I/O if the live cache objects were serialized.
 	 */
-	static protected class CacheEntry implements Serializable, Cloneable{
+	static protected class CacheEntry implements Serializable, Cloneable {
 		private static final long serialVersionUID = -2129350665073838766L;
 
-		private transient volatile byte[] bytes = null;
+		private transient volatile byte[] zippedBytes = null;
+		private transient volatile int expandedSize = -1;
     	private volatile String filename = null;
     	
     	/**
@@ -821,28 +908,56 @@ public class LayerImpl implements ILayer {
     	public InputStream getInputStream(HttpServletRequest request, 
     			HttpServletResponse response) throws IOException {
     		// Check bytes before filename when reading and reverse order when setting
-    		byte[] bytes = this.bytes;
+    		byte[] bytes = this.zippedBytes;
     		String filename = this.filename;
-    		InputStream in;
+    		InputStream in, logInputStream = null;
     		long size;
-    		if (bytes != null) {
-    			in = new ByteArrayInputStream(bytes);
-    			size = bytes.length;
-    		} else {
-    			ICacheManager cmgr = ((IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME)).getCacheManager();
-    			File file = new File(cmgr.getCacheDir(), filename);
-    			in = new FileInputStream(file);
-    			size = file.length();
-    		}
-            response.setContentType("application/x-javascript; charset=utf-8"); //$NON-NLS-1$
-        	response.setHeader("Content-Length", Long.toString(size)); //$NON-NLS-1$
-            String accept = request.getHeader("Accept-Encoding"); //$NON-NLS-1$
+    		// determine if response is to be gzipped
+    		boolean isGzipped = false;
+    		String accept = request.getHeader("Accept-Encoding"); //$NON-NLS-1$
+            if (log.isLoggable(Level.FINE)) {
+            	log.fine("Accept-Encoding = " + (accept != null ? accept : "null"));
+            }
             if (accept != null)
             	accept = accept.toLowerCase();
             if (accept != null && accept.contains("gzip") && !accept.contains("gzip;q=0")) { //$NON-NLS-1$ //$NON-NLS-2$
+            	isGzipped = true;
+            }
+            
+    		if (bytes != null) {
+    			in = new ByteArrayInputStream(bytes);
+    			size = bytes.length;
+    			if (!isGzipped) {
+    				in = new GZIPInputStream(in);
+                	size = expandedSize;
+    			}
+    			if (log.isLoggable(Level.FINEST)) {
+    				logInputStream = new GZIPInputStream(new ByteArrayInputStream(bytes));
+    			}
+    		} else {
+    			ICacheManager cmgr = ((IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME)).getCacheManager();
+    			if (isGzipped) {
+    				filename += ".zip";
+    			}
+    			File file = new File(cmgr.getCacheDir(), filename);
+    			in = new FileInputStream(file);
+    			if (log.isLoggable(Level.FINEST)) {
+    				logInputStream = new GZIPInputStream(new FileInputStream(file));
+    			}
+    			size = file.length();
+    		}
+            response.setContentType("application/x-javascript; charset=utf-8"); //$NON-NLS-1$
+            if (isGzipped) {
             	response.setHeader("Content-Encoding", "gzip"); //$NON-NLS-1$ //$NON-NLS-2$
-            } else {
-            	in = new GZIPInputStream(in);
+            }
+            if (log.isLoggable(Level.FINE)) {
+            	log.fine("Returning " + (isGzipped ? "" : "un-") + "gzipped response: size=" + size); //$NON-NLS-1$
+            }
+        	response.setHeader("Content-Length", Long.toString(size)); //$NON-NLS-1$
+            if (logInputStream != null) {
+            	ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            	CopyUtil.copy(logInputStream, bos);
+            	log.log(Level.FINEST, "Response: " + bos.toString("UTF-8")); //$NON-NLS-1$ //$NON-NLS-2$
             }
 			return in;
     	}
@@ -857,7 +972,7 @@ public class LayerImpl implements ILayer {
     			HttpServletResponse response) throws IOException {
     		InputStream in = null;
     		// Check bytes before filename when reading and reverse order when setting
-    		if (bytes != null || filename != null) {
+    		if (zippedBytes != null || filename != null) {
     			try {
     				in = getInputStream(request, response);
     			} catch (IOException e) {
@@ -875,9 +990,20 @@ public class LayerImpl implements ILayer {
     	/**
     	 * @param bytes
     	 */
-    	public void setBytes(byte[] bytes) {
-    		this.bytes = bytes;
+    	public void setBytes(byte[] bytes, int expandedSize) {
+    		this.zippedBytes = bytes;
+    		this.expandedSize = expandedSize;
     	}
+    	
+    	/**
+    	 * Returns the expanded (unzipped) size of this cached entry
+    	 * 
+    	 * @return the expanded (unzipped) size
+    	 */
+    	public int getExpandedSize() {
+    		return expandedSize;
+    	}
+    	
     	
     	/**
     	 * Delete the cached build after the specified delay in minues
@@ -887,27 +1013,42 @@ public class LayerImpl implements ILayer {
     	public void delete(final ICacheManager mgr) {
     		if (CacheEntry.this.filename != null) {
     			mgr.deleteFileDelayed(filename);
+    			mgr.deleteFileDelayed(filename + ".zip");
     		}
     	}
     	
     	/**
     	 * Asynchronously write the layer build content to disk and set filename to the 
-    	 * name of the cache file when done.
+    	 * name of the cache files when done.  Save the unzipped contents first, and then
+    	 * once we have the cache filename, save the zipped contents to a file with the
+    	 * same name with a .zip extension.
     	 * 
     	 * @param mgr The cache manager
     	 */
-    	public void persist(final ICacheManager mgr) {
-			mgr.createCacheFileAsync("layer.", new ByteArrayInputStream(bytes),  //$NON-NLS-1$
+    	public void persist(final ICacheManager mgr) throws IOException {
+			mgr.createCacheFileAsync("layer.", //$NON-NLS-1$
+					new GZIPInputStream(new ByteArrayInputStream(zippedBytes)),
 					new ICacheManager.CreateCompletionCallback() {
 				@Override
-				public void completed(String fname, Exception e) {
+				public void completed(final String fname, Exception e) {
 					if (e == null) {
-		                // Set filename before clearing bytes 
-		                filename = fname;
-		                // Free up the memory for the content now that we've written out to disk
-		                // TODO:  Determine a size threshold where we may want to keep the contents
-		                // of small files in memory to reduce disk i/o.
-		                bytes = null;
+						mgr.createNamedCacheFileAsync(fname + ".zip", new ByteArrayInputStream(zippedBytes), 
+								new ICacheManager.CreateCompletionCallback() {
+							@Override
+							public void completed(String zippedFname, Exception e) {
+								if (e == null) {
+									// now that we have the filename for the non-zipped result,
+									// save the zipped result using the same filename with a .zip
+									// extension
+					                // Set filename before clearing bytes 
+					                filename = fname;
+					                // Free up the memory for the content now that we've written out to disk
+					                // TODO:  Determine a size threshold where we may want to keep the contents
+					                // of small files in memory to reduce disk i/o.
+					                zippedBytes = null;
+								}
+							}
+						});				
 					}
 				}
 			});

@@ -9,30 +9,31 @@ package com.ibm.jaggr.service.cache;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
-import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.layer.ILayerCache;
+import com.ibm.jaggr.service.module.IModuleCache;
 
 /**
  * The aggregator cache is the repository for cached module builds and layers.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface ICache extends Serializable, Cloneable {
 
 	/**
-	 * Returns a map of the layer build cache entries.
+	 * Returns the cache of layer build cache entries.
 	 * 
 	 * @return The layer build cache entries
 	 */
-	public ConcurrentMap<String, ILayer> getLayers();
+	public ILayerCache getLayers();
 	
 	/**
-	 * Returns a map of the module build cache entries
+	 * Returns the cache of module build cache entries
 	 * 
 	 * @return The module build cache entries
 	 */
-	public ConcurrentMap<String, IModule> getModules();
+	public IModuleCache getModules();
 		
 	/**
 	 * Returns the date and time that this cache object was created.

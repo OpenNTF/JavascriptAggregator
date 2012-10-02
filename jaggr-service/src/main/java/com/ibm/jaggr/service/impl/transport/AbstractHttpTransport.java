@@ -16,7 +16,6 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -39,6 +38,8 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceRegistration;
@@ -60,6 +61,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
 /**
  * Implements common functionality useful for all Http Transport implementation
  * and defines abstract methods that subclasses need to implement
+ * 
+ * @author chuckd@us.ibm.com
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
@@ -377,7 +380,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 *         specified names
 	 */
 	protected static String getParameter(HttpServletRequest request, String[] aliases) {
-		@SuppressWarnings("unchecked")
 		Map<String, String[]> params = request.getParameterMap();
 		String result = null;
 		for (Map.Entry<String, String[]> entry : params.entrySet()) {
@@ -476,19 +478,23 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
-	public void modifyConfig(IAggregator aggregator, Map<String, Object> config) {
+	public void modifyConfig(IAggregator aggregator, Scriptable config) {
 		// The server-side AMD config has been updated.  Add an entry to the 
 		// {@code paths} property to map the resource (combo) path to the 
 		// location of the combo resources on the server.
-		Map<String, Object> pathsObj = (Map<String, Object>)config.get(PATHS_PROPNAME);
-		if (pathsObj == null) {
-			// If not present, add it.
-			config.put("paths", new HashMap<String, Object>()); //$NON-NLS-1$
-			pathsObj = (Map<String, Object>)config.get(PATHS_PROPNAME);
+		Context context = Context.enter();
+		try {
+			Object pathsObj = config.get(PATHS_PROPNAME, config);
+			if (pathsObj == Scriptable.NOT_FOUND) {
+				// If not present, add it.
+				config.put("paths", config, context.newObject(config)); //$NON-NLS-1$
+				pathsObj = (Scriptable)config.get(PATHS_PROPNAME, config);
+			}
+			((Scriptable)pathsObj).put(getResourcePathId(), (Scriptable)pathsObj, getComboUri().toString());
+		} finally {
+			Context.exit();
 		}
-		pathsObj.put(getResourcePathId(), getComboUri().toString());
 	}
 	
 	/* (non-Javadoc)
@@ -579,6 +585,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		StringBuffer sb = new StringBuffer();
 		for (String contribution : getExtensionContributions()) {
 			sb.append(contribution).append("\r\n"); //$NON-NLS-1$
+		}
+		String cacheBust = aggregator.getConfig().getCacheBust();
+		String optionsCb = aggregator.getOptions().getCacheBust();
+		if (optionsCb != null && optionsCb.length() > 0) {
+			cacheBust = (cacheBust != null && cacheBust.length() > 0) ? (cacheBust + "-" + optionsCb) : optionsCb;
+		}
+		if (cacheBust != null && cacheBust.length() > 0) {
+			sb.append("if (!combo.cacheBust){combo.cacheBust = '" + cacheBust + "';}\r\n");
 		}
 		return sb.toString();
 	}

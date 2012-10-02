@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -34,6 +33,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
+import org.mozilla.javascript.Scriptable;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
@@ -133,6 +133,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * inlinedImageExcludeList.</dd>
  * </dl>
  * </blockquote>
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IShutdownListener, IConfigListener {
 
@@ -324,7 +326,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		 */
 		boolean includePreamble 
 				= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME)) 
-								&& options.isDevelopmentMode();
+								&& (options.isDebugMode() || options.isDevelopmentMode());
 		if (includePreamble && path != null && path.length() > 0) {
 			buf.append("/* @import "  + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
@@ -646,17 +648,19 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void configLoaded(IConfig conf, long sequence) {
-		Map<String, Object> config = conf.getRawConfig();
+		Scriptable config = conf.getRawConfig();
 		/** Maximum size of image that can be in-lined */
-		imageSizeThreshold = TypeUtil.asInt(config.get(SIZETHRESHOLD_CONFIGPARAM), SIZETHRESHOLD_DEFAULT_VALUE);
+		Object obj = config.get(SIZETHRESHOLD_CONFIGPARAM, config);
+		imageSizeThreshold = TypeUtil.asInt(obj==Scriptable.NOT_FOUND ? null : obj.toString(), SIZETHRESHOLD_DEFAULT_VALUE);
 
 		/** True if &#064;import statements should be inlined */
-		inlineImports = TypeUtil.asBoolean(config.get(INLINEIMPORTS_CONFIGPARAM), INLINEIMPORTS_DEFAULT_VALUE);
+		obj = config.get(INLINEIMPORTS_CONFIGPARAM, config);
+		inlineImports = TypeUtil.asBoolean(obj==Scriptable.NOT_FOUND ? null : obj.toString(), INLINEIMPORTS_DEFAULT_VALUE);
 
 		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes); 
-		Object oImageTypes = config.get(IMAGETYPES_CONFIGPARAM);
-		if (oImageTypes != null && oImageTypes instanceof String && ((String)oImageTypes).length() > 0) {
-			String[] aTypes = ((String)oImageTypes).split(","); //$NON-NLS-1$
+		Object oImageTypes = config.get(IMAGETYPES_CONFIGPARAM, config);
+		if (oImageTypes != Scriptable.NOT_FOUND) {
+			String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
 			for (String type : aTypes) {
 				types.add(type);
 			}
@@ -665,10 +669,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		
 		/** List of files that should be in-lined */
 		Collection<Pattern> list = Collections.emptyList();
-		Object oIncludeList = config.get(INCLUDELIST_CONFIGPARAM);
-		if (oIncludeList != null && oIncludeList instanceof String && ((String)oIncludeList).length() > 0) {
+		Object oIncludeList = config.get(INCLUDELIST_CONFIGPARAM, config);
+		if (oIncludeList != Scriptable.NOT_FOUND) {
 			list = new ArrayList<Pattern>();
-			for (String s : ((String)oIncludeList).split(",")) { //$NON-NLS-1$
+			for (String s : oIncludeList.toString().split(",")) { //$NON-NLS-1$
 				list.add(toRegexp(s));
 			}
 		}
@@ -676,10 +680,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 		/** List of files that should NOT be in-lined */
 		list = Collections.emptyList();
-		Object oExcludeList = config.get(EXCLUDELIST_CONFIGPARAM);
-		if (oExcludeList != null && oExcludeList instanceof String && ((String)oExcludeList).length() > 0) {
+		Object oExcludeList = config.get(EXCLUDELIST_CONFIGPARAM, config);
+		if (oExcludeList != Scriptable.NOT_FOUND) {
 			list = new ArrayList<Pattern>();
-			for (String s : ((String)oExcludeList).split(",")) { //$NON-NLS-1$
+			for (String s : oExcludeList.toString().split(",")) { //$NON-NLS-1$
 				list.add(toRegexp(s));
 			}
 		}

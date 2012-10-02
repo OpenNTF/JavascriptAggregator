@@ -90,10 +90,20 @@ public class OptionsImpl  implements IOptions {
 	public boolean isDevelopmentMode() {
 		return Boolean.parseBoolean(getOption(DEVELOPMENT_MODE));
 	}
+	
+	@Override
+	public boolean isDebugMode() {
+		return Boolean.parseBoolean(getOption(DEBUG_MODE));
+	}
 
 	@Override
 	public boolean isSkipHasFiltering() {
 		return Boolean.parseBoolean(getOption(SKIP_HASFILTERING));
+	}
+	
+	@Override
+	public String getCacheBust() {
+		return getOption(CACHEBUST);
 	}
 
 	@Override
@@ -244,17 +254,15 @@ public class OptionsImpl  implements IOptions {
 	 */
 	protected void saveProps(Properties props) throws IOException {
 		// Persist the change to the properties file.
-    	String homedir = System.getProperty("user.home"); //$NON-NLS-1$
-    	String filename = getPropsFilename();
-    	if (filename != null) {
-    		File file = new File(homedir, filename);
-    		FileWriter writer = new FileWriter(file);
-    		try {
-    			props.store(writer, null);
-    		} finally {
-    			writer.close();
-    		}
-    	}
+		File file = getPropsFile();
+		if (file != null) {
+			FileWriter writer = new FileWriter(file);
+			try {
+				props.store(writer, null);
+			} finally {
+				writer.close();
+			}
+		}
 	}
 	
 	/**
@@ -269,7 +277,7 @@ public class OptionsImpl  implements IOptions {
 		ServiceReference[] refs = null;
 		try {
 			refs = bundleContext
-					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + registrationName + ")");
+					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + registrationName + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		
 			if (refs != null) {
 				for (ServiceReference ref : refs) {

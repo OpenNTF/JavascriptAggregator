@@ -25,13 +25,13 @@ import javax.servlet.http.HttpServletRequest;
 import junit.framework.Assert;
 
 import org.apache.commons.io.input.ReaderInputStream;
-import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mozilla.javascript.Scriptable;
 
 import sun.misc.BASE64Decoder;
 
@@ -56,8 +56,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	Map<String, String> requestParams = new HashMap<String, String>();
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
-	@SuppressWarnings("unchecked")
-	Map<String, Object> configJson = new JSONObject();
+	Scriptable configScript;
 	IAggregator mockAggregator;
 	HttpServletRequest mockRequest;
 	CSSModuleBuilderTester builder = new CSSModuleBuilderTester(); 
@@ -93,6 +92,8 @@ public class CSSModuleBuilderTest extends EasyMock {
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams);
 		replay(mockRequest);
 		replay(mockAggregator);
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
+		configScript = cfg.getRawConfig();
 	}
 
 	@After
@@ -162,11 +163,14 @@ public class CSSModuleBuilderTest extends EasyMock {
 		String css, output;
 		URI resuri = testdir.toURI();
 		
+		// create file to import
+		css = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
+		CopyUtil.copy(css, new FileWriter(new File(testdir, "imported.css")));
 		/*
 		 * Make sure imported css files get inlined
 		 */
-		configJson.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, Boolean.TRUE);
-		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, configScript, Boolean.TRUE);
+		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		css = "/* importing file */\n\r@import \"imported.css\"";
 		output = buildCss(new StringResource(css, resuri));
@@ -305,149 +309,149 @@ public class CSSModuleBuilderTest extends EasyMock {
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 		
-		configJson.put(CSSModuleBuilder.INLINEIMPORTS_CONFIGPARAM, "true");
-		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INLINEIMPORTS_CONFIGPARAM, configScript, "true");
+		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		
 		long size = image.length();
-		configJson.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, Long.toString(size));
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, configScript, Long.toString(size));
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
 		// Set the size threshold just below the image size and make sure the image isn't inlined
 		size--;
-		configJson.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, Long.toString(size));
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, configScript, Long.toString(size));
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 		
 		size++;
-		configJson.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, Long.toString(size));
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, configScript, Long.toString(size));
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
 		// Make sure we can disable image inlining by request parameter
 		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, "false");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 
 		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, "true");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
 		// Make sure that the image is inlined if it is specifically included
-		configJson.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, Long.toString(0));
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "testImage.png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, configScript, Long.toString(0));
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "testImage.png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 
 		// Test wildcard matching algorithm for include/exclude filenames
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "*.png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "*.png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "testImage*");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "testImage*");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "*");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "*");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "*Image.pn?");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "*Image.pn?");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "test*.png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "test*.png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "te?tIma???png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "te?tIma???png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "testImage.*png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "testImage.*png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "???Image.png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "???Image.png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "test*.??");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "test*.??");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 		
 		// Ensure exclude list overrides include list
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "*");
-		configJson.put(CSSModuleBuilder.EXCLUDELIST_CONFIGPARAM, "*.png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "*");
+		configScript.put(CSSModuleBuilder.EXCLUDELIST_CONFIGPARAM, configScript, "*.png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 		
-		configJson.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, "testImage.png");
-		configJson.put(CSSModuleBuilder.EXCLUDELIST_CONFIGPARAM, "testImage.png");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM, configScript, "testImage.png");
+		configScript.put(CSSModuleBuilder.EXCLUDELIST_CONFIGPARAM, configScript, "testImage.png");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 		
 		CopyUtil.copy("hello world!\r\n", new FileWriter(new File(testdir, "hello.txt")));
 		css = ".foo {background-image:url(hello.txt)}";
-		configJson.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, Long.toString(size));
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, configScript, Long.toString(size));
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(hello.txt)}", output);
 
 		// Should not be inlined because there's still an include list
-		configJson.put(CSSModuleBuilder.IMAGETYPES_CONFIGPARAM, "text/plain");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.IMAGETYPES_CONFIGPARAM, configScript, "text/plain");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(hello.txt)}", output);
 
 		// Remove the include list and now we should be able to load the new content type
-		configJson.remove(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM);
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.delete(CSSModuleBuilder.INCLUDELIST_CONFIGPARAM);
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:text\\/plain;base64\\,[^']*'\\)\\}"));
 		
 		// Ensure exclude list overrides content type list
-		configJson.put(CSSModuleBuilder.EXCLUDELIST_CONFIGPARAM, "*.txt");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.EXCLUDELIST_CONFIGPARAM, configScript, "*.txt");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(hello.txt)}", output);
@@ -455,8 +459,8 @@ public class CSSModuleBuilderTest extends EasyMock {
 		// Make sure type content/unknown lets us load anything not excluded
 		CopyUtil.copy("hello world!\r\n", new FileWriter(new File(testdir, "hello.foo")));
 		css = ".foo {background-image:url(hello.foo)}";
-		configJson.put(CSSModuleBuilder.IMAGETYPES_CONFIGPARAM, "content/unknown");
-		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson);
+		configScript.put(CSSModuleBuilder.IMAGETYPES_CONFIGPARAM, configScript, "content/unknown");
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:content\\/unknown;base64\\,[^']*'\\)\\}"));

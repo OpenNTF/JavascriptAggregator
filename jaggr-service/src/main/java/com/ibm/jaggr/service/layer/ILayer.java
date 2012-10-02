@@ -33,6 +33,8 @@ import com.ibm.jaggr.service.module.IModule;
  * I/O.
  * <p>
  * Instances of ILayer are cloneable and serializable.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface ILayer extends Cloneable, Serializable {
 	
@@ -100,4 +102,12 @@ public interface ILayer extends Cloneable, Serializable {
 	 * @throws CloneNotSupportedException
 	 */
 	public Object clone() throws CloneNotSupportedException;
+
+	/**
+	 * Returns the cache key that this layer is associated with in the
+	 * layer cache.
+	 * 
+	 * @return this layer's cache key
+	 */
+	public String getKey();
 }

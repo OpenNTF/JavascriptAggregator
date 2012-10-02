@@ -24,9 +24,10 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
+
 public class DepUtilsTest {
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.deps.DepUtils#removeRedundantPaths(java.util.Collection)}.
+	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#removeRedundantPaths(java.util.Collection)}.
 	 * @throws URISyntaxException 
 	 */
 	@Test
@@ -54,7 +55,7 @@ public class DepUtilsTest {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.deps.DepUtils#getNodeForResource(java.lang.String, java.util.Map)}.
+	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#getNodeForResource(java.lang.String, java.util.Map)}.
 	 * @throws URISyntaxException 
 	 */
 	@Test
@@ -94,7 +95,7 @@ public class DepUtilsTest {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.deps.DepUtils#parseDependencies(com.google.javascript.rhino.Node)}.
+	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#parseDependencies(com.google.javascript.rhino.Node)}.
 	 */
 	@Test
 	public void testParseDependencies() {

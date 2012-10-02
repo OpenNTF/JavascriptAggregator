@@ -29,6 +29,8 @@ import com.ibm.jaggr.service.IAggregator;
  * registered using the IOptions interface during bundle activation for the
  * aggregator bundle. Calls to {@link IAggregator#getOptions()} return this
  * single instance of the options object.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IOptions {
 
@@ -43,16 +45,31 @@ public interface IOptions {
 	 * Name of property that specifies if the aggregator is running in
 	 * development mode. When running in development mode, the last-modified
 	 * dates of source files comprising an aggregated response are checked
-	 * against the if-modified-since date in the request for every
-	 * request.
+	 * against the if-modified-since date in the request for every request.
 	 * <p>
 	 * Development mode also enables enhanced error reporting, with information
 	 * about errors that occur on the server displayed in the browser console
 	 * using console.error() calls.
 	 * <p>
+	 * Development mode also enables all debug mode features
+	 * <p>
 	 * Valid values: <code>true/false</code>
 	 */
 	public static final String DEVELOPMENT_MODE = "developmentMode"; //$NON-NLS-1$
+	
+	/**
+	 * Name of property that specifies if the aggregator is running in debug
+	 * mode. Debug mode features are useful for diagnosing problems and include
+	 * enabling of URL query args to disable optimization, enable require list
+	 * expansion logging, and emitting of module names in aggregated responses.
+	 * <p>
+	 * Debug mode features do not negatively impact overall server performance 
+	 * like some development mode features do.
+	 * <p>
+	 * All features enabled by debug mode are also enabled by development mode.
+	 * Valid values: <code>true/false</code>
+	 */
+	public static final String DEBUG_MODE = "debugMode"; //$NON-NLS-1$
 
 	/**
 	 * Name of property that specifies if the aggregator should not perform
@@ -69,6 +86,19 @@ public interface IOptions {
 	 * Valid values: <code>true/false</code>
 	 */
 	public static final String SKIP_REQUIRELISTEXPANSION = "skipRequireListExpansion"; //$NON-NLS-1$
+	
+	/**
+	 * Name of property that specifies a cache bust string. This is an arbitrary
+	 * string that is associated with the serialized meta-data for aggregator
+	 * caches and the module dependency maps. When these data structures are
+	 * de-serialized on server restarts, the saved value is compared against the
+	 * value that is read from the current options, and if the values don't
+	 * match, then the de-serialized data is discarded and the caches and
+	 * dependency maps are deleted and rebuilt.
+	 * <p>
+	 * Valid values: <code>String</code>
+	 */
+	public static final String CACHEBUST = "cacheBust"; //$NON-NLS-1$
 
 	/**
 	 * Name of property that specifies the delay in seconds to wait before
@@ -130,6 +160,14 @@ public interface IOptions {
 	public boolean isDevelopmentMode();
 
 	/**
+	 * Convenience method for reading the {@link #DEBUG_MODE} 
+	 * options property.
+	 * 
+	 * @return The value of the {@link #DEBUG_MODE} property 
+	 * as a boolean
+	 */
+	public boolean isDebugMode();
+	/**
 	 * Convenience method for reading the {@link #SKIP_HASFILTERING} 
 	 * options property.
 	 * 
@@ -138,6 +176,14 @@ public interface IOptions {
 	 */
 	public boolean isSkipHasFiltering();
 
+	/**
+	 * Convenience method for reading the {@link #CACHEBUST} options
+	 * property.
+	 * 
+	 * @return The value of the {@link #CACHEBUST} options property.
+	 */
+	public String getCacheBust();
+	
 	/**
 	 * Convenience method for reading the {@link #DELETE_DELAY} 
 	 * options property.

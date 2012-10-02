@@ -21,6 +21,8 @@ import java.net.URI;
  * <p>
  * Implementors of this interface also implement the
  * {@link IResourceVisitor.Resource} interface.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IResource {
 	

@@ -20,6 +20,8 @@ import com.ibm.jaggr.service.readers.AggregationReader;
 /**
  * This class implements an aggregating resource that combines the 
  * contents of one or more component resources.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class AggregationResource implements IResource, IResourceVisitor.Resource {
 	

@@ -13,13 +13,14 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -29,13 +30,6 @@ import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
-import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
-import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
-import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
-import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.test.TestUtils;
 
 public class DependenciesTest extends EasyMock {
@@ -50,9 +44,10 @@ public class DependenciesTest extends EasyMock {
 	}
 	
 	@Before 
-	public void setup() {
+	public void setup() throws Exception {
 		tmpdir = Files.createTempDir();
-		mockAggregator = createMockAggregator();
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		EasyMock.replay(mockAggregator);
 		
 	}
 	@After
@@ -72,7 +67,7 @@ public class DependenciesTest extends EasyMock {
 	}
 	
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.deps.DepTree#Dependencies(java.util.Collection, java.io.File, boolean, boolean)}.
+	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepTree#Dependencies(java.util.Collection, java.io.File, boolean, boolean)}.
 	 * @throws ClassNotFoundException 
 	 */
 	@Test
@@ -124,7 +119,7 @@ public class DependenciesTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.deps.DepTree#mapDependencies(com.ibm.jaggr.service.modules.AMDConfig)}.
+	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepTree#mapDependencies(com.ibm.jaggr.service.modules.AMDConfig)}.
 	 * @throws ClassNotFoundException 
 	 * @throws CloneNotSupportedException 
 	 */
@@ -217,55 +212,31 @@ public class DependenciesTest extends EasyMock {
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModifiedDep());
 	}
 	
-	private IAggregator createMockAggregator() {
-		IAggregator mockAggregator = createNiceMock(IAggregator.class);
-		expect(mockAggregator.getWorkingDirectory()).andReturn(tmpdir).anyTimes();
-		expect(mockAggregator.getConfig()).andAnswer(new IAnswer<IConfig>() {
-			public IConfig answer() throws Throwable {
-				return configRef.get();
-			}
-		}).anyTimes();
-		expect(mockAggregator.getName()).andReturn("test").anyTimes();
-		expect(mockAggregator.newResource((URI)anyObject())).andAnswer(new IAnswer<IResource>() {
-			public IResource answer() throws Throwable {
-				return new FileResource((URI)getCurrentArguments()[0]);
-			}
-		}).anyTimes();
-		expect(mockAggregator.newModule((String)anyObject(), (URI)anyObject())).andAnswer(new IAnswer<IModule>() {
-			public IModule answer() throws Throwable {
-				String mid = (String)getCurrentArguments()[0];
-				URI uri = (URI)getCurrentArguments()[1];
-				return new ModuleImpl(mid, uri);
-			}
-		}).anyTimes();
-		expect(mockAggregator.getModuleBuilder((String)anyObject(), (IResource)anyObject())).andAnswer(new IAnswer<IModuleBuilder>() {
-			public IModuleBuilder answer() throws Throwable {
-				String mid = (String)getCurrentArguments()[0];
-				return mid.contains(".") ? new TextModuleBuilder() : new JavaScriptModuleBuilder();
-			}
-		}).anyTimes();
-		
-		replay(mockAggregator);
-		return mockAggregator;
-	}
-	
 	private static class TestDependenciesWrapper extends DepTree {
 		private static final long serialVersionUID = 7700824773233302591L;
 
 		public TestDependenciesWrapper(File cacheDir, IAggregator aggregator,
 				boolean clean, boolean validateDeps) throws Exception {
-			super(aggregator.getConfig().getPathURIs().values(), aggregator, clean, validateDeps);
+			super(getPathURIs(aggregator.getConfig().getPaths().values()), aggregator, 0, clean, validateDeps);
 		}
 		
 		/** For unit testing 
 		 * @throws CloneNotSupportedException */
 		public TestDependenciesWrapper(ConcurrentMap<URI, DepTreeNode> depMap, IConfig config) throws IOException {
 			this.depMap = depMap;
-			this.rawConfig = config.getRawConfig();
+			this.rawConfig = config.toString();
 		}
 		
 		public ConcurrentMap<URI, DepTreeNode> getDepMap() {
 			return depMap;
+		}
+		
+		private static Collection<URI> getPathURIs(Collection<IConfig.Location> locations) {
+			Collection<URI> uris = new HashSet<URI>();
+			for (IConfig.Location location : locations) {
+				uris.add(location.getPrimary());
+			}
+			return uris;
 		}
 		
 	}

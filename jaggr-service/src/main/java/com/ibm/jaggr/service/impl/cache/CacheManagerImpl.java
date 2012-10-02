@@ -17,6 +17,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.Map;
@@ -50,7 +51,6 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     private static final Logger log = Logger.getLogger(ICacheManager.class.getName());
     
     private static final String CACHEDIR_NAME = "cache"; //$NON-NLS-1$
-    private static final int CACHE_INITIAL_SIZE = 50;
     /** 
      * Reference the cache with an atomic reference so that we don't need to synchronize
      * access to it.  The atomic reference is needed for when we swap the cache out with
@@ -64,16 +64,9 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     /** The cache directory */
     private final File _directory;
     
-    /** The initial cache size for the hash maps */
-    private final int _initialSize;
-    
-    private Map<String, String> _optionsMap;
+    private CacheControl _control;
     
     private IAggregator _aggregator;
-    
-    private String _rawConfig;
-    
-    private long _depsLastMod;
     
     private ServiceRegistration _shutdownListener = null;
     
@@ -87,22 +80,30 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     
     private Object cacheSerializerSyncObj = new Object();
     
-    /**
-     * Starts up the cache.  Attempts to de-serialize a previously serialized cache from
-     * disk and starts the periodic serializer task.
-     * 
-     * @param directory The location of the cache directory on the file system
-     * @param initialSize The initial cache size
-     */
-    public CacheManagerImpl(IAggregator aggregator) throws IOException {
+    private static class CacheControl implements Serializable {
+		private static final long serialVersionUID = 1276701428723406198L;
+		volatile String rawConfig = null;
+    	volatile Map<String, String> optionsMap = null;
+    	volatile long depsLastMod = -1;
+    	long initStamp = -1;
+    }
+    
+	/**
+	 * Starts up the cache. Attempts to de-serialize a previously serialized
+	 * cache from disk and starts the periodic serializer task.
+	 * 
+	 * @param aggregator
+	 *            the aggregator instance this cache manager belongs to
+	 * @param stamp
+	 *            a time stamp used to determine if the cache should be cleared.
+	 *            The cache should be cleared if the time stamp is later than
+	 *            the one associated with the cached resources.
+	 * @throws IOException
+	 */
+    public CacheManagerImpl(IAggregator aggregator, long stamp) throws IOException {
     	
         _directory = new File(aggregator.getWorkingDirectory(), CACHEDIR_NAME);
-        _initialSize = CACHE_INITIAL_SIZE;
         _aggregator = aggregator;
-        IOptions options = aggregator.getOptions();
-        if (options != null) {
-        	_optionsMap = options.getOptionsMap();
-        }
         // Make sure the cache directory exists
         if (!_directory.exists()) {
             if (!_directory.mkdirs()) {
@@ -117,7 +118,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     	try {
     		File file = new File(_directory, CACHE_META_FILENAME);
     		ObjectInputStream is = new ObjectInputStream(new FileInputStream(file));
-    		cache = (CacheImpl)is.readObject();
+    		try {
+    			cache = (CacheImpl)is.readObject();
+    		} finally {
+    			try { is.close(); } catch (Exception ignore) {}
+    		}
     	} catch (FileNotFoundException e) {
     		if (log.isLoggable(Level.INFO))
 				log.log(Level.INFO, Messages.CacheManagerImpl_1);
@@ -131,13 +136,16 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 				log.log(Level.SEVERE, e.getMessage(), e);
     	}
     	if (cache != null) {
-            _cache.set(cache);
-    	} else if (_optionsMap != null){
-    		clearCache();
+    		_control = (CacheControl)cache.getControlObj();
     	}
-    	
-    	_rawConfig = cache != null ? cache.getRawConfig() : null; 
-    	_depsLastMod = cache != null ? cache.getDepsLastModified() : -1; 
+    	if (_control != null) {
+    		if (stamp > 0 && stamp <= _control.initStamp) {
+    			_cache.set(cache);
+    		}
+    	} else {
+    		_control = new CacheControl();
+    		_control.initStamp = stamp;
+    	}
     	
         // Start up the periodic serializer task.  Serializes the cache every 10 minutes.
         // This is done so that we can recover from an unexpected shutdown
@@ -150,8 +158,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         			// the thread processing servlet destroy from colliding.
         			synchronized(cacheSerializerSyncObj) {
         				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
-        				os.writeObject(clone);
-        				os.close();
+        				try {
+        					os.writeObject(clone);
+        				} finally {
+        					try { os.close(); } catch (Exception ignore) {}
+        				}
         			}
         		} catch(Exception e) {
         			if (log.isLoggable(Level.SEVERE))
@@ -198,11 +209,26 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			optionsUpdated(aggregator.getOptions(), 1);
 	        configLoaded(aggregator.getConfig(), 1);
 	        dependenciesLoaded(aggregator.getDependencies(), 1);
-		}        
+		}
+		
+		// Now invoke the listeners for objects that have already been initialized
+		IOptions options = _aggregator.getOptions();
+		if (options != null) {
+			optionsUpdated(options, 1);
+		}
+		IConfig config = _aggregator.getConfig();
+		if (config != null) {
+			configLoaded(config, 1);
+		}
+		
+		IDependencies deps = _aggregator.getDependencies();
+		if (deps != null) {
+			dependenciesLoaded(deps, 1);
+		}
     }
     
     public synchronized void clearCache() {
-    	CacheImpl newCache = new CacheImpl(_initialSize, _rawConfig, _depsLastMod, _optionsMap);
+    	CacheImpl newCache = new CacheImpl(_aggregator.newLayerCache(), _aggregator.newModuleCache(), _control);
     	clean(_directory);
     	CacheImpl oldCache = _cache.getAndSet(newCache);
     	if (oldCache != null) {
@@ -344,6 +370,36 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		});
 	}
 	
+	@Override
+	public void createNamedCacheFileAsync(final String filename, final InputStream is,
+			final CreateCompletionCallback callback) {
+		_aggregator.getExecutors().getFileCreateExecutor().submit(new Runnable() {
+			File file = null;
+			public void run() {
+				try {
+					file = new File(_directory, filename);
+	                OutputStream os = new FileOutputStream(file.isAbsolute() ? file : new File(_directory, file.getPath()));
+	                CopyUtil.copy(is, os);
+	                if (callback != null) {
+	                	callback.completed(file.getName(), null);
+	                }
+				} catch (IOException e) {
+					if (log.isLoggable(Level.WARNING))
+						log.log(Level.WARNING, MessageFormat.format(
+								Messages.CacheManagerImpl_4, new Object[]{file.getPath()}), e);
+					if (callback != null) {
+						callback.completed(file != null ? file.getName() : null, e);
+					}
+				}
+			}
+		});
+	}
+
+	@Override
+	public void createNamedCacheFileAsync(String fileNamePrefix, Reader reader, 
+			CreateCompletionCallback callback) {
+    	createNamedCacheFileAsync(fileNamePrefix, new ReaderInputStream(reader, "UTF-8"), callback); //$NON-NLS-1$
+	}
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.cache.ICacheManager#deleteFileDelayed(java.lang.String)
 	 */
@@ -375,24 +431,24 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (options == null) {
 			return;
 		}
-		if (_cache.get() == null || !options.getOptionsMap().equals(_cache.get().getOptionsMap())) {
-			Map<String, String> previousOptions = _optionsMap;
-			_optionsMap = options.getOptionsMap();
+		if (_cache.get() == null || !options.getOptionsMap().equals(_control.optionsMap)) {
+			Map<String, String> previousOptions = _control.optionsMap;
+			_control.optionsMap = options.getOptionsMap();
 			if (_cache.get() == null || previousOptions != null) {
-				if (sequence > updateSequenceNumber || _cache.get() == null) {
-					updateSequenceNumber = sequence;
-					String msg = MessageFormat.format(
-							Messages.CacheManagerImpl_5,
-							new Object[]{_aggregator.getName()}
-					);
-					new ConsoleService().println(msg);
-					if (log.isLoggable(Level.INFO)) {
-						log.info(msg);
+				if (sequence > updateSequenceNumber) {
+					if (_cache.get() != null) {
+						updateSequenceNumber = sequence;
+						String msg = MessageFormat.format(
+								Messages.CacheManagerImpl_5,
+								new Object[]{_aggregator.getName()}
+						);
+						new ConsoleService().println(msg);
+						if (log.isLoggable(Level.INFO)) {
+							log.info(msg);
+						}
 					}
 					clearCache();
 				}
-			} else {
-				_cache.get().setOptionsMap(_optionsMap);
 			}
 		}
 	}
@@ -402,26 +458,25 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (deps == null) {
 			return;
 		}
-		if (_cache.get() == null || deps.getLastModified() > _cache.get().getDepsLastModified()) {
-			long previousLastMod = _depsLastMod;
-			_depsLastMod = deps.getLastModified();
+		long lastMod = deps.getLastModified();
+		if (_cache.get() == null || lastMod > _control.depsLastMod) {
+			long previousLastMod = _control.depsLastMod;
+			_control.depsLastMod = lastMod;
 			if (previousLastMod != -1 || _cache.get() == null) {
 				if (sequence > updateSequenceNumber) {
-					updateSequenceNumber = sequence;
-					String msg = MessageFormat.format(
-							Messages.CacheManagerImpl_6,
-							new Object[]{ _aggregator.getName()}
-					);
-					new ConsoleService().println(msg);
-					if (log.isLoggable(Level.INFO)) {
-						log.info(msg);
+					if (_cache.get() != null) {
+						updateSequenceNumber = sequence;
+						String msg = MessageFormat.format(
+								Messages.CacheManagerImpl_6,
+								new Object[]{ _aggregator.getName()}
+						);
+						new ConsoleService().println(msg);
+						if (log.isLoggable(Level.INFO)) {
+							log.info(msg);
+						}
 					}
 					clearCache();
 				}
-			} else {
-				// if the previous last modified was -1, then we are being initialized so no need
-				// to clear the cache.
-				_cache.get().setDepsLastModified(_depsLastMod);
 			}
 		}
 	}
@@ -431,26 +486,25 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (config == null) {
 			return;
 		}
-		String rawConfig = null;
-		rawConfig = config.getRawConfig().toString();
-		if (_cache.get() == null || !StringUtils.equals(rawConfig, _cache.get().getRawConfig())) {
-			Object previousConfig = _rawConfig;
-			_rawConfig = rawConfig;
-			if (previousConfig != null || _cache.get() == null) {
+		String rawConfig = config.toString();
+		if (_cache.get() == null || !StringUtils.equals(rawConfig, _control.rawConfig)) {
+			Object previousConfig = _control.rawConfig;
+			_control.rawConfig = rawConfig;
+			if (_cache.get() == null || previousConfig != null) {
 				if (sequence > updateSequenceNumber) {
-					updateSequenceNumber = sequence;
-					String msg = MessageFormat.format(
-							Messages.CacheManagerImpl_7,
-							new Object[]{ _aggregator.getName()}
-					);
-					new ConsoleService().println(msg);
-					if (log.isLoggable(Level.INFO)) {
-						log.info(msg);
+					if (_cache.get() != null) {
+						updateSequenceNumber = sequence;
+						String msg = MessageFormat.format(
+								Messages.CacheManagerImpl_7,
+								new Object[]{ _aggregator.getName()}
+						);
+						new ConsoleService().println(msg);
+						if (log.isLoggable(Level.INFO)) {
+							log.info(msg);
+						}
 					}
 					clearCache();
 				}
-			} else {
-				_cache.get().setRawConfig(_rawConfig);
 			}
 		}
 	}

@@ -7,61 +7,61 @@
 package com.ibm.jaggr.service.impl.config;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Date;
+import java.util.Dictionary;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.junit.After;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
+import org.mozilla.javascript.Context;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 
+import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
+import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.PathUtil;
 
-/**
- * These tests require that the "osgi.instance.area" system property be set
- * to point the the osgi workspace directory of the domino server.  You can 
- * set this by specifying the following JVM args:
- * 
- * -Dosgi.instance.area=file:/c:/domino/data/domino/workspace/
- */
 public class ConfigTests {
 	
-//	@Test
-//	public void testFindModuleLocation() {
-//		fail("Not yet implemented");
-//	}
+	File tmpFile = null;
+	URI tmpDir = null;
+	IAggregator mockAggregator;
 
-//	@Test
-//	public void testGetName() {
-//		fail("Not yet implemented");
-//	}
-
-//	@Test
-//	public void testGet() {
-//		fail("Not yet implemented");
-//	}
-
-	@Test
-	public void testLoad() throws IOException, URISyntaxException {
-		/* Note: set the "osgi.instance.area" system property in the run configuration
-		 * for this JUnit test
-		 */
-		if (System.getProperty("osgi.instance.area") == null) {
-			System.setProperty("osgi.instance.area", new File(".").toURI().toString());
+	@Before 
+	public void setup() throws Exception {
+		tmpFile = Files.createTempDir();
+		tmpDir = tmpFile.toURI();
+		mockAggregator = TestUtils.createMockAggregator();
+		EasyMock.replay(mockAggregator);
+		
+	}
+	@After
+	public void tearDown() throws Exception {
+		if (tmpFile != null) {
+			TestUtils.deleteRecursively(tmpFile);
+			tmpFile = null;
 		}
-		// TODO: create a test config  
-//    	URI uri = ConfigImpl.class.getResource("../../socmail-config.js").toURI();
-//		assertNotNull(ConfigImpl.load("default", uri));
 	}
 
 	@Test
@@ -70,19 +70,14 @@ public class ConfigTests {
 		String[] paths = new String[]{
 			"./yyy",
 			".././zzz",
-			"/ooo",
 			"../../..//xxx",
 			"../../../../yyy",
 			"ddd/eee",
-			"/../eee",
-			"../../../../../eee",
 			"plugin!aaa/bbb",
 			"plugin!./aaa/bbb",
 			"plugin!../aaa/bbb",
-			"plugin!/aaa/bbb",
 			"./plugin!aaa/bbb",
 			"../plugin!aaa/bbb",
-			"/plugin!../aaa/bbb",
 			"../../has!dojo-firebug?../../with_firebug:../../withot_firebug",
 			"abc/123/.",
 			"dojo/has!vml?dojo/text!./templates/spinner-vml.html:dojo/text!./templates/spinner-canvas.html",
@@ -90,57 +85,131 @@ public class ConfigTests {
 		String[] result = PathUtil.normalizePaths(ref, paths);
 		Assert.assertEquals(result[0], "aaa/bbb/ccc/ddd/yyy");
 		Assert.assertEquals(result[1], "aaa/bbb/ccc/zzz");
-		Assert.assertEquals(result[2], "/ooo");
-		Assert.assertEquals(result[3], "aaa/xxx");
-		Assert.assertEquals(result[4], "yyy");
-		Assert.assertEquals(result[5], "ddd/eee");
-		Assert.assertEquals(result[6], "/../eee");
-		Assert.assertEquals(result[7], "../../../../../eee");
-		Assert.assertEquals(result[8], "plugin!aaa/bbb");
-		Assert.assertEquals(result[9], "plugin!aaa/bbb/ccc/ddd/aaa/bbb");
-		Assert.assertEquals(result[10], "plugin!aaa/bbb/ccc/aaa/bbb");
-		Assert.assertEquals(result[11], "plugin!/aaa/bbb");
-		Assert.assertEquals(result[12], "aaa/bbb/ccc/ddd/plugin!aaa/bbb");
-		Assert.assertEquals(result[13], "aaa/bbb/ccc/plugin!aaa/bbb");
-		Assert.assertEquals(result[14], "/plugin!aaa/bbb/ccc/aaa/bbb");
-		Assert.assertEquals(result[15], "aaa/bbb/has!dojo-firebug?aaa/bbb/with_firebug:aaa/bbb/withot_firebug");
-		Assert.assertEquals(result[16], "abc/123");
-		Assert.assertEquals(result[17], "dojo/has!vml?dojo/text!aaa/bbb/ccc/ddd/templates/spinner-vml.html:dojo/text!aaa/bbb/ccc/ddd/templates/spinner-canvas.html");
-		
-		
+		Assert.assertEquals(result[2], "aaa/xxx");
+		Assert.assertEquals(result[3], "yyy");
+		Assert.assertEquals(result[4], "ddd/eee");
+		Assert.assertEquals(result[5], "plugin!aaa/bbb");
+		Assert.assertEquals(result[6], "plugin!aaa/bbb/ccc/ddd/aaa/bbb");
+		Assert.assertEquals(result[7], "plugin!aaa/bbb/ccc/aaa/bbb");
+		Assert.assertEquals(result[8], "aaa/bbb/ccc/ddd/plugin!aaa/bbb");
+		Assert.assertEquals(result[9], "aaa/bbb/ccc/plugin!aaa/bbb");
+		Assert.assertEquals(result[10], "aaa/bbb/has!dojo-firebug?aaa/bbb/with_firebug:aaa/bbb/withot_firebug");
+		Assert.assertEquals(result[11], "abc/123");
+		Assert.assertEquals(result[12], "dojo/has!vml?dojo/text!aaa/bbb/ccc/ddd/templates/spinner-vml.html:dojo/text!aaa/bbb/ccc/ddd/templates/spinner-canvas.html");
 		for (int i = 0; i < paths.length; i++) {
 			System.out.println(paths[i] + " -> " + result[i]);
 		}
+
+		boolean exceptionCaught = false;
+		try {
+			result = PathUtil.normalizePaths(ref, new String[]{"/../eee"});
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+
+		exceptionCaught = false;
+		try {
+			result = PathUtil.normalizePaths(ref, new String[]{"../../../../../eee"});
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+
+		exceptionCaught = false;
+		try {
+			result = PathUtil.normalizePaths(ref, new String[]{"plugin!/aaa/bbb"});
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+		
+		exceptionCaught = false;
+		try {
+			result = PathUtil.normalizePaths(ref, new String[]{"/plugin!aaa/bbb"});
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+		
 		ref = "/aaa/bbb";
 		paths = new String[] {
 				"ccc",
 				"../xxx",
-				"../../zzz",
-				"../../../eee"
+				"../../zzz"
 		};
 		result = PathUtil.normalizePaths(ref, paths);
 		Assert.assertEquals(result[0], "ccc");
 		Assert.assertEquals(result[1], "/aaa/xxx");
 		Assert.assertEquals(result[2], "/zzz");
-		Assert.assertEquals(result[3], "../../../eee");
-		
 		for (int i = 0; i < paths.length; i++) {
 			System.out.println(paths[i] + " -> " + result[i]);
 		}
+
+		paths = new String[]{paths[0], paths[1], paths[2], "../../../eee"};
+		exceptionCaught = false;
+		try {
+			result = PathUtil.normalizePaths(ref, paths);
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+		
 	}
+	
+	@Test
+	public void testVariableSubstitution() throws Exception {
+		mockAggregator = new MockAggregatorWrapper() {
+			@Override public String substituteProps(String str) {
+				return str.replace("${REPLACE_THIS}", "file:/c:/substdir/");
+			}
+		};
+		String config = "{paths:{subst:'${REPLACE_THIS}/resources'}}";
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		IConfig.Location loc = cfg.getPaths().get("subst");
+		Assert.assertEquals("file:/c:/substdir/resources", loc.getPrimary().toString());
+		Assert.assertNull(loc.getOverride());
+
+		config = "{paths:{subst1:'${REPLACE_THIS}/foo', subst2:'${REPLACE_THIS}/bar' }}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getPaths().get("subst1");
+		Assert.assertEquals("file:/c:/substdir/foo", loc.getPrimary().toString());
+		loc = cfg.getPaths().get("subst2");
+		Assert.assertEquals("file:/c:/substdir/bar", loc.getPrimary().toString());
+	}
+	
 	@Test
 	public void testJsVars() throws Exception {
 		// Test to make sure the shared scope options and initParams variables are working
-		IAggregator mockAggregator = TestUtils.createMockAggregator();
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam("param1", "param1Value1"));
 		initParams.add(new InitParams.InitParam("param1", "param1Value2"));
 		initParams.add(new InitParams.InitParam("param2", "param2Value"));
-		EasyMock.expect(mockAggregator.getInitParams()).andReturn(new InitParams(initParams)).anyTimes();
+		final Bundle mockBundle = EasyMock.createNiceMock(Bundle.class);
+		final Dictionary<String, String> dict = new Hashtable<String, String>();
+		dict.put("foo", "foobar");
+		EasyMock.expect(mockBundle.getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
+			public Dictionary<String, String> answer() throws Throwable {
+				return dict;
+			}
+		}).anyTimes();
+		EasyMock.replay(mockBundle);
+		final BundleContext mockBundleContext = EasyMock.createNiceMock(BundleContext.class);
+		EasyMock.expect(mockBundleContext.getBundle()).andAnswer(new IAnswer<Bundle>() {
+			public Bundle answer() throws Throwable {
+				return mockBundle;
+			}
+		}).anyTimes();
+		EasyMock.replay(mockBundleContext);
+		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
+		EasyMock.expect(mockAggregator.getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
+			public BundleContext answer() throws Throwable {
+				return mockBundleContext;
+			}
+		}).anyTimes();
 		EasyMock.replay(mockAggregator);
 		mockAggregator.getOptions().setOption("foo", "bar");
-		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return 'foo';})()}";
-		URI tmpDir = new File(System.getProperty("java.io.tmpdir")).toURI();
+		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
 		final TestConsoleLogger logger = new TestConsoleLogger();
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config) {
 			@Override
@@ -148,9 +217,9 @@ public class ConfigTests {
 				return logger;
 			}
 		};
-		System.out.println(cfg.getRawConfig());
+		System.out.println(cfg.toString());
 		List<String> logged = logger.getLogged();
-		Assert.assertEquals(cfg.getCacheBust(), "foo");
+		Assert.assertEquals(cfg.getCacheBust(), "foobar");
 		Assert.assertEquals("log: bar", logged.get(0));
 		Assert.assertEquals("info: param1Value1", logged.get(1));
 		Assert.assertEquals("warn: param1Value2", logged.get(2));
@@ -159,42 +228,39 @@ public class ConfigTests {
 	
 	@Test
 	public void testAliasResolver() throws Exception {
-		IAggregator mockAggregator = TestUtils.createMockAggregator();
-		EasyMock.replay(mockAggregator);
 		Features features = new Features();
 		Set<String> dependentFeatures = new HashSet<String>();
-		URI tmpDir = new File(System.getProperty("java.io.tmpdir")).toURI();
 		
 		// Test simple string matcher resolver
 		String config = "{aliases:[['foo/test', 'bar/test']]}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		String result = cfg.resolveAlias("foo/test", features, dependentFeatures, null);
+		String result = cfg.resolveAliases("foo/test", features, dependentFeatures, null);
 		Assert.assertEquals("bar/test", result);
 		
 		// Test regular expression matcher with string replacement
 		config = "{aliases:[[/\\/bar\\//, '/foo/']]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		result = cfg.resolveAlias("p1/bar/p2/bar/test", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/bar/p2/bar/test", features, dependentFeatures, null);
 		Assert.assertEquals("p1/foo/p2/foo/test", result);
 		
 		// Test regular expression matcher with replacement function conditioned on feature test
 		config = "{aliases:[[/\\/foo\\//, function(s){return '/'+has('test')+'/'}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		features.put("test", true);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/true/p2", result);
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("test", dependentFeatures.iterator().next());
 		
 		features.put("test", false);
 		dependentFeatures.clear();
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/false/p2", result);
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("test", dependentFeatures.iterator().next());
 		
 		features.remove("test");
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/undefined/p2", result);
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("test", dependentFeatures.iterator().next());
@@ -203,14 +269,14 @@ public class ConfigTests {
 		dependentFeatures.clear();
 		config = "{aliases:[[/^(.*)\\/foo\\/(.*)$/, '$2/bar/$1']]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p2/bar/p1", result);
 		Assert.assertEquals(0, dependentFeatures.size());
 		
 		// Test regular expression with function based group replacement
 		config = "{aliases:[[/^(.*)\\/foo\\/(.*)$/, function(a,b,c){return c+'/bar/'+b;}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p2/bar/p1", result);
 		Assert.assertEquals(0, dependentFeatures.size());
 		
@@ -219,23 +285,503 @@ public class ConfigTests {
 		options.setOption("developmentMode", "false");
 		config = "{aliases:[[/^(.*)\\/foo\\/(.*)$/, function(a,b,c){return options.developmentMode == 'true' ? (c+'/bar/'+b) : (b+/bar/+c);}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/bar/p2", result);
 		options.setOption("developmentMode", "true");
 		cfg.optionsUpdated(options, 2);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p2/bar/p1", result);
 		
 		// Test regular expression flags
 		config = "{aliases:[[/^(.*)\\/Foo\\/(.*)$/, function(a,b,c){return b+'/bar/'+c;}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/foo/p2", result);
 		config = "{aliases:[[/^(.*)\\/Foo\\/(.*)$/i, function(a,b,c){return b+'/bar/'+c;}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		result = cfg.resolveAlias("p1/foo/p2", features, dependentFeatures, null);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/bar/p2", result);
+
+		// Test that alias resolver function can call another function defined in closure scope.
+		config = "(function(){function fn(a,b,c){return b+'/'+a+'/'+c;} return {aliases:[[/^(.*)\\/Foo\\/(.*)$/, function(a,b,c){return fn('bar',b,c);}]]}})();";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
+		Assert.assertEquals("p1/foo/p2", result);
 		
+	}
+	
+	@Test
+	public void testGetBase() throws Exception {
+		// Test path without override
+		String config = "{baseUrl:'.'}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		IConfig.Location loc = cfg.getBase();
+		Assert.assertEquals(tmpDir, loc.getPrimary());
+		Assert.assertNull(loc.getOverride());
+		
+		config = "{baseUrl:'WebContent'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getBase();
+		Assert.assertEquals(tmpDir.resolve("WebContent/"), loc.getPrimary());
+		Assert.assertNull(loc.getOverride());
+		
+		config = "{baseUrl:['namedbundleresource://com.ibm.config.test/resources']}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getBase();
+		Assert.assertEquals("namedbundleresource://com.ibm.config.test/resources/", loc.getPrimary().toString());
+		Assert.assertNull(loc.getOverride());
+		
+		config = "{baseUrl:['WebContent/', 'file:/e:/overrides']}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getBase();
+		Assert.assertEquals(tmpDir.resolve("WebContent/"), loc.getPrimary());
+		Assert.assertEquals("file:/e:/overrides/", loc.getOverride().toString());
+		
+		config = "{baseUrl:['../primary', '.']}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getBase();
+		Assert.assertEquals(tmpDir.resolve("../primary/"), loc.getPrimary());
+		Assert.assertEquals(tmpDir, loc.getOverride());
+		
+		config = "{baseUrl:['WebContent/', '../override/', 'extra']}";
+		boolean exceptionCaught = false;
+		try {
+			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+	}
+	
+	@Test
+	public void testGetPaths() throws Exception {
+		// Test path without override
+		String config = "{paths:{foo:'fooPath'}}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		IConfig.Location loc = cfg.getPaths().get("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath"), loc.getPrimary());
+		Assert.assertNull(loc.getOverride());
+		
+		config = "{paths:{abspath:'file:/c:/temp/resources'}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getPaths().get("abspath");
+		Assert.assertEquals("file:/c:/temp/resources", loc.getPrimary().toString());
+		Assert.assertNull(loc.getOverride());
+		
+		config = "{paths:{foo:['fooPath', 'barPath']}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getPaths().get("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath"), loc.getPrimary());
+		Assert.assertEquals(tmpDir.resolve("barPath"), loc.getOverride());
+		
+		config = "{paths:{foo:['fooPath', 'barPath', 'extraPath']}}";
+		boolean exceptionThrown = false;
+		try {
+			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		} catch (IllegalArgumentException e) {
+			exceptionThrown = true;
+		}
+		Assert.assertTrue(exceptionThrown);
+		
+		// test resolving paths against base
+		config = "{baseUrl:'file:/c:/primary',paths:{foo:'fooPath'}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getPaths().get("foo");
+		Assert.assertEquals("file:/c:/primary/fooPath", loc.getPrimary().toString());
+		Assert.assertNull(loc.getOverride());
+		
+		
+		config = "{baseUrl:'file:/c:/primary',paths:{foo:['fooPath', 'fooPathOverride']}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getPaths().get("foo");
+		Assert.assertEquals("file:/c:/primary/fooPath", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/primary/fooPathOverride", loc.getOverride().toString());
+		
+		config = "{baseUrl:['file:/c:/primary', 'file:/c:/override'],paths:{foo:['fooPath'], bar:['barPath', 'barPathOverride']}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		loc = cfg.getPaths().get("foo");
+		Assert.assertEquals("file:/c:/primary/fooPath", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/override/fooPath", loc.getOverride().toString());
+		loc = cfg.getPaths().get("bar");
+		Assert.assertEquals("file:/c:/primary/barPath", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/override/barPathOverride", loc.getOverride().toString());
+	}
+	
+	@Test
+	public void testGetPackages() throws Exception {
+		// Test path without override
+		String config = "{packages:[{name:'foo', location:'fooPkgLoc'}]}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		IConfig.IPackage pkg = cfg.getPackages().get("foo");
+		Assert.assertEquals("foo", pkg.getName());
+		Assert.assertEquals("foo/main", pkg.getMain());
+		IConfig.Location loc = pkg.getLocation();
+		Assert.assertEquals(tmpDir.resolve("fooPkgLoc/"), loc.getPrimary());
+		Assert.assertNull(loc.getOverride());
+
+		config = "{packages:[{name:'foo', location:'fooPkgLoc', main:'fooMain'}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		pkg = cfg.getPackages().get("foo");
+		Assert.assertEquals("fooMain", pkg.getMain());
+
+		config = "{packages:[{name:'foo', location:'fooPkgLoc', main:'./fooMain'}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		pkg = cfg.getPackages().get("foo");
+		Assert.assertEquals("foo/fooMain", pkg.getMain());
+		
+		config = "{packages:[{name:'foo', location:['fooPkgLoc', 'fooOverride']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		pkg = cfg.getPackages().get("foo");
+		loc = pkg.getLocation();
+		Assert.assertEquals(tmpDir.resolve("fooPkgLoc/"), loc.getPrimary());
+		Assert.assertEquals(tmpDir.resolve("fooOverride/"), loc.getOverride());
+
+		config = "{packages:[{name:'foo', location:['fooPkgLoc', 'fooOverride', 'extra']}]}";
+		boolean exceptionThrown = false;
+		try {
+			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		} catch (IllegalArgumentException e) {
+			exceptionThrown = true;
+		}
+		Assert.assertTrue(exceptionThrown);
+
+		// test resolving package locations against base
+		config = "{baseUrl:'file:/c:/primary', packages:[{name:'foo', location:['fooPath']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		pkg = cfg.getPackages().get("foo");
+		loc = pkg.getLocation();
+		Assert.assertEquals("file:/c:/primary/fooPath/", loc.getPrimary().toString());
+		Assert.assertNull(loc.getOverride());
+		
+		config = "{baseUrl:'file:/c:/primary', packages:[{name:'foo', location:['fooPath', 'barPath']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		pkg = cfg.getPackages().get("foo");
+		loc = pkg.getLocation();
+		Assert.assertEquals("file:/c:/primary/fooPath/", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/primary/barPath/", loc.getOverride().toString());
+		
+		config = "{baseUrl:['file:/c:/primary', 'file:/c:/override'], packages:[{name:'foo', location:['fooPath\']}, {name:'bar', location:['barPath', 'barPathOverride\']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		pkg = cfg.getPackages().get("foo");
+		loc = pkg.getLocation();
+		Assert.assertEquals("file:/c:/primary/fooPath/", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/override/fooPath/", loc.getOverride().toString());
+		pkg = cfg.getPackages().get("bar");
+		loc = pkg.getLocation();
+		Assert.assertEquals("file:/c:/primary/barPath/", loc.getPrimary().toString());
+		Assert.assertEquals("file:/c:/override/barPathOverride/", loc.getOverride().toString());
+	}
+	
+	@Test
+	public void testLocateModuleResource() throws Exception {
+
+		// Test path without override
+		String config = "{paths:{foo:'fooPath'}}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		URI uri = cfg.locateModuleResource("fooPath/foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
+		
+		
+		config = "{baseUrl:['.', '" + tmpDir.resolve("override") + "']}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		uri = cfg.locateModuleResource("fooPath/foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
+		TestUtils.createTestFile(new File(tmpFile, "override/fooPath"), "foo.js", "/**/");
+		try {
+			uri = cfg.locateModuleResource("fooPath/foo");
+			Assert.assertEquals(tmpDir.resolve("override/fooPath/foo.js"), uri);
+			config = "{paths:{'foo':['fooPath/foo', 'override/fooPath/foo']}}";
+			
+			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+			uri = cfg.locateModuleResource("foo");
+			Assert.assertEquals(tmpDir.resolve("override/fooPath/foo.js"), uri);
+		} finally {	
+			TestUtils.deleteRecursively(tmpFile);
+		}
+		uri = cfg.locateModuleResource("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
+		
+		// test that path definitions override package locations
+		config = "{packages:[{name:'foo', location:'fooPath1'}], paths:{foo:'fooPath2'}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		uri = cfg.locateModuleResource("foo/bar");
+		Assert.assertEquals(tmpDir.resolve("fooPath2/bar.js"), uri);
+		uri = cfg.locateModuleResource("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath2.js"), uri);
+		
+		config = "{packages:[{name:'foo', location:'fooPath'}], paths:{bar:'barPath'}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		uri = cfg.locateModuleResource("foo/bar");
+		Assert.assertEquals(tmpDir.resolve("fooPath/bar.js"), uri);
+		uri = cfg.locateModuleResource("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath/main.js"), uri);
+		uri = cfg.locateModuleResource("bar");
+		Assert.assertEquals(tmpDir.resolve("barPath.js"), uri);
+		uri = cfg.locateModuleResource("bar/bar");
+		Assert.assertEquals(tmpDir.resolve("barPath/bar.js"), uri);
+		
+		config = "{packages:[{name:'foo', location:['fooPath', 'fooPathOverride']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		uri = cfg.locateModuleResource("foo/bar");
+		Assert.assertEquals(tmpDir.resolve("fooPath/bar.js"), uri);
+		uri = cfg.locateModuleResource("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPath/main.js"), uri);
+		TestUtils.createTestFile(new File(tmpFile, "fooPathOverride"), "bar.js", "/**/");
+		TestUtils.createTestFile(new File(tmpFile, "fooPathOverride"), "main.js", "/**/");
+		uri = cfg.locateModuleResource("foo/bar");
+		Assert.assertEquals(tmpDir.resolve("fooPathOverride/bar.js"), uri);
+		uri = cfg.locateModuleResource("foo");
+		Assert.assertEquals(tmpDir.resolve("fooPathOverride/main.js"), uri);
+
+		config = "{baseUrl:['.', 'overrides'], packages:[{name:'foo', location:['fooPath', 'fooPathOverride']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		TestUtils.createTestFile(new File(tmpFile, "overrides/fooPathOverride"), "bar.js", "/**/");
+		TestUtils.createTestFile(new File(tmpFile, "overrides/fooPathOverride"), "main.js", "/**/");
+		uri = cfg.locateModuleResource("foo/bar");
+		Assert.assertEquals(tmpDir.resolve("overrides/fooPathOverride/bar.js"), uri);
+		uri = cfg.locateModuleResource("foo");
+		Assert.assertEquals(tmpDir.resolve("overrides/fooPathOverride/main.js"), uri);
+	}
+	
+	@Test
+	public void testIsDepsIncludeBaseUrl() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertFalse(cfg.isDepsIncludeBaseUrl());
+		
+		config = "{depsIncludeBaseUrl:true}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertTrue(cfg.isDepsIncludeBaseUrl());
+
+		config = "{depsIncludeBaseUrl:'true'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertTrue(cfg.isDepsIncludeBaseUrl());
+
+		config = "{depsIncludeBaseUrl:false}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertFalse(cfg.isDepsIncludeBaseUrl());
+
+		config = "{depsIncludeBaseUrl:'foo'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertFalse(cfg.isDepsIncludeBaseUrl());
+	}
+	
+	@Test
+	public void testIsCoerceUndefinedToFalse() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertFalse(cfg.isCoerceUndefinedToFalse());
+		
+		config = "{coerceUndefinedToFalse:true}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertTrue(cfg.isCoerceUndefinedToFalse());
+		
+		config = "{coerceUndefinedToFalse:'true'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertTrue(cfg.isCoerceUndefinedToFalse());
+		
+		config = "{coerceUndefinedToFalse:'foo'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertFalse(cfg.isCoerceUndefinedToFalse());
+	}
+	
+	@Test
+	public void testGetExpires() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getExpires());
+		
+		config = "{expires:1000}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(1000, cfg.getExpires());
+		
+		config = "{expires:'1000'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(1000, cfg.getExpires());
+
+		config = "{expires:'foo'}";
+		boolean exceptionCaught = false;
+		try {
+			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		} catch (IllegalArgumentException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+	}
+	
+	@Test
+	public void testGetDeps() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		List<String> deps = cfg.getDeps();
+		Assert.assertEquals(0, deps.size());
+		
+		config = "{deps:['foo', 'bar']}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		deps = cfg.getDeps();
+		Assert.assertEquals(2, deps.size());
+		Assert.assertEquals("foo", deps.get(0));
+		Assert.assertEquals("bar", deps.get(1));
+		
+		config = "{deps:{foo:'bar'}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0,  cfg.getDeps().size());
+	}
+	
+	@Test
+	public void testGetNotice() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertNull(cfg.getNotice());
+		
+		String copywrite = "/* Copyright IBM Corporation */"; 
+		URI noticeUri = tmpDir.resolve("notice.txt");
+		Writer fileWriter = new FileWriter(new File(noticeUri));
+		fileWriter.append(copywrite);
+		fileWriter.close();
+
+		config = "{notice:'" + noticeUri.toString() + "'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(copywrite, cfg.getNotice());
+
+		// test relative URI
+		config = "{notice:'notice.txt'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(copywrite, cfg.getNotice());
+
+		// test file not found exception
+		config = "{notice:'foo'}";
+		boolean exceptionCaught = false;
+		try {
+			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		} catch (IOException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
+	}
+
+	@Test
+	public void testGetCacheBust() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertNull(cfg.getCacheBust());
+		
+		config = "{cacheBust:'123'}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals("123", cfg.getCacheBust());
+	}
+
+	@Test
+	public void testGetPackageLocations() throws Exception {
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getPackageLocations().size());
+		
+		config = "{packages:[{name:'foo', location:'fooloc'},{name:'bar', location:['primary', 'override']}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Map<String, IConfig.Location> map = cfg.getPackageLocations();
+		Assert.assertEquals(2, cfg.getPackageLocations().size());
+		Assert.assertEquals(tmpDir.resolve("fooloc/"), map.get("foo").getPrimary());
+		Assert.assertNull(map.get("foo").getOverride());
+		Assert.assertEquals(tmpDir.resolve("primary/"), map.get("bar").getPrimary());
+		Assert.assertEquals(tmpDir.resolve("override/"), map.get("bar").getOverride());
+	}
+	
+	@Test
+	public void testLastModified() throws Exception {
+		
+		String config = "{paths:{foo:'fooloc'}}"; 
+		URI cfgUri = tmpDir.resolve("config.js");
+		Writer fileWriter = new FileWriter(new File(cfgUri));
+		fileWriter.append(config);
+		fileWriter.close();
+		long today = new Date().getTime();
+		long yesterday = today - 24 * 60 * 60 * 1000;
+		File cfgFile = new File(cfgUri);
+		cfgFile.setLastModified(yesterday);
+		
+		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
+		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, cfgUri.toString()));
+		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
+		EasyMock.replay(mockAggregator);
+		ConfigImpl cfg = new ConfigImpl(mockAggregator);
+		Assert.assertEquals(yesterday, cfg.lastModified());
+
+		cfgFile.setLastModified(today);
+		cfg = new ConfigImpl(mockAggregator);
+		Assert.assertEquals(today, cfg.lastModified());
+	}
+
+	@Test
+	public void testGetConfigUri() throws Exception {
+		String config = "{paths:{foo:'fooloc'}}"; 
+		URI cfgUri = tmpDir.resolve("config.js");
+		Writer fileWriter = new FileWriter(new File(cfgUri));
+		fileWriter.append(config);
+		fileWriter.close();
+		
+		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
+		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, cfgUri.toString()));
+		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
+		EasyMock.replay(mockAggregator);
+		ConfigImpl cfg = new ConfigImpl(mockAggregator);
+		Assert.assertEquals(cfgUri, cfg.getConfigUri());
+	}
+
+	@Test
+	public void testGetRawConfig() throws Exception {
+		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()"; 
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Object rawCfg = cfg.getRawConfig();
+		Context.enter();
+		String str = Context.toString(rawCfg);
+		Context.exit();
+		Assert.assertEquals("{paths:{foo:\"fooloc\"}}", str);
+	}
+	
+	@Test
+	public void testToString() throws Exception {
+		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()"; 
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Object rawCfg = cfg.getRawConfig();
+		Context.enter();
+		String str = Context.toString(rawCfg);
+		Context.exit();
+		Assert.assertEquals(str, cfg.toString());
+		
+	}
+	
+	@Test
+	public void testResolve() throws Exception {
+		Features features = new Features();
+		Set<String> dependentFeatures = new HashSet<String>();
+		String config = "{}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals("foo", cfg.resolve("foo", features, dependentFeatures, null));
+		
+		config = "{aliases:[['foo', 'bar']]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals("bar", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals(0, dependentFeatures.size());
+		Assert.assertEquals("has!xxx?bar:foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null));
+		Assert.assertEquals(1, dependentFeatures.size());
+		Assert.assertEquals("xxx", dependentFeatures.iterator().next());
+		features.put("xxx", true);
+		Assert.assertEquals("bar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null));
+		Assert.assertEquals(1, dependentFeatures.size());
+		features.put("xxx", false);
+		Assert.assertEquals("foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null));
+		
+		dependentFeatures.clear();
+		config = "{aliases:[['foo', 'has!bar?aaa:bbb']], packages:[{name:'aaa', location:'aaaloc'}, {name:'bbb', location:'bbbloc', main:'mainloc'}]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals("has!bar?aaa:bbb", cfg.resolve("foo", features, dependentFeatures, null));
+		features.put("bar", true);
+		Assert.assertEquals("aaa/main", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals(1, dependentFeatures.size());
+		Assert.assertEquals("bar", dependentFeatures.iterator().next());
+		features.put("bar", false);
+		Assert.assertEquals("mainloc", cfg.resolve("foo", features, dependentFeatures, null));
 		
 		
 	}
@@ -262,4 +808,5 @@ public class ConfigTests {
 			logged.add("error: " + msg);
 		}
 	}
+	
 }

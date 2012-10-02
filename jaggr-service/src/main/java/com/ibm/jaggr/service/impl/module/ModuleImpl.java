@@ -41,6 +41,7 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.impl.layer.CompletedFuture;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
@@ -289,20 +290,19 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 		return aggr.getExecutors().getBuildExecutor().submit(new Callable<ModuleBuildReader>() {
 			public ModuleBuildReader call() throws Exception {
 				ICacheKeyGenerator[] newCacheKeyGenerators = cacheKeyGenerators;
-				try {
-					ModuleBuild build;
-					// Synchronize on the ModuleBuild object for the compile.
-					// This will prevent multiple
-					// threads from compiling the same output. If more than one
-					// thread requests the same
-					// output (same cache key), then the first one to grab the
-					// sync object will win and
-					// the rest will wait for the first thread to finish
-					// compiling and then just return
-					// the output from the first thread when they wake.
-					synchronized (cacheEntry) {
-						Reader reader = null;
-
+				ModuleBuild build;
+				// Synchronize on the ModuleBuild object for the compile.
+				// This will prevent multiple
+				// threads from compiling the same output. If more than one
+				// thread requests the same
+				// output (same cache key), then the first one to grab the
+				// sync object will win and
+				// the rest will wait for the first thread to finish
+				// compiling and then just return
+				// the output from the first thread when they wake.
+				synchronized (cacheEntry) {
+					Reader reader = null;
+					try {
 						// Check to see if data is available in case a different
 						// thread finished
 						// compiling the output while we were blocked on the
@@ -330,79 +330,82 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 									.getBuildOutput()), null, true);
 						}
 						cacheEntry.setData(build.getBuildOutput());
-					}
-					// If we don't yet have has-conditionals for this module,
-					// then set them from the
-					// discoveredHasConditionalss we got as a buildReader of the
-					// compilation, and then update
-					// the cache key for this cache entry if necessary.
-					if (KeyGenUtil.isProvisional(newCacheKeyGenerators)) {
-						newCacheKeyGenerators = build.getCacheKeyGenerators();
-						synchronized (this) {
-							if (KeyGenUtil.isProvisional(_cacheKeyGenerators)
-									&& _moduleBuilds == moduleBuilds) {
-								_cacheKeyGenerators = newCacheKeyGenerators;
+
+						// If we don't yet have has-conditionals for this module,
+						// then set them from the
+						// discoveredHasConditionalss we got as a buildReader of the
+						// compilation, and then update
+						// the cache key for this cache entry if necessary.
+						if (KeyGenUtil.isProvisional(newCacheKeyGenerators)) {
+							newCacheKeyGenerators = build.getCacheKeyGenerators();
+							synchronized (this) {
+								if (KeyGenUtil.isProvisional(_cacheKeyGenerators)
+										&& _moduleBuilds == moduleBuilds) {
+									_cacheKeyGenerators = newCacheKeyGenerators;
+								}
 							}
-						}
-						CacheEntry oldEntry = null;
-						String newkey = KeyGenUtil.generateKey(request, newCacheKeyGenerators);
-						// If the key changed, then add the ModuleBuild to the
-						// cache using the new key and remove the one under the
-						// old key
-						if (!newkey.equals(key)) {
-							if (isLogLevelFiner) {
-								log.finer("Updating cache key for module build.  Old key = " //$NON-NLS-1$
-										+ key + ", new key = " + newkey); //$NON-NLS-1$
+							CacheEntry oldEntry = null;
+							String newkey = KeyGenUtil.generateKey(request, newCacheKeyGenerators);
+							// If the key changed, then add the ModuleBuild to the
+							// cache using the new key and remove the one under the
+							// old key
+							if (!newkey.equals(key)) {
+								if (isLogLevelFiner) {
+									log.finer("Updating cache key for module build.  Old key = " //$NON-NLS-1$
+											+ key + ", new key = " + newkey); //$NON-NLS-1$
+								}
+								oldEntry = moduleBuilds.putIfAbsent(newkey,
+										cacheEntry);
+								moduleBuilds.remove(key, cacheEntry);
 							}
-							oldEntry = moduleBuilds.putIfAbsent(newkey,
-									cacheEntry);
-							moduleBuilds.remove(key, cacheEntry);
-						}
-						// Only write out the cache file if the put was
-						// successful
-						if ((oldEntry == null || oldEntry == cacheEntry) && !ignoreCached) {
+							// Only write out the cache file if the put was
+							// successful
+							if ((oldEntry == null || oldEntry == cacheEntry) && !ignoreCached) {
+								cacheEntry.persist(mgr, ModuleImpl.this); // asynchronous
+							}
+						} else if (!ignoreCached) {
+							// Write the cache file to disk
 							cacheEntry.persist(mgr, ModuleImpl.this); // asynchronous
 						}
-					} else if (!ignoreCached) {
-						// Write the cache file to disk
-						cacheEntry.persist(mgr, ModuleImpl.this); // asynchronous
-					}
-				} catch (Exception ex) {
-					// don't cache error responses
-					moduleBuilds.remove(key, cacheEntry);
-					if (options.isDevelopmentMode()) {
-						Throwable t = ex;
-			        	while (t != null) {
-				        	if (t instanceof DependencyVerificationException) {
-				        		// This exception will be handled by the layer builder
-				        		throw (DependencyVerificationException)t;
-				        	} else if (t instanceof ProcessingDependenciesException) {
-				        		throw (ProcessingDependenciesException)t;
-				        	}
-			        		t = t.getCause();
-			        	}
-						// Log error
-						if (log.isLoggable(Level.SEVERE)) {
-							log.log(Level.SEVERE, ex.getMessage(), ex);
+					} catch (Exception ex) {
+						// don't cache error responses
+						moduleBuilds.remove(key, cacheEntry);
+						if (options.isDevelopmentMode() || options.isDebugMode()) {
+							if (options.isDevelopmentMode()) {
+								Throwable t = ex;
+					        	while (t != null) {
+						        	if (t instanceof DependencyVerificationException) {
+						        		// This exception will be handled by the layer builder
+						        		throw (DependencyVerificationException)t;
+						        	} else if (t instanceof ProcessingDependenciesException) {
+						        		throw (ProcessingDependenciesException)t;
+						        	}
+					        		t = t.getCause();
+					        	}
+							}
+							// Log error
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, ex.getMessage(), ex);
+							}
+							// In debug/development mode, don't throw an exception.
+							// Instead, log the
+							// error on the client.
+							return new ModuleBuildReader(
+								new ErrorModuleReader(
+									StringUtil.escapeForJavaScript(	
+										ex.getClass().getName() + 
+										": " + 	ex.getMessage() + //$NON-NLS-1$
+										"\r\n" + //$NON-NLS-1$
+										Messages.ModuleImpl_2
+									),
+									getModuleName(),
+									request
+								), null, true
+							);
+		
+						} else {
+							throw ex;
 						}
-						// In development mode, don't throw an exception.
-						// Instead, log the
-						// error on the client.
-						return new ModuleBuildReader(
-							new ErrorModuleReader(
-								StringUtil.escapeForJavaScript(	
-									ex.getClass().getName() + 
-									": " + 	ex.getMessage() + //$NON-NLS-1$
-									"\r\n" + //$NON-NLS-1$
-									Messages.ModuleImpl_2
-								),
-								getModuleName(),
-								request
-							), null, true
-						);
-
-					} else {
-						throw ex;
 					}
 				}
 				// return a Build object
@@ -539,6 +542,16 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 			}
 			moduleBuilds.clear();
 		}
+	}
+
+	/**
+	 * Static factory method for a new module cache object
+	 * 
+	 * @param aggregator the aggregator that this module cache belongs to
+	 * @return the new module cache object
+	 */
+	public static IModuleCache newModuleCache(IAggregator aggregator) {
+		return new ModuleCacheImpl();
 	}
 
 	/**

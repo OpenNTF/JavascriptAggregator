@@ -45,6 +45,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * the module names be exported in the define functions of anonymous modules, so 
  * don't do this if exporting module names is disabled, or if the optimization
  * level is 'none'.
+ *   
+ * @author chuckd@us.ibm.com
  */
 public class I18nModuleBuilder 
 extends JavaScriptModuleBuilder {

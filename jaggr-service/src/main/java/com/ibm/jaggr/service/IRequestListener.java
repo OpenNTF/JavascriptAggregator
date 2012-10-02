@@ -18,6 +18,8 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * <p>
  * Listeners are registered as an OSGi service using the name of 
  * the aggregator as the name attribute of the listener object.
+ * 
+ * @author chuckd@us.ibm.com
  */
 public interface IRequestListener {
 	/**

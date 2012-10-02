@@ -13,7 +13,6 @@ import javax.servlet.http.HttpServletRequest;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.TypeUtil;
 
-
 public class ErrorModuleReader extends AggregationReader {
 	private static final String prologueFmt = "(function(msg){console.%s(msg);(typeof define==='function')&&define('%s',[],function(){throw new Error(msg)})})(\""; //$NON-NLS-1$
 	private static final String prologueFmtAnon = "(function(msg){console.%s(msg);(typeof define==='function')&&define([],function(){throw new Error(msg)})})(\""; //$NON-NLS-1$

@@ -104,13 +104,13 @@
 			            <configuration>
 			            	<resources>
 			            		<resource>
-			            			<runIf>{{ !new File("WebContent", "dojo-release-1.7.0-src" ).isDirectory() }}</runIf>
+			            			<runIf>{{ !new File("WebContent", "dojo-release-1.8.0-src" ).isDirectory() }}</runIf>
 								    <targetPath>WebContent</targetPath>
-								    <file>http://download.dojotoolkit.org/release-1.7.0/dojo-release-1.7.0-src.zip</file>
+								    <file>http://download.dojotoolkit.org/release-1.8.0/dojo-release-1.8.0-src.zip</file>
 								    <zipEntries>
-									    <zipEntry>dojo-release-1.7.0-src/dojo/**</zipEntry>
-									    <zipEntry>dojo-release-1.7.0-src/dojox/**</zipEntry>
-									    <zipEntry>dojo-release-1.7.0-src/dijit/**</zipEntry>
+									    <zipEntry>dojo-release-1.8.0-src/dojo/**</zipEntry>
+									    <zipEntry>dojo-release-1.8.0-src/dojox/**</zipEntry>
+									    <zipEntry>dojo-release-1.8.0-src/dijit/**</zipEntry>
 								    </zipEntries>
 								    <unpack>true</unpack>
 								    <preservePath>true</preservePath>

@@ -14,6 +14,8 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * Defines static utility methods for working with arrays of cache
  * key generators
+ * 
+ * @author chuckd@us.ibm.com
  */
 public class KeyGenUtil {
 	
@@ -69,6 +71,9 @@ public class KeyGenUtil {
 	 */
 	static public String toString(Iterable<ICacheKeyGenerator> keyGens) {
 		StringBuffer sb = new StringBuffer();
+		if (keyGens == null) {
+			return "null"; //$NON-NLS-1$
+		}
 		for (ICacheKeyGenerator keyGen : keyGens) {
 			sb.append(sb.length() > 0 ? ";" : "").append(keyGen.toString()); //$NON-NLS-1$ //$NON-NLS-2$
 		}

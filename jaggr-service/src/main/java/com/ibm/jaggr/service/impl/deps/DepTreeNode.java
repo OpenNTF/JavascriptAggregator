@@ -46,6 +46,9 @@ import com.ibm.jaggr.service.util.PathUtil;
  * corresponds to the name in the dependency list at the same index and
  * represents a reference to the {@code DepTreeNode} in the same tree for the
  * named dependency.
+ * 
+ * @author chuckd@us.ibm.com
+ * 
  */
 public class DepTreeNode implements Cloneable, Serializable {
 	private static final long serialVersionUID = 5598497628602046531L;
@@ -216,8 +219,33 @@ public class DepTreeNode implements Cloneable, Serializable {
 		if (children == null) {
 			children = new HashMap<String, DepTreeNode>();
 		}
-		children.put(child.name, child);
+		children.put(child.getName(), child);
 		child.setParent(this);
+	}
+	
+	/**
+	 * Overlay the specified node and its descendants over this node.  The
+	 * specified node will be merged with this node, with the dependencies
+	 * of any nodes from the specified node replacing the dependencies of 
+	 * the corresponding node in this node's tree.
+	 * 
+	 * @param child
+	 */
+	public void overlay(DepTreeNode node) {
+		if (node.getDepArray() != null) {
+			setDependencies(node.getDepArray(), node.lastModified(), node.lastModifiedDep());
+		}
+		if (node.getChildren() == null) {
+			return;
+		}
+		for(Map.Entry<String, DepTreeNode> entry : node.getChildren().entrySet()) {
+			DepTreeNode existing = getChild(entry.getKey());
+			if (existing == null) {
+				add(entry.getValue());
+			} else {
+				existing.overlay(entry.getValue());
+			}
+		}
 	}
 
 	public void addAll(Collection<DepTreeNode> children) {
@@ -225,6 +253,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 			add(child);
 		}
 	}
+	
 	/**
 	 * Returns the node at the specified path location within the tree, or
 	 * creates it if it is not already in the tree. Will create any required
