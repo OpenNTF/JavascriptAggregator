@@ -68,6 +68,7 @@
           <excludes combine.children="append">
             <exclude>.gitignore</exclude>
             <exclude>**/*.MF</exclude>
+            <exclude>doc/**</exclude>
           </excludes>
         </configuration>
         <executions>
