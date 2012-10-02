@@ -38,13 +38,13 @@
   <build>
   	<resources>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>plugin.xml</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>WebContent/**</include>
         </includes>
@@ -91,8 +91,9 @@
 			            <configuration>
 			            	<resources>
 			            		<resource>
-			            			<runIf>{{ !new File("WebContent", "dojo-release-1.8.0-src" ).isDirectory() }}</runIf>
-								    <targetPath>WebContent</targetPath>
+			            			<directory>${basedir}</directory>
+			            			<runIf>{{ !new File(project.basedir, "WebContent/dojo-release-1.8.0-src" ).isDirectory() }}</runIf>
+								    <targetPath>${basedir}/WebContent</targetPath>
 								    <file>http://download.dojotoolkit.org/release-1.8.0/dojo-release-1.8.0-src.zip</file>
 								    <zipEntries>
 									    <zipEntry>dojo-release-1.8.0-src/dojo/**</zipEntry>
@@ -145,7 +146,6 @@
     	<groupId>org.eclipse.core</groupId>
     	<artifactId>runtime</artifactId>
     	<version>3.3.100-v20070530</version>
-    	<type>jar</type>
     	<scope>provided</scope>
     </dependency>
     <dependency>

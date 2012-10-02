@@ -38,37 +38,37 @@
   <build>
   	<resources>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>plugin.xml</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>WebContent/**</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>schema/**</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>aggregator.properties</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>javadoc.xml</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>logging-readme.txt</include>
         </includes>
@@ -253,7 +253,6 @@
     	<groupId>org.eclipse.core</groupId>
     	<artifactId>runtime</artifactId>
     	<version>3.3.100-v20070530</version>
-    	<type>jar</type>
     	<scope>provided</scope>
     </dependency>
     <dependency>

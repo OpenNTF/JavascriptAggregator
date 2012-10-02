@@ -22,6 +22,12 @@
   <version>0.9.0-SNAPSHOT</version>
   <packaging>pom</packaging>
   
+  <modules>
+    <module>jaggr-service</module>
+    <module>jaggr-sample-dojo</module>
+    <module>jaggr-sample</module>
+  </modules>
+  
   <name>Javascript AMD Aggregator</name>
   <description>A Javascript Aggregation Service for Asynchronous Module Definition(AMD) modules.</description>
   <url>https://github.com/OpenNTF/JavascriptAggregator</url>
@@ -66,8 +72,14 @@
         <configuration>
           <excludeSubProjects>false</excludeSubProjects>
           <excludes combine.children="append">
-            <exclude>.gitignore</exclude>
+            <exclude>.git/**</exclude>
+            <exclude>**/.gitignore</exclude>
+            <exclude>**/.classpath</exclude>
+            <exclude>**/.project</exclude>
+            <exclude>**/WebContent/dojo*/**</exclude>
+            <exclude>**/target/**</exclude>
             <exclude>**/*.MF</exclude>
+            <exclude>**/.settings/*.prefs</exclude>
           </excludes>
         </configuration>
         <executions>

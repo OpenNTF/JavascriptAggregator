@@ -38,25 +38,25 @@
   <build>
   	<resources>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>plugin.xml</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>WebContent/**</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>notice.txt</include>
         </includes>
       </resource>
       <resource>
-        <directory>.</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>testaggr-config.js</include>
         </includes>
@@ -123,7 +123,6 @@
     	<groupId>org.eclipse.core</groupId>
     	<artifactId>runtime</artifactId>
     	<version>3.3.100-v20070530</version>
-    	<type>jar</type>
     	<scope>provided</scope>
     </dependency>
     <dependency>
@@ -136,14 +135,12 @@
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-service</artifactId>
     	<version>0.9.0-SNAPSHOT</version>
-    	<type>bundle</type>
     	<scope>provided</scope>
     </dependency>
     <dependency>
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-sample-dojo</artifactId>
     	<version>0.9.0-SNAPSHOT</version>
-    	<type>bundle</type>
     	<scope>provided</scope>
     </dependency>
   </dependencies>
