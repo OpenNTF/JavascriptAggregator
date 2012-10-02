@@ -43,8 +43,6 @@ import com.ibm.jaggr.service.module.IModule;
  * I/O.
  * <p>
  * Instances of ILayer are cloneable and serializable.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface ILayer extends Cloneable, Serializable {
 	

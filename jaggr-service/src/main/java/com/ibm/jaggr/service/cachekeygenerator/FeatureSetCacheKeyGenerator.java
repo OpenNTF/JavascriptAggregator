@@ -36,8 +36,6 @@ import com.ibm.jaggr.service.util.Features;
 /**
  * Cache key generator for content that depends on the feature set specified in
  * the request.
- * 
- * @author chuckd@us.ibm.com
  */
 public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 

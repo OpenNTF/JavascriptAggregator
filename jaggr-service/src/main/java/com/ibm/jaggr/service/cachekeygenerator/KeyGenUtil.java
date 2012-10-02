@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * Defines static utility methods for working with arrays of cache
  * key generators
- * 
- * @author chuckd@us.ibm.com
  */
 public class KeyGenUtil {
 	

@@ -36,9 +36,6 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
  * define() function. Separate threads are used for the parser in order to try
  * and achieve a measure of parallel processing so that the builder is not so
  * I/O bound.
- * 
- * @author chuckd@us.ibm.com
- * 
  */
 final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 

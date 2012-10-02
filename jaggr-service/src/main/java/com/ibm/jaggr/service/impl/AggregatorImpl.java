@@ -115,8 +115,6 @@ import com.ibm.jaggr.service.util.StringUtil;
  * assumption is that because instances of this class are created by the OSGi
  * Framework, and the framework itself does not support serialization, then no
  * attempts will be made to serialize instances of this class.
- * 
- * @author chuckd@us.ibm.com
  */
 @SuppressWarnings("serial")
 public class AggregatorImpl extends HttpServlet implements IExecutableExtension, IOptionsListener, BundleListener, IAggregator {

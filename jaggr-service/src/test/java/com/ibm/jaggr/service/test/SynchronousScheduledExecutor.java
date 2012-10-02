@@ -31,8 +31,6 @@ import java.util.concurrent.TimeUnit;
  * of tasks submitted using the submit methods and scheduled tasks with a 0 timeout.
  * Used for unit test cases to avoid threading issues with attempting to clean up
  * the cache directory after a test case has completed.
- * 
- * @author chuckd@us.ibm.com
  */
 public class SynchronousScheduledExecutor extends ScheduledThreadPoolExecutor {
 	public SynchronousScheduledExecutor() {

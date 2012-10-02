@@ -33,8 +33,6 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
 
 /**
  * An implementation of {@link IResource} for File resources
- * 
- * @author chuckd@us.ibm.com
  */
 public class FileResource implements IResource {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());

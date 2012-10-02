@@ -25,8 +25,6 @@ import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
  * {@code IAggregatorExtension} objects is returned by the method
  * {@link IAggregator#getResourceFactoryExtensions()} and 
  * {@link IAggregator#getModuleBuilderExtensions()}, 
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IAggregatorExtension {
 	/**

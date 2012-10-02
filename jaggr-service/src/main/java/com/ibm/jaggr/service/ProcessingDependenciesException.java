@@ -22,8 +22,6 @@ import java.io.IOException;
 /**
  * Thrown when the aggregator is servicing a request the dependency graph is
  * in the process of being built/validated, and development mode is enabled.
- * 
- * @author chuckd@us.ibm.com
  */
 public class ProcessingDependenciesException extends IOException {
 	private static final long serialVersionUID = -8334623620467466846L;

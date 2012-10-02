@@ -21,8 +21,6 @@ import java.io.IOException;
 /**
  * Extends ServletException for resource not found errors.  Results in a
  * HTTP Status 404 (Not Found) returned to the client.
- * 
- * @author chuckd@us.ibm.com
  */
 public class NotFoundException extends IOException {
 

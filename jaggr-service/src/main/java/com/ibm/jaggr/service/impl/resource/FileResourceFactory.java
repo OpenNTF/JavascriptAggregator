@@ -25,8 +25,6 @@ import com.ibm.jaggr.service.resource.IResourceFactory;
 /**
  * Default implementation for {@link IResourceFactory} that currently supports
  * only file resources.
- * 
- * @author chuckd@us.ibm.com
  */
 public class FileResourceFactory implements IResourceFactory {
 	/* (non-Javadoc)

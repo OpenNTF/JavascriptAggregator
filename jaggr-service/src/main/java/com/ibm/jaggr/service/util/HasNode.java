@@ -23,8 +23,6 @@ import java.util.regex.Pattern;
 /**
  * Recursive has condition checking. Performs full ternary expression parsing
  * for the has plugin.
- * 
- * @author ddumont
  */
 public class HasNode {
 	private static Pattern p = Pattern.compile("([^:?]*)([:?]?)"); //$NON-NLS-1$

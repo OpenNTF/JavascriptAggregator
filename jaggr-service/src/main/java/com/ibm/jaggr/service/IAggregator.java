@@ -52,8 +52,6 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * When servicing requests, a reference to the aggregator may be obtained from
  * the request attribute named {@link #AGGREGATOR_REQATTRNAME}. It may also be
  * obtained from the session context attributes using the same name.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IAggregator {
 

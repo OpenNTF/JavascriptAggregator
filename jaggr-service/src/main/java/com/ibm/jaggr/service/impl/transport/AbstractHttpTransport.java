@@ -71,8 +71,6 @@ import com.ibm.jaggr.service.util.TypeUtil;
 /**
  * Implements common functionality useful for all Http Transport implementation
  * and defines abstract methods that subclasses need to implement
- * 
- * @author chuckd@us.ibm.com
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());

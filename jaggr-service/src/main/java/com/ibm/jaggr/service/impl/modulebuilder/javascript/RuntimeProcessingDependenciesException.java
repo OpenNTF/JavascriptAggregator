@@ -28,8 +28,6 @@ public class RuntimeProcessingDependenciesException extends RuntimeException {
 	 * exceptions, so this class inherits from RuntimeException. Instances of
 	 * this exception are caught by the JavaScript module builder which in turn
 	 * throws {@link ProcessingDependenciesException}.
-	 * 
-	 * @author chuckd@us.ibm.com
 	 */
 	RuntimeProcessingDependenciesException(ProcessingDependenciesException cause) {
 		super(cause);

@@ -60,8 +60,6 @@ import com.ibm.jaggr.service.util.PathUtil;
  * {@link DepTreeNode} which maps module references to the exploded module
  * dependencies (the dependencies declared in the module, plus nested
  * dependencies) for the module.
- * 
- * @author chuckd@us.ibm.com
  */
 public class DepTree implements Serializable {
 	private static final long serialVersionUID = 5453343490025146049L;

@@ -24,8 +24,6 @@ import javax.servlet.http.HttpServletRequest;
  * <p>
  * Implements default cache key generator behavior for module builders that d
  * don't need provisional cache key generators and don't need combine logic.
- * 
- * @author chuckd@us.ibm.com
  */
 @SuppressWarnings("serial")
 public abstract class AbstractCacheKeyGenerator implements

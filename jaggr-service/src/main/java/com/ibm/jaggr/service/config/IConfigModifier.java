@@ -26,8 +26,6 @@ import com.ibm.jaggr.service.IAggregator;
  * that the config object is associated with. The
  * {@link #modifyConfig(IAggregator, Scriptable)} method is called whenever the
  * config is loaded/reloaded, before any config listeners are called.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IConfigModifier {
 	/**

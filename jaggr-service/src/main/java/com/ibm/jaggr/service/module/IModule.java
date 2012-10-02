@@ -50,8 +50,6 @@ import com.ibm.jaggr.service.resource.IResource;
  * Instances of {@code IModule} are created by calling {@link IAggregator#newModule(String, URI)}.
  * <p>
  * IModules objects are cloneable and serializable.
- * 
- * @author chuckd
  */
 public interface IModule extends Serializable, Cloneable {
 

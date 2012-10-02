@@ -21,8 +21,6 @@ import java.io.IOException;
 /**
  * Extends ServletException for incorrect or improperly formated requests.
  * Results in a HTTP 400 Status (Bad Request) returned to the client.
- * 
- * @author chuckd@us.ibm.com
  */
 public class BadRequestException extends IOException {
 	private static final long serialVersionUID = -7233292670300274166L;

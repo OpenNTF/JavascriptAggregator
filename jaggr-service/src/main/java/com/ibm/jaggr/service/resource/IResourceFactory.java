@@ -43,8 +43,6 @@ import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
  * URI for which the {@code IResource} is being requested. See
  * {@link IAggregator#newResource(URI)} for a description of how the aggregator
  * selects an {@code IResourceFactory} for a URI.
- * 
- * @author chuckd@us.ibm.com
  */
 public interface IResourceFactory {
 

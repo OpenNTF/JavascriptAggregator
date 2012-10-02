@@ -31,8 +31,6 @@ import com.ibm.jaggr.service.options.IOptions;
  * Init params are specified with the init-param attribute in the servlet
  * element of the {@code org.eclipse.equinox.http.registry.servlets}
  * extension point.
- * 
- * @author chuckd@us.ibm.com
  */
 public class InitParams implements Iterable<InitParam>{
 
