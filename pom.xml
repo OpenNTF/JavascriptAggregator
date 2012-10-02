@@ -70,16 +70,15 @@
         <artifactId>apache-rat-plugin</artifactId>
         <version>0.8</version>
         <configuration>
-          <excludeSubProjects>false</excludeSubProjects>
+          <excludeSubProjects>true</excludeSubProjects>
           <excludes combine.children="append">
             <exclude>.git/**</exclude>
-            <exclude>**/.gitignore</exclude>
-            <exclude>**/.classpath</exclude>
-            <exclude>**/.project</exclude>
-            <exclude>**/WebContent/dojo*/**</exclude>
-            <exclude>**/target/**</exclude>
+            <exclude>.gitignore</exclude>
+            <exclude>.classpath</exclude>
+            <exclude>.project</exclude>
             <exclude>**/*.MF</exclude>
-            <exclude>**/.settings/*.prefs</exclude>
+            <exclude>.settings/*.prefs</exclude>
+            <exclude>doc/**</exclude>
           </excludes>
         </configuration>
         <executions>
