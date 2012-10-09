@@ -149,7 +149,10 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     		_control = (CacheControl)cache.getControlObj();
     	}
     	if (_control != null) {
-    		if (stamp > 0 && stamp <= _control.initStamp) {
+    		// stamp == 0 means no overrides.  Need to check for this explicitly
+    		// in case the overrides directory has been removed.
+    		if (stamp == 0 && _control.initStamp == 0 ||
+    			stamp != 0 && stamp <= _control.initStamp) {
     			_cache.set(cache);
     		}
     	} else {
