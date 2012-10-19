@@ -24,4 +24,9 @@ services to AMDs loaders that supports the loader extension API.  Features inclu
 * i18n resource consolidation
 * Caching of previously built/minified output for quicker response on subsequent requests
 
+The Aggregator supports the Eclipse plugin extension architecture to allow the addition of support for:
+* New types of resource repositories locations on the server
+* New types of module builders/minifiers
+* New AMD loaders
+
 See the [wiki](/OpenNTF/JavascriptAggregator/wiki) for more details.
