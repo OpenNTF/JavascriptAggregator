@@ -25,7 +25,7 @@ services to AMDs loaders that supports the loader extension API.  Features inclu
 * Caching of previously built/minified output for quicker response on subsequent requests
 
 The Aggregator supports the Eclipse plugin extension architecture to allow the addition of support for:
-* New types of resource repositories locations on the server
+* New types of resource repository locations on the server
 * New types of module builders/minifiers
 * New AMD loaders
 
