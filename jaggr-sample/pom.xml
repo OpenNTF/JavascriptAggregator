@@ -59,6 +59,7 @@
         <directory>${basedir}</directory>
         <includes>
           <include>testaggr-config.js</include>
+          <include>embed.txt</include>
         </includes>
       </resource>
     </resources>
