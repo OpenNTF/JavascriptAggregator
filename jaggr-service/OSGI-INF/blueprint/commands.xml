@@ -16,8 +16,17 @@
 -->
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
     <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.0.0">
-        <command name="aggregator/hello">
-            <action class="com.ibm.jaggr.service.util.HelloShellCommand"/>
+        <command name="aggregator/help">
+            <action class="com.ibm.jaggr.service.console.commands.HelpShellCommand"/>
+        </command>
+        <command name="aggregator/list">
+            <action class="com.ibm.jaggr.service.console.commands.ListShellCommand"/>
+        </command>
+        <command name="aggregator/reloadconfig">
+            <action class="com.ibm.jaggr.service.console.commands.ReloadConfigShellCommand"/>
+        </command>
+        <command name="aggregator/validatedeps">
+            <action class="com.ibm.jaggr.service.console.commands.ValidateDepsShellCommand"/>
         </command>
     </command-bundle>
 </blueprint>

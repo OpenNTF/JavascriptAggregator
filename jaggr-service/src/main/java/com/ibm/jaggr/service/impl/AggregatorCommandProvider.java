@@ -140,7 +140,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	private void doListCmd(CommandInterpreter ci) throws InvalidSyntaxException {
+	public void doListCmd(CommandInterpreter ci) throws InvalidSyntaxException {
 		// list the registered servlets
 		BundleContext context = getBundleContext();
 		ServiceReference[] refs = context.getServiceReferences(IAggregator.class.getName(), null);
@@ -161,7 +161,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	private void doReloadConfigsCmd(CommandInterpreter ci) throws IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
+	public void doReloadConfigsCmd(CommandInterpreter ci) throws IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
@@ -189,7 +189,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	private void doReloadDepsCmd(CommandInterpreter ci) throws MalformedURLException, IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
+	public void doReloadDepsCmd(CommandInterpreter ci) throws MalformedURLException, IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
 		ServiceReference ref = getServiceRef(ci);
 		boolean clean = PARAM_CLEAN.equals(ci.nextArgument());
 		if (ref != null) {

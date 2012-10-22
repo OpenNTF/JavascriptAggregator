@@ -13,16 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ibm.jaggr.service.util;
+
+package com.ibm.jaggr.service.console.commands;
 
 import org.apache.felix.gogo.commands.Command;
-import org.apache.karaf.shell.console.OsgiCommandSupport;
 
-@Command(scope = "aggregator", name = "hello", description="Says hello")
-public class HelloShellCommand extends OsgiCommandSupport {
+import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
+
+@Command(scope = "aggregator", name = "help", description="shows aggregator help")
+public class HelpShellCommand extends AbstractOsgiCommandSupport {
 	@Override
-	protected Object doExecute() throws Exception {
-		System.out.println("Executing Hello command");
-		return null;
+	protected void exec(AggregatorCommandProvider provider) throws Exception {
+		System.out.println(provider.getHelp());
 	}
 }
