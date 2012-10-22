@@ -277,7 +277,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	private void doDumpCacheCmd(CommandInterpreter ci) throws InvalidSyntaxException, IOException {
+	public void doDumpCacheCmd(CommandInterpreter ci) throws InvalidSyntaxException, IOException {
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);

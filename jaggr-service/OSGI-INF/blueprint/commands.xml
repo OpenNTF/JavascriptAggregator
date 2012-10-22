@@ -31,5 +31,8 @@
         <command name="aggregator/clearcache">
             <action class="com.ibm.jaggr.service.console.commands.ClearCacheShellCommand"/>
         </command>
+        <command name="aggregator/dumpcache">
+            <action class="com.ibm.jaggr.service.console.commands.DumpCacheShellCommand"/>
+        </command>
     </command-bundle>
 </blueprint>
