@@ -100,17 +100,6 @@
           		<skipTests>true</skipTests>
         	</configuration>
   		</plugin>
-  		<plugin>
-          <groupId>org.apache.rat</groupId>
-          <artifactId>apache-rat-plugin</artifactId>
-          <version>0.8</version>
-          <configuration>
-            <excludes>
-              <!-- Remove this when we move to dojo 1.8 -->
-              <exclude>WebContent/dojo-patched/dojo.js</exclude>
-            </excludes>
-          </configuration>
-        </plugin>
   	</plugins>
   </build>
   <dependencies>
