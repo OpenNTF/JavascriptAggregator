@@ -34,5 +34,8 @@
         <command name="aggregator/dumpcache">
             <action class="com.ibm.jaggr.service.console.commands.DumpCacheShellCommand"/>
         </command>
+        <command name="aggregator/getoptions">
+            <action class="com.ibm.jaggr.service.console.commands.GetOptionsShellCommand"/>
+        </command>
     </command-bundle>
 </blueprint>

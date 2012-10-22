@@ -330,7 +330,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 
-	private void doGetOptionsCmd(CommandInterpreter ci) throws InvalidSyntaxException {
+	public void doGetOptionsCmd(CommandInterpreter ci) throws InvalidSyntaxException {
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			try {
