@@ -259,7 +259,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 
-	private void doClearCacheCmd(CommandInterpreter ci) throws InvalidSyntaxException {
+	public void doClearCacheCmd(CommandInterpreter ci) throws InvalidSyntaxException {
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);

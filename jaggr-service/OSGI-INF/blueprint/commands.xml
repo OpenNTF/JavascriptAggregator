@@ -28,5 +28,8 @@
         <command name="aggregator/validatedeps">
             <action class="com.ibm.jaggr.service.console.commands.ValidateDepsShellCommand"/>
         </command>
+        <command name="aggregator/clearcache">
+            <action class="com.ibm.jaggr.service.console.commands.ClearCacheShellCommand"/>
+        </command>
     </command-bundle>
 </blueprint>
