@@ -25,7 +25,7 @@ import org.apache.felix.gogo.commands.Command;
 import com.google.common.collect.Lists;
 import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
 
-@Command(scope = "aggregator", name = "dumpcache", description="<servlet> con|file [<regular expression>] - outputs the cache metadata for the specified servlet, using the specified regular expression tilter the output by module names")
+@Command(scope = "aggregator", name = "dumpcache", description="<servlet> con|file [<regular expression>] - outputs the cache metadata for the specified servlet, using the specified regular expression to filter the output by module names")
 public class DumpCacheShellCommand extends AbstractOsgiCommandSupport {
 	
 	@Argument(index = 0, name = "servlet", description = "The servlet to validate deps for", required = true, multiValued = false)
