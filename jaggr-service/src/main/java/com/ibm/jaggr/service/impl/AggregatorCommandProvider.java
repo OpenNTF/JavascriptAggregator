@@ -364,7 +364,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	private void doShowConfigCmd(CommandInterpreter ci) throws InvalidSyntaxException, JSONException {
+	public void doShowConfigCmd(CommandInterpreter ci) throws InvalidSyntaxException, JSONException {
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
