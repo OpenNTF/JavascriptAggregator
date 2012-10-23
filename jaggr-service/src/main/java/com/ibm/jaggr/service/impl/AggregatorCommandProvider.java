@@ -216,7 +216,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	private void doGetDepsCmd(CommandInterpreter ci) throws InvalidSyntaxException, IOException {
+	public void doGetDepsCmd(CommandInterpreter ci) throws InvalidSyntaxException, IOException {
 		Map<String, String> moduleDeps = null;
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {

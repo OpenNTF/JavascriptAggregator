@@ -43,5 +43,8 @@
         <command name="aggregator/showconfig">
             <action class="com.ibm.jaggr.service.console.commands.ShowConfigShellCommand"/>
         </command>
+        <command name="aggregator/getdeps">
+            <action class="com.ibm.jaggr.service.console.commands.GetDepsShellCommand"/>
+        </command>
     </command-bundle>
 </blueprint>
