@@ -37,5 +37,8 @@
         <command name="aggregator/getoptions">
             <action class="com.ibm.jaggr.service.console.commands.GetOptionsShellCommand"/>
         </command>
+        <command name="aggregator/setoption">
+            <action class="com.ibm.jaggr.service.console.commands.SetOptionShellCommand"/>
+        </command>
     </command-bundle>
 </blueprint>
