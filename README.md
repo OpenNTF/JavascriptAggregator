@@ -14,5 +14,19 @@
    limitations under the License.
 -->
 
-Coming Soon!
-=====
+The JavaScript Aggregator (JAGGR) is an OSGi servlet that provides aggregation and code minification 
+services to AMDs loaders that supports the loader extension API.  Features include:
+
+* JavaScript minification using the Google Closure compiler
+* Code trimming using has.js feature detection
+* Require list expansion to reduce the cascade of requests resulting from dependency discovery as modules are loaded on the client
+* CSS Optimizations
+* i18n resource consolidation
+* Caching of previously built/minified output for quicker response on subsequent requests
+
+The Aggregator supports the Eclipse plugin extension architecture to allow the addition of support for:
+* New types of resource repository locations on the server
+* New types of module builders/minifiers
+* New AMD loaders
+
+See the [wiki](/OpenNTF/JavascriptAggregator/wiki) for more details.
