@@ -40,37 +40,13 @@
       <resource>
         <directory>${basedir}</directory>
         <includes>
-          <include>plugin.xml</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
           <include>WebContent/**</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
           <include>schema/**</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
-          <include>aggregator.properties</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
+          <include>OSGI-INF/**</include>
+          <include>plugin.xml</include>
           <include>javadoc.xml</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
           <include>logging-readme.txt</include>
+          <include>aggregator.properties</include>
         </includes>
       </resource>
     </resources>
@@ -123,6 +99,10 @@
 		            <Import-Package>
 		            	javax.servlet;version="[2,4)",
 		            	javax.servlet.http;version="[2,4)",
+		            	org.apache.felix.service.command;resolution:=optional,
+		                org.apache.felix.gogo.commands;resolution:=optional,
+		                org.apache.karaf.shell.console;resolution:=optional,
+		                org.osgi.service.blueprint;resolution:=optional,
 		            	!org.apache.tools.*,
 		            	!org.apache.xmlbeans.*,
 		            	!javax.*,
@@ -272,6 +252,11 @@
     	<artifactId>easymock</artifactId>
     	<version>3.1</version>
     	<scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.karaf.shell</groupId>
+      <artifactId>org.apache.karaf.shell.console</artifactId>
+      <version>2.2.9</version>
     </dependency>
   </dependencies>
 </project>
