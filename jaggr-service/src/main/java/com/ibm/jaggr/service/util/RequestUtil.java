@@ -14,21 +14,21 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service;
+package com.ibm.jaggr.service.util;
 
+import javax.servlet.http.HttpServletRequest;
 
-/**
- * Extneds RuntimeException for limit Aggregator limit exceeded errors
- */
-public class LimitExceededException extends RuntimeException {
+import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.service.transport.IHttpTransport;
 
-	private static final long serialVersionUID = 3005341596518701343L;
-	
-	/**
-	 * @param msg the error message
-	 */
-	public LimitExceededException(String msg) {
-		super(msg);
+public class RequestUtil {
+
+	public static boolean isIgnoreCached(HttpServletRequest request) {
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		return (options.isDevelopmentMode() || options.isDebugMode()) &&
+				TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOCACHE_REQATTRNAME));
+		
 	}
-	
 }

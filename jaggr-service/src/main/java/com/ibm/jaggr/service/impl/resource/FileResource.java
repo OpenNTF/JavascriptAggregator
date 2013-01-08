@@ -119,8 +119,8 @@ public class FileResource implements IResource {
 	 * (non-Javadoc)
 	 * 
 	 * @see
-	 * com.ibm.jaggr.service.modules.Resource#walkTree(com.ibm.servlets
-	 * .amd.aggregator.modules.ResourceVisitor, boolean)
+	 * com.ibm.jaggr.service.modules.Resource#walkTree(com.ibm.jaggr.modules
+	 * .ResourceVisitor, boolean)
 	 */
 	@Override
 	public void walkTree(IResourceVisitor visitor) throws IOException {

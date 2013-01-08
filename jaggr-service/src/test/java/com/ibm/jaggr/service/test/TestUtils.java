@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.wink.json4j.JSONException;
 import org.easymock.EasyMock;
@@ -40,7 +41,6 @@ import com.ibm.jaggr.service.InitParams.InitParam;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.executors.IExecutors;
-import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.service.impl.layer.LayerCacheImpl;
@@ -82,10 +82,10 @@ public class TestUtils {
 	}
 	
 	
-	static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
-	static String b = "define([\"./c\"], function(a) {\nalert(\"hello from b.js\");\nreturn null;\n});";
-	static String c = "define([\"./a\", \"./b\", \"./noexist\"], function(a, b, d) {\nalert(\"hello from c.js\");\nreturn null;\n});";
-	static String foo = "define([\"p1/a\", \"p2/p1/b\", \"p2/p1/p1/c\", \"p2/noexist\"], function(a, b, c, noexist) {\n"
+	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
+	public static String b = "define([\"./c\"], function(a) {\nalert(\"hello from b.js\");\nreturn null;\n});";
+	public static String c = "define([\"./a\", \"./b\", \"./noexist\"], function(a, b, d) {\nalert(\"hello from c.js\");\nreturn null;\n});";
+	public static String foo = "define([\"p1/a\", \"p2/p1/b\", \"p2/p1/p1/c\", \"p2/noexist\"], function(a, b, c, noexist) {\n"
 			+ "	if (has(\"conditionTrue\")) { \n"
 			+ "		require([\"p2/a\"], function(a) {\n"
 			+ "			alert(\"condition_True\");\n"
@@ -241,7 +241,8 @@ public class TestUtils {
 			}
 		}).anyTimes();
 		EasyMock.replay(mockAggregator);
-		cacheMgrRef.set(new CacheManagerImpl(mockAggregator, 0));
+		TestCacheManager cacheMgr = new TestCacheManager(mockAggregator, 1);
+		cacheMgrRef.set(cacheMgr);
 		//((IOptionsListener)cacheMgrRef.get()).optionsUpdated(options, 1);
 		if (createConfig) {
 			configRef.set(new ConfigImpl(mockAggregator, workingDirectory.toURI(), "{}"));
@@ -363,5 +364,10 @@ public class TestUtils {
 			}).anyTimes();
 		}
 		return mockRequest;
+	}
+	
+	public static HttpServletResponse createMockResponse() {
+		HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
+		return mockResponse;
 	}
 }

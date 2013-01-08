@@ -17,14 +17,17 @@
 package com.ibm.jaggr.service.module;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.Writer;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import com.ibm.jaggr.service.IAggregator;
+
 /**
  * Interface for module cache object
  */
-public interface IModuleCache {
+public interface IModuleCache extends Serializable {
 	
 	/**
 	 * Adds the module to the cache if a module with the specified key
@@ -81,14 +84,6 @@ public interface IModuleCache {
 	 */
 	public Set<String> getKeys();
 	
-	/**
-	 * Implementors of this interface must provide the clone method
-	 * 
-	 * @return the cloned object
-	 * @throws CloneNotSupportedException
-	 */
-	public Object clone() throws CloneNotSupportedException;
-
     /**
      * Output the cache info to the specified Writer
      * 
@@ -97,4 +92,15 @@ public interface IModuleCache {
      * @throws IOException
      */
 	public void dump(Writer writer, Pattern filter) throws IOException;
+
+	/**
+	 * Called for newly created (or de-serialized) caches to set the 
+	 * aggregator instance for this cache.  Note that the aggregator may not be fully 
+     * initialized at the time that this method is called and some aggregator
+     * methods (like {@link IAggregator#getConfig()} may return null if called
+     * from within this method.
+	 * 
+	 * @param aggregator The aggregator instance for the cache
+	 */
+	public void setAggregator(IAggregator aggregator);
 }
