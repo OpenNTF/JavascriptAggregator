@@ -170,8 +170,12 @@ public class ConfigTests {
 	@Test
 	public void testVariableSubstitution() throws Exception {
 		mockAggregator = new MockAggregatorWrapper() {
-			@Override public String substituteProps(String str) {
-				return str.replace("${REPLACE_THIS}", "file:/c:/substdir/");
+			@Override public String substituteProps(String str, IAggregator.SubstitutionTransformer transformer) {
+				str = str.replace("${REPLACE_THIS}", "file:/c:/substdir/");
+				if (transformer != null) {
+					str = transformer.transform("REPLACE_THIS", str);
+				}
+				return str;
 			}
 		};
 		String config = "{paths:{subst:'${REPLACE_THIS}/resources'}}";
