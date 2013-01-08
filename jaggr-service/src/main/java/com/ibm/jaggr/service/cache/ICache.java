@@ -21,13 +21,14 @@ import java.io.Serializable;
 import java.io.Writer;
 import java.util.regex.Pattern;
 
+import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModuleCache;
 
 /**
  * The aggregator cache is the repository for cached module builds and layers.
  */
-public interface ICache extends Serializable, Cloneable {
+public interface ICache extends Serializable {
 
 	/**
 	 * Returns the cache of layer build cache entries.
@@ -64,4 +65,14 @@ public interface ICache extends Serializable, Cloneable {
 	 */
     public void dump(Writer writer, Pattern filter) throws IOException;
 
+    /**
+     * Called for newly created (or de-serialized) caches to set the aggregator
+     * instance for the cache.  Note that the aggregator may not be fully 
+     * initialized at the time that this method is called and some aggregator
+     * methods (like {@link IAggregator#getConfig()} may return null if called
+     * from within this method.
+     * 
+     * @param aggregator The aggregator instance for this cache object
+     */
+    public void setAggregator(IAggregator aggregator);
 }

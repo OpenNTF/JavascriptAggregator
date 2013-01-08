@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 
@@ -33,31 +34,6 @@ import com.ibm.jaggr.service.module.IModuleCache;
  */
 public class ModuleCacheImpl extends ConcurrentHashMap<String, IModule> implements IModuleCache {
 	private static final long serialVersionUID = 2506609170016466623L;
-
-	// Default constructor
-	public ModuleCacheImpl() {
-	}
-	
-	// Copy constructor
-	// Creates a shallow copy of the map
-	private ModuleCacheImpl(ModuleCacheImpl other) {
-		super(other);
-	}
-	
-	/* (non-Javadoc)
-	 * @see java.util.AbstractMap#clone()
-	 */
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-		ModuleCacheImpl cloned = new ModuleCacheImpl(this);
-		// The copy constructor creates a shallow copy, so we
-		// we need to clone the individual values.  Keys don't need to be cloned since
-		// strings are immutable.
-		for (Map.Entry<String, IModule> entry : cloned.entrySet()) {
-			entry.setValue((IModule)entry.getValue().clone());
-		}
-		return cloned;
-	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleCache#dump(java.io.Writer, java.util.regex.Pattern)
@@ -106,5 +82,10 @@ public class ModuleCacheImpl extends ConcurrentHashMap<String, IModule> implemen
 	@Override
 	public Set<String> getKeys() {
 		return super.keySet();
+	}
+
+	@Override
+	public void setAggregator(IAggregator aggregator) {
+		// Not currently used by this implementation
 	}
 }

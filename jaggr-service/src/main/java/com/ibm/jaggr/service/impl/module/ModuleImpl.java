@@ -20,6 +20,9 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.InvalidObjectException;
+import java.io.ObjectInputStream;
+import java.io.ObjectStreamException;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
@@ -63,9 +66,9 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.StringUtil;
 import com.ibm.jaggr.service.util.TypeUtil;
 
-public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
+public class ModuleImpl extends ModuleIdentifier implements IModule, Serializable {
 
-	private static final long serialVersionUID = 8809476135160923678L;
+	private static final long serialVersionUID = -970059455315515031L;
 
 	private static final Logger log = Logger.getLogger(ModuleImpl.class
 			.getName());
@@ -110,6 +113,20 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 	public ModuleImpl(String mid, URI uri) {
 		super(mid);
 		this.uri = uri;
+	}
+	
+	/**
+	 * Copy constructor.  Needed by subclasses that override writeReplace
+	 * 
+	 * @param module
+	 */
+	protected ModuleImpl(ModuleImpl module) {
+		super(module.getModuleId());
+		uri = module.uri;
+		resource = module.resource;
+		_cacheKeyGenerators = module._cacheKeyGenerators;
+		_lastModified = module._lastModified;
+		_moduleBuilds = module._moduleBuilds;
 	}
 	
 	/**
@@ -254,16 +271,18 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 		// Try retrieving the cache entry using get first since it doesn't lock.
 		// If that fails,
 		// then use the locking putIfAbsent
-		CacheEntry existingEntry = moduleBuilds.get(key);
-		if (!ignoreCached
-				&& existingEntry != null
+		CacheEntry existingEntry = null;
+		if (!ignoreCached) {
+			existingEntry = moduleBuilds.get(key);
+			if (existingEntry != null
 				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir())) != null) {
-			if (isLogLevelFiner) {
-				log.finer("returning cached module build with cache key: " //$NON-NLS-1$
-						+ key);
+				if (isLogLevelFiner) {
+					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
+							+ key);
+				}
+				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
+						_cacheKeyGenerators, false));
 			}
-			return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
-					_cacheKeyGenerators, false));
 		}
 
 		CacheEntry newEntry = new CacheEntry();
@@ -273,16 +292,17 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 		// otherwise the
 		// existing entry is returned in the buildReader and newEntry was not
 		// added.
-		existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
-		if (!ignoreCached
-				&& existingEntry != null
+		if (!ignoreCached) {
+			existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
+			if (existingEntry != null
 				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir())) != null) {
-			if (isLogLevelFiner) {
-				log.finer("returning cached module build with cache key: " //$NON-NLS-1$
-						+ key);
+				if (isLogLevelFiner) {
+					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
+							+ key);
+				}
+				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
+						_cacheKeyGenerators, false));
 			}
-			return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
-					_cacheKeyGenerators, false));
 		}
 
 		if (fromCacheOnly) {
@@ -340,12 +360,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 									.getBuildOutput()), null, true);
 						}
 						cacheEntry.setData(build.getBuildOutput());
-
-						// If we don't yet have has-conditionals for this module,
-						// then set them from the
-						// discoveredHasConditionalss we got as a buildReader of the
-						// compilation, and then update
-						// the cache key for this cache entry if necessary.
+						
+						// If we have a provisional cache key generator, then upgrade to
+						// the non-provisional cache key generator returned by the build
 						if (KeyGenUtil.isProvisional(newCacheKeyGenerators)) {
 							newCacheKeyGenerators = build.getCacheKeyGenerators();
 							synchronized (this) {
@@ -354,24 +371,26 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 									_cacheKeyGenerators = newCacheKeyGenerators;
 								}
 							}
-							CacheEntry oldEntry = null;
-							String newkey = KeyGenUtil.generateKey(request, newCacheKeyGenerators);
-							// If the key changed, then add the ModuleBuild to the
-							// cache using the new key and remove the one under the
-							// old key
-							if (!newkey.equals(key)) {
-								if (isLogLevelFiner) {
-									log.finer("Updating cache key for module build.  Old key = " //$NON-NLS-1$
-											+ key + ", new key = " + newkey); //$NON-NLS-1$
+							if (!ignoreCached) {
+								CacheEntry oldEntry = null;
+								String newkey = KeyGenUtil.generateKey(request, newCacheKeyGenerators);
+								// If the key changed, then add the ModuleBuild to the
+								// cache using the new key and remove the one under the
+								// old key
+								if (!newkey.equals(key)) {
+									if (isLogLevelFiner) {
+										log.finer("Updating cache key for module build.  Old key = " //$NON-NLS-1$
+												+ key + ", new key = " + newkey); //$NON-NLS-1$
+									}
+									oldEntry = moduleBuilds.putIfAbsent(newkey,
+											cacheEntry);
+									moduleBuilds.remove(key, cacheEntry);
 								}
-								oldEntry = moduleBuilds.putIfAbsent(newkey,
-										cacheEntry);
-								moduleBuilds.remove(key, cacheEntry);
-							}
-							// Only write out the cache file if the put was
-							// successful
-							if ((oldEntry == null || oldEntry == cacheEntry) && !ignoreCached) {
-								cacheEntry.persist(mgr, ModuleImpl.this); // asynchronous
+								// Only write out the cache file if the put was
+								// successful
+								if (oldEntry == null || oldEntry == cacheEntry) {
+									cacheEntry.persist(mgr, ModuleImpl.this); // asynchronous
+								}
 							}
 						} else if (!ignoreCached) {
 							// Write the cache file to disk
@@ -459,46 +478,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 		return sb.toString();
 	}
 
-	/**
-	 * Clones this object. Note that although cloning is thread safe, it is NOT
-	 * atomic. This means that some mutable objects, like {@link #_moduleBuilds}
-	 * and it's entries, can be changing while we are in the process of cloning.
-	 * Although these changes are done in a thread safe way, the code in this
-	 * class must be able to tolerate any potential inconsistencies resulting
-	 * from such changes when this object is de-serialized.
-	 */
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see java.lang.Object#clone()
-	 */
-	@Override
-	public Object clone() throws CloneNotSupportedException {
-		ModuleImpl clone;
-		// _hasConditionals is an immutable set, so a reference clone is ok
-		synchronized (this) {
-			clone = (ModuleImpl) super.clone();
-			clone.resource = null;
-		}
-		// ConcurrentHashMap doesn't implement Cloneable, so need to use the
-		// copy
-		// constructor instead. Be sure to use the cloned map as the source for
-		// the copy in order to maintain consistency with the rest of the cloned
-		// object.
-		if (clone._moduleBuilds != null) {
-			clone._moduleBuilds = new ConcurrentHashMap<String, CacheEntry>(
-					clone._moduleBuilds);
-
-			// Now clone each of the entries in the in the map
-			for (Map.Entry<String, CacheEntry> cacheEntry : clone._moduleBuilds
-					.entrySet()) {
-				cacheEntry
-						.setValue((CacheEntry) cacheEntry.getValue().clone());
-			}
-		}
-		return clone;
-	}
-
 	/*
 	 * This accessor is provided for unit testing only
 	 */
@@ -529,13 +508,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 		return result;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.ibm.domino.servlets.aggrsvc.modules.Module#deleteCached(com.ibm.domino
-	 * .servlets.aggrsvc.modules.CacheManager, int)
-	 */
 	/**
 	 * Asynchronously delete the set of cached files for this module.
 	 */
@@ -562,6 +534,47 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 	 */
 	public static IModuleCache newModuleCache(IAggregator aggregator) {
 		return new ModuleCacheImpl();
+	}
+
+	/* ---------------- Serialization Support -------------- */
+	/*
+	 * Use a Serialization proxy so that we can copy the proxy object 
+	 * in a thread safe manner, thereby avoiding the need to use 
+	 * synchronization while doing disk i/o. 
+	 */
+	protected Object writeReplace() throws ObjectStreamException {
+		return new SerializationProxy(this);
+	}
+
+	private void readObject(ObjectInputStream stream) throws InvalidObjectException {
+	    throw new InvalidObjectException("Proxy required");
+	}
+
+	protected static class SerializationProxy extends ModuleIdentifier implements Serializable {
+		private static final long serialVersionUID = 5050612601255358014L;
+
+		private final URI uri;
+		private final ICacheKeyGenerator[] _cacheKeyGenerators;
+		private final long _lastModified;
+		private final ConcurrentHashMap<String, CacheEntry> _moduleBuilds; 
+
+		protected SerializationProxy(ModuleImpl module) {
+			super(module.getModuleId());
+			synchronized (module) {
+				uri = module.uri;
+				_cacheKeyGenerators = module._cacheKeyGenerators;
+				_lastModified = module._lastModified;
+				_moduleBuilds = new ConcurrentHashMap<String, CacheEntry>(module._moduleBuilds);
+			}
+	    }
+
+	    protected Object readResolve() {
+	    	ModuleImpl module = new ModuleImpl(super.getModuleId(), uri);
+	    	module._cacheKeyGenerators = _cacheKeyGenerators;
+	    	module._lastModified = _lastModified;
+	    	module._moduleBuilds = _moduleBuilds;
+	    	return module;
+	    }
 	}
 
 	/**
@@ -708,16 +721,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Cloneable {
 			if (filename != null) {
 				mgr.deleteFileDelayed(filename);
 			}
-		}
-
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see java.lang.Object#clone()
-		 */
-		@Override
-		public Object clone() throws CloneNotSupportedException {
-			return super.clone();
 		}
 	}
 }
