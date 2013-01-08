@@ -175,4 +175,10 @@ public class MockAggregatorWrapper implements IAggregator {
 		return mock.substituteProps(str);
 	}
 
+	@Override
+	public String substituteProps(String str,
+			SubstitutionTransformer transformer) {
+		return mock.substituteProps(str, transformer);
+	}
+
 }
