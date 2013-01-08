@@ -316,4 +316,29 @@ public interface IAggregator {
 	 * the variable values.
 	 */
 	public String substituteProps(String str);
+	
+	/**
+	 * Like {@link #substituteProps(String)}, but allows the caller to specify
+	 * a transformer class to process the substitution values.
+	 * 
+	 * @param str The input string
+	 * @param transformer An instance of {@link SubstitutionTransformer}
+	 * @return The transformed string
+	 */
+	public String substituteProps(String str, SubstitutionTransformer transformer);
+	
+	/**
+	 * Transformer interface used by 
+	 * {@link IAggregator#substituteProps(String, SubstitutionTransformer)}. 
+	 */
+	public interface SubstitutionTransformer {
+		/**
+		 * Transforms the string property being substituted.
+		 * 
+		 * @param name the property name
+		 * @param str the property value
+		 * @return the transformed property value
+		 */
+		String transform(String name, String value);
+	};
 }

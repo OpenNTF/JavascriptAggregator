@@ -750,15 +750,19 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
         return getCacheManager().getCache().getLayers().getLayer(request);
     }
 	
-	/**
-	 * Substitutes patterns of the form ${system.property} with the value of 
-	 * the specified system property.  Returns the modified string.
-	 * 
-	 * @param str The input string
-	 * @return The modified string
+	/* (non-Javadoc)
+	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String)
 	 */
 	@Override
 	public String substituteProps(String str) {
+		return substituteProps(str, null);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String, com.ibm.servlets.amd.aggregator.IAggregator.SubstitutionTransformer)
+	 */
+	@Override
+	public String substituteProps(String str, SubstitutionTransformer transformer) {
 		if (str == null) {
 			return null;
 		}
@@ -789,14 +793,19 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		    		}
 	    		}
 	    	}
-	    	if (propValue != null)
-	    		matcher.appendReplacement(buf, propValue);
-	    	else
+	    	if (propValue != null) {
+	    		if (transformer != null) {
+	    			propValue = transformer.transform(propName, propValue);
+	    		}
+	    		matcher.appendReplacement(buf, propValue.replace("\\", "\\\\")); //$NON-NLS-1$ //$NON-NLS-2$
+	    	} else {
 	    		matcher.appendReplacement(buf, "\\${"+propName+"}"); //$NON-NLS-1$ //$NON-NLS-2$
+	    	}
 	    }
 	    matcher.appendTail(buf);
 	    return buf.toString();
 	}
+	
 
 	/**
 	 * Loads the {@code IConfig} for this aggregator

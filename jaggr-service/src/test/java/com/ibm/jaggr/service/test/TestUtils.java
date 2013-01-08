@@ -225,6 +225,11 @@ public class TestUtils {
 				return (String)EasyMock.getCurrentArguments()[0];
 			}
 		}).anyTimes();
+		EasyMock.expect(mockAggregator.substituteProps((String)EasyMock.anyObject(), (IAggregator.SubstitutionTransformer)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
+			public String answer() throws Throwable {
+				return (String)EasyMock.getCurrentArguments()[0];
+			}
+		}).anyTimes();
 		EasyMock.expect(mockAggregator.newLayerCache()).andAnswer(new IAnswer<ILayerCache>() {
 			public ILayerCache answer() throws Throwable {
 				return new LayerCacheImpl(mockAggregator);
@@ -301,6 +306,11 @@ public class TestUtils {
 			}
 		}).anyTimes();
 		EasyMock.expect(mockAggregator.substituteProps((String)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
+			public String answer() throws Throwable {
+				return (String)EasyMock.getCurrentArguments()[0];
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.substituteProps((String)EasyMock.anyObject(), (IAggregator.SubstitutionTransformer)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
 			public String answer() throws Throwable {
 				return (String)EasyMock.getCurrentArguments()[0];
 			}
