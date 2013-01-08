@@ -153,6 +153,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     		// in case the overrides directory has been removed.
     		if (stamp == 0 && _control.initStamp == 0 ||
     			stamp != 0 && stamp <= _control.initStamp) {
+    			// Use AggregatorProxy so that getCacheManager will return non-null
+    			// if called from within setAggregator.  Need to do this because
+    			// IAggregator.getCacheManager() is unable to return this object
+    			// since it is still being constructed.
+    			cache.setAggregator(AggregatorProxy.newInstance(_aggregator, this));
     			_cache.set(cache);
     		}
     	} else {
@@ -166,13 +171,12 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         	public void run() {
         		try {
         			File file = new File(_directory, CACHE_META_FILENAME);
-        			ICache clone = (ICache)_cache.get().clone();
         			// Synchronize on the cache object to keep the scheduled cache sync thread and
         			// the thread processing servlet destroy from colliding.
         			synchronized(cacheSerializerSyncObj) {
         				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
         				try {
-        					os.writeObject(clone);
+        					os.writeObject(_cache.get());
         				} finally {
         					try { os.close(); } catch (Exception ignore) {}
         				}
@@ -242,6 +246,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     
     public synchronized void clearCache() {
     	CacheImpl newCache = new CacheImpl(_aggregator.newLayerCache(), _aggregator.newModuleCache(), _control);
+    	newCache.setAggregator(_aggregator);
     	clean(_directory);
     	CacheImpl oldCache = _cache.getAndSet(newCache);
     	if (oldCache != null) {
@@ -277,6 +282,10 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     	
 		// Serialize the cache metadata one last time
 		serializeCache();
+		
+		// avoid memory leaks caused by circular references
+		_aggregator = null;
+		_cache.set(null);
 	}
 
 	/* (non-Javadoc)
@@ -304,15 +313,14 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
      * @param cache The object to serialize
      * @param directory The target directory
      */
-    private void serializeCache() {
+    protected void serializeCache() {
 		try {
 			File file = new File(_directory, CACHE_META_FILENAME);
-			ICache clone = (ICache)_cache.get().clone();
 			// Synchronize on the cache object to keep the scheduled cache sync thread and
 			// the thread processing servlet destroy from colliding.
 			synchronized(cacheSerializerSyncObj) {
 				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
-				os.writeObject(clone);
+				os.writeObject(_cache.get());
 				os.close();
 			}
 		} catch(Exception e) {

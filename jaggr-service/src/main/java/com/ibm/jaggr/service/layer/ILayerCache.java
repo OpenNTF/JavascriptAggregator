@@ -17,17 +17,20 @@
 package com.ibm.jaggr.service.layer;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.Writer;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import com.ibm.jaggr.service.IAggregator;
+
 
 /**
  * Interface for layer cache object
  */
-public interface ILayerCache {
+public interface ILayerCache extends Serializable {
 	
 	/**
 	 * Returns a layer object for the specified request.  If a layer is already in 
@@ -60,14 +63,6 @@ public interface ILayerCache {
 	public boolean contains(String key);
 	
 	/**
-	 * Removes the layer with the specified key from the cache
-	 * 
-	 * @param key the layer key
-	 * @return The layer that was removed, or null if not in the cache
-	 */
-	public ILayer remove(String key);
-	
-	/**
 	 * Removes all layer objects in the cache
 	 */
 	public void clear();
@@ -95,11 +90,14 @@ public interface ILayerCache {
      */
     public void dump(Writer writer, Pattern filter) throws IOException;
     
-    /**
-     * Returns a deep clone of this cache object
-     * @return the object clone
-     * @throws CloneNotSupportedException
-     */
-	public Object clone() throws CloneNotSupportedException;
-	
+	/**
+	 * Called for newly created (or de-serialized) caches to set the 
+	 * aggregator instance for this cache.  Note that the aggregator may not be fully 
+     * initialized at the time that this method is called and some aggregator
+     * methods (like {@link IAggregator#getConfig()} may return null if called
+     * from within this method.
+	 * 
+	 * @param aggregator The aggregator instance for the cache
+	 */
+	public void setAggregator(IAggregator aggregator);
 }

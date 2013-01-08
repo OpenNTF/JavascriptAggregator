@@ -44,7 +44,7 @@ import com.ibm.jaggr.service.module.IModule;
  * <p>
  * Instances of ILayer are cloneable and serializable.
  */
-public interface ILayer extends Cloneable, Serializable {
+public interface ILayer extends Serializable {
 	
 	/**
 	 * Name of request attribute indicating that the response should not be
@@ -100,16 +100,6 @@ public interface ILayer extends Cloneable, Serializable {
 	 *            The cache manager
 	 */
 	public void clearCached(ICacheManager mgr);
-
-	/**
-	 * Clones this object.  The cache manager create clones of ILayer objects
-	 * for the purpose of serializing the cache metadata
-	 * 
-	 * @return A copy of this object
-	 * 
-	 * @throws CloneNotSupportedException
-	 */
-	public Object clone() throws CloneNotSupportedException;
 
 	/**
 	 * Returns the cache key that this layer is associated with in the

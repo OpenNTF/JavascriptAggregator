@@ -51,7 +51,7 @@ import com.ibm.jaggr.service.resource.IResource;
  * <p>
  * IModules objects are cloneable and serializable.
  */
-public interface IModule extends Serializable, Cloneable {
+public interface IModule extends Serializable {
 
 	/**
 	 * Returns a <code>{@link Future}&lt;{@link ModuleBuildReader}&gt;</code> to the
@@ -80,16 +80,6 @@ public interface IModule extends Serializable, Cloneable {
 	 */
 	public void clearCached(ICacheManager mgr);
 	
-	/**
-	 * Clones this object.  The cache manager create clones of IModule objects
-	 * for the purpose of serializing the cache metadata
-	 * 
-	 * @return A copy of this object
-	 * 
-	 * @throws CloneNotSupportedException
-	 */
-	public Object clone() throws CloneNotSupportedException;
-
 	/**
 	 * Returns the module id for this module.  The id includes the plugin name,
 	 * if any, and the module name separated by a '!'.

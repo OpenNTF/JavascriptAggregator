@@ -21,6 +21,7 @@ import java.io.Writer;
 import java.util.Date;
 import java.util.regex.Pattern;
 
+import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cache.ICache;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModuleCache;
@@ -71,25 +72,6 @@ public class CacheImpl implements ICache {
 		return _control;
 	}
 	
-	/**
-	 * Returns a clone of this object.  Note that although cloning is thread-safe,
-	 * it is NOT atomic.  This means that the object being cloned can be changing
-	 * while we are in the process of cloning it (e.g. items being added/removed
-	 * from the Maps) so there is no guaranty that the cloned object is an exact
-	 * copy of the object being cloned at any one point in time.
-	 */
-	/* (non-Javadoc)
-	 * @see java.lang.Object#clone()
-	 */
-	@Override
-	public synchronized Object clone() throws CloneNotSupportedException {
-		
-		CacheImpl clone = (CacheImpl)super.clone();
-		clone._layerCache = (ILayerCache)_layerCache.clone();
-		clone._moduleCache =(IModuleCache)_moduleCache.clone();
-		return clone;
-	}
-
     /**
      * Help out the GC by clearing out the cache maps.  
      */
@@ -107,4 +89,10 @@ public class CacheImpl implements ICache {
     	_moduleCache.dump(writer, filter);
     }
     
+
+	@Override
+	public void setAggregator(IAggregator aggregator) {
+		_layerCache.setAggregator(aggregator);
+		_moduleCache.setAggregator(aggregator);
+	}
 }
