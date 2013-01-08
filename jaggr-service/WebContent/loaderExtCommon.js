@@ -157,7 +157,15 @@ var params = {
 		var hasArr = [], n = 0;
 		for (var s in cache) {
 			if (cache.hasOwnProperty(s) && featureFilter(s)) {
-				var value = has(s);
+				var value;
+				try {
+					value = has(s);
+				} catch (e) {
+					if (console) {
+						console.warn("Exception thrown evaluating feature " + s + ".");
+						console.warn(e);
+					}
+				}
 				if (includeUndefined || (typeof value !== 'undefined')) {
 					hasArr[n++] = (!value ? '!' : '') + s;
 				}
