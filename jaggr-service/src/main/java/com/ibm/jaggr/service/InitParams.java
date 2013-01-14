@@ -67,11 +67,12 @@ public class InitParams implements Iterable<InitParam>{
 	 * aggregator.
 	 */
 	public static final String OPTIONS_INITPARAM = "options"; //$NON-NLS-1$
+
 	/**
-	 * Name of the servlet init-param that specifies the maximum number of 
-	 * entries allowed in the layer cache.
+	 * Name of the servlet init-param that specifies the maximum capacity of 
+	 * the layer cache in megabytes.
 	 */
-	public static final String MAXLAYERCACHEENTRIES_INITPARAM = "maxlayercacheentries"; //$NON-NLS-1$ 
+	public static final String MAXLAYERCACHECAPACITY_MB_INITPARAM = "maxlayercachecapacity_mb"; //$NON-NLS-1$ 
 	
 	/**
 	 * The init-params 

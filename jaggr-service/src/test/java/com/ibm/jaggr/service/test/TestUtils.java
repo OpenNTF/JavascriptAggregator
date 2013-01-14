@@ -33,7 +33,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.wink.json4j.JSONException;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 
@@ -172,20 +171,28 @@ public class TestUtils {
 	}
 
 	public static IAggregator createMockAggregator() throws Exception {
-		return createMockAggregator(null, null, null);
+		return createMockAggregator(null, null, null, null);
 	}
 	
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
 		
-		return createMockAggregator(configRef, workingDirectory, null);
+		return createMockAggregator(configRef, workingDirectory, null, null);
+	}
+
+	public static IAggregator createMockAggregator(
+			Ref<IConfig> configRef,
+			File workingDirectory, List<InitParam> initParams) throws Exception {
+		
+		return createMockAggregator(configRef, workingDirectory, initParams, null);
 	}
 
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory,
-			List<InitParam> initParams) throws IOException, JSONException {
+			List<InitParam> initParams,
+			Class<?> aggregatorProxyClass) throws Exception {
 
 		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
 		IOptions options = new OptionsImpl(null, "test", false);
@@ -250,11 +257,15 @@ public class TestUtils {
 			}
 		}).anyTimes();
 		EasyMock.replay(mockAggregator);
-		TestCacheManager cacheMgr = new TestCacheManager(mockAggregator, 1);
+		IAggregator mockAggregatorProxy = mockAggregator;
+		if (aggregatorProxyClass != null) {
+			mockAggregatorProxy = (IAggregator)aggregatorProxyClass.getConstructor(new Class[]{IAggregator.class}).newInstance(mockAggregator);
+		}
+		TestCacheManager cacheMgr = new TestCacheManager(mockAggregatorProxy, 1);
 		cacheMgrRef.set(cacheMgr);
 		//((IOptionsListener)cacheMgrRef.get()).optionsUpdated(options, 1);
 		if (createConfig) {
-			configRef.set(new ConfigImpl(mockAggregator, workingDirectory.toURI(), "{}"));
+			configRef.set(new ConfigImpl(mockAggregatorProxy, workingDirectory.toURI(), "{}"));
 		}
 		EasyMock.reset(mockAggregator);
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();

@@ -23,7 +23,6 @@ import java.util.List;
 
 import javax.servlet.http.HttpServlet;
 
-import org.apache.wink.json4j.JSONException;
 import org.easymock.EasyMock;
 import org.osgi.framework.BundleContext;
 
@@ -50,7 +49,7 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  */
 public class MockAggregatorWrapper implements IAggregator {
 	
-	IAggregator mock;
+	protected IAggregator mock;
 	
 	public MockAggregatorWrapper() throws Exception {
 		mock = TestUtils.createMockAggregator();
@@ -65,10 +64,15 @@ public class MockAggregatorWrapper implements IAggregator {
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory,
-			List<InitParam> initParams) throws IOException, JSONException {
+			List<InitParam> initParams) throws Exception {
 		mock = TestUtils.createMockAggregator(configRef, workingDirectory, initParams);
 		EasyMock.replay(mock);
 	}
+	
+	public MockAggregatorWrapper(IAggregator mock) {
+		this.mock = mock;
+	}
+	
 	
 	@Override
 	public String getName() {
