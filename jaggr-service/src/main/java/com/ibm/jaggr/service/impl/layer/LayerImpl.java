@@ -413,7 +413,7 @@ public class LayerImpl implements ILayer {
 		            		log.fine("Key changed!  Adding layer to cache with key: " + key); //$NON-NLS-1$
 		            	}
 	        			final CacheEntry originalEntry = entry;
-	        			CacheEntry updateEntry = new CacheEntry(entry);
+	        			CacheEntry updateEntry = (originalKey == null) ? entry : new CacheEntry(entry);
 		        		CacheEntry previousEntry = _layerBuilds.putIfAbsent(key, updateEntry, options.isDevelopmentMode());
 			            // Write the file to disk only if the LayerBuild was successfully added to the cache,
 		        		// or if the current cache entry is the cache entry we're working on
