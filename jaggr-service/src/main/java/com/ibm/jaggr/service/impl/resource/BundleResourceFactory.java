@@ -60,6 +60,21 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 			if (converter != null) {
 				URL fileUrl = null;
 				try {
+					if (!uri.getPath().endsWith("/")) {
+						/*
+						 * Workaround for bug on some platforms that shows up
+						 * when a file resource is requested from the converter
+						 * before the directory containing the file is requested
+						 * for the first time. In this case, subsequent requests
+						 * for files or directories that are children of the
+						 * containing directory will return a valid file
+						 * resource URL, but the files or directories will not
+						 * be found because the resources were not written to
+						 * disk. Requesting the containing folder first works
+						 * around this bug.
+						 */
+						converter.toFileURL(uri.resolve(".").toURL());
+					}
 					fileUrl = converter.toFileURL(uri.toURL());
 					result = getAggregator().newResource(PathUtil.url2uri(fileUrl));
 				} catch (FileNotFoundException e) {

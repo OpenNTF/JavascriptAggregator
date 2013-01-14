@@ -485,11 +485,14 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     		BundleContext bundleContext = contributingBundle.getBundleContext();
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
-       		workdir = getWorkingDirectory(configElem);
             initParams = getInitParams(configElem);
        		executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
        		variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
             initOptions(initParams);
+       		workdir = initWorkingDirectory( // this must be after initOptions
+       				Platform.getStateLocation(getBundleContext().getBundle()).toFile(),
+       				configElem
+       		);	
         	initExtensions(configElem);
         	
         	// create the config.  Keep it local so it won't be seen by deps and cacheMgr
@@ -1143,10 +1146,22 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 * @return The {@code File} object for the working directory
 	 * @throws FileNotFoundException
 	 */
-	protected File getWorkingDirectory(IConfigurationElement configElem) throws FileNotFoundException {
+	protected File initWorkingDirectory(File defaultLocation, IConfigurationElement configElem) throws FileNotFoundException {
+		String dirName = getOptions().getCacheDirectory();
+		File dirFile = null;
+		if (dirName == null) {
+			dirFile = defaultLocation;
+		} else {
+			// Make sure the path exists
+			dirFile = new File(dirName);
+			dirFile.mkdirs();
+		}
+		if (!dirFile.exists()) {
+			throw new FileNotFoundException(dirFile.toString());
+		}
         // Create a directory using the alias name within the contributing bundle's working
         // directory
-		File workDir = new File(Platform.getStateLocation(getBundleContext().getBundle()).toFile(), getName());
+		File workDir = new File(dirFile, getName());
         // Create a bundle-version specific subdirectory.  If the directory doesn't exist, assume
         // the bundle has been updated and clean out the workDir to remove all stale cache files.
 		File servletDir = new File(workDir, Long.toString(getBundleContext().getBundle().getBundleId()));

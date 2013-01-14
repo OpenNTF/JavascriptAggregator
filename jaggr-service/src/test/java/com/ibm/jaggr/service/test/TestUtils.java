@@ -33,7 +33,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.wink.json4j.JSONException;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 
@@ -172,20 +171,28 @@ public class TestUtils {
 	}
 
 	public static IAggregator createMockAggregator() throws Exception {
-		return createMockAggregator(null, null, null);
+		return createMockAggregator(null, null, null, null);
 	}
 	
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
 		
-		return createMockAggregator(configRef, workingDirectory, null);
+		return createMockAggregator(configRef, workingDirectory, null, null);
+	}
+
+	public static IAggregator createMockAggregator(
+			Ref<IConfig> configRef,
+			File workingDirectory, List<InitParam> initParams) throws Exception {
+		
+		return createMockAggregator(configRef, workingDirectory, initParams, null);
 	}
 
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory,
-			List<InitParam> initParams) throws IOException, JSONException {
+			List<InitParam> initParams,
+			Class<?> aggregatorProxyClass) throws Exception {
 
 		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
 		IOptions options = new OptionsImpl(null, "test", false);
@@ -250,11 +257,15 @@ public class TestUtils {
 			}
 		}).anyTimes();
 		EasyMock.replay(mockAggregator);
-		TestCacheManager cacheMgr = new TestCacheManager(mockAggregator, 1);
+		IAggregator mockAggregatorProxy = mockAggregator;
+		if (aggregatorProxyClass != null) {
+			mockAggregatorProxy = (IAggregator)aggregatorProxyClass.getConstructor(new Class[]{IAggregator.class}).newInstance(mockAggregator);
+		}
+		TestCacheManager cacheMgr = new TestCacheManager(mockAggregatorProxy, 1);
 		cacheMgrRef.set(cacheMgr);
 		//((IOptionsListener)cacheMgrRef.get()).optionsUpdated(options, 1);
 		if (createConfig) {
-			configRef.set(new ConfigImpl(mockAggregator, workingDirectory.toURI(), "{}"));
+			configRef.set(new ConfigImpl(mockAggregatorProxy, workingDirectory.toURI(), "{}"));
 		}
 		EasyMock.reset(mockAggregator);
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
@@ -335,14 +346,15 @@ public class TestUtils {
 	
 	public static HttpServletRequest createMockRequest(IAggregator aggregator, Map<String, Object> requestAttributes) {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, aggregator);
-		return createMockRequest(aggregator, requestAttributes, null, null);
+		return createMockRequest(aggregator, requestAttributes, null, null, null);
 	}
 	
 	public static HttpServletRequest createMockRequest(
 			IAggregator aggregator,
 			final Map<String, Object> requestAttributes, 
 			final Map<String, String[]> requestParameters,
-			final Cookie[] cookies) {
+			final Cookie[] cookies,
+			final Map<String, String> headers) {
 		HttpServletRequest mockRequest = EasyMock.createNiceMock(HttpServletRequest.class);
 		if (requestAttributes != null) {
 			requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, aggregator);
@@ -386,11 +398,27 @@ public class TestUtils {
 				}
 			}).anyTimes();
 		}
+		if (headers != null) {
+			EasyMock.expect(mockRequest.getHeader((String)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
+				public String answer() throws Throwable {
+					return headers.get((String)EasyMock.getCurrentArguments()[0]);
+				}
+			}).anyTimes();
+		}
 		return mockRequest;
 	}
 	
-	public static HttpServletResponse createMockResponse() {
+	public static HttpServletResponse createMockResponse(final Map<String, String> responseAttributes) {
 		HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
+		mockResponse.setContentLength(EasyMock.anyInt());
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
+			public Object answer() throws Throwable {
+				if (responseAttributes != null) {
+					responseAttributes.put("Content-Length", ((Integer)EasyMock.getCurrentArguments()[0]).toString());
+				}
+				return null;
+			}
+		}).anyTimes();
 		return mockResponse;
 	}
 }

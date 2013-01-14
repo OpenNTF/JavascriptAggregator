@@ -134,6 +134,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n:[]:provisional"));
+		keyGens = null;
 		output = buildIt();
 		
 		Assert.assertTrue(builder.handles("nls/strings", new FileResource(new File(nls, "strings.js").toURI())));

@@ -36,7 +36,7 @@ public class KeyGenUtil {
 	 *            The array
 	 * @return True if there is a provisional cache key generator in the array
 	 */
-	static public boolean isProvisional(List<ICacheKeyGenerator> keyGens) {
+	static public boolean isProvisional(Iterable<ICacheKeyGenerator> keyGens) {
 		boolean provisional = false;
 		for (ICacheKeyGenerator keyGen : keyGens) {
 			if (keyGen.isProvisional()) {

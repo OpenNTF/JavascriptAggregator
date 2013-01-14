@@ -61,7 +61,7 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	String getRequiredModuleId() {
 		return requiredModuleId;
 	}
-
+	
 	Set<String> getDependentFeatures() {
 		return dependentFeatures;
 	}

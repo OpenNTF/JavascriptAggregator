@@ -44,6 +44,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Files;
+import com.googlecode.concurrentlinkedhashmap.Weigher;
+import com.googlecode.concurrentlinkedhashmap.Weighers;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.NotFoundException;
@@ -51,6 +53,8 @@ import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.layer.ILayer;
+import com.ibm.jaggr.service.layer.ILayerCache;
+import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestCacheManager;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
@@ -74,6 +78,8 @@ public class LayerCacheTest {
 		}
 	};
 
+	static int maxCapacity = 10;
+
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
@@ -90,9 +96,7 @@ public class LayerCacheTest {
 
 	@Test
 	public void test() throws Exception {
-		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
-		initParams.add(new InitParams.InitParam(InitParams.MAXLAYERCACHEENTRIES_INITPARAM, "10"));
-		createMockObjects(initParams);
+		createMockObjects(null);
 		
 		LayerCacheImpl layerCache = (LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers();
 		Assert.assertEquals(0, layerCache.getLayerBuildMap().size());
@@ -139,7 +143,7 @@ public class LayerCacheTest {
 		// Serialize the cache to disk
 		List<String> serializedKeys = new LinkedList<String>(layerCache.getLayerBuildKeys());
 		((TestCacheManager)mockAggregator.getCacheManager()).serializeCache();
-		createMockObjects(initParams);
+		createMockObjects(null);
 		layerCache = (LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers();
 		Assert.assertEquals(new LinkedList<String>(layerCache.getLayerBuildKeys()), new LinkedList<String>(serializedKeys));
 		Assert.assertEquals(5, layerCache.size());
@@ -177,7 +181,7 @@ public class LayerCacheTest {
 		Assert.assertEquals(6, layerCache.size());
 		Assert.assertEquals(10, layerCache.getLayerBuildMap().size());
 		// test to make sure the expected number of layer cache files are in the cache directory
-		Assert.assertEquals(10 * 2, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+		Assert.assertEquals(10, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
 
 		// Serialize the cache to disk
 		serializedKeys = new LinkedList<String>(layerCache.getLayerBuildKeys());
@@ -186,21 +190,18 @@ public class LayerCacheTest {
 		String filename1 = layerCache.getLayerBuildMap().get(serializedKeys.get(0)).filename;
 		String filename2 = layerCache.getLayerBuildMap().get(serializedKeys.get(1)).filename;
 		Assert.assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), filename1).exists());
-		Assert.assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), filename1 + ".zip").exists());
 		Assert.assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), filename2).exists());
-		Assert.assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), filename2 + ".zip").exists());
 		
 		// Make sure that if the cache is de-serialized using a smaller max size, then
 		// it is adjusted accordingly.
-		initParams.clear();
-		initParams.add(new InitParams.InitParam(InitParams.MAXLAYERCACHEENTRIES_INITPARAM, "8"));
-		createMockObjects(initParams);
+		maxCapacity = 8;
+		createMockObjects(null);
 		layerCache = (LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers();
 		Assert.assertEquals(5, layerCache.getNumEvictions());
 		Assert.assertEquals(5, layerCache.size());
 		Assert.assertEquals(8, layerCache.getLayerBuildMap().size());
 		// test to make sure the expected number of layer cache files are in the cache directory
-		Assert.assertEquals(8 * 2, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+		Assert.assertEquals(8, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
 		// Make sure the LRU entries were removed
 		Assert.assertNull(layerCache.getLayerBuildMap().get(serializedKeys.get(0)));
 		Assert.assertNull(layerCache.getLayerBuildMap().get(serializedKeys.get(1)));
@@ -208,9 +209,7 @@ public class LayerCacheTest {
 		Assert.assertEquals(layerCache.getLayerBuildMap(), ((LayerImpl)layerCache.get("[p1/b]")).getLayerBuildMap());
 
 		Assert.assertFalse(new File(mockAggregator.getCacheManager().getCacheDir(), filename1).exists());
-		Assert.assertFalse(new File(mockAggregator.getCacheManager().getCacheDir(), filename1 + ".gzip").exists());
 		Assert.assertFalse(new File(mockAggregator.getCacheManager().getCacheDir(), filename2).exists());
-		Assert.assertFalse(new File(mockAggregator.getCacheManager().getCacheDir(), filename2 + ".gzip").exists());
 		
 		mockAggregator.getCacheManager().clearCache();
 		Assert.assertEquals(0, layerCache.size());
@@ -218,9 +217,8 @@ public class LayerCacheTest {
 		Assert.assertEquals(0, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
 
 		// Test modified file updating when development mode is enabled
-		initParams.clear();
-		initParams.add(new InitParams.InitParam(InitParams.MAXLAYERCACHEENTRIES_INITPARAM, "10"));
-		createMockObjects(initParams);
+		maxCapacity = 10;
+		createMockObjects(null);
 		layerCache = (LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers();
 		populateCache(layerCache);
 		
@@ -249,29 +247,42 @@ public class LayerCacheTest {
 		Assert.assertEquals(0, layerCache.getNumEvictions());
 		Assert.assertEquals(5, layerCache.size());
 		Assert.assertEquals(10, layerCache.getLayerBuildMap().size());
-		Assert.assertEquals(20, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+		Assert.assertEquals(10, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
 	
 		// Make sure replace entry was moved to end tail of LRU queue
 		Assert.assertEquals(key, new LinkedList<String>(layerCache.getLayerBuildKeys()).getLast());
 		
 		// Test recovery from deleted cache entry data
 		layerCache.getLayerBuildMap().get(key).delete(mockAggregator.getCacheManager());
-		Assert.assertEquals(18, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+		Assert.assertEquals(9, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		in.close();
 		Assert.assertEquals(0, layerCache.getNumEvictions());
 		Assert.assertEquals(5, layerCache.size());
 		Assert.assertEquals(10, layerCache.getLayerBuildMap().size());
-		Assert.assertEquals(20, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+		Assert.assertEquals(10, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+	}
+	
+	@Test
+	public void testGetMaxCapacity() throws Exception {
+		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
+		createMockObjects(initParams);
+		LayerCacheImpl layerCache = new LayerCacheImpl(mockAggregator);
+		Assert.assertEquals(LayerCacheImpl.DEFAULT_MAXLAYERCACHECAPACITY_MB * 1024 * 1024, layerCache.getMaxCapacity());
+		
+		initParams.add(new InitParams.InitParam(InitParams.MAXLAYERCACHECAPACITY_MB_INITPARAM, "50"));
+		layerCache = new LayerCacheImpl(mockAggregator);
+		Assert.assertEquals(50 * 1024 * 1024, layerCache.getMaxCapacity());
 	}
 	
 	@SuppressWarnings("unchecked")
 	private void createMockObjects(List<InitParams.InitParam> initParams) throws Exception {
-		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams);
+		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class);
+		mockAggregator = new Proxy(easyMockAggregator);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 		mockDependencies = EasyMock.createMock(IDependencies.class);
-		EasyMock.expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
+		EasyMock.expect(easyMockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;
 			}
@@ -295,7 +306,7 @@ public class LayerCacheTest {
 		map.put("p1", p1Path);
 		map.put("p2", p2Path);
 		
-		EasyMock.replay(mockAggregator);
+		EasyMock.replay(easyMockAggregator);
 		EasyMock.replay(mockRequest);
 		EasyMock.replay(mockResponse);
 		EasyMock.replay(mockDependencies);
@@ -331,5 +342,45 @@ public class LayerCacheTest {
 		}	
 		Assert.assertEquals(0, layerCache.getNumEvictions());
 		Assert.assertNotNull(layerCache.get("[p1/a]"));
+	}
+	
+	/*
+	 * Proxy class to override the behavior of newLayerCache in the mocked aggregator.
+	 * We could define our own mocked aggregator that implements the desired behavior,
+	 * but it's easier to use the mock aggregator created by TestUtils.createMockAggregator()
+	 * and just override this one method using the MockAggregatorWrapper.  Would be nice
+	 * if EasyMock allowed re-defining of previously defined methods in a mocked object.
+	 */
+	public static class Proxy extends MockAggregatorWrapper implements IAggregator {
+		public Proxy(IAggregator mock) {super(mock);}
+		public ILayerCache newLayerCache() {
+			return new TestLayerCacheImpl(mock);
+		}
+	}
+
+	/*
+	 * Override LayerCacheImple to provide an entry weigher that always returns 1
+	 */
+	static class TestLayerCacheImpl extends LayerCacheImpl {
+		TestLayerCacheImpl() {
+			super();
+		}
+		
+		TestLayerCacheImpl(IAggregator aggregator) {
+			super(aggregator);
+		}
+		
+		@Override
+		protected int getMaxCapacity(IAggregator aggregator) {
+			// return our test defined max capacity
+			return LayerCacheTest.maxCapacity;
+		}
+		
+		@Override
+		protected Weigher<CacheEntry> newWeigher() {
+			// All entries have a weight of 1
+			return Weighers.singleton();
+		}
+		
 	}
 }
