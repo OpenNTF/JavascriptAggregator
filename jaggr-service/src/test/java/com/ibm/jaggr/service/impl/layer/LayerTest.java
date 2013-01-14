@@ -37,9 +37,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -51,6 +52,7 @@ import org.junit.Test;
 
 import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
@@ -72,6 +74,15 @@ public class LayerTest extends EasyMock {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = createNiceMock(HttpServletResponse.class);
 	IDependencies mockDependencies = createMock(IDependencies.class);
+	static final Map<String, Map<String, String>> testDepMap;
+	
+	static {
+		testDepMap = new HashMap<String, Map<String, String>>();
+		for (Map.Entry<String, Map<String, String>> entry : TestUtils.testDepMap.entrySet()) {
+			testDepMap.put(entry.getKey(), new HashMap<String, String>(entry.getValue()));
+		}
+	}
+
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -101,14 +112,25 @@ public class LayerTest extends EasyMock {
 		}).anyTimes();
 		
 		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		expect(mockDependencies.getExpandedDependencies((String)anyObject(), (Features)anyObject(), (Set<String>)anyObject(), anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
+		expect(mockDependencies.getDelcaredDependencies(eq("p1/a"))).andReturn(Arrays.asList(new String[]{"p1/b"})).anyTimes();
+		expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
 			public Map<String, String> answer() throws Throwable {
-				String name = (String)getCurrentArguments()[0];
-				Map<String, String> result = TestUtils.testDepMap.get(name);
+				String name = (String)EasyMock.getCurrentArguments()[0];
+				Features features = (Features)EasyMock.getCurrentArguments()[1];
+				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
+				Map<String, String> result = testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}
-				return result;
+				// resolve aliases
+				Map<String, String> temp = new HashMap<String, String>();
+				IConfig config = mockAggregator.getConfig();
+				for (Map.Entry<String, String> entry : result.entrySet()) {
+					String depName = entry.getKey();
+					String resolved = config.resolve(depName, features, dependentFeatures, null);
+					temp.put(resolved != null ? resolved : depName, entry.getValue());
+				}
+				return temp;
 			}
 		}).anyTimes();
 		
@@ -137,7 +159,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.ayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("unchecked")
@@ -304,53 +326,6 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#deleteCached(com.ibm.jaggr.service.cache.ICacheManager, int)}.
-	 */
-	/*
-	@Test
-	public void testDeleteCached() throws Exception {
-		// Request a single module
-		Collection<String> modules = Arrays.asList(new String[]{"p1/a"});
-		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		LayerImpl layer = newLayerImpl();
-		layer.setReportCacheInfo(true);
-		InputStream in = layer.getInputStream(mockRequest, mockResponse);
-		Writer writer = new StringWriter();
-		CopyUtil.copy(in, writer);
-		String result = writer.toString();
-		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		@SuppressWarnings("unchecked")
-		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
-		assertEquals("add", moduleCacheInfo.get("p1/a"));
-		assertTrue(result.contains("\"hello from a.js\""));
-		
-		// get the name of the cached layer file
-		File cachedLayer = null;
-		for (File file : mockAggregator.getCacheManager().getCacheDir().listFiles()) {
-			if (file.getName().startsWith("layer.")) {
-				cachedLayer = file;
-				break;
-			}
-		}
-		assertNotNull(cachedLayer);
-		layer.clearCached(mockAggregator.getCacheManager());
-		if (cachedLayer.exists()) {
-			System.out.println(cachedLayer.toString());
-		}
-		assertFalse(cachedLayer.exists());
-		
-		requestAttributes.clear();
-		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		in = layer.getInputStream(mockRequest, mockResponse);
-		writer = new StringWriter();
-		CopyUtil.copy(in, writer);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-	}
-	*/
-	
-	/**
 	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
 	 */
 	@Test
@@ -392,45 +367,6 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getHasMapFromRequest(javax.servlet.http.HttpServletRequest)}.
-	 * @throws ServletException 
-	 */
-	/* TODO: Move this to HttpTransportImplTest
-	@Test
-	public void testGetHasMapFromRequest() throws ServletException {
-		MockHttpServletRequest request = new MockHttpServletRequest();
-		assertEquals(0, LayerImpl.getHasMapFromRequest(request).size());
-		
-		request = new MockHttpServletRequest();
-		String hasConditions = "foo;!bar";
-		request.setParameter("has", new String[]{hasConditions});
-		Map<String, Boolean> hasmap = LayerImpl.getHasMapFromRequest(request);
-		assertTrue(2 == hasmap.size());
-		assertTrue(hasmap.get("foo"));
-		assertFalse(hasmap.get("bar"));
-
-		// Not try specifying the has conditions in the cookie
-		request = new MockHttpServletRequest();
-		request.setParameter("hashash", new String[]{"xxxx"}); // value not checked by server
-		request.addCookie(new Cookie("has", hasConditions));
-		hasmap = LayerImpl.getHasMapFromRequest(request);
-		assertTrue(2 == hasmap.size());
-		assertTrue(hasmap.get("foo"));
-		assertFalse(hasmap.get("bar"));
-		
-		// Make sure we handle null cookie values without throwing
-		request = new MockHttpServletRequest();
-		request.setParameter("hashash", new String[]{"xxxx"}); // value not checked by server
-		request.addCookie(new Cookie("has", null));
-		assertEquals(0, LayerImpl.getHasMapFromRequest(request).size());
-		
-		// Try missing cookie
-		request = new MockHttpServletRequest();
-		request.setParameter("hashash", new String[]{"xxxx"}); // value not checked by server
-		assertEquals(0, LayerImpl.getHasMapFromRequest(request).size());
-	}
-	*/
-	/**
 	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.service.config.IConfig)}.
 	 */
 	@Test
@@ -445,33 +381,76 @@ public class LayerTest extends EasyMock {
 		assertEquals(uri, impl.newModule(mockRequest, "p1/hello.txt").getURI());
 
 	}
-
-	/*
-	@Test
-	public void testLimits() throws Exception {
-		// Request a single module
-		Collection<String> modules = Arrays.asList(new String[]{"p1/a"}); 
-		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		LayerImpl layer = new LayerImpl("", new AtomicInteger(9), 10);
-		InputStream in = layer.getInputStream(mockRequest, mockResponse);
-		in.close();
-		// Request the same layer with different option which will result in a new layer build
-		// added to the cache and busting the limit.
-		requestAttributes.clear();
-		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
-		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		boolean exceptionCaught = false;
-		try {
-			layer.getInputStream(mockRequest, mockResponse);
-		} catch(LimitExceededException e) {
-			exceptionCaught = true;
-		}
-		Assert.assertTrue(exceptionCaught);
-	}
-	*/
 	
+	@Test
+	public void featureSetUpdatingTests() throws Exception {
+		testDepMap.get("p2/a").put("p1/aliased/d", "");
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		
+		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, IHttpTransport.OptimizationLevel.NONE);
+		LayerImpl layer = newLayerImpl(mockAggregator);
+		layer.setReportCacheInfo(true);
+		
+		layer.getInputStream(mockRequest, mockResponse).close();
+		Map<String, ICacheKeyGenerator> keyGen = layer.getCacheKeyGenerators();
+		System.out.println(keyGen.values());
+		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[conditionFalse, conditionTrue])"));
+		
+		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
+		Features features = new Features();
+		features.put("foo", true);
+		features.put("bar", true);
+		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
+		
+		layer.getInputStream(mockRequest, mockResponse).close();
+		keyGen = layer.getCacheKeyGenerators();
+		System.out.println(keyGen.values());
+		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[conditionFalse, conditionTrue, foo])"));
+		
+		features.put("foo", false);
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		layer.getInputStream(mockRequest, mockResponse).close();
+		keyGen = layer.getCacheKeyGenerators();
+		System.out.println(keyGen.values());
+		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[bar, conditionFalse, conditionTrue, foo])"));
+		
+		features.put("foo", true);
+		features.put("bar", false);
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		layer.getInputStream(mockRequest, mockResponse).close();
+		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
+		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+		features.put("foo", false);
+		features.put("bar", false);
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		layer.getInputStream(mockRequest, mockResponse).close();
+		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		keyGen = layer.getCacheKeyGenerators();
+		System.out.println(keyGen.values());
+		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[bar, conditionFalse, conditionTrue, foo, non])"));
+
+		features.put("foo", true);
+		features.put("bar", true);
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		layer.getInputStream(mockRequest, mockResponse).close();
+		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
+		
+		features.remove("foo");
+		features.remove("bar");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		layer.getInputStream(mockRequest, mockResponse).close();
+		assertEquals("hit_1", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
+
+	}
+
 	@SuppressWarnings("serial")
 	class TestLayerImpl extends LayerImpl { 
 		TestLayerImpl() {
@@ -487,39 +466,6 @@ public class LayerTest extends EasyMock {
 		}
 	};
 	
-	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getHasConditionsFromRequest(javax.servlet.http.HttpServletRequest)}.
-	 * @throws ServletException 
-	 */
-	/* TODO: Move this to HttpTransportImplTest
-	@Test
-	public void testGetHasConditionsFromRequest() throws ServletException {
-		MockHttpServletRequest request = new MockHttpServletRequest();
-		assertNull(LayerImpl.getHasConditionsFromRequest(request));
-		
-		request = new MockHttpServletRequest();
-		String hasConditions = "foo;!bar";
-		request.setParameter("has", new String[]{hasConditions});
-		assertEquals(hasConditions, LayerImpl.getHasConditionsFromRequest(request));
-		
-		// Not try specifying the has conditions in the cookie
-		request = new MockHttpServletRequest();
-		request.setParameter("hashash", new String[]{"xxxx"}); // value not checked by server
-		request.addCookie(new Cookie("has", hasConditions));
-		assertEquals(hasConditions, LayerImpl.getHasConditionsFromRequest(request));
-		
-		// Make sure we handle null cookie values without throwing
-		request = new MockHttpServletRequest();
-		request.setParameter("hashash", new String[]{"xxxx"}); // value not checked by server
-		request.addCookie(new Cookie("has", null));
-		assertNull(LayerImpl.getHasConditionsFromRequest(request));
-
-		// Try missing cookie
-		request = new MockHttpServletRequest();
-		request.setParameter("hashash", new String[]{"xxxx"}); // value not checked by server
-		assertNull(LayerImpl.getHasConditionsFromRequest(request));
-	}
-	*/
 	static private LayerImpl newLayerImpl(IAggregator aggregator) {
 		LayerImpl result = new LayerImpl("", 1);
 		result.setLayerBuildsAccessor(new LayerBuildsAccessor(

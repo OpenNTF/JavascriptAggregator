@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.cachekeygenerator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedMap;
@@ -45,7 +46,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	/**
 	 * The features this key generator depends on.
 	 */
-	private final Collection<String> depFeatures;
+	private final Set<String> depFeatures;
 
 	/**
 	 * true if this cache key generator is provisional.
@@ -68,7 +69,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	public FeatureSetCacheKeyGenerator(Set<String> dependentFeatures,
 			boolean provisional) {
 		depFeatures = dependentFeatures == null ? null : 
-				Collections.unmodifiableCollection(new HashSet<String>(dependentFeatures));
+				Collections.unmodifiableSet(new HashSet<String>(dependentFeatures));
 		this.provisional = provisional;
 	}
 	
@@ -126,15 +127,25 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator)
 	 */
 	@Override
-	public ICacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
+	public FeatureSetCacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
+		if (this.equals(otherKeyGen)) {
+			return this;
+		}
 		FeatureSetCacheKeyGenerator other = (FeatureSetCacheKeyGenerator)otherKeyGen;
-		if (provisional || other.provisional) {
+		if (provisional && other.provisional) {
 			// should never happen
 			throw new IllegalStateException();
 		}
-		Set<String> combined = null;
-		if (depFeatures != null && other.depFeatures != null) {
-			combined = new HashSet<String>(depFeatures);
+		if (provisional) {
+			return other;
+		} else if (other.provisional) {
+			return this;
+		}
+		Set<String> combined = new HashSet<String>();
+		if (depFeatures != null) {
+			combined.addAll(depFeatures);
+		} 
+		if (other.depFeatures != null) {
 			combined.addAll(other.depFeatures);
 		}
 		return new FeatureSetCacheKeyGenerator(combined, false);
@@ -157,7 +168,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 		// items in the output.
 		SortedSet<String> set = depFeatures == null ? null : new TreeSet<String>(depFeatures);
 		StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
-		sb.append(set == null ? "null" : set.toString()); //$NON-NLS-1$
+		sb.append(set == null ? "[]" : set.toString()); //$NON-NLS-1$
 		if (isProvisional()) {
 			sb.append(":provisional"); //$NON-NLS-1$
 		}
@@ -165,7 +176,33 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	@Override
-	public ICacheKeyGenerator[] getCacheKeyGenerators(HttpServletRequest request) {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request) {
+		// results are not request dependent.
 		return null;
+	}
+	
+	public Collection<String> getFeatureSet() {
+		return depFeatures;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other != null && getClass().equals(other.getClass()) && 
+				provisional == ((FeatureSetCacheKeyGenerator)other).provisional &&
+				(
+					depFeatures != null && depFeatures.equals(((FeatureSetCacheKeyGenerator)other).depFeatures) ||
+					depFeatures == null && ((FeatureSetCacheKeyGenerator)other).depFeatures == null
+				);
+		
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = getClass().hashCode();
+		result = result * 31 + Boolean.valueOf(provisional).hashCode();
+		if (depFeatures != null) {
+			result = result * 31 + depFeatures.hashCode();
+		}
+		return result;
 	}
 }

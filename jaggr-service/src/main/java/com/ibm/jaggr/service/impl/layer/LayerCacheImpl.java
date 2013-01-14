@@ -70,8 +70,6 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * between the evicted entry and the ILayer object.  When a ILayer object
  * no longer has any CacheEntry objects in the layerBuildMap, it is 
  * removed from the layerMap.
- * 
- * @author chuckd@us.ibm.com
  */
 public class LayerCacheImpl implements ILayerCache, Serializable {
 	private static final long serialVersionUID = -3231549218609175774L;

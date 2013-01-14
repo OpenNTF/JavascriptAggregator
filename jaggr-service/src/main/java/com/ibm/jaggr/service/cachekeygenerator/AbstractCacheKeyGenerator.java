@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.service.cachekeygenerator;
 
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 
 
@@ -47,7 +49,7 @@ public abstract class AbstractCacheKeyGenerator implements
 	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#getCacheKeyGenerators(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
-	public ICacheKeyGenerator[] getCacheKeyGenerators(HttpServletRequest request) {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request) {
 		return null;
 	}
 

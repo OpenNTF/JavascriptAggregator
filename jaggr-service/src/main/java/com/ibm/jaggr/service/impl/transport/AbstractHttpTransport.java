@@ -363,11 +363,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			}
 			if (ret == null) {
 				if (log.isLoggable(Level.WARNING)) {
-					String url = request.getRequestURL()
-					   .append("?").append(request.getQueryString()).toString(); //$NON-NLS-1$
-					log.warning(MessageFormat.format(
-							Messages.AbstractHttpTransport_0,
-							new Object[]{url, request.getHeader("User-Agent")})); //$NON-NLS-1$
+					StringBuffer url = request.getRequestURL();
+					if (url != null) {	// might be null if using mock request for unit testing
+						url.append("?").append(request.getQueryString()).toString(); //$NON-NLS-1$
+						log.warning(MessageFormat.format(
+								Messages.AbstractHttpTransport_0,
+								new Object[]{url, request.getHeader("User-Agent")})); //$NON-NLS-1$
+					}
 				}
 			}
 		}
@@ -388,6 +390,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 *         specified names
 	 */
 	protected static String getParameter(HttpServletRequest request, String[] aliases) {
+		@SuppressWarnings("unchecked")
 		Map<String, String[]> params = request.getParameterMap();
 		String result = null;
 		for (Map.Entry<String, String[]> entry : params.entrySet()) {
@@ -571,7 +574,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#getCacheKeyGenerators()
 	 */
 	@Override
-	public abstract ICacheKeyGenerator[] getCacheKeyGenerators();
+	public abstract List<ICacheKeyGenerator> getCacheKeyGenerators();
 	
 	/**
 	 * Returns the extension contributions that have been registered with this
