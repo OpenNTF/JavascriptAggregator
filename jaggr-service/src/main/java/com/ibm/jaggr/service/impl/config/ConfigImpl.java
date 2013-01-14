@@ -596,8 +596,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			// Use newResource to convert the bundleresource uri into a file uri if the
 			// platform supports it.  File uri's are more stable across server restarts
 			// than bundleresource uri's.
-			URL bundleRoot = getAggregator().getBundleContext().getBundle().getResource("/");
-			configUri = aggregator.newResource(PathUtil.url2uri(bundleRoot)).getURI().resolve(configName);
+			configUri = aggregator.newResource(PathUtil.url2uri(configUrl)).getURI();
 		}
 		return configUri;
 	}
