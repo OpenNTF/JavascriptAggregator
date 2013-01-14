@@ -48,7 +48,7 @@ public interface IExecutors {
 	 * 
 	 * @return A scheduled executor service
 	 */
-	public ScheduledExecutorService getCacheSerializeExecutor();
+	public ScheduledExecutorService getScheduledExecutor();
 
 	/**
 	 * Returns a scheduled executor that will execute submitted tasks after a

@@ -100,7 +100,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 	@Before
 	public void setUp() throws Exception {
 		mockAggregator = TestUtils.createMockAggregator();
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");

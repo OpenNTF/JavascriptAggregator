@@ -136,8 +136,17 @@ public interface IOptions {
 	 */
 	public static final String VERIFY_DEPS = "verifyDeps"; //$NON-NLS-1$
 	
+	/**
+	 * Name of property to specify the directory to use for cache files. If not
+	 * specified, then the plugin state area for the bundle is used (i.e. the
+	 * value returned by
+	 * {@link Platform#getStateLocation(org.osgi.framework.Bundle)}).
+	 */
+	public static final String CACHE_DIRECTORY = "cacheDirectory"; //$NON-NLS-1$
+	
 	/** The default value returned by {@link #getDeleteDelay()} */
 	public static final int DEFAULT_DELETE_DELAY = 3*60; // 3 minutes
+
 	
 	
 	/**
@@ -202,6 +211,15 @@ public interface IOptions {
 	 */
 	public int getDeleteDelay();
 	
+    /**
+     * Convenience method for reading the {@link #CACHE_DIRECTORY}
+     * options property.
+     * 
+     * @return The value of the {@link #CACHE_DIRECTORY} property
+     */
+	
+    public String getCacheDirectory();
+    
     /**
      * Returns the value of the specified option
      * 

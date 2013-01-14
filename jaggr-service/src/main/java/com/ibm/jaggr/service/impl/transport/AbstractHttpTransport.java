@@ -390,7 +390,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 *         specified names
 	 */
 	protected static String getParameter(HttpServletRequest request, String[] aliases) {
-		@SuppressWarnings("unchecked")
 		Map<String, String[]> params = request.getParameterMap();
 		String result = null;
 		for (Map.Entry<String, String[]> entry : params.entrySet()) {

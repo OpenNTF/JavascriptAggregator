@@ -41,6 +41,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import com.googlecode.concurrentlinkedhashmap.EvictionListener;
+import com.googlecode.concurrentlinkedhashmap.Weigher;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.layer.ILayer;
@@ -74,7 +75,7 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class LayerCacheImpl implements ILayerCache, Serializable {
 	private static final long serialVersionUID = -3231549218609175774L;
 
-	private static final int DEFAULT_MAXLAYERCACHEENTRIES = 10000;
+	static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
 	
 	private ConcurrentMap<String, LayerImpl> layerMap;
 	
@@ -84,14 +85,14 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	
 	private AtomicInteger newLayerId = new AtomicInteger(0);
 	
-	private int maxNumCachedEntries = DEFAULT_MAXLAYERCACHEENTRIES;
+	private int maxCapacity = DEFAULT_MAXLAYERCACHECAPACITY_MB;
 	
 	private AtomicInteger numEvictions = new AtomicInteger(0);
 	
 	private ReadWriteLock cloneLock = new ReentrantReadWriteLock();
 	
 	// Used by Serialization proxy
-	private LayerCacheImpl() {}
+	protected LayerCacheImpl() {}
 	
 	/**
 	 * Copy constructor.  Used by sub-classes that need to override writeReplace
@@ -103,22 +104,18 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		layerBuildMap = layerCache.layerBuildMap;
 		aggregator = layerCache.aggregator;
 		newLayerId = layerCache.newLayerId;
-		maxNumCachedEntries = layerCache.maxNumCachedEntries;
+		maxCapacity = layerCache.maxCapacity;
 		numEvictions = layerCache.numEvictions;
 		cloneLock = layerCache.cloneLock;
 	}
 	
 	public LayerCacheImpl(IAggregator aggregator) {
-		InitParams initParams =  aggregator.getInitParams();
-		if (initParams != null) {
-			List<String> values = initParams.getValues(InitParams.MAXLAYERCACHEENTRIES_INITPARAM);
-			maxNumCachedEntries = TypeUtil.asInt(values.size()  > 0 ? values.get(values.size()-1) : null,  DEFAULT_MAXLAYERCACHEENTRIES);
-		}
+		maxCapacity = getMaxCapacity(aggregator);
 		layerMap = new ConcurrentHashMap<String, LayerImpl>();
 		layerBuildMap = new ConcurrentLinkedHashMap.Builder<String, CacheEntry>()
-				.maximumWeightedCapacity(maxNumCachedEntries)
-				.listener(
-					new LayerCacheEvictionListener()).build();
+				.maximumWeightedCapacity(maxCapacity)
+				.listener(newEvictionListener())
+				.weigher(newWeigher()).build();
 	}
 	
 	/* (non-Javadoc)
@@ -241,6 +238,10 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		return numEvictions.get();
 	}
 	
+	int getMaxCapacity() {
+		return maxCapacity;
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayerCache#setAggregator(com.ibm.jaggr.service.IAggregator)
 	 */
@@ -251,23 +252,20 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		}
 		this.aggregator = aggregator;
 		
-		// See if the max cache entries init-param has changed and 
-		InitParams initParams =  aggregator.getInitParams();
-		int newMaxNumCachedEntries = DEFAULT_MAXLAYERCACHEENTRIES;
-		if (initParams != null) {
-			List<String> values = initParams.getValues(InitParams.MAXLAYERCACHEENTRIES_INITPARAM);
-			newMaxNumCachedEntries = TypeUtil.asInt(values.size()  > 0 ? values.get(values.size()-1) : null,  DEFAULT_MAXLAYERCACHEENTRIES);
-		}
+		// See if the max cache entries init-param has changed and
+		int newMaxCapacity = getMaxCapacity(aggregator);
+
 		// If the maximum size has changed, then create a new layerBuildMap with the new
 		// max size and copy the entries from the existing map to the new map
 		ConcurrentLinkedHashMap<String, CacheEntry> oldLayerBuildMap = null;
 															// have no layer builds in the layerBuildMap
-		if (maxNumCachedEntries != newMaxNumCachedEntries) {
-			maxNumCachedEntries = newMaxNumCachedEntries;
+		if (maxCapacity != newMaxCapacity) {
+			maxCapacity = newMaxCapacity;
 			oldLayerBuildMap = layerBuildMap;
 			layerBuildMap = new ConcurrentLinkedHashMap.Builder<String, CacheEntry>()
-					.maximumWeightedCapacity(maxNumCachedEntries)
-					.listener(new LayerCacheEvictionListener())
+					.maximumWeightedCapacity(maxCapacity)
+					.listener(newEvictionListener())
+					.weigher(newWeigher())
 					.build();
 			// Need to call setLayerBuildAccessors BEFORE calling putAll because
 			// it might result in the eviction handler being called.
@@ -306,21 +304,41 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			layerMap.remove(key);
 		}
 	}
-	
-	private class LayerCacheEvictionListener implements	EvictionListener<String, CacheEntry> {
-		
-		@Override
-		public void onEviction(String layerKey, CacheEntry cacheEntry) {
-			LayerImpl layer = layerMap.get(cacheEntry.layerKey);
-			if (layer != null) {
-				numEvictions.incrementAndGet();
-				if (layer.cacheEntryEvicted(cacheEntry)) {
-					layerMap.remove(layer.getKey(), layer);
+
+	protected EvictionListener<String, CacheEntry> newEvictionListener() {
+		return new EvictionListener<String, CacheEntry>() { 
+			@Override
+			public void onEviction(String layerKey, CacheEntry cacheEntry) {
+				LayerImpl layer = layerMap.get(cacheEntry.layerKey);
+				if (layer != null) {
+					numEvictions.incrementAndGet();
+					if (layer.cacheEntryEvicted(cacheEntry)) {
+						layerMap.remove(layer.getKey(), layer);
+					}
 				}
+				// Delete the cache entry persistent storage.
+				cacheEntry.delete(aggregator.getCacheManager());
 			}
-			// Delete the cache entry persistent storage.
-			cacheEntry.delete(aggregator.getCacheManager());
+		};
+	}
+	
+	protected Weigher<CacheEntry> newWeigher() {
+		return new Weigher<CacheEntry>() {
+			@Override
+			public int weightOf(CacheEntry entry) {
+				return entry.size; //entry.size;
+			}
+		};
+	}
+	
+	protected int getMaxCapacity(IAggregator aggregator) {
+		InitParams initParams =  aggregator.getInitParams();
+		int result = DEFAULT_MAXLAYERCACHECAPACITY_MB * 1024 * 1024;
+		if (initParams != null) {
+			List<String> values = initParams.getValues(InitParams.MAXLAYERCACHECAPACITY_MB_INITPARAM);
+			result = (TypeUtil.asInt(values.size()  > 0 ? values.get(values.size()-1) : null,  DEFAULT_MAXLAYERCACHECAPACITY_MB) * 1024 * 1024);
 		}
+		return result;
 	}
 	
 	/* ---------------- Serialization Support -------------- */
@@ -344,16 +362,18 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		private static final long serialVersionUID = 1956233862324653291L;
 		
 		private final int newLayerId;
-		private final int maxNumCachedEntries;
+		private final int maxCapacity;
 		private final int numEvictions;
+		private final Class<?> clazz;
 		private final ConcurrentMap<String, LayerImpl> layerMap;
 		private final Map<String, CacheEntry> layerBuildMap;
 
 		protected SerializationProxy(LayerCacheImpl cache) throws InvalidObjectException {
 			cache.cloneLock.writeLock().lock();
 			try {
+				clazz = cache.getClass();
 				newLayerId = cache.newLayerId.get();
-				maxNumCachedEntries = cache.maxNumCachedEntries;
+				maxCapacity = cache.maxCapacity;
 				numEvictions = cache.numEvictions.get();
 				layerMap = new ConcurrentHashMap<String, LayerImpl>();
 				for (Map.Entry<String, LayerImpl> entry : cache.layerMap.entrySet()) {
@@ -367,15 +387,21 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	    }
 
 	    protected Object readResolve() {
-	    	LayerCacheImpl cache = new LayerCacheImpl();
+	    	LayerCacheImpl cache;
+			try {
+				cache = (LayerCacheImpl)clazz.newInstance();
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 	    	cache.layerMap = layerMap;
 	    	cache.newLayerId = new AtomicInteger(newLayerId);
-	    	cache.maxNumCachedEntries = maxNumCachedEntries;
+	    	cache.maxCapacity = maxCapacity;
 	    	cache.numEvictions = new AtomicInteger(numEvictions);
 	    	cache.cloneLock = new ReentrantReadWriteLock();
 			cache.layerBuildMap = new ConcurrentLinkedHashMap.Builder<String, CacheEntry>()
-					.maximumWeightedCapacity(maxNumCachedEntries)
-					.listener(cache.new LayerCacheEvictionListener())
+					.maximumWeightedCapacity(maxCapacity)
+					.listener(cache.newEvictionListener())
+					.weigher(cache.newWeigher())
 					.build();
 			cache.layerBuildMap.putAll(layerBuildMap);
 	    	return cache;
