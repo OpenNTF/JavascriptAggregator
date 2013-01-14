@@ -115,6 +115,11 @@ public class OptionsImpl  implements IOptions {
 	public String getCacheBust() {
 		return getOption(CACHEBUST);
 	}
+	
+	@Override
+	public String getCacheDirectory() {
+		return getOption(CACHE_DIRECTORY);
+	}
 
 	@Override
 	public int getDeleteDelay() {

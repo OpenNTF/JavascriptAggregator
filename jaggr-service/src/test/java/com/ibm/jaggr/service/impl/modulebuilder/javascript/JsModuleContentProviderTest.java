@@ -370,7 +370,6 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testGenerateCacheKey() throws IOException {
-		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();

@@ -89,27 +89,26 @@ public class LayerImpl implements ILayer {
     public static final String MODULECACHEIFNO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
     
     protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
-        	new AbstractCacheKeyGenerator() {
-        		// This is a singleton, so default equals() will do
-    			private static final long serialVersionUID = 2013098945317787755L;
-    			private static final String eyeCatcher = "lyr";
-    			@Override
-    			public String generateKey(HttpServletRequest request) {
-    				boolean showFilenames =  TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
-    				return new StringBuffer(eyeCatcher).append(":") //$NON-NLS-1$
-    						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$
-    						.append(showFilenames ? "1" : "0").toString(); //$NON-NLS-1$ //$NON-NLS-2$
+    	new AbstractCacheKeyGenerator() {
+    		// This is a singleton, so default equals() will do
+			private static final long serialVersionUID = 2013098945317787755L;
+			private static final String eyeCatcher = "lyr";
+			@Override
+			public String generateKey(HttpServletRequest request) {
+				boolean showFilenames =  TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
+				return new StringBuffer(eyeCatcher).append(":") //$NON-NLS-1$
+						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+						.append(showFilenames ? "1" : "0").toString(); //$NON-NLS-1$ //$NON-NLS-2$
 
-    			}
-    			@Override
-    			public String toString() {
-    				return eyeCatcher; //$NON-NLS-1$
-    			}
-        	}
-        }));
-        	
-        public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):");
-    
+			}
+			@Override
+			public String toString() {
+				return eyeCatcher; //$NON-NLS-1$
+			}
+    	}
+    }));
+    	
+    public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):");
     /**
      * Map of cache dependency objects for module classes included in this layer.
      * Cloned by reference since cache key generators are immutable.
@@ -415,8 +414,7 @@ public class LayerImpl implements ILayer {
 	        			final CacheEntry originalEntry = entry;
 	        			CacheEntry updateEntry = (originalKey == null) ? entry : new CacheEntry(entry);
 		        		CacheEntry previousEntry = _layerBuilds.putIfAbsent(key, updateEntry, options.isDevelopmentMode());
-			            // Write the file to disk only if the LayerBuild was successfully added to the cache,
-		        		// or if the current cache entry is the cache entry we're working on
+			            // Write the file to disk only if the LayerBuild was successfully added to the cache
 			        	if (previousEntry == null) {
 			        		// Updated entry was added to the cache.
 			        		entry = updateEntry;

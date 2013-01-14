@@ -43,7 +43,7 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class TextModuleBuilder implements IModuleBuilder {
 	
 	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators = 
-			Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()}));
+		Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()}));
 
 	/**
 	 * Returns the compiler input source for the text module as the text stream

@@ -338,6 +338,12 @@ public class TestUtils {
 		return mockAggregator;
 	}
 	
+	public static HttpServletRequest createMockRequest(IAggregator aggregator) {
+		HttpServletRequest mockRequest = EasyMock.createNiceMock(HttpServletRequest.class);
+		EasyMock.expect(mockRequest.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME)).andReturn(aggregator).anyTimes();
+		return mockRequest;
+	}
+	
 	public static HttpServletRequest createMockRequest(IAggregator aggregator, Map<String, Object> requestAttributes) {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, aggregator);
 		return createMockRequest(aggregator, requestAttributes, null, null, null);

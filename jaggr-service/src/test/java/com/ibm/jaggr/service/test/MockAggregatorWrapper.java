@@ -73,7 +73,6 @@ public class MockAggregatorWrapper implements IAggregator {
 		this.mock = mock;
 	}
 	
-	
 	@Override
 	public String getName() {
 		return mock.getName();

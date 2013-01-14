@@ -19,6 +19,7 @@ package com.ibm.jaggr.service;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import com.ibm.jaggr.service.impl.AggregatorImplTest;
 import com.ibm.jaggr.service.impl.config.ConfigTests;
 import com.ibm.jaggr.service.impl.deps.DepTreeNodeTests;
 import com.ibm.jaggr.service.impl.deps.DepUtilsTest;
@@ -55,7 +56,8 @@ import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 	TxtModuleContentProviderTest.class,
 	RequireExpansionCompilerPassTest.class,
 	AbstractHttpTransportTest.class,
-	DojoHttpTransportTest.class
+	DojoHttpTransportTest.class,
+	AggregatorImplTest.class
 })
 public class EverythingSuite {
 
