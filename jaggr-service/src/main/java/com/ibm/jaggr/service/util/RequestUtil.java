@@ -31,4 +31,15 @@ public class RequestUtil {
 				TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOCACHE_REQATTRNAME));
 		
 	}
+	
+	public static boolean isGzipEncoding(HttpServletRequest request) {
+		boolean result = false;
+		String accept = request.getHeader("Accept-Encoding"); //$NON-NLS-1$
+        if (accept != null)
+        	accept = accept.toLowerCase();
+        if (accept != null && accept.contains("gzip") && !accept.contains("gzip;q=0")) { //$NON-NLS-1$ //$NON-NLS-2$
+        	result = true;
+        }
+        return result;
+	}
 }

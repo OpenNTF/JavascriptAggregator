@@ -49,7 +49,7 @@ public class AbstractHttpTransportTest {
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		Map<String, String[]> requestParameters = new HashMap<String, String[]>();
 		Cookie[] cookies = new Cookie[1];
-		HttpServletRequest request = TestUtils.createMockRequest(null, requestAttributes, requestParameters, cookies);
+		HttpServletRequest request = TestUtils.createMockRequest(null, requestAttributes, requestParameters, cookies, null);
 		EasyMock.replay(request);
 		assertNull(AbstractHttpTransport.getHasConditionsFromRequest(request));
 		

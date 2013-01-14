@@ -182,7 +182,8 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 	
 	public Collection<String> getFeatureSet() {
-		return depFeatures;
+		if (depFeatures != null) return depFeatures;
+		else return Collections.emptySet();
 	}
 
 	@Override

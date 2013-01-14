@@ -21,8 +21,11 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
@@ -36,16 +39,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
+import java.util.zip.Deflater;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -71,8 +74,11 @@ public class LayerTest extends EasyMock {
 	IAggregator mockAggregator;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
+	Map<String, String[]> requestParameters = new HashMap<String, String[]>();
+	Map<String, String> requestHeaders = new HashMap<String, String>();
+	Map<String, String> responseAttributes = new HashMap<String, String>();
 	HttpServletRequest mockRequest;
-	HttpServletResponse mockResponse = createNiceMock(HttpServletResponse.class);
+	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
 	IDependencies mockDependencies = createMock(IDependencies.class);
 	static final Map<String, Map<String, String>> testDepMap;
 	
@@ -104,7 +110,7 @@ public class LayerTest extends EasyMock {
 	@Before
 	public void setup() throws Exception {
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, requestHeaders);
 		expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;
@@ -159,7 +165,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.servlets.amd.aggregator.config.IConfig, long)}.
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("unchecked")
@@ -326,7 +332,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.servlets.amd.aggregator.config.IConfig, long)}.
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
@@ -351,7 +357,7 @@ public class LayerTest extends EasyMock {
 
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#toString()}.
+	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#toString()}.
 	 */
 	@Test
 	public void testToString() throws Exception {
@@ -363,11 +369,11 @@ public class LayerTest extends EasyMock {
 		in.close();
 		String s = layer.toString();
 		System.out.println(s);
-		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};sn:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
+		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};lyr:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.service.config.IConfig)}.
+	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.servlets.amd.aggregator.config.IConfig)}.
 	 */
 	@Test
 	public void testGetResourceURI() {
@@ -402,7 +408,6 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
 		Features features = new Features();
 		features.put("foo", true);
-		features.put("bar", true);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
 		
 		layer.getInputStream(mockRequest, mockResponse).close();
@@ -412,6 +417,7 @@ public class LayerTest extends EasyMock {
 		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[conditionFalse, conditionTrue, foo])"));
 		
 		features.put("foo", false);
+		features.put("bar", true);
 		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		layer.getInputStream(mockRequest, mockResponse).close();
 		keyGen = layer.getCacheKeyGenerators();
@@ -442,13 +448,108 @@ public class LayerTest extends EasyMock {
 		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
 		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
 		
-		features.remove("foo");
 		features.remove("bar");
 		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		layer.getInputStream(mockRequest, mockResponse).close();
 		assertEquals("hit_1", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
 		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
 
+	}
+	
+	@Test
+	public void gzipTests() throws Exception {
+		testDepMap.get("p2/a").put("p1/aliased/d", "");
+		String configJson = "{paths:{p1:'p1',p2:'p2'}}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		
+		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		LayerImpl layer = newLayerImpl(mockAggregator);
+		layer.setReportCacheInfo(true);
+		
+		InputStream in = layer.getInputStream(mockRequest, mockResponse);
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		byte[] unzipped = bos.toByteArray();
+		Assert.assertEquals("add",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+
+		bos = new ByteArrayOutputStream();
+		VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
+        compress.setLevel(Deflater.BEST_COMPRESSION);
+        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
+        CopyUtil.copy(new ByteArrayInputStream(unzipped), writer);
+        byte[] zipped = bos.toByteArray();
+		
+        requestHeaders.put("Accept-Encoding", "gzip");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(zipped, bos.toByteArray());
+		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		// ensure that the response was generated by zipping the cached unzipped  response
+		Assert.assertEquals("hit_4",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+        requestHeaders.remove("Accept-Encoding");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(unzipped, bos.toByteArray());
+		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		// ensure response came from cache
+		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+        requestHeaders.put("Accept-Encoding", "gzip");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(zipped, bos.toByteArray());
+		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		// ensure response came from cache
+		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+		layer = newLayerImpl(mockAggregator);
+		layer.setReportCacheInfo(true);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(zipped, bos.toByteArray());
+		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		Assert.assertEquals("add",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+		requestHeaders.remove("Accept-Encoding");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(unzipped, bos.toByteArray());
+		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		// ensure response was generated by unzipping the cached zipped response
+		Assert.assertEquals("hit_5",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+		requestHeaders.put("Accept-Encoding", "gzip");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(zipped, bos.toByteArray());
+		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		// ensure response came from cache
+		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		
+		requestHeaders.remove("Accept-Encoding");
+		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
+		in = layer.getInputStream(mockRequest, mockResponse);
+		bos = new ByteArrayOutputStream();
+		CopyUtil.copy(in, bos);
+		Assert.assertArrayEquals(unzipped, bos.toByteArray());
+		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		// ensure response came from cache
+		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
 	}
 
 	@SuppressWarnings("serial")

@@ -107,7 +107,7 @@ class LayerBuildsAccessor {
 		cloneLock.readLock().lock();
 		try {
 			replaced = map.replace(keyPrefix + key, oldValue, newValue);
-			if (replaced) {
+			if (replaced && oldValue != newValue) {
 				oldValue.delete(cacheMgr);
 			}
 		} finally {
