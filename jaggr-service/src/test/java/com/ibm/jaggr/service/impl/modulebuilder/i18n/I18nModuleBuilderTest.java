@@ -20,6 +20,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -71,7 +72,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 	ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
 	I18nModuleBuilder builder;
 	IResource res;
-	ICacheKeyGenerator[] keyGens = null;
+	List<ICacheKeyGenerator> keyGens = null;
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -132,7 +133,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
-		Assert.assertTrue(s.contains("i18n:null:provisional"));
+		Assert.assertTrue(s.contains("i18n:[]:provisional"));
 		output = buildIt();
 		
 		Assert.assertTrue(builder.handles("nls/strings", new FileResource(new File(nls, "strings.js").toURI())));
@@ -181,12 +182,11 @@ public class I18nModuleBuilderTest extends EasyMock {
 		// Now enable development mode and make sure the addition of the new locale is detected
 		TestUtils.deleteRecursively(eb);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
-		// get a provisional cache key generator
-		keyGens = builder.getCacheKeyGenerators(mockAggregator);
+		keyGens = null;
 		output = buildIt();
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
-		Assert.assertTrue(s.contains("i18n:null"));
+		Assert.assertTrue(s.contains("i18n:[]"));
 		Assert.assertFalse(s.contains("provisional"));
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
@@ -210,7 +210,6 @@ public class I18nModuleBuilderTest extends EasyMock {
 		String s, output;
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		builder = new I18nModuleBuilder();
-		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -310,9 +309,6 @@ public class I18nModuleBuilderTest extends EasyMock {
 	
 	private String buildIt() throws Exception {
 		concurrentMap.clear();
-		if (keyGens == null) {
-			keyGens = builder.getCacheKeyGenerators(mockAggregator);
-		}
 		ModuleBuild build = builder.build("nls/strings", res, mockRequest, keyGens);
 		keyGens = build.getCacheKeyGenerators();
 		if (build.isError()) {

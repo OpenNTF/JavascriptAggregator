@@ -23,11 +23,13 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -59,26 +61,28 @@ import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
 public class TestUtils {
-	static public final Map<String, Map<String, String>> testDepMap = new HashMap<String, Map<String, String>>();
-	static public final Map<String, String> emptyDepMap = new HashMap<String, String>();
+	static public final Map<String, Map<String, String>> testDepMap;
+	static public final Map<String, String> emptyDepMap = Collections.unmodifiableMap(new HashMap<String, String>());
 	
 	static {
 		Map<String,String> temp = new HashMap<String, String>();
+		Map<String, Map<String, String>> depMap = new HashMap<String, Map<String, String>>();
 		temp.put("p2/b", "");
 		temp.put("p2/c", "");
-		testDepMap.put("p2/a",  temp);
+		depMap.put("p2/a",  Collections.unmodifiableMap(temp));
 		temp = new HashMap<String, String>();
 		temp.put("p1/b", "");
 		temp.put("p1/c", "");
 		temp.put("p1/a", "");
 		temp.put("p1/noexist", "");
-		testDepMap.put("p1/a", temp);
+		depMap.put("p1/a", Collections.unmodifiableMap(temp));
 		temp = new HashMap<String, String>();
 		temp.put("p2/p1/p1/a", "");
 		temp.put("p2/p1/p1/b", "");
 		temp.put("p2/p1/p1/noexist", "");
 		temp.put("p2/p1/p1/c", "");
-		testDepMap.put("p2/p1/p1/c", temp);
+		depMap.put("p2/p1/p1/c", Collections.unmodifiableMap(temp));
+		testDepMap = Collections.unmodifiableMap(depMap);
 	}
 	
 	
@@ -331,13 +335,14 @@ public class TestUtils {
 	
 	public static HttpServletRequest createMockRequest(IAggregator aggregator, Map<String, Object> requestAttributes) {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, aggregator);
-		return createMockRequest(aggregator, requestAttributes, null);
+		return createMockRequest(aggregator, requestAttributes, null, null);
 	}
 	
 	public static HttpServletRequest createMockRequest(
 			IAggregator aggregator,
 			final Map<String, Object> requestAttributes, 
-			final Map<String, String> requestParameters) {
+			final Map<String, String[]> requestParameters,
+			final Cookie[] cookies) {
 		HttpServletRequest mockRequest = EasyMock.createNiceMock(HttpServletRequest.class);
 		if (requestAttributes != null) {
 			requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, aggregator);
@@ -369,7 +374,15 @@ public class TestUtils {
 		if (requestParameters != null) {
 			EasyMock.expect(mockRequest.getParameter((String)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {
 				public String answer() throws Throwable {
-					return requestParameters.get((String)EasyMock.getCurrentArguments()[0]);
+					String [] ary = requestParameters.get((String)EasyMock.getCurrentArguments()[0]);
+					return ary != null && ary.length > 0 ? ary[0] : null;
+				}
+			}).anyTimes();
+		}
+		if (cookies != null) {
+			EasyMock.expect(mockRequest.getCookies()).andAnswer(new IAnswer<Cookie[]>() {
+				public Cookie[] answer() throws Throwable {
+					return cookies;
 				}
 			}).anyTimes();
 		}

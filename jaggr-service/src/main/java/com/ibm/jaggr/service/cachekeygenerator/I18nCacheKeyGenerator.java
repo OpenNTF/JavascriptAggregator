@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.cachekeygenerator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -86,27 +87,36 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 
 	@Override
 	public ICacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
+		if (this.equals(otherKeyGen)) {
+			return this;
+		}
 		I18nCacheKeyGenerator other = (I18nCacheKeyGenerator)otherKeyGen;
-		if (provisional || other.provisional) {
+		if (provisional && other.provisional) {
 			// should never happen
 			throw new IllegalStateException();
 		}
-		Collection<String> combined = null;
-		if (availableLocales != null && other.availableLocales != null) {
-			combined = new HashSet<String>(availableLocales);
+		if (provisional) {
+			return other;
+		} else if (other.provisional) {
+			return this;
+		}
+		Collection<String> combined = new HashSet<String>();
+		if (availableLocales != null) {
+			combined.addAll(other.availableLocales);
+		} 
+		if (other.availableLocales != null) {
 			combined.addAll(other.availableLocales);
 		}
-		return new I18nCacheKeyGenerator(
-				combined,
-				false);
+		return new I18nCacheKeyGenerator(combined, false);
 	}
+	
 	@Override
 	public String toString() {
 		// Map features into sorted set so we get predictable ordering of
 		// items in the output.
 		SortedSet<String> set = availableLocales == null ? null : new TreeSet<String>(availableLocales);
 		StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
-		sb.append(set == null ? "null" : set.toString()); //$NON-NLS-1$
+		sb.append(set == null ? "[]" : set.toString()); //$NON-NLS-1$
 		if (isProvisional()) {
 			sb.append(":provisional"); //$NON-NLS-1$
 		}
@@ -114,11 +124,32 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	@Override
-	public ICacheKeyGenerator[] getCacheKeyGenerators(HttpServletRequest request) {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request) {
 		return null;
 	}
 	
 	public Collection<String> getLocales() {
 		return availableLocales;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other != null && getClass().equals(other.getClass()) && 
+				provisional == ((I18nCacheKeyGenerator)other).provisional &&
+				(
+					availableLocales != null && availableLocales.equals(((I18nCacheKeyGenerator)other).availableLocales) ||
+					availableLocales == null && ((I18nCacheKeyGenerator)other).availableLocales == null
+				);
+		
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = getClass().hashCode();
+		result = result * 31 + Boolean.valueOf(provisional).hashCode();
+		if (availableLocales != null) {
+			result = result * 31 + availableLocales.hashCode();
+		}
+		return result;
 	}
 }

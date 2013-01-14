@@ -40,6 +40,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -139,10 +140,10 @@ public class JsModuleContentProviderTest extends EasyMock {
 		System.out.println(compiled);
 
 		// Assert that the two conditionals were identified
-		ICacheKeyGenerator[] gens = future.get().getCacheKeyGenerators();
-		String s = KeyGenUtil.toString(Arrays.asList(gens));
+		List<ICacheKeyGenerator> gens = future.get().getCacheKeyGenerators();
+		String s = KeyGenUtil.toString(gens);
 		System.out.println(s);
-		assertEquals("expn;js;has:[conditionFalse, conditionTrue]",s);
+		assertEquals("expn;js:(has:[conditionFalse, conditionTrue])",s);
 
 		// Make sure the content of both has has features is present
 		assertTrue(compiled.contains("has(\"conditionTrue\")"));
@@ -152,7 +153,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 
 		// getCachedFileName will wait for the cached file to be persisted asynchronously.
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
-		ICacheKeyGenerator[] keyGens = builder.getCacheKeyGenerators(mockAggregator);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		String cacheFileName = p1.getCachedFileName(KeyGenUtil.generateKey(mockRequest, keyGens));
 		assertNotNull(cacheFileName);
 
@@ -257,7 +258,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getName()}.
+	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getModuleName()}.
 	 * @throws URISyntaxException 
 	 */
 	@Test
@@ -297,7 +298,6 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testClearCached() throws Exception {
-		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
@@ -339,7 +339,6 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testToString() throws Exception {
-		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
@@ -375,7 +374,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		TestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
-		ICacheKeyGenerator[] keyGens = builder.getCacheKeyGenerators(mockAggregator);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		assertEquals("expn:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
@@ -496,7 +495,8 @@ public class JsModuleContentProviderTest extends EasyMock {
 	
 	public class TestJavaScriptModuleBuilder extends JavaScriptModuleBuilder {
 		@Override
-		public ICacheKeyGenerator[] getCacheKeyGenerators(Set<String> dependentFeatures) {
+		public List<ICacheKeyGenerator> getCacheKeyGenerators(
+				Set<String> dependentFeatures) {
 			return super.getCacheKeyGenerators(dependentFeatures);
 		}
 	}

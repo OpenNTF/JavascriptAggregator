@@ -24,7 +24,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.ibm.jaggr.service.cache.ICache;
-import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.module.IModule;
 
 /**
@@ -90,16 +89,6 @@ public interface ILayer extends Serializable {
 	 */
 	public long getLastModified(HttpServletRequest request)
 			throws IOException;
-
-	/**
-	 * Deletes the cached layer builds for this layer. The cached layer builds
-	 * are deleted asynchronously using the provided cache manager's
-	 * {@link ICacheManager#deleteFileDelayed(String)} method.
-	 * 
-	 * @param mgr
-	 *            The cache manager
-	 */
-	public void clearCached(ICacheManager mgr);
 
 	/**
 	 * Returns the cache key that this layer is associated with in the

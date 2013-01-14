@@ -28,7 +28,6 @@ import java.net.URI;
 import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -176,6 +175,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	
 	@SuppressWarnings("serial")
 	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new AbstractCacheKeyGenerator() {
+		// This is a singleton, so default equals() is sufficient
 		private final String eyecatcher = "css"; //$NON-NLS-1$ 
 		@Override
 		public String generateKey(HttpServletRequest request) {
@@ -194,6 +194,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 	};
 
+	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators;
+	
+	static {
+		List<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>(TextModuleBuilder.s_cacheKeyGenerators.size());
+		keyGens.addAll(TextModuleBuilder.s_cacheKeyGenerators);
+		keyGens.add(s_cacheKeyGenerator);
+		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
+	}
+	
 	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
@@ -209,7 +218,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			String mid, 
 			IResource resource, 
 			HttpServletRequest request, 
-			ICacheKeyGenerator[] keyGens) 
+			List<ICacheKeyGenerator> keyGens) 
 	throws IOException {
 		
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
@@ -607,11 +616,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilder#getCacheKeyGenerator(com.ibm.jaggr.service.IAggregator)
 	 */
-	@Override	public final ICacheKeyGenerator[] getCacheKeyGenerators(IAggregator aggregator) {
-		List<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
-		keyGens.addAll(Arrays.asList(super.getCacheKeyGenerators(aggregator)));
-		keyGens.add(s_cacheKeyGenerator);
-		return keyGens.toArray(new ICacheKeyGenerator[keyGens.size()]);
+	@Override	public final List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
+		return s_cacheKeyGenerators;
 	}
 	
 	/* (non-Javadoc)

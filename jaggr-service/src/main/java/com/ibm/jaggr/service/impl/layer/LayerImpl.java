@@ -25,6 +25,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -47,15 +48,16 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
+import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
-import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.BuildListReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
@@ -82,8 +84,9 @@ public class LayerImpl implements ILayer {
     public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
     public static final String MODULECACHEIFNO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
     
-    protected static final ICacheKeyGenerator[] layerCacheKeyGenerators  = new ICacheKeyGenerator[]{
+    protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
+    		// This is a singleton, so default equals() will do
 			private static final long serialVersionUID = 2013098945317787755L;
 			@Override
 			public String generateKey(HttpServletRequest request) {
@@ -95,7 +98,7 @@ public class LayerImpl implements ILayer {
 				return "sn"; //$NON-NLS-1$
 			}
     	}
-    };
+    }));
     	
     
     /**
@@ -198,7 +201,7 @@ public class LayerImpl implements ILayer {
 		        }
 	        }	
 	        // Creata a cache key.
-	        key = generateCacheKey(request);
+	        key = generateCacheKey(request, _cacheKeyGenerators);
 	
 	        // Try retrieving the cached layer build first using get() since it doesn't block.  If that fails,
 	        // then try again using the locking putIfAbsent()
@@ -306,35 +309,32 @@ public class LayerImpl implements ILayer {
 	        	}
 	        } else {
 	        	if (!ignoreCached) {	
-			        // If we don't yet have a cache key for this layer, then get one 
-					// from the cache key generators, and then update the cache key for this 
-		        	// cache entry.
-			        if (key == null) {
-			        	if (_cacheKeyGenerators == null) {   // opportunistic check to possibly avoid sync block
-			        		Map<String, ICacheKeyGenerator> cacheKeyGenerators = new HashMap<String, ICacheKeyGenerator>();
-			        		addCacheKeyGenerators(cacheKeyGenerators, layerCacheKeyGenerators);
-			        		for (Future<ModuleBuildReader> future : futures) {
-			        			ICacheKeyGenerator[] gen = null;
-								try {
-									gen = future.get().getCacheKeyGenerators();
-								} catch (InterruptedException e) {
-									throw new IOException(e);
-								} catch (ExecutionException e) {
-									throw new IOException(e);
-								}
-								addCacheKeyGenerators(cacheKeyGenerators, gen);
-			        		}
-			        		addCacheKeyGenerators(cacheKeyGenerators, getModules(request).getCacheKeyGenerators());
-			        		addCacheKeyGenerators(cacheKeyGenerators, aggr.getTransport().getCacheKeyGenerators());
-			        		
-			            	synchronized(this) {
-			            		if (_cacheKeyGenerators == null) {
-			            			_cacheKeyGenerators = cacheKeyGenerators;
-			            		}
-			            	}
-			        	}
-			            key = generateCacheKey(request);
-			        }
+	        		// See if we need to create or update the cache key generators
+			        Map<String, ICacheKeyGenerator> newKeyGens = new HashMap<String, ICacheKeyGenerator>(),
+			                                        cacheKeyGenerators = _cacheKeyGenerators;
+			        Set<String> requiredModuleListDeps = getModules(request).getDependentFeatures();
+		        	addCacheKeyGenerators(newKeyGens, s_layerCacheKeyGenerators);
+	        		addCacheKeyGenerators(newKeyGens, aggr.getTransport().getCacheKeyGenerators());
+        			addCacheKeyGenerators(newKeyGens, Arrays.asList(new ICacheKeyGenerator[]{new FeatureSetCacheKeyGenerator(requiredModuleListDeps, false)}));
+        			addCacheKeyGenerators(newKeyGens, getCacheKeyGenerators(futures));
+
+        			boolean cacheKeyGeneratorsUpdated = false;
+	        		if (!newKeyGens.equals(cacheKeyGenerators)) {
+				        // If we don't yet have a cache key for this layer, then get one 
+						// from the cache key generators, and then update the cache key for this 
+			        	// cache entry.
+
+	        			synchronized(this) {
+		        			if (_cacheKeyGenerators != null) {
+		        				addCacheKeyGenerators(newKeyGens, _cacheKeyGenerators.values());
+		        			}
+	        				_cacheKeyGenerators = Collections.unmodifiableMap(newKeyGens);
+				        }
+	        			cacheKeyGeneratorsUpdated = true;
+	        		}
+	        		if (key == null || cacheKeyGeneratorsUpdated) {
+			            key = generateCacheKey(request, newKeyGens);
+	        		}
 		            // Add the LayerBuild to the cache using the new key.
 	            	if (log.isLoggable(Level.FINE)) {
 	            		log.fine("Adding layer to cache with key: " + key); //$NON-NLS-1$
@@ -526,7 +526,7 @@ public class LayerImpl implements ILayer {
 
 	protected void addCacheKeyGenerators(
 			Map<String, ICacheKeyGenerator> cacheKeyGenerators,
-			ICacheKeyGenerator[] gens) 
+			Iterable<ICacheKeyGenerator> gens) 
 	{
 		if (gens != null) {
 			for (ICacheKeyGenerator gen : gens) {
@@ -567,9 +567,8 @@ public class LayerImpl implements ILayer {
 	 * @return the cache key
 	 * @throws IOException
 	 */
-	protected String generateCacheKey(HttpServletRequest request) throws IOException {
+	protected String generateCacheKey(HttpServletRequest request, Map<String, ICacheKeyGenerator> cacheKeyGenerators) throws IOException {
 		String cacheKey = null;
-		Map<String, ICacheKeyGenerator> cacheKeyGenerators = _cacheKeyGenerators;
 		if (cacheKeyGenerators != null) {
 			// First, decompose any composite cache key generators into their 
 			// constituent cache key generators so that we can combine them 
@@ -577,10 +576,10 @@ public class LayerImpl implements ILayer {
 			// keys.
 			Map<String, ICacheKeyGenerator> gens = new TreeMap<String, ICacheKeyGenerator>();
 			for (ICacheKeyGenerator gen : cacheKeyGenerators.values()) {
-				ICacheKeyGenerator[] constituentGens = gen.getCacheKeyGenerators(request);
+				List<ICacheKeyGenerator> constituentGens = gen.getCacheKeyGenerators(request);
 				addCacheKeyGenerators(gens, 
 						constituentGens == null ? 
-								new ICacheKeyGenerator[]{gen} : 
+								Arrays.asList(new ICacheKeyGenerator[]{gen}) : 
 								constituentGens);
 			}
 			cacheKey = KeyGenUtil.generateKey(
@@ -590,19 +589,6 @@ public class LayerImpl implements ILayer {
 		return cacheKey;
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayer#clearCached(com.ibm.jaggr.service.cache.ICacheManager)
-	 */
-	@Override
-	public void clearCached(ICacheManager mgr) {
-		synchronized (this) {
-			_cacheKeyGenerators.clear();
-		}
-		for (Map.Entry<String, CacheEntry> entry : _layerBuilds.entrySet()) {
-			_layerBuilds.remove(entry.getKey(), entry.getValue());
-		}
-	}
-
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayer#getLastModified(javax.servlet.http.HttpServletRequest)
 	 */
@@ -796,6 +782,26 @@ public class LayerImpl implements ILayer {
     	return result;
     }
     
+    protected List<ICacheKeyGenerator> getCacheKeyGenerators(List<Future<ModuleBuildReader>> futures) throws IOException {
+    	List<ICacheKeyGenerator> result = new LinkedList<ICacheKeyGenerator>();
+		for (Future<ModuleBuildReader> future : futures) {
+			ModuleBuildReader reader;
+			try {
+				reader = future.get();
+			} catch (InterruptedException e) {
+				throw new IOException(e);
+			} catch (ExecutionException e) {
+				throw new IOException(e);
+			}
+			List<ICacheKeyGenerator> keyGens = reader.getCacheKeyGenerators();
+			if (keyGens != null) {
+	        	result.addAll(keyGens);
+			}
+		}
+		return result;
+    	
+    }
+    
 	/**
 	 * Called by the layer cache manager when a layer build is evicted from the
 	 * eviction map do to size limitations.
@@ -805,10 +811,19 @@ public class LayerImpl implements ILayer {
 	 * @return true if this layer has no more builds and the layer should be
 	 *         removed from the layer cache
 	 */
-	boolean cacheEntryEvicted(CacheEntry cacheEntry) {
+	protected boolean cacheEntryEvicted(CacheEntry cacheEntry) {
 		return _layerBuilds.cacheEntryEvicted(cacheEntry);
 	}
 
+    /**
+     * This method is provided for unit testing
+     *  
+     * @return The cacheKeyGenerators for this layer
+     */
+    Map<String, ICacheKeyGenerator> getCacheKeyGenerators() {
+    	return _cacheKeyGenerators;
+    }
+    
 	/**
 	 * Used by unit test cases.
 	 * 
@@ -825,4 +840,5 @@ public class LayerImpl implements ILayer {
      */
 	public static ILayerCache newLayerCache(IAggregator aggregator) {
 		return new LayerCacheImpl(aggregator);
-	}}
+	}
+}

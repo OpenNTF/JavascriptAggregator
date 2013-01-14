@@ -46,4 +46,13 @@ public final class ExportNamesCacheKeyGenerator extends
 		return eyecatcher;
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		return other != null && this.getClass().equals(other.getClass());
+	}
+	
+	@Override
+	public int hashCode() {
+		return this.getClass().hashCode();
+	}
 }

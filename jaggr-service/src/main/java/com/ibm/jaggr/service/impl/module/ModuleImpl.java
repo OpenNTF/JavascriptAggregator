@@ -32,6 +32,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
@@ -75,8 +76,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	
 
 	@SuppressWarnings("serial")
-	private static final ICacheKeyGenerator[] defaultCacheKeyGenerators =
-		new ICacheKeyGenerator[] {new AbstractCacheKeyGenerator() {
+	private static final List<ICacheKeyGenerator> defaultCacheKeyGenerators = Collections.unmodifiableList(
+		Arrays.asList(new ICacheKeyGenerator[] {new AbstractCacheKeyGenerator() {
+			// This is a singleton, so default equals() will suffice
 			private static final String eyecatcher = "nokey"; //$NON-NLS-1$
 			@Override
 			public String generateKey(HttpServletRequest request) {
@@ -87,13 +89,13 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				return eyecatcher;
 			}
 		}
-	};
+	}));
 	
 	private final URI uri;
 	
 	private transient IResource resource = null;
 	
-	private volatile ICacheKeyGenerator[] _cacheKeyGenerators;
+	private volatile List<ICacheKeyGenerator> _cacheKeyGenerators;
 
 	/** Last modified time of source file that the cached entries are based on. */
 	private long _lastModified = 0;
@@ -124,9 +126,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		super(module.getModuleId());
 		uri = module.uri;
 		resource = module.resource;
-		_cacheKeyGenerators = module._cacheKeyGenerators;
-		_lastModified = module._lastModified;
-		_moduleBuilds = module._moduleBuilds;
+		synchronized(module) {
+			_cacheKeyGenerators = module._cacheKeyGenerators;
+			_lastModified = module._lastModified;
+			_moduleBuilds = module._moduleBuilds;
+		}
 	}
 	
 	/**
@@ -231,7 +235,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		// make local copies of instance variables so we can access them in a
 		// thread-safe way
 		// without holding onto the synchronization lock for too long
-		final ICacheKeyGenerator[] cacheKeyGenerators;
+		final List<ICacheKeyGenerator> cacheKeyGenerators;
 		final ConcurrentMap<String, CacheEntry> moduleBuilds;
 		ConcurrentMap<String, CacheEntry> oldModuleBuilds = null;
 		synchronized (this) {
@@ -245,7 +249,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				_moduleBuilds = null;
 				_lastModified = modified;
 				IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
-				_cacheKeyGenerators = builder.getCacheKeyGenerators(aggr);
+				_cacheKeyGenerators = Collections.unmodifiableList(builder.getCacheKeyGenerators(aggr));
 				if (_cacheKeyGenerators == null) {
 					_cacheKeyGenerators = defaultCacheKeyGenerators;
 				}
@@ -281,7 +285,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							+ key);
 				}
 				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
-						_cacheKeyGenerators, false));
+						cacheKeyGenerators, false));
 			}
 		}
 
@@ -301,7 +305,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							+ key);
 				}
 				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
-						_cacheKeyGenerators, false));
+						cacheKeyGenerators, false));
 			}
 		}
 
@@ -319,7 +323,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		// Future<ModuleReader> to the caller
 		return aggr.getExecutors().getBuildExecutor().submit(new Callable<ModuleBuildReader>() {
 			public ModuleBuildReader call() throws Exception {
-				ICacheKeyGenerator[] newCacheKeyGenerators = cacheKeyGenerators;
+				List<ICacheKeyGenerator> newCacheKeyGenerators = 
+						KeyGenUtil.isProvisional(cacheKeyGenerators) ? null : cacheKeyGenerators;
 				ModuleBuild build;
 				// Synchronize on the ModuleBuild object for the compile.
 				// This will prevent multiple
@@ -361,14 +366,15 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						}
 						cacheEntry.setData(build.getBuildOutput());
 						
-						// If we have a provisional cache key generator, then upgrade to
-						// the non-provisional cache key generator returned by the build
-						if (KeyGenUtil.isProvisional(newCacheKeyGenerators)) {
-							newCacheKeyGenerators = build.getCacheKeyGenerators();
+						// If the cache key generator has changed, then update the 
+						if (newCacheKeyGenerators == null || !newCacheKeyGenerators.equals(build.getCacheKeyGenerators())) {
 							synchronized (this) {
-								if (KeyGenUtil.isProvisional(_cacheKeyGenerators)
-										&& _moduleBuilds == moduleBuilds) {
-									_cacheKeyGenerators = newCacheKeyGenerators;
+								if (_moduleBuilds == moduleBuilds) {
+									_cacheKeyGenerators = newCacheKeyGenerators = Collections.unmodifiableList(
+											newCacheKeyGenerators == null ?
+													build.getCacheKeyGenerators() :
+													KeyGenUtil.combine(newCacheKeyGenerators, build.getCacheKeyGenerators())
+									);
 								}
 							}
 							if (!ignoreCached) {
@@ -465,7 +471,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		}
 		if (_cacheKeyGenerators != null) {
 			sb.append("KeyGen: ") //$NON-NLS-1$
-				.append(KeyGenUtil.toString(Arrays.asList(_cacheKeyGenerators)))
+				.append(KeyGenUtil.toString(_cacheKeyGenerators))
 				.append(linesep);
 		}
 		if (_moduleBuilds != null) {
@@ -495,7 +501,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		return result;
 	}
 
-	/**
+	/*
 	 * Returns the set of keys for cached entries. Used for unit testing
 	 * 
 	 * @return the cache keys
@@ -508,6 +514,22 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		return result;
 	}
 
+	/*
+	 * Returns the cache key generators for this module. Used for unit testing
+	 * 
+	 * @return the cache keys
+	 */
+	protected List<ICacheKeyGenerator> getCacheKeyGenerators() {
+		return _cacheKeyGenerators; 
+	}
+	
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see
+	 * com.ibm.domino.servlets.aggrsvc.modules.Module#deleteCached(com.ibm.domino
+	 * .servlets.aggrsvc.modules.CacheManager, int)
+	 */
 	/**
 	 * Asynchronously delete the set of cached files for this module.
 	 */
@@ -554,7 +576,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		private static final long serialVersionUID = 5050612601255358014L;
 
 		private final URI uri;
-		private final ICacheKeyGenerator[] _cacheKeyGenerators;
+		private final List<ICacheKeyGenerator> _cacheKeyGenerators;
 		private final long _lastModified;
 		private final ConcurrentHashMap<String, CacheEntry> _moduleBuilds; 
 

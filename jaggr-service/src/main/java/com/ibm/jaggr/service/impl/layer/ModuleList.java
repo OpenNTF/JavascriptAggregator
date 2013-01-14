@@ -19,15 +19,11 @@ package com.ibm.jaggr.service.impl.layer;
 import java.util.LinkedList;
 import java.util.Set;
 
-import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.module.IModule;
 
 class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -4578312833010749563L;
 	
-	private static final ICacheKeyGenerator[] emptyKeyGens = new ICacheKeyGenerator[0];
-
 	static class ModuleListEntry {
 		enum Type {
 			MODULES,
@@ -65,12 +61,8 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	String getRequiredModuleId() {
 		return requiredModuleId;
 	}
-	
-	ICacheKeyGenerator[] getCacheKeyGenerators() {
-		ICacheKeyGenerator[] result = emptyKeyGens;
-		if (dependentFeatures != null && dependentFeatures.size() >= 0) {
-			result = new ICacheKeyGenerator[]{new FeatureSetCacheKeyGenerator(dependentFeatures, false)};
-		}
-		return result;
+
+	Set<String> getDependentFeatures() {
+		return dependentFeatures;
 	}
 }

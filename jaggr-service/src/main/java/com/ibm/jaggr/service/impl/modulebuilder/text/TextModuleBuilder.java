@@ -19,6 +19,9 @@ package com.ibm.jaggr.service.impl.modulebuilder.text;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -39,8 +42,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
  */
 public class TextModuleBuilder implements IModuleBuilder {
 	
-	static private final ICacheKeyGenerator[] s_cacheKeyGenerators = 
-		new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()};
+	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators = 
+			Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()}));
 
 	/**
 	 * Returns the compiler input source for the text module as the text stream
@@ -54,7 +57,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 			String mid, 
 			IResource resource, 
 			HttpServletRequest request,
-			ICacheKeyGenerator[] keyGens
+			List<ICacheKeyGenerator> keyGens
 			) 
 	throws Exception {
 		StringBuffer sb = new StringBuffer();
@@ -80,13 +83,13 @@ public class TextModuleBuilder implements IModuleBuilder {
 			String mid,
 			IResource resource, 
 			HttpServletRequest request,
-			ICacheKeyGenerator[] keyGens) 
+			List<ICacheKeyGenerator> keyGens) 
 	throws IOException {
 		return resource.getReader();
 	}
 	
 	@Override
-	public ICacheKeyGenerator[] getCacheKeyGenerators(IAggregator aggregator) {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		return s_cacheKeyGenerators;
 	}
 

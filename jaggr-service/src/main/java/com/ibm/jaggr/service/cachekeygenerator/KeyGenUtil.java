@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.cachekeygenerator;
 
 import java.util.Arrays;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -35,7 +36,7 @@ public class KeyGenUtil {
 	 *            The array
 	 * @return True if there is a provisional cache key generator in the array
 	 */
-	static public boolean isProvisional(ICacheKeyGenerator[] keyGens) {
+	static public boolean isProvisional(List<ICacheKeyGenerator> keyGens) {
 		boolean provisional = false;
 		for (ICacheKeyGenerator keyGen : keyGens) {
 			if (keyGen.isProvisional()) {
@@ -65,10 +66,6 @@ public class KeyGenUtil {
 		return sb.toString();
 	}
 	
-	static public String generateKey(HttpServletRequest request, ICacheKeyGenerator[] keyGens) {
-		return generateKey(request, Arrays.asList(keyGens));
-	}
-	
 	/**
 	 * Builds a string by combining the toString output of the cache key
 	 * generators in the array
@@ -88,7 +85,33 @@ public class KeyGenUtil {
 		return sb.toString();
 	}
 	
-	static public String toString(ICacheKeyGenerator[] keyGens) {
-		return toString(Arrays.asList(keyGens));
+	/**
+	 * Returns a new list containing the results of combining each element in a with the
+	 * corresponding element in b.  If the result contains the same elements as a, then 
+	 * a is returned.
+	 * <p>
+	 * The input arrays must be the same length, and the types of the array elements at each
+	 * index must be the same
+	 * 
+	 * @param a
+	 * @param b
+	 * @return The list of combined cache key generators
+	 */
+	static public List<ICacheKeyGenerator> combine(List<ICacheKeyGenerator> a, List<ICacheKeyGenerator> b) {
+		if (a == null) {
+			return b;
+		} else if (b == null) {
+			return a;
+		}
+		if (a.size() != b.size()) {
+			throw new IllegalStateException();
+		}
+		ICacheKeyGenerator[] combined = new ICacheKeyGenerator[a.size()];
+		boolean modified = false;
+		for (int i = 0; i < a.size(); i++) {
+			combined[i] = a.get(i).combine(b.get(i));
+			modified = modified || combined[i] != a.get(i);
+		}
+		return modified ? Arrays.asList(combined) : a;
 	}
 }
