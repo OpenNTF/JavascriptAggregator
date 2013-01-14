@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.cachekeygenerator;
 
 import java.io.Serializable;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -89,7 +90,7 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * key generator.
 	 * <p>
 	 * For most implementations, these two generators will be identical and a
-	 * reference to the current object can be returned. Only implementations
+	 * reference to the current object should be returned. Only implementations
 	 * who's cache keys are dependent on module content or other factors
 	 * external to the request object need to provide a non-trivial
 	 * implementation for this method. An example would be a javascript minifier
@@ -102,7 +103,14 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * method would create a new CacheKeyGenerator from the union of the feature
 	 * name sets from this generator and the specified generator.
 	 * <p>
-	 * This method is never called for a provisional cache key generator.
+	 * If either this cache key generator or the specified cached key generator
+	 * is a provisional cache key generator and the other is not, the returned
+	 * object must be a non-provisional cache key generator.
+	 * <p>
+	 * If combining this cache key generator with the specified cache key
+	 * generator yields a cache key generator that produces identical cache keys
+	 * as this cache key generator, then this cache key generator should be 
+	 * returned.
 	 * 
 	 * @param other
 	 *            A reference to the CacheKeyGenerator object that is to be
@@ -111,7 +119,9 @@ public interface ICacheKeyGenerator extends Serializable {
 	 *            so it is always safe to cast {@code other} to an instance of
 	 *            the current object.
 	 * 
-	 * @return The combined CacheKeyGenerator
+	 * @return The combined CacheKeyGenerator, or this object if combining 
+	 *         this object with <code>other</code> will produce a cache key
+	 *         generator that generates the same keys as this object.
 	 */
 	public ICacheKeyGenerator combine(ICacheKeyGenerator other);
 
@@ -145,7 +155,7 @@ public interface ICacheKeyGenerator extends Serializable {
 	 *            The request object
 	 * @return Array of constituent cache key generators, or null.
 	 */
-	public ICacheKeyGenerator[] getCacheKeyGenerators(HttpServletRequest request);
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request);
 	
 	/**
 	 * Instances of this object can be provisional. If cache keys for the module
@@ -157,7 +167,7 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * information available in the request only. The builder should then
 	 * provide a non-provisional cache key generator in the {@link ModuleBuild}
 	 * object returned from
-	 * {@link IModuleBuilder#build(String, IResource, HttpServletRequest, ICacheKeyGenerator[])}
+	 * {@link IModuleBuilder#build(String, IResource, HttpServletRequest, List)}
 	 * when it is subsequently called by a separate worker thread for the same
 	 * request.
 	 * <p>
@@ -191,4 +201,15 @@ public interface ICacheKeyGenerator extends Serializable {
 	 */
 	@Override
 	public String toString();
+	
+	/**
+	 * This method should return true if this object's {@link #generateKey(HttpServletRequest)}
+	 * method will always return the same value as <code>other</code> for the same 
+	 * {@link HttpServletRequest} object.  Classes that implement this method should
+	 * implement {@link Object#hashCode()} as well.
+	 * 
+	 * @return True if this object is logically equal to <code>other</code>
+	 */
+	@Override
+	public boolean equals(Object other);
 }

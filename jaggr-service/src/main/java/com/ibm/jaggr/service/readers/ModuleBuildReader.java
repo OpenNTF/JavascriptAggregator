@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.readers;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.List;
 import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,7 +35,7 @@ import com.ibm.jaggr.service.module.IModule;
  */
 public class ModuleBuildReader extends Reader {
 	private Reader reader;
-	private ICacheKeyGenerator[] keyGenerators;
+	private List<ICacheKeyGenerator> keyGenerators;
 	private boolean error;
 	
 	/**
@@ -42,10 +43,10 @@ public class ModuleBuildReader extends Reader {
 	 * and error flag.
 	 * 
 	 * @param reader A {@link Reader} to the build content
-	 * @param keyGens The {@link ICacheKeyGenerator} array for this IModule
+	 * @param keyGens The {@link ICacheKeyGenerator} list for this IModule
 	 * @param error True if this module build contains an error response
 	 */
-	public ModuleBuildReader(Reader reader, ICacheKeyGenerator[] keyGens, boolean error) {
+	public ModuleBuildReader(Reader reader, List<ICacheKeyGenerator> keyGens, boolean error) {
 		this.reader = reader;
 		this.keyGenerators = keyGens;
 		this.error = error;
@@ -77,7 +78,7 @@ public class ModuleBuildReader extends Reader {
 	 * 
 	 * @return The cache key generator
 	 */
-	public ICacheKeyGenerator[] getCacheKeyGenerators() {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators() {
 		return keyGenerators;
 	}
 	

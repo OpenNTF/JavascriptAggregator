@@ -336,7 +336,7 @@ public interface IAggregator {
 		 * Transforms the string property being substituted.
 		 * 
 		 * @param name the property name
-		 * @param str the property value
+		 * @param value the property value
 		 * @return the transformed property value
 		 */
 		String transform(String name, String value);

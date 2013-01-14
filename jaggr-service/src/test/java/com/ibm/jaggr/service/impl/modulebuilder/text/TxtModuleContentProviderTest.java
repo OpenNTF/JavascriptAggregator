@@ -22,6 +22,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -70,7 +71,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	@Test
 	public void testGetCacheKeyGenerator() {
 		TextModuleBuilder builder = new TextModuleBuilder();
-		ICacheKeyGenerator[] generators = builder.getCacheKeyGenerators(null);
+		List<ICacheKeyGenerator> generators = builder.getCacheKeyGenerators(null);
 		String key = KeyGenUtil.generateKey(mockRequest, generators);
 		Assert.assertEquals("expn:0", key);
 		reset(mockRequest);

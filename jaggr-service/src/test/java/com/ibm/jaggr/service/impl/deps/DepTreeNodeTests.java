@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.easymock.EasyMock;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -61,6 +62,14 @@ public class DepTreeNodeTests extends EasyMock {
 		));
 	}
 	
+	@After
+	public void tearDown() throws Exception {
+		if (tmpdir != null) {
+			TestUtils.deleteRecursively(tmpdir);
+			tmpdir = null;
+		}
+	}
+
 	@Test
 	public void testDepTreeNode() {
 		DepTreeNode node = new DepTreeNode("foo");
