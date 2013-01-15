@@ -506,7 +506,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				if (gens == null) {
 					result.add(featureKeyGen);
 				} else {
-					result.addAll(Arrays.asList(featureKeyGen.getCacheKeyGenerators(request)));
+					result.addAll(Arrays.asList(gens));
 				}
 			}
 			return result.toArray(new ICacheKeyGenerator[result.size()]);

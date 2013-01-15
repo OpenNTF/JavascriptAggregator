@@ -679,7 +679,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 			
-			cx.evaluateString(sharedScope, "var config = " + aggregator.substituteProps(configScript), getConfigUri().toString(), 1, null); //$NON-NLS-1$
+			cx.evaluateString(sharedScope, "var config = " + 
+				aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
+					@Override
+					public String transform(String name, String value) {
+						// escape forward slashes for javascript literals
+						return value.replace("\\", "\\\\");
+					}
+				}), getConfigUri().toString(), 1, null); //$NON-NLS-1$
 			config = (Scriptable)sharedScope.get("config", sharedScope); //$NON-NLS-1$
 			if (config == Scriptable.NOT_FOUND) {
 				System.out.println("config is not defined."); //$NON-NLS-1$

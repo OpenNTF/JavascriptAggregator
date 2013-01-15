@@ -145,8 +145,7 @@ public class ExecutorsImpl implements IExecutors {
 		// finish up any waiting deletions
 		BlockingQueue<Runnable> queue = deleteExecutor.getQueue();
 		Runnable task;
-		while ((task = queue.peek()) != null) {
-			deleteExecutor.remove(task);
+		while ((task = queue.poll()) != null) {
 			task.run();
 		}
 		

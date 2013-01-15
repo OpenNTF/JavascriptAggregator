@@ -93,16 +93,17 @@
 		            <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
 		            <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
 		            <Bundle-Activator>${bundle.namespace}.impl.Activator</Bundle-Activator>
-					<Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>		            <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
+					      <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
+					      <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
 		            <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
 		            <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
 		            <Import-Package>
 		            	javax.servlet;version="[2,4)",
 		            	javax.servlet.http;version="[2,4)",
 		            	org.apache.felix.service.command;resolution:=optional,
-		                org.apache.felix.gogo.commands;resolution:=optional,
-		                org.apache.karaf.shell.console;resolution:=optional,
-		                org.osgi.service.blueprint;resolution:=optional,
+		              org.apache.felix.gogo.commands;resolution:=optional,
+		              org.apache.karaf.shell.console;resolution:=optional,
+		              org.osgi.service.blueprint;resolution:=optional,
 		            	!org.apache.tools.*,
 		            	!org.apache.xmlbeans.*,
 		            	!javax.*,
@@ -121,7 +122,7 @@
 		            	*
 		            </Import-Package>
 		            <!-- embed dependencies -->
-		            <Embed-Dependency>closure-compiler;inline=false,guava,wink-json4j,commons-io,commons-lang,js</Embed-Dependency>
+		            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,js</Embed-Dependency>
 		            <Embed-Directory>lib</Embed-Directory>
 		            <Embed-StripGroup>true</Embed-StripGroup>
 				</instructions>
@@ -224,6 +225,16 @@
     	<version>r09</version>
     </dependency>
     <dependency>
+      <groupId>org.apache.karaf.shell</groupId>
+      <artifactId>org.apache.karaf.shell.console</artifactId>
+      <version>2.2.9</version>
+    </dependency>
+    <dependency>
+      <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
+      <artifactId>concurrentlinkedhashmap-lru</artifactId>
+      <version>1.3.2</version>
+    </dependency>
+    <dependency>
     	<groupId>javax.servlet</groupId>
     	<artifactId>javax.servlet-api</artifactId>
     	<version>3.0.1</version>
@@ -252,11 +263,6 @@
     	<artifactId>easymock</artifactId>
     	<version>3.1</version>
     	<scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.karaf.shell</groupId>
-      <artifactId>org.apache.karaf.shell.console</artifactId>
-      <version>2.2.9</version>
     </dependency>
   </dependencies>
 </project>

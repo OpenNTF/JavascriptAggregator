@@ -26,9 +26,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamException;
 import java.io.Reader;
+import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -453,6 +456,10 @@ public class JsModuleContentProviderTest extends EasyMock {
 			return super.getBuild(request, fromCacheOnly);
 		}
 
+		protected JsModuleTester(ModuleImpl module) {
+			super(module);
+		}
+		
 		public JsModuleTester(String mid, URI uri) {
 			super(mid, uri);
 		}
@@ -465,6 +472,26 @@ public class JsModuleContentProviderTest extends EasyMock {
 			return super.getKeys();
 		}
 		
+		protected Object writeReplace() throws ObjectStreamException {
+			return new SerializationProxy(this);
+		}
+
+		private void readObject(ObjectInputStream stream) throws InvalidObjectException {
+		    throw new InvalidObjectException("Proxy required");
+		}
+
+		static class SerializationProxy extends ModuleImpl.SerializationProxy implements Serializable {
+
+			private static final long serialVersionUID = 1618641512031181089L;
+
+			SerializationProxy(ModuleImpl module) {
+				super(module);
+		    }
+
+		    protected Object readResolve() {
+		    	return new JsModuleTester((ModuleImpl)super.readResolve());
+		    }
+		}
 	}
 	
 	public class TestJavaScriptModuleBuilder extends JavaScriptModuleBuilder {
