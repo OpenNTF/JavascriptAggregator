@@ -46,9 +46,12 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
+
+import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -198,7 +201,11 @@ public class JsModuleContentProviderTest extends EasyMock {
 		assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), cacheFile1).exists());
 		
 		// validate that require list was expanded and has blocks were removed
-		assertTrue(compiled.contains("require([\"p2/a\",\"p2/b\",\"p2/c\"]"));
+		Matcher m = Pattern.compile("require\\(\\[\\\"([^\"]*)\\\",\\\"([^\"]*)\\\",\\\"([^\"]*)\\\"\\]").matcher(compiled);
+		Assert.assertTrue(m.find());
+		Assert.assertEquals(
+				new HashSet<String>(Arrays.asList(new String[]{"p2/a", "p2/b", "p2/c"})),  
+				new HashSet<String>(Arrays.asList(new String[]{m.group(1), m.group(2), m.group(3)})));
 		assertTrue(compiled.contains("condition_True"));
 		assertFalse(compiled.contains("condition_False"));
 		assertFalse(compiled.contains("has("));
