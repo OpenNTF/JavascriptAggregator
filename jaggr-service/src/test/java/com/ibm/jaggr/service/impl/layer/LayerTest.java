@@ -350,7 +350,13 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		testLastMod = layer.getLastModified(mockRequest);
-		assertTrue(lastMod == testLastMod);
+		
+		if (testLastMod % 1000 == 0) {
+			// Coarse time system
+			assertEquals("Unexpected coarse LastModified value.", lastMod.longValue() / 1000, testLastMod / 1000);
+		} else {
+			assertEquals("Unexpected fine LastModified value.", lastMod.longValue(), testLastMod);
+		}
 		assertNotNull(requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertTrue(testLastMod == (Long)requestAttributes.get(LayerImpl.LAST_MODIFIED_PROPNAME));
 	}
