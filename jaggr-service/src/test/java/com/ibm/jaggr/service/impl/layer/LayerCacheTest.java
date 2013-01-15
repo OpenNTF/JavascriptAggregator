@@ -236,6 +236,7 @@ public class LayerCacheTest {
 		Writer writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		String result = writer.toString();
+		System.out.println(result);
 		Assert.assertTrue(result.contains("Hello from a.js"));
 		String newFilename = layerCache.getLayerBuildMap().get(key).filename;
 		Assert.assertNotSame(filename, newFilename);
