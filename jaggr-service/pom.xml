@@ -49,6 +49,12 @@
           <include>aggregator.properties</include>
         </includes>
       </resource>
+      <resource>
+      	<directory>${basedir}/src</directory>
+      	<includes>
+      		<include>**/*.properties</include>
+      	</includes>
+      </resource>
     </resources>
     <pluginManagement>
    	  <plugins>
@@ -122,6 +128,7 @@
 		            	*
 		            </Import-Package>
 		            <!-- embed dependencies -->
+		            <Include-Resources>{maven-resources}</Include-Resources>
 		            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,js</Embed-Dependency>
 		            <Embed-Directory>lib</Embed-Directory>
 		            <Embed-StripGroup>true</Embed-StripGroup>
