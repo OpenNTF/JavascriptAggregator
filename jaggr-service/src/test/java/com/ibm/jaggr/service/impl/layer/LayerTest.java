@@ -311,6 +311,8 @@ public class LayerTest extends EasyMock {
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
 		assertEquals(saveResult, result);
 		
+		Thread.sleep(1000L);   // Wait long enough for systems with coarse grain last-mod
+		                       // times to recognize that the file has changed.
 		// Touch a file and make sure the layer is rebuilt
 		new File(tmpdir, "p1/b.js").setLastModified(new Date().getTime());
 		requestAttributes.clear();
@@ -344,6 +346,9 @@ public class LayerTest extends EasyMock {
 		LayerImpl layer = newLayerImpl(mockAggregator);
 		long testLastMod = layer.getLastModified(mockRequest);
 		assertTrue(lastMod == testLastMod);
+
+		Thread.sleep(1000L);	// Wait long enough for systems with coarse grain last-mod
+        // times to recognize that the file has changed
 		lastMod = new Date().getTime();
 		new File(tmpdir, "p1/a.js").setLastModified(lastMod);
 		requestAttributes.clear();

@@ -224,6 +224,8 @@ public class LayerCacheTest {
 		
 		mockAggregator.getOptions().setOption("developmentMode", "true");
 		
+		Thread.sleep(1000L);  // wait long enough for systems with coarse grain last-mod times
+		                      // to recognize that the file has changed
 		TestUtils.createTestFile(tmpdir, "p1/a.js", TestUtils.a.replace("hello", "Hello"));
 		requestAttributes.clear();
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/a"}));
@@ -236,6 +238,7 @@ public class LayerCacheTest {
 		Writer writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		String result = writer.toString();
+		System.out.println(result);
 		Assert.assertTrue(result.contains("Hello from a.js"));
 		String newFilename = layerCache.getLayerBuildMap().get(key).filename;
 		Assert.assertNotSame(filename, newFilename);
