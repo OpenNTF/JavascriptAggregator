@@ -408,10 +408,10 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		code = "require([\"foo\"],function(){});";
 		output = runPass(pass, code);
 		System.out.println(output);
-		Assert.assertTrue(Pattern.compile("console\\.log\\(\\\"[^)\"]*Expanding requires list").matcher(output).find());
-		Assert.assertTrue(output.contains("foo (Declared.)"));
-		Assert.assertTrue(output.contains("bar (Declared.)"));
-		Assert.assertTrue(output.contains("a/b (From: foo)"));
+		Assert.assertTrue("Expected pattern not found.", Pattern.compile("console\\.log\\(\\\"[^)\"]*Expanding requires list").matcher(output).find());
+		Assert.assertTrue("Output does not contain expected value.", output.contains("foo (Declared.)"));
+		Assert.assertTrue("Output does not contain expected value.", output.contains("bar (Declared.)"));
+		Assert.assertTrue("Output does not contain expected value.", output.contains("a/b (From: foo)"));
 		
 	}
 		
