@@ -346,9 +346,10 @@ public class LayerTest extends EasyMock {
 		LayerImpl layer = newLayerImpl(mockAggregator);
 		long testLastMod = layer.getLastModified(mockRequest);
 		assertTrue(lastMod == testLastMod);
-		lastMod = new Date().getTime();
+
 		Thread.sleep(1000L);	// Wait long enough for systems with coarse grain last-mod
-		                        // times to recognize that the file has changed
+        // times to recognize that the file has changed
+		lastMod = new Date().getTime();
 		new File(tmpdir, "p1/a.js").setLastModified(lastMod);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
