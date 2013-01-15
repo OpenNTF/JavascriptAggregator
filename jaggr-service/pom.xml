@@ -128,7 +128,10 @@
 		            	*
 		            </Import-Package>
 		            <!-- embed dependencies -->
-		            <Include-Resources>{maven-resources}</Include-Resources>
+		            <Include-Resource>
+                      {maven-resources}, {maven-dependencies},
+                      **/*.properties
+                    </Include-Resource>
 		            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,js</Embed-Dependency>
 		            <Embed-Directory>lib</Embed-Directory>
 		            <Embed-StripGroup>true</Embed-StripGroup>
