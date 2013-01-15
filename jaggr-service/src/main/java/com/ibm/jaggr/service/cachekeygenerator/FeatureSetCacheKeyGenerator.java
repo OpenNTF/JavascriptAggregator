@@ -168,7 +168,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 		// items in the output.
 		SortedSet<String> set = depFeatures == null ? null : new TreeSet<String>(depFeatures);
 		StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
-		sb.append(set == null ? "[]" : set.toString()); //$NON-NLS-1$
+		sb.append(set == null ? "null" : set.toString()); //$NON-NLS-1$
 		if (isProvisional()) {
 			sb.append(":provisional"); //$NON-NLS-1$
 		}

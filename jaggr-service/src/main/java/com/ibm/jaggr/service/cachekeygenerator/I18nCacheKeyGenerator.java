@@ -35,6 +35,19 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	private final Collection<String> availableLocales;
 	private final boolean provisional;
 	
+	/**
+	 * Element constructor.
+	 * 
+	 * @param dependentFeatures
+	 *            Set of feature names that this cache key generator depends on.
+	 *            The key output by this key generator will contain only those
+	 *            features from the request that are included in
+	 *            {@code dependentFeatures}.  If the value is null, then all
+	 *            the features specified in the request are included in the 
+	 *            generated cache key.
+	 * @param provisional
+	 *            True if this is a provisional cache key generator.
+	 */
 	public I18nCacheKeyGenerator(
 			Collection<String> availableLocales,
 			boolean provisional) {
@@ -116,7 +129,7 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 		// items in the output.
 		SortedSet<String> set = availableLocales == null ? null : new TreeSet<String>(availableLocales);
 		StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
-		sb.append(set == null ? "[]" : set.toString()); //$NON-NLS-1$
+		sb.append(set == null ? "null" : set.toString()); //$NON-NLS-1$
 		if (isProvisional()) {
 			sb.append(":provisional"); //$NON-NLS-1$
 		}
