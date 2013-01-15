@@ -329,6 +329,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				// feature sets in the request.
 				CacheKeyGenerator keyGen = (CacheKeyGenerator)keyGens.get(1);
 				if (keyGen.featureKeyGen == null || 
+						keyGen.featureKeyGen.getFeatureSet() == null ||
 						!keyGen.featureKeyGen.getFeatureSet().containsAll(discoveredHasConditionals)) {
 					discoveredHasConditionals.addAll(keyGen.featureKeyGen.getFeatureSet());
 					createNewKeyGen = true;

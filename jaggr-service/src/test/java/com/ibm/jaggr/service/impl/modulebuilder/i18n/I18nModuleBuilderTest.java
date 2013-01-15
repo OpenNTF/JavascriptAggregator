@@ -133,7 +133,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
-		Assert.assertTrue(s.contains("i18n:[]:provisional"));
+		Assert.assertTrue(s.contains("i18n:null:provisional"));
 		keyGens = null;
 		output = buildIt();
 		
@@ -187,7 +187,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		output = buildIt();
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
-		Assert.assertTrue(s.contains("i18n:[]"));
+		Assert.assertTrue(s.contains("i18n:null"));
 		Assert.assertFalse(s.contains("provisional"));
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
