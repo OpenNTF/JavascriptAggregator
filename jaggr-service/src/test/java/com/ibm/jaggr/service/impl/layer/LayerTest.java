@@ -349,25 +349,19 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(mockAggregator);
 		long testLastMod = layer.getLastModified(mockRequest);
-		assertTrue(lastMod == testLastMod);
+		assertTrue("Last modifieds don't match", lastMod == testLastMod);
 
 		Thread.sleep(1000L);	// Wait long enough for systems with coarse grain last-mod
         // times to recognize that the file has changed
 		lastMod = new Date().getTime();
 		new File(tmpdir, "p1/a.js").setLastModified(new Date().getTime());
 		lastMod = new File(tmpdir, "p1/a.js").lastModified();
-		Assert.assertNotSame(lastMod,  testLastMod);
+		Assert.assertNotSame("Last modifieds shouldn't match", lastMod,  testLastMod);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		testLastMod = layer.getLastModified(mockRequest);
-		
-		if (testLastMod % 1000 == 0) {
-			// Coarse time system
-			assertEquals("Unexpected coarse LastModified value.", lastMod.longValue() / 1000, testLastMod / 1000);
-		} else {
-			assertEquals("Unexpected fine LastModified value.", lastMod.longValue(), testLastMod);
-		}
+		assertTrue("Last modifieds don't match", lastMod == testLastMod);
 		assertNotNull(requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertTrue(testLastMod == (Long)requestAttributes.get(LayerImpl.LAST_MODIFIED_PROPNAME));
 	}
