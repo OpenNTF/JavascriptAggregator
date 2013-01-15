@@ -50,10 +50,11 @@
         </includes>
       </resource>
       <resource>
-      	<directory>${basedir}/src</directory>
-      	<includes>
-      		<include>**/*.properties</include>
-      	</includes>
+        <directory>${basedir}/src/main/java</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
       </resource>
     </resources>
     <pluginManagement>
