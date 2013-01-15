@@ -38,7 +38,7 @@ public class ExecutorsImpl implements IExecutors {
     private static final Logger log = Logger.getLogger(ICacheManager.class.getName());
 
     /* Thread group name constants */
-    private static final String CACHE_SERIALIZER_THREADNAME = "Aggregator Scheduled Cache Serializer"; //$NON-NLS-1$
+    private static final String SCHEDULED_EXECUTOR_THREADNAME = "Aggregator Scheduled Executor"; //$NON-NLS-1$
     private static final String CACHE_FILE_CREATOR_THREADNAME = "Aggregator Cache File Creator"; //$NON-NLS-1$
     private static final String CACHE_FILE_DELETOR_THREADNAME = "Aggregator Cache File Deletor"; //$NON-NLS-1$
     private static final String MODULE_BUILDER_THREADNAME = "{0} Thread - {1}"; //$NON-NLS-1$
@@ -49,7 +49,7 @@ public class ExecutorsImpl implements IExecutors {
     private final ThreadGroup buildTG = new ThreadGroup(MODULE_BUILDER_TGNAME);
 
     /** Single thread {@link ScheduledExcetutorService} to periodically serialize the cache metadata */
-    private ScheduledExecutorService cacheSerializeExecutor;
+    private ScheduledExecutorService scheduledExecutor;
 	
     /** Single thread {@link ExecutorService} used to asynchrnously create cache files */ 
     private ExecutorService createExecutor; 
@@ -70,23 +70,23 @@ public class ExecutorsImpl implements IExecutors {
 		ExecutorService createExecutor,
 		ExecutorService buildExecutor,
 		ScheduledThreadPoolExecutor deleteExecutor,
-		ScheduledExecutorService cacheSerializeExecutor) {
+		ScheduledExecutorService scheduledExecutor) {
 			
     	this.createExecutor = createExecutor;
     	this.buildExecutor = buildExecutor;
     	this.deleteExecutor = deleteExecutor;
-    	this.cacheSerializeExecutor = cacheSerializeExecutor;
+    	this.scheduledExecutor = scheduledExecutor;
     	
 	}
     private void open() {
     	
     	if (opened) return;
     	
-        if (cacheSerializeExecutor == null) {
-        	cacheSerializeExecutor = 
+        if (scheduledExecutor == null) {
+        	scheduledExecutor = 
         	Executors.newSingleThreadScheduledExecutor(new ThreadFactory() {
         		public Thread newThread(Runnable r) {
-        			return new Thread(r, CACHE_SERIALIZER_THREADNAME);
+        			return new Thread(r, SCHEDULED_EXECUTOR_THREADNAME);
         		}
         	});
         }
@@ -133,7 +133,7 @@ public class ExecutorsImpl implements IExecutors {
     	
 		// Shutdown the asynchronous executor services
 		Collection<ExecutorService> executors = new ArrayList<ExecutorService>();
-		executors.add(cacheSerializeExecutor);
+		executors.add(scheduledExecutor);
 		executors.add(deleteExecutor);
 		executors.add(createExecutor);
 		executors.add(buildExecutor);
@@ -176,9 +176,9 @@ public class ExecutorsImpl implements IExecutors {
     }
 
 	@Override
-	public ScheduledExecutorService getCacheSerializeExecutor() {
+	public ScheduledExecutorService getScheduledExecutor() {
     	if (!opened) open();
-		return cacheSerializeExecutor;
+		return scheduledExecutor;
 	}
 
 	@Override

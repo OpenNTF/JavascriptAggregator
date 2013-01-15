@@ -167,7 +167,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     	
         // Start up the periodic serializer task.  Serializes the cache every 10 minutes.
         // This is done so that we can recover from an unexpected shutdown
-        aggregator.getExecutors().getCacheSerializeExecutor().scheduleAtFixedRate(new Runnable() {
+        aggregator.getExecutors().getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
         	public void run() {
         		try {
         			File file = new File(_directory, CACHE_META_FILENAME);
@@ -331,7 +331,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     
     private void clean(File directory) {
     	final File[] oldCacheFiles = directory.listFiles();
-    	_aggregator.getExecutors().getCacheSerializeExecutor().submit(new Runnable() {
+    	_aggregator.getExecutors().getScheduledExecutor().submit(new Runnable() {
     		public void run() {
     			for (File file : oldCacheFiles) {
     				try {

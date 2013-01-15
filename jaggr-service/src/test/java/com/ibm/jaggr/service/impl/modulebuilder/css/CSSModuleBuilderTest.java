@@ -28,6 +28,7 @@ import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
@@ -64,13 +65,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 	static final String base64PngData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAASCAYAAACaV7S8AAAAAXNSR0IArs4c6QAAACNJREFUCNdj+P///0cmBgaGJ0wMDAyPsbAgXIb////zMZACAIj0DUFA3QqvAAAAAElFTkSuQmCC";
 	
 
-	Map<String, String> requestParams = new HashMap<String, String>();
+	Map<String, String[]> requestParams = new HashMap<String, String[]>();
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	Scriptable configScript;
 	IAggregator mockAggregator;
 	HttpServletRequest mockRequest;
 	CSSModuleBuilderTester builder = new CSSModuleBuilderTester(); 
-	ICacheKeyGenerator[] keyGens = builder.getCacheKeyGenerators(mockAggregator);
+	List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 	long seq = 1;
 	
 	class CSSModuleBuilderTester extends CSSModuleBuilder {
@@ -79,7 +80,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 				String mid, 
 				IResource resource, 
 				HttpServletRequest request, 
-				ICacheKeyGenerator[] keyGens) 
+				List<ICacheKeyGenerator> keyGens) 
 		throws IOException {
 			return super.getContentReader(mid, resource, request, keyGens);
 		}			
@@ -99,7 +100,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 	@Before
 	public void setUp() throws Exception {
 		mockAggregator = TestUtils.createMockAggregator();
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
@@ -268,19 +269,19 @@ public class CSSModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(".background-image:url('#images/img.jpg');", output);
 
 		// Make sure we can disable inlining of imports by request parameter
-		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, "false");
+		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"false"});
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals("@import \"subdir/imported.css\"", output);
 		
-		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, "true");
+		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"true"});
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".background-image:url('#images/img.jpg');", output);
 		
-		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, "0");
+		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"0"});
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals("@import \"subdir/imported.css\"", output);
 
-		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, "1");
+		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"1"});
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".background-image:url('#images/img.jpg');", output);
 		
@@ -347,13 +348,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
 		// Make sure we can disable image inlining by request parameter
-		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, "false");
+		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, new String[]{"false"});
 		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".foo{background-image:url(images/testImage.png)}", output);
 
-		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, "true");
+		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, new String[]{"true"});
 		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
@@ -478,11 +479,11 @@ public class CSSModuleBuilderTest extends EasyMock {
 	
 	@Test
 	public void testCacheKeyGen() throws Exception {
-		ICacheKeyGenerator[] keyGens = builder.getCacheKeyGenerators(mockAggregator);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		Assert.assertEquals("expn:0;css:0:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
-		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, "true");
+		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, new String[]{"true"});
 		Assert.assertEquals("expn:0;css:0:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
-		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, "true");
+		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"true"});
 		Assert.assertEquals("expn:0;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		Assert.assertEquals("expn:1;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));

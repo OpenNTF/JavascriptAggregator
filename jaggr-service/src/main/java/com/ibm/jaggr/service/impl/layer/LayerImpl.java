@@ -25,6 +25,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,10 +36,14 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.zip.Deflater;
+import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -47,15 +52,16 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
+import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
-import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.BuildListReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
@@ -82,22 +88,27 @@ public class LayerImpl implements ILayer {
     public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
     public static final String MODULECACHEIFNO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
     
-    protected static final ICacheKeyGenerator[] layerCacheKeyGenerators  = new ICacheKeyGenerator[]{
+    protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
+    		// This is a singleton, so default equals() will do
 			private static final long serialVersionUID = 2013098945317787755L;
+			private static final String eyeCatcher = "lyr";
 			@Override
 			public String generateKey(HttpServletRequest request) {
 				boolean showFilenames =  TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
-				return "sn:" + (showFilenames ? "1" : "0"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				return new StringBuffer(eyeCatcher).append(":") //$NON-NLS-1$
+						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+						.append(showFilenames ? "1" : "0").toString(); //$NON-NLS-1$ //$NON-NLS-2$
+
 			}
 			@Override
 			public String toString() {
-				return "sn"; //$NON-NLS-1$
+				return eyeCatcher; //$NON-NLS-1$
 			}
     	}
-    };
+    }));
     	
-    
+    public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):");
     /**
      * Map of cache dependency objects for module classes included in this layer.
      * Cloned by reference since cache key generators are immutable.
@@ -197,8 +208,10 @@ public class LayerImpl implements ILayer {
 		        	}
 		        }
 	        }	
+	        Map<String, ICacheKeyGenerator> cacheKeyGenerators = _cacheKeyGenerators;
+	        
 	        // Creata a cache key.
-	        key = generateCacheKey(request);
+	        key = generateCacheKey(request, cacheKeyGenerators);
 	
 	        // Try retrieving the cached layer build first using get() since it doesn't block.  If that fails,
 	        // then try again using the locking putIfAbsent()
@@ -206,13 +219,14 @@ public class LayerImpl implements ILayer {
 	        if (existingEntry != null) {
 	        	if (!ignoreCached) {
 		        	try {
-			        	result = existingEntry.tryGetInputStream(request, response);
+			        	result = existingEntry.tryGetInputStream(request);
 			        	if (result != null) {
 				        	if (isLogLevelFiner) {
 				        		log.finer("returning cached layer build with cache key: " + key); //$NON-NLS-1$
 				        	}
 				        	if (_isReportCacheInfo)
 				        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_1"); //$NON-NLS-1$
+				        	setResponseHeaders(request, response, existingEntry.size);
 							return result;
 			        	} 
 		        	} catch (IOException e) {
@@ -236,13 +250,14 @@ public class LayerImpl implements ILayer {
 				existingEntry = _layerBuilds.putIfAbsent(key, newEntry, options.isDevelopmentMode());
 			}
 			if (!ignoreCached && existingEntry != null 
-				&& (result = existingEntry.tryGetInputStream(request, response)) != null) {
+				&& (result = existingEntry.tryGetInputStream(request)) != null) {
 	        	if (isLogLevelFiner) {
 	        		log.finer("returning cached layer build with cache key: " + key); //$NON-NLS-1$
 	        	}
 	        	if (_isReportCacheInfo) {
 	        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_2"); //$NON-NLS-1$
 	        	}
+				setResponseHeaders(request, response, existingEntry.size);
 				return result;
 			}
 	    	if (_isReportCacheInfo)
@@ -251,11 +266,11 @@ public class LayerImpl implements ILayer {
 			// putIfAbsent() succeeded and the new entry was added to the cache
 			entry = (existingEntry != null) ? existingEntry : newEntry;
 			
-			BuildListReader in;
+			BuildListReader in = null;
 			
 	        // List of Future<IModule.ModuleReader> objects that will be used to read the module
 	        // data from
-	        List<Future<ModuleBuildReader>> futures;
+	        List<Future<ModuleBuildReader>> futures = null;
 	
 	        // Synchronize on the LayerBuild object for the build.  This will prevent multiple
 			// threads from building the same output.  If more than one thread requests the same
@@ -266,10 +281,14 @@ public class LayerImpl implements ILayer {
 	
 	        	// Check to see if data is available one more time in case a different thread finished
 				// building the output while we were blocked on the sync object.
-	        	if (!ignoreCached && key != null && (result = entry.tryGetInputStream(request, response)) != null) {
+	        	if (!ignoreCached && key != null && (result = entry.tryGetInputStream(request)) != null) {
 	            	if (isLogLevelFiner) {
 	            		log.finer("returning built layer with cache key: " + key); //$NON-NLS-1$
 	            	}
+		        	if (_isReportCacheInfo) {
+		        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_3"); //$NON-NLS-1$
+		        	}
+	            	setResponseHeaders(request, response, entry.size);
 	        		return result;
 	        	}
 	
@@ -277,80 +296,148 @@ public class LayerImpl implements ILayer {
 	        		log.finer("Building layer with cache key: " + key); //$NON-NLS-1$
 	        	}
 	        	
-				futures = collectFutures(request, ignoreCached);
-	
-		        // Create a BuildListReader from the list of Futures.  This reader will obtain a 
-		        // ModuleReader from each of the Futures in the list and read data from each one in
-		        // succession until all the data has been read, blocking on each Future until the 
-		        // reader becomes available.
-				in = new BuildListReader(futures);
-				
-				// Create the compression stream for the output
+	        	boolean isGzip = RequestUtil.isGzipEncoding(request);
 		        ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		        VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
-		        compress.setLevel(Deflater.BEST_COMPRESSION);
-		        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
-	
-		        // Copy the data from the input stream to the output, compressing as we go.
-		        int expandedSize = CopyUtil.copy(in, writer);
-	            
-	            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
-	            entry.setBytes(bos.toByteArray(), expandedSize);
+	        	
+	        	// See if we already have a cached response that uses a different gzip
+	        	// encoding option.  If we do, then just zip (or unzip) the cached
+	        	// response
+	        	CacheEntry otherEntry = null;
+	        	if (key != null) {
+		        	StringBuffer sb = new StringBuffer();
+		        	Matcher m = GZIPFLAG_KEY_PATTERN.matcher(key);
+		        	m.find();
+		        	m.appendReplacement(sb, 
+		        			new StringBuffer(s_layerCacheKeyGenerators.get(0).toString()).append(":")
+		        				.append("1".equals(m.group(1)) ? "0" : "1").append(":").toString()
+		        	).appendTail(sb);
+			        otherEntry = _layerBuilds.get(sb.toString());
+	        	}
+		        if (otherEntry != null) {
+		        	if (isGzip) {
+			        	if (isLogLevelFiner) {
+			        		log.finer("Zipping unzipped response from cache"); //$NON-NLS-1$
+			        	}
+			        	if (_isReportCacheInfo) {
+			        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_4"); //$NON-NLS-1$
+			        	}
+		        		// We need gzipped and the cached entry is unzipped
+						// Create the compression stream for the output
+				        VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
+				        compress.setLevel(Deflater.BEST_COMPRESSION);
+				        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
+			
+				        // Copy the data from the input stream to the output, compressing as we go.
+				        CopyUtil.copy(otherEntry.getInputStream(request), writer);
+		        	} else {
+			        	if (isLogLevelFiner) {
+			        		log.finer("Unzipping zipped response from cache"); //$NON-NLS-1$
+			        	}
+			        	if (_isReportCacheInfo) {
+			        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_5"); //$NON-NLS-1$
+			        	}
+		        		// We need unzipped and the cached entry is zipped.  Just unzip it
+		        		CopyUtil.copy(new GZIPInputStream(otherEntry.getInputStream(request)), bos);
+		        	}
+		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
+		            entry.setBytes(bos.toByteArray());
+		            if (!ignoreCached) {
+		            	entry.persist(mgr);
+		            }
+		        } else {
+					futures = collectFutures(request, ignoreCached);
+		
+			        // Create a BuildListReader from the list of Futures.  This reader will obtain a 
+			        // ModuleReader from each of the Futures in the list and read data from each one in
+			        // succession until all the data has been read, blocking on each Future until the 
+			        // reader becomes available.
+					in = new BuildListReader(futures);
+					
+			        if (isGzip) {
+				        VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
+				        compress.setLevel(Deflater.BEST_COMPRESSION);
+				        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
+			
+				        // Copy the data from the input stream to the output, compressing as we go.
+				        CopyUtil.copy(in, writer);
+			        } else {
+			        	CopyUtil.copy(in, bos);
+			        }
+		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
+		            entry.setBytes(bos.toByteArray());
+		        }
 	        }
 	        
 	    	// if any of the readers included an error response, then don't cache the layer.
-	        if (in.hasErrors()) {
+	        if (in != null && in.hasErrors()) {
 	        	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 	        	if (key != null) {
 	        		_layerBuilds.remove(key, entry);
 	        	}
-	        } else {
+	        } else if (futures != null) {
 	        	if (!ignoreCached) {	
-			        // If we don't yet have a cache key for this layer, then get one 
-					// from the cache key generators, and then update the cache key for this 
-		        	// cache entry.
-			        if (key == null) {
-			        	if (_cacheKeyGenerators == null) {   // opportunistic check to possibly avoid sync block
-			        		Map<String, ICacheKeyGenerator> cacheKeyGenerators = new HashMap<String, ICacheKeyGenerator>();
-			        		addCacheKeyGenerators(cacheKeyGenerators, layerCacheKeyGenerators);
-			        		for (Future<ModuleBuildReader> future : futures) {
-			        			ICacheKeyGenerator[] gen = null;
-								try {
-									gen = future.get().getCacheKeyGenerators();
-								} catch (InterruptedException e) {
-									throw new IOException(e);
-								} catch (ExecutionException e) {
-									throw new IOException(e);
-								}
-								addCacheKeyGenerators(cacheKeyGenerators, gen);
-			        		}
-			        		addCacheKeyGenerators(cacheKeyGenerators, getModules(request).getCacheKeyGenerators());
-			        		addCacheKeyGenerators(cacheKeyGenerators, aggr.getTransport().getCacheKeyGenerators());
-			        		
-			            	synchronized(this) {
-			            		if (_cacheKeyGenerators == null) {
-			            			_cacheKeyGenerators = cacheKeyGenerators;
-			            		}
-			            	}
+	        		// See if we need to create or update the cache key generators
+			        Map<String, ICacheKeyGenerator> newKeyGens = new HashMap<String, ICacheKeyGenerator>();
+			        Set<String> requiredModuleListDeps = getModules(request).getDependentFeatures();
+		        	addCacheKeyGenerators(newKeyGens, s_layerCacheKeyGenerators);
+	        		addCacheKeyGenerators(newKeyGens, aggr.getTransport().getCacheKeyGenerators());
+        			addCacheKeyGenerators(newKeyGens, Arrays.asList(new ICacheKeyGenerator[]{new FeatureSetCacheKeyGenerator(requiredModuleListDeps, false)}));
+        			addCacheKeyGenerators(newKeyGens, getCacheKeyGenerators(futures));
+
+        			boolean cacheKeyGeneratorsUpdated = false;
+	        		if (!newKeyGens.equals(cacheKeyGenerators)) {
+				        // If we don't yet have a cache key for this layer, then get one 
+						// from the cache key generators, and then update the cache key for this 
+			        	// cache entry.
+
+	        			synchronized(this) {
+		        			if (_cacheKeyGenerators != null) {
+		        				addCacheKeyGenerators(newKeyGens, _cacheKeyGenerators.values());
+		        			}
+	        				_cacheKeyGenerators = Collections.unmodifiableMap(newKeyGens);
+				        }
+	        			cacheKeyGeneratorsUpdated = true;
+	        		}
+	        		final String originalKey = key;
+	        		if (key == null || cacheKeyGeneratorsUpdated) {
+			            key = generateCacheKey(request, newKeyGens);
+	        		}
+	            	if (originalKey == null || !originalKey.equals(key)) {
+	            		/*
+	            		 * The cache key has changed from what was originally used to put the
+	            		 * un-built entry into the cache.  Add the LayerBuild to the cache 
+	            		 * using the new key.
+	            		 */
+		            	if (log.isLoggable(Level.FINE)) {
+		            		log.fine("Key changed!  Adding layer to cache with key: " + key); //$NON-NLS-1$
+		            	}
+	        			final CacheEntry originalEntry = entry;
+	        			CacheEntry updateEntry = (originalKey == null) ? entry : new CacheEntry(entry);
+		        		CacheEntry previousEntry = _layerBuilds.putIfAbsent(key, updateEntry, options.isDevelopmentMode());
+			            // Write the file to disk only if the LayerBuild was successfully added to the cache
+			        	if (previousEntry == null) {
+			        		// Updated entry was added to the cache.
+			        		entry = updateEntry;
+			            	entry.persist(mgr);
 			        	}
-			            key = generateCacheKey(request);
-			        }
-		            // Add the LayerBuild to the cache using the new key.
-	            	if (log.isLoggable(Level.FINE)) {
-	            		log.fine("Adding layer to cache with key: " + key); //$NON-NLS-1$
+			        	// If the key changed, then remove the entry under the old key.  Use a 
+			        	// delay to give other threads a chance to start using the new cache
+			        	// key generator.
+			        	if (originalKey != null) {
+			        		aggr.getExecutors().getScheduledExecutor().schedule(new Runnable() {
+			        			public void run() {
+			        				_layerBuilds.remove(originalKey, originalEntry);
+			        			}
+			        		}, 10, TimeUnit.SECONDS);
+			        	}
+	            	} else {
+	            		entry.persist(mgr);
 	            	}
-	        		CacheEntry oldEntry = _layerBuilds.putIfAbsent(key, entry, options.isDevelopmentMode());
-		            // Write the file to disk only if the LayerBuild was successfully added to the cache,
-	        		// or if the current cache entry is the cache entry we're working onf
-		        	if (oldEntry == null || oldEntry == entry) {
-		            	entry.persist(mgr);
-		        	} else {
-		        		entry = oldEntry;
-		        	}
 	        	}
 	        }
 	        // return the input stream to the LayerBuild
-			result = entry.getInputStream(request, response);
+			result = entry.getInputStream(request);
+	        setResponseHeaders(request, response, entry.size);
 	        return result;
 		} catch (IOException e) {
 			_layerBuilds.remove(key, entry);
@@ -526,7 +613,7 @@ public class LayerImpl implements ILayer {
 
 	protected void addCacheKeyGenerators(
 			Map<String, ICacheKeyGenerator> cacheKeyGenerators,
-			ICacheKeyGenerator[] gens) 
+			Iterable<ICacheKeyGenerator> gens) 
 	{
 		if (gens != null) {
 			for (ICacheKeyGenerator gen : gens) {
@@ -567,9 +654,8 @@ public class LayerImpl implements ILayer {
 	 * @return the cache key
 	 * @throws IOException
 	 */
-	protected String generateCacheKey(HttpServletRequest request) throws IOException {
+	protected String generateCacheKey(HttpServletRequest request, Map<String, ICacheKeyGenerator> cacheKeyGenerators) throws IOException {
 		String cacheKey = null;
-		Map<String, ICacheKeyGenerator> cacheKeyGenerators = _cacheKeyGenerators;
 		if (cacheKeyGenerators != null) {
 			// First, decompose any composite cache key generators into their 
 			// constituent cache key generators so that we can combine them 
@@ -577,10 +663,10 @@ public class LayerImpl implements ILayer {
 			// keys.
 			Map<String, ICacheKeyGenerator> gens = new TreeMap<String, ICacheKeyGenerator>();
 			for (ICacheKeyGenerator gen : cacheKeyGenerators.values()) {
-				ICacheKeyGenerator[] constituentGens = gen.getCacheKeyGenerators(request);
+				List<ICacheKeyGenerator> constituentGens = gen.getCacheKeyGenerators(request);
 				addCacheKeyGenerators(gens, 
 						constituentGens == null ? 
-								new ICacheKeyGenerator[]{gen} : 
+								Arrays.asList(new ICacheKeyGenerator[]{gen}) : 
 								constituentGens);
 			}
 			cacheKey = KeyGenUtil.generateKey(
@@ -590,19 +676,6 @@ public class LayerImpl implements ILayer {
 		return cacheKey;
 	}
 	
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayer#clearCached(com.ibm.jaggr.service.cache.ICacheManager)
-	 */
-	@Override
-	public void clearCached(ICacheManager mgr) {
-		synchronized (this) {
-			_cacheKeyGenerators.clear();
-		}
-		for (Map.Entry<String, CacheEntry> entry : _layerBuilds.entrySet()) {
-			_layerBuilds.remove(entry.getKey(), entry.getValue());
-		}
-	}
-
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayer#getLastModified(javax.servlet.http.HttpServletRequest)
 	 */
@@ -796,6 +869,26 @@ public class LayerImpl implements ILayer {
     	return result;
     }
     
+    protected List<ICacheKeyGenerator> getCacheKeyGenerators(List<Future<ModuleBuildReader>> futures) throws IOException {
+    	List<ICacheKeyGenerator> result = new LinkedList<ICacheKeyGenerator>();
+		for (Future<ModuleBuildReader> future : futures) {
+			ModuleBuildReader reader;
+			try {
+				reader = future.get();
+			} catch (InterruptedException e) {
+				throw new IOException(e);
+			} catch (ExecutionException e) {
+				throw new IOException(e);
+			}
+			List<ICacheKeyGenerator> keyGens = reader.getCacheKeyGenerators();
+			if (keyGens != null) {
+	        	result.addAll(keyGens);
+			}
+		}
+		return result;
+    	
+    }
+    
 	/**
 	 * Called by the layer cache manager when a layer build is evicted from the
 	 * eviction map do to size limitations.
@@ -805,10 +898,19 @@ public class LayerImpl implements ILayer {
 	 * @return true if this layer has no more builds and the layer should be
 	 *         removed from the layer cache
 	 */
-	boolean cacheEntryEvicted(CacheEntry cacheEntry) {
+	protected boolean cacheEntryEvicted(CacheEntry cacheEntry) {
 		return _layerBuilds.cacheEntryEvicted(cacheEntry);
 	}
 
+    /**
+     * This method is provided for unit testing
+     *  
+     * @return The cacheKeyGenerators for this layer
+     */
+    Map<String, ICacheKeyGenerator> getCacheKeyGenerators() {
+    	return _cacheKeyGenerators;
+    }
+    
 	/**
 	 * Used by unit test cases.
 	 * 
@@ -825,4 +927,14 @@ public class LayerImpl implements ILayer {
      */
 	public static ILayerCache newLayerCache(IAggregator aggregator) {
 		return new LayerCacheImpl(aggregator);
-	}}
+	}
+	
+	protected void setResponseHeaders(HttpServletRequest request, HttpServletResponse response, int size) {
+        response.setContentType("application/x-javascript; charset=utf-8"); //$NON-NLS-1$
+        response.setContentLength(size);
+        if (RequestUtil.isGzipEncoding(request)) {
+        	response.setHeader("Content-Encoding", "gzip"); //$NON-NLS-1$ //$NON-NLS-2$
+        }
+		
+	}
+}

@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.service.modulebuilder;
 
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IAggregator;
@@ -138,10 +140,32 @@ public interface IModuleBuilder {
 	 * the requested module may be included in the build output, regardless of
 	 * whether or not the module builds provided by this builder are named.
 	 * <p>
-	 * This method must not return a provisional cache key generator. This
-	 * requirement is enforced by the {@code ModuleBuild} constructor, which
-	 * throws an {@code IllegalStateException} if a provisional cache key
-	 * generator is used to construct the object.
+	 * The module builder may update one or more of the cache key generators in
+	 * <code>keyGens</code> by specifying a new list of cache key generators in
+	 * the returned {@link ModuleBuild} object. When a new list is provided,
+	 * the cached cache key generator list for this module, and any layers
+	 * containing this module, are updated. If this method returns the same list
+	 * object specified by <code>keyGens</code> in the {@link ModuleBuild}
+	 * , then no updates of the cached key generators are performed. Most module
+	 * builders will have no need to update a cached key generator list once it
+	 * has been created and should just return 
+	 * <code>keyGens</code> in the {@link ModuleBuild} object, however, if 
+	 * <code>keyGens</code> is null,
+	 * then a new cache key generator list containing only non-provisional 
+	 * cache key generators MUST be provided in the returned {@link ModuleBuild}.
+	 * <p>
+	 * A module builder should always return the same sized cache key generator
+	 * list for any given resource, and the cache key generators in the list
+	 * must be the same class, and in the same sequence, for all responses for
+	 * the same resource. Note that subclasses of this class may add their own
+	 * cache key generators to the result list, so <code>keyGens</code> may be
+	 * larger than what this method previously returned because it contains
+	 * contributions from the subclasses. If this class wishes to update the
+	 * cache key generator list, it should not try to include any of these
+	 * added cache key generators in the new list. It should only include its
+	 * own cache key generators. Subclasses are responsible for detecting that
+	 * the superclass has updated the list in the result and then adding their
+	 * own cache key generators to the new result.
 	 * 
 	 * @param mid
 	 *            The module id
@@ -150,25 +174,24 @@ public interface IModuleBuilder {
 	 * @param request
 	 *            The HTTP request object
 	 * @param keyGens
-	 *            Array of cache key generators for this module that was
+	 *            List of cache key generators for this module that was
 	 *            obtained by a previous call to this method or
-	 *            {@link #getCacheKeyGenerators(IAggregator)}. If
-	 *            {@code keyGens} specifies a provisional cache key generator,
-	 *            then the {@code ModuleBuild} returned by this method MUST
-	 *            specify a non-provisional cache key generator. Otherwise, this
-	 *            method SHOULD return a {@code ModuleBuild} object that
-	 *            specifies {@code keyGen} for the cache key generator.
+	 *            {@link #getCacheKeyGenerators(IAggregator)}. If null, 
+	 *            then the {@code ModuleBuild} returned by this method must
+	 *            specify a new list of non-provisional cache key generators, 
+	 *            otherwise, this method may return a {@code ModuleBuild} object 
+	 *            that specifies {@code keyGen} for the cache key generator.
 	 * 
 	 * @return The processed (built) content as a {@link ModuleBuild} object
 	 * @throws Exception
 	 */
 	public ModuleBuild build(String mid, IResource resource,
-			HttpServletRequest request, ICacheKeyGenerator[] keyGens)
+			HttpServletRequest request, List<ICacheKeyGenerator> keyGens)
 			throws Exception;
 
 	/**
 	 * This method may be called, before
-	 * {@link #build(String, IResource, HttpServletRequest, ICacheKeyGenerator[])}
+	 * {@link #build(String, IResource, HttpServletRequest, List)}
 	 * is called by a separate worker thread, to obtain a cache key generator
 	 * for this builder. If cache keys for this builder depend on module
 	 * content, then this method should return a provisional cache key
@@ -177,17 +200,19 @@ public interface IModuleBuilder {
 	 * cache keys in matching requests to module builds.
 	 * <p>
 	 * If this method returns a provisional cache key generator, then
-	 * {@link #build(String, IResource, HttpServletRequest, ICacheKeyGenerator[])}
-	 * MUST return a non-provisional cache key generator in the returned
-	 * {@link ModuleBuild} object when subsequently called for the same request.
+	 * {@link #build(String, IResource, HttpServletRequest, List)}
+	 * will be called with a null cache key generator list and that method
+	 * MUST return a 
+	 * {@link ModuleBuild} object with a new immutable list of non-provisional cache key 
+	 * generators when subsequently called for the same request.
 	 * 
 	 * @param aggregator
 	 *            The aggregator instance
 	 * 
-	 * @return The cache key generator for this builder, or null if the build
-	 *         output does not have dependencies on any request parameters.
+	 * @return The list of cache key generators for this builder.  One or more of the
+	 *         cache key generators may be provisional.
 	 */
-	public ICacheKeyGenerator[] getCacheKeyGenerators(IAggregator aggregator);
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator);
 
 	public boolean handles(String mid, IResource resource);
 }

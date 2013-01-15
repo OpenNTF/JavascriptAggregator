@@ -22,6 +22,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +38,6 @@ import com.google.javascript.jscomp.JSSourceFile;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.I18nCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.resource.IResource;
@@ -72,13 +72,13 @@ extends JavaScriptModuleBuilder {
 
 	@Override
 	public ModuleBuild build(String mid, IResource resource,
-			HttpServletRequest request, ICacheKeyGenerator[] keyGens) throws Exception {
+			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {
 	
 		ModuleBuild result = super.build(mid, resource, request, keyGens);
-		if (KeyGenUtil.isProvisional(keyGens)) {
+		if (keyGens != result.getCacheKeyGenerators()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			List<ICacheKeyGenerator> newKeyGens = new ArrayList<ICacheKeyGenerator>();
-			newKeyGens.addAll(Arrays.asList(result.getCacheKeyGenerators()));
+			newKeyGens.addAll(result.getCacheKeyGenerators());
 			/*
 			 * In development mode, we want to detect new resources when they are added so we 
 			 * don't remember the list of available locales when the cache key generator is 
@@ -87,17 +87,15 @@ extends JavaScriptModuleBuilder {
 			 * cache key generator will be created when development mode is turned off.
 			 */
 			
-			Matcher m = re.matcher(mid);
-			m.matches();
 			String[] availableLocales = aggr.getOptions().isDevelopmentMode() ?
 					null : getAvailableLocales(request, mid, resource, keyGens);
 			newKeyGens.add(new CacheKeyGenerator(availableLocales, false));
-			keyGens = newKeyGens.toArray(new ICacheKeyGenerator[newKeyGens.size()]);
+			keyGens = newKeyGens;
 		}
 		return new ModuleBuild(result.getBuildOutput(), keyGens, result.isError());
 	}
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.impl.javascript.JavaScriptModuleBuilder#getJSSource(com.ibm.jaggr.service.module.IModule.Source, com.ibm.jaggr.service.resource.IResource, javax.servlet.http.HttpServletRequest)
+	 * @see com.ibm.jaggr.service.impl.module.javascript.JavaScriptModuleBuilder#getJSSource(com.ibm.jaggr.service.module.IModule.Source, com.ibm.jaggr.service.resource.IResource, javax.servlet.http.HttpServletRequest)
 	 */
 	/**
 	 * Overrides the base class method to add the locale specific modules specified in the 
@@ -105,7 +103,7 @@ extends JavaScriptModuleBuilder {
 	 */
 	@Override
 	protected List<JSSourceFile> getJSSource(String mid, IResource resource,
-			HttpServletRequest request, ICacheKeyGenerator[] keyGens) throws IOException {
+			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		
 		List<JSSourceFile> result;
 		if (isExpandLocaleResources(request)) {
@@ -180,7 +178,7 @@ extends JavaScriptModuleBuilder {
 			final HttpServletRequest request, 
 			final String mid, 
 			final IResource res,
-			final ICacheKeyGenerator[] keyGens) 
+			final List<ICacheKeyGenerator> keyGens) 
 	throws IOException {
 		String key = I18nModuleBuilder.class.getName() + "." + mid; //$NON-NLS-1$
 		ConcurrentMap<String, Object> reqmap = 
@@ -191,12 +189,14 @@ extends JavaScriptModuleBuilder {
 		
 		// The list of available locales isn't in the request.  Try to get it from
 		// the cache key generator
-		for (ICacheKeyGenerator keyGen : keyGens) {
-			if (keyGen.getClass().equals(CacheKeyGenerator.class) && !keyGen.isProvisional()) {
-				I18nCacheKeyGenerator i18nKeyGen = ((CacheKeyGenerator)keyGen).keyGen;
-				Collection<String> locales = i18nKeyGen.getLocales();
-				if (locales != null) {
-					return locales.toArray(new String[locales.size()]);
+		if (keyGens != null) {
+			for (ICacheKeyGenerator keyGen : keyGens) {
+				if (keyGen.getClass().equals(CacheKeyGenerator.class) && !keyGen.isProvisional()) {
+					I18nCacheKeyGenerator i18nKeyGen = ((CacheKeyGenerator)keyGen).keyGen;
+					Collection<String> locales = i18nKeyGen.getLocales();
+					if (locales != null) {
+						return locales.toArray(new String[locales.size()]);
+					}
 				}
 			}
 		}
@@ -285,19 +285,19 @@ extends JavaScriptModuleBuilder {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getCacheKeyGenerator()
+	 * @see com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#getCacheKeyGenerator()
 	 */
 	@Override 
-	public ICacheKeyGenerator[] getCacheKeyGenerators(IAggregator aggregator) {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		// Return a provisional cache key generator
 		ArrayList<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
-		keyGens.addAll(Arrays.asList(super.getCacheKeyGenerators(aggregator)));
+		keyGens.addAll(super.getCacheKeyGenerators(aggregator));
 		keyGens.add(new CacheKeyGenerator(null, true));
-		return keyGens.toArray(new ICacheKeyGenerator[keyGens.size()]);
+		return keyGens;
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#handles(java.lang.String, com.ibm.jaggr.service.resource.IResource)
+	 * @see com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#handles(java.lang.String, com.ibm.jaggr.service.resource.IResource)
 	 */
 	@Override
 	public boolean handles(String mid, IResource resource) {
@@ -320,6 +320,8 @@ extends JavaScriptModuleBuilder {
 	static private final class CacheKeyGenerator implements ICacheKeyGenerator {
 
 		private static final long serialVersionUID = -3519536825171383430L;
+		
+		private static final String eyeCatcher = "i18nBldr"; //$NON-NLS-1$
 
 		private final I18nCacheKeyGenerator keyGen;
 		
@@ -341,21 +343,23 @@ extends JavaScriptModuleBuilder {
 
 		@Override
 		public ICacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
-			CacheKeyGenerator other = (CacheKeyGenerator)otherKeyGen;
+			if (this.equals(otherKeyGen)) {
+				return this;
+			}
 			return new CacheKeyGenerator(
-					(I18nCacheKeyGenerator)keyGen.combine(other.keyGen)
+					(I18nCacheKeyGenerator)keyGen.combine(((CacheKeyGenerator)otherKeyGen).keyGen)
 			);
 		}
 
 		@Override
-		public ICacheKeyGenerator[] getCacheKeyGenerators(
+		public List<ICacheKeyGenerator> getCacheKeyGenerators(
 				HttpServletRequest request) {
 			if (!isExpandLocaleResources(request)) {
-				return new ICacheKeyGenerator[0];
+				return Collections.emptyList();
 			}
-			ICacheKeyGenerator[] gens = keyGen.getCacheKeyGenerators(request);
+			List<ICacheKeyGenerator> gens = keyGen.getCacheKeyGenerators(request);
 			// Null means keyGen is an identity cache key generator
-			return (gens != null) ? gens : new ICacheKeyGenerator[]{keyGen};
+			return (gens != null) ? gens : Arrays.asList(new ICacheKeyGenerator[]{keyGen});
 		}
 
 		@Override
@@ -365,7 +369,17 @@ extends JavaScriptModuleBuilder {
 
 		@Override
 		public String toString() {
-			return keyGen.toString();
+			return eyeCatcher + ":(" + keyGen.toString() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		
+		@Override
+		public boolean equals(Object other) {
+			return other != null && getClass().equals(other.getClass()) && keyGen.equals(((CacheKeyGenerator)other).keyGen);
+		}
+		
+		@Override 
+		public int hashCode() {
+			return getClass().hashCode() * 31 + keyGen.hashCode();
 		}
 	}
 }

@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.service.modulebuilder;
 
+import java.util.List;
+
 import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IAggregator;
@@ -26,11 +28,11 @@ import com.ibm.jaggr.service.resource.IResource;
 /**
  * Result wrapper class for built content. Instances of this object are
  * returned by
- * {@link IModuleBuilder#build(String, IResource, HttpServletRequest, ICacheKeyGenerator[])}.
+ * {@link IModuleBuilder#build(String, IResource, HttpServletRequest, List)}.
  */
 public final class ModuleBuild {
 	private String buildOutput;
-	private ICacheKeyGenerator[] keyGenerators;
+	private List<ICacheKeyGenerator> keyGenerators;
 	private boolean error;
 
 	/**
@@ -59,7 +61,7 @@ public final class ModuleBuild {
 	 * @param error
 	 *            True if an error occurred while generating the build
 	 */
-	public ModuleBuild(String buildOutput, ICacheKeyGenerator[] keyGens, boolean error) {
+	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
 		this.buildOutput = buildOutput;
 		this.keyGenerators = keyGens;
 		this.error = error;
@@ -86,7 +88,7 @@ public final class ModuleBuild {
 	 * 
 	 * @return The cache key generator
 	 */
-	public ICacheKeyGenerator[] getCacheKeyGenerators() {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators() {
 		return keyGenerators;
 	}
 

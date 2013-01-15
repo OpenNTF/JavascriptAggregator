@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.transport;
 
 import java.io.IOException;
+import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -320,5 +321,5 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * @return The cache key generator for the JavaScript output by this
 	 *         transport.
 	 */
-	public ICacheKeyGenerator[] getCacheKeyGenerators();
+	public List<ICacheKeyGenerator> getCacheKeyGenerators();
 }

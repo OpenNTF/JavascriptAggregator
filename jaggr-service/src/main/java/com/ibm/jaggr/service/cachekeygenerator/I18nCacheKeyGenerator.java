@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.cachekeygenerator;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -34,6 +35,19 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	private final Collection<String> availableLocales;
 	private final boolean provisional;
 	
+	/**
+	 * Element constructor.
+	 * 
+	 * @param dependentFeatures
+	 *            Set of feature names that this cache key generator depends on.
+	 *            The key output by this key generator will contain only those
+	 *            features from the request that are included in
+	 *            {@code dependentFeatures}.  If the value is null, then all
+	 *            the features specified in the request are included in the 
+	 *            generated cache key.
+	 * @param provisional
+	 *            True if this is a provisional cache key generator.
+	 */
 	public I18nCacheKeyGenerator(
 			Collection<String> availableLocales,
 			boolean provisional) {
@@ -86,20 +100,29 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 
 	@Override
 	public ICacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
+		if (this.equals(otherKeyGen)) {
+			return this;
+		}
 		I18nCacheKeyGenerator other = (I18nCacheKeyGenerator)otherKeyGen;
-		if (provisional || other.provisional) {
+		if (provisional && other.provisional) {
 			// should never happen
 			throw new IllegalStateException();
 		}
-		Collection<String> combined = null;
-		if (availableLocales != null && other.availableLocales != null) {
-			combined = new HashSet<String>(availableLocales);
+		if (provisional) {
+			return other;
+		} else if (other.provisional) {
+			return this;
+		}
+		Collection<String> combined = new HashSet<String>();
+		if (availableLocales != null) {
+			combined.addAll(other.availableLocales);
+		} 
+		if (other.availableLocales != null) {
 			combined.addAll(other.availableLocales);
 		}
-		return new I18nCacheKeyGenerator(
-				combined,
-				false);
+		return new I18nCacheKeyGenerator(combined, false);
 	}
+	
 	@Override
 	public String toString() {
 		// Map features into sorted set so we get predictable ordering of
@@ -114,11 +137,32 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	@Override
-	public ICacheKeyGenerator[] getCacheKeyGenerators(HttpServletRequest request) {
+	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request) {
 		return null;
 	}
 	
 	public Collection<String> getLocales() {
 		return availableLocales;
+	}
+
+	@Override
+	public boolean equals(Object other) {
+		return other != null && getClass().equals(other.getClass()) && 
+				provisional == ((I18nCacheKeyGenerator)other).provisional &&
+				(
+					availableLocales != null && availableLocales.equals(((I18nCacheKeyGenerator)other).availableLocales) ||
+					availableLocales == null && ((I18nCacheKeyGenerator)other).availableLocales == null
+				);
+		
+	}
+	
+	@Override
+	public int hashCode() {
+		int result = getClass().hashCode();
+		result = result * 31 + Boolean.valueOf(provisional).hashCode();
+		if (availableLocales != null) {
+			result = result * 31 + availableLocales.hashCode();
+		}
+		return result;
 	}
 }
