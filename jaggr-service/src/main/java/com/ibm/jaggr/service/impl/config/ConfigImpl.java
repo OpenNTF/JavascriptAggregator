@@ -142,7 +142,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript) throws IOException {
 		Context.enter();
 		try {
-			lastModified = -1;
+			lastModified = configUri != null ? configUri.toURL().openConnection().getLastModified() : -1;
 			this.configUri = configUri;
 			this.aggregator = aggregator;
 			this.rawConfig = loadConfig(configScript);
@@ -155,7 +155,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public ConfigImpl(IAggregator aggregator, URI configUri, Scriptable rawConfig) throws IOException {
 		Context.enter();
 		try {
-			lastModified = -1;
+			lastModified = configUri != null ? configUri.toURL().openConnection().getLastModified() : -1;
 			this.configUri = configUri;
 			this.aggregator = aggregator;
 			this.rawConfig = rawConfig;

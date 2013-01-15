@@ -695,12 +695,9 @@ public class LayerImpl implements ILayer {
 		        ModuleList moduleFiles = getModules(request);
 		        lastModified = getLastModified(aggregator, moduleFiles);
 		        // Get last-modified date of config file
-				URI configUri = aggregator.getConfig().getConfigUri();
-				if (configUri != null) {
-					lastModified = Math.max(
-							lastModified, 
-							configUri.toURL().openConnection().getLastModified());
-				}
+				lastModified = Math.max(
+						lastModified, 
+						aggregator.getConfig().lastModified());
 		        request.setAttribute(LAST_MODIFIED_PROPNAME, lastModified);
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning calculated last modified "  //$NON-NLS-1$
