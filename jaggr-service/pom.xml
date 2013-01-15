@@ -49,6 +49,12 @@
           <include>aggregator.properties</include>
         </includes>
       </resource>
+      <resource>
+      	<directory>${basedir}/src</directory>
+      	<includes>
+      		<include>**/*.properties</include>
+      	</includes>
+      </resource>
     </resources>
     <pluginManagement>
    	  <plugins>
