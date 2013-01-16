@@ -24,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -34,9 +35,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
@@ -54,6 +56,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Files;
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
@@ -70,7 +73,15 @@ import com.ibm.jaggr.service.util.Features;
 
 public class LayerTest extends EasyMock {
 
+	static int id = 1;
 	static File tmpdir = null;
+	static Pattern layerPattern = Pattern.compile("[/\\\\]layer\\.[0-9]*\\.cache$");
+	static FileFilter layerFilter = new FileFilter() {
+		@Override public boolean accept(File pathname) { 
+			return  layerPattern.matcher(pathname.getPath()).find();
+		}
+	};
+
 	IAggregator mockAggregator;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
@@ -94,6 +105,7 @@ public class LayerTest extends EasyMock {
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
+		LayerImpl.LAYERBUILD_REMOVE_DELAY_SECONDS = 0;
 	}
 
 	@AfterClass
@@ -165,7 +177,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.servlets.amd.aggregator.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("unchecked")
@@ -173,18 +185,24 @@ public class LayerTest extends EasyMock {
 	public void testGetInputStream() throws Exception {
 
 		// Request a single module
+		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
+		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
+		long totalSize = 0;
 		Collection<String> modules = Arrays.asList(new String[]{"p1/a"}); 
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
+		List<String> layerCacheInfo = new LinkedList<String>();
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		Writer writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		String result = writer.toString();
 		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
-		assertEquals("add", moduleCacheInfo.get("p1/a"));
+		totalSize += result.length();
+		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
+		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
 		assertTrue(result.contains("\"hello from a.js\""));
 		
 		// Request two modules
@@ -192,62 +210,71 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
+		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("add", moduleCacheInfo.get("p1/b"));
 		assertTrue(result.contains("\"hello from a.js\""));
 		assertTrue(result.contains("\"hello from b.js\""));
+		totalSize += result.length();
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		// Add a text resource
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		modules = Arrays.asList(new String[]{"p1/b","p1/a","p1/hello.txt"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
+		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("add", moduleCacheInfo.get("p1/hello.txt"));
 		assertTrue(result.contains("\"hello from a.js\""));
 		assertTrue(result.contains("\"hello from b.js\""));
 		assertTrue(result.contains("Hello world text"));
+		totalSize += result.length();
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		// Test filename prologue option
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, "true");
 		layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
+		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
 		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
 		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
 		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
+		totalSize += result.length();
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		String saveResult = result;
 		
 
@@ -256,14 +283,17 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		assertEquals("hit_1", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		assertNull(requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME));
+		assertEquals("[hit_1]", layerCacheInfo.toString());
+		assertNull(requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME));
 		assertEquals(saveResult, result);
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 	
 		// rename one of the source files and make sure it busts the cache
 		new File(tmpdir, "p1/a.js").renameTo(new File(tmpdir, "p1/a.js.save"));
@@ -271,13 +301,14 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
+		assertEquals("[error_noaction]", layerCacheInfo.toString());
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
 		assertEquals("remove", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
@@ -299,16 +330,19 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		assertEquals("[update_keygen, update_key, update_hit]", layerCacheInfo.toString());
 		assertEquals("add", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		assertEquals(saveResult, result);
 		
 		Thread.sleep(1000L);   // Wait long enough for systems with coarse grain last-mod
@@ -319,22 +353,25 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEIFNO_PROPNAME);
+		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		assertEquals(saveResult, result);
 		
 	}
 
 	/**
-	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.servlets.amd.aggregator.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.imple.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
@@ -368,7 +405,7 @@ public class LayerTest extends EasyMock {
 
 
 	/**
-	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#toString()}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#toString()}.
 	 */
 	@Test
 	public void testToString() throws Exception {
@@ -384,7 +421,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.servlets.amd.aggregator.layer.impl.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.servlets.amd.aggregator.config.IConfig)}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.service.config.IConfig)}.
 	 */
 	@Test
 	public void testGetResourceURI() {
@@ -401,17 +438,29 @@ public class LayerTest extends EasyMock {
 	
 	@Test
 	public void featureSetUpdatingTests() throws Exception {
+		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
+		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
+		long totalSize = 0;
 		testDepMap.get("p2/a").put("p1/aliased/d", "");
+		List<String> layerCacheInfo = new LinkedList<String>();
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, IHttpTransport.OptimizationLevel.NONE);
-		LayerImpl layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		
-		layer.getInputStream(mockRequest, mockResponse).close();
+		LayerImpl layer = newLayerImpl(mockAggregator);
+		
+		InputStream in = layer.getInputStream(mockRequest, mockResponse);
+		Writer writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		String result = writer.toString();
+		totalSize += result.length();
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
+		
 		Map<String, ICacheKeyGenerator> keyGen = layer.getCacheKeyGenerators();
 		System.out.println(keyGen.values());
 		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[conditionFalse, conditionTrue])"));
@@ -421,49 +470,79 @@ public class LayerTest extends EasyMock {
 		features.put("foo", true);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
 		
-		layer.getInputStream(mockRequest, mockResponse).close();
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		totalSize += result.length();
 		keyGen = layer.getCacheKeyGenerators();
 		System.out.println(keyGen.values());
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		assertEquals("[added, update_keygen, update_key, update_add]", layerCacheInfo.toString());
 		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[conditionFalse, conditionTrue, foo])"));
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		features.put("foo", false);
 		features.put("bar", true);
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
-		layer.getInputStream(mockRequest, mockResponse).close();
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		totalSize += result.length();
 		keyGen = layer.getCacheKeyGenerators();
 		System.out.println(keyGen.values());
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		assertEquals("[added, update_keygen, update_key, update_add]", layerCacheInfo.toString());
 		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[bar, conditionFalse, conditionTrue, foo])"));
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		features.put("foo", true);
 		features.put("bar", false);
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
-		layer.getInputStream(mockRequest, mockResponse).close();
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		totalSize += result.length();
 		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		assertEquals("[added, update_weights]", layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		features.put("foo", false);
 		features.put("bar", false);
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
-		layer.getInputStream(mockRequest, mockResponse).close();
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		totalSize += result.length();
+		assertEquals("[added, update_keygen, update_key, update_weights]", layerCacheInfo.toString());
 		keyGen = layer.getCacheKeyGenerators();
 		System.out.println(keyGen.values());
 		Assert.assertTrue(keyGen.values().toString().contains("js:(has:[bar, conditionFalse, conditionTrue, foo, non])"));
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 
 		features.put("foo", true);
 		features.put("bar", true);
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
-		layer.getInputStream(mockRequest, mockResponse).close();
-		assertEquals("add", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		totalSize += result.length();
+		assertEquals("[added, update_weights]", layerCacheInfo.toString());
 		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		features.remove("bar");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
-		layer.getInputStream(mockRequest, mockResponse).close();
-		assertEquals("hit_1", requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		assertEquals("[hit_1]", layerCacheInfo.toString());
 		Assert.assertTrue(keyGen == layer.getCacheKeyGenerators());
+		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 
 	}
 	
@@ -471,19 +550,24 @@ public class LayerTest extends EasyMock {
 	public void gzipTests() throws Exception {
 		testDepMap.get("p2/a").put("p1/aliased/d", "");
 		String configJson = "{paths:{p1:'p1',p2:'p2'}}";
+		List<String> layerCacheInfo = new LinkedList<String>();
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
+		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		LayerImpl layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
 		
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		byte[] unzipped = bos.toByteArray();
-		Assert.assertEquals("add",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[update_keygen, update_key, update_add]",layerCacheInfo.toString());
 		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
+		Assert.assertEquals("weighted size error", unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 
 		bos = new ByteArrayOutputStream();
 		VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
@@ -493,83 +577,93 @@ public class LayerTest extends EasyMock {
         byte[] zipped = bos.toByteArray();
 		
         requestHeaders.put("Accept-Encoding", "gzip");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(zipped, bos.toByteArray());
 		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
 		// ensure that the response was generated by zipping the cached unzipped  response
-		Assert.assertEquals("hit_4",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[added, zip_unzipped, replaced_2]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
         requestHeaders.remove("Accept-Encoding");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(unzipped, bos.toByteArray());
 		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
 		// ensure response came from cache
-		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[hit_1]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
         requestHeaders.put("Accept-Encoding", "gzip");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(zipped, bos.toByteArray());
 		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
 		// ensure response came from cache
-		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[hit_1]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
+		mockAggregator.getCacheManager().clearCache();
+		cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
+		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(mockAggregator);
-		layer.setReportCacheInfo(true);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(zipped, bos.toByteArray());
 		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
-		Assert.assertEquals("add",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[zip, update_keygen, update_key, update_add]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		requestHeaders.remove("Accept-Encoding");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(unzipped, bos.toByteArray());
 		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
 		// ensure response was generated by unzipping the cached zipped response
-		Assert.assertEquals("hit_5",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[added, unzip_zipped, replaced_2]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		requestHeaders.put("Accept-Encoding", "gzip");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(zipped, bos.toByteArray());
 		Assert.assertEquals(zipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
 		// ensure response came from cache
-		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[hit_1]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 		
 		requestHeaders.remove("Accept-Encoding");
-		requestAttributes.remove(LayerImpl.LAYERCACHEINFO_PROPNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);
 		Assert.assertArrayEquals(unzipped, bos.toByteArray());
 		Assert.assertEquals(unzipped.length, Integer.parseInt(responseAttributes.get("Content-Length")));
 		// ensure response came from cache
-		Assert.assertEquals("hit_1",requestAttributes.get(LayerImpl.LAYERCACHEINFO_PROPNAME));
+		Assert.assertEquals("[hit_1]",layerCacheInfo.toString());
+		Assert.assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
+		Assert.assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 	}
 
 	@SuppressWarnings("serial")
 	class TestLayerImpl extends LayerImpl { 
 		TestLayerImpl() {
-			super("", 1);
+			super("", id++);
 			setLayerBuildsAccessor(new LayerBuildsAccessor(
-					1,
-					new ConcurrentHashMap<String, CacheEntry>(), 
+					id,
+					(ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap(),
 					mockAggregator.getCacheManager(), 
 					new ReentrantReadWriteLock(), null, null));
 		}
@@ -579,13 +673,14 @@ public class LayerTest extends EasyMock {
 	};
 	
 	static private LayerImpl newLayerImpl(IAggregator aggregator) {
-		LayerImpl result = new LayerImpl("", 1);
+		LayerImpl result = new LayerImpl("", id++);
 		result.setLayerBuildsAccessor(new LayerBuildsAccessor(
-				1, 
-				new ConcurrentHashMap<String, CacheEntry>(), 
+				id, 
+				(ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)aggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap(),
 				aggregator.getCacheManager(), 
 				new ReentrantReadWriteLock(), 
 				null, null));
+		result.setReportCacheInfo(true);
 		return result;
 	}
 

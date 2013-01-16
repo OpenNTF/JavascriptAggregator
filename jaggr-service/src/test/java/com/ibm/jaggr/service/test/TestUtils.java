@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.test;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
@@ -155,6 +156,15 @@ public class TestUtils {
 		createTestFile(p2p1p1, "c", c);
 		createTestFile(p2p1p1, "foo", foo);
 		createTestFile(p1, "hello.txt", hello);
+	}
+
+	static public long getDirListSize(File directory, FileFilter filter) {
+		File[] files = directory.listFiles(filter);
+		long result = 0;
+		for (File file : files) {
+			result += file.length();
+		}
+		return result;
 	}
 
 	static public class Ref<T> {
