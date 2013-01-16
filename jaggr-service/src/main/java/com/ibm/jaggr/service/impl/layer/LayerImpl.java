@@ -342,6 +342,7 @@ public class LayerImpl implements ILayer {
 		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
 		            entry.setBytes(bos.toByteArray());
 		            if (!ignoreCached) {
+	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 		            	entry.persist(mgr);
 		            }
 		        } else {
@@ -365,6 +366,8 @@ public class LayerImpl implements ILayer {
 			        }
 		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
 		            entry.setBytes(bos.toByteArray());
+		            // entry will be persisted below after we determine if cache key 
+		            // generator needs to be updated
 		        }
 	        }
 	        
@@ -422,7 +425,7 @@ public class LayerImpl implements ILayer {
 			        	}
 			        	// If the key changed, then remove the entry under the old key.  Use a 
 			        	// delay to give other threads a chance to start using the new cache
-			        	// key generator.
+			        	// key generator.  No need to update entry weight in map
 			        	if (originalKey != null) {
 			        		aggr.getExecutors().getScheduledExecutor().schedule(new Runnable() {
 			        			public void run() {
@@ -431,6 +434,7 @@ public class LayerImpl implements ILayer {
 			        		}, 10, TimeUnit.SECONDS);
 			        	}
 	            	} else {
+	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 	            		entry.persist(mgr);
 	            	}
 	        	}
