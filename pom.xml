@@ -79,6 +79,7 @@
             <exclude>**/*.MF</exclude>
             <exclude>.settings/*.prefs</exclude>
             <exclude>doc/**</exclude>
+            <exclude>bin/**</exclude>
           </excludes>
         </configuration>
         <executions>
