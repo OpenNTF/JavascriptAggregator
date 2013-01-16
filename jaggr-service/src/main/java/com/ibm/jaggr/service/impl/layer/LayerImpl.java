@@ -86,7 +86,7 @@ public class LayerImpl implements ILayer {
     public static final String LAST_MODIFIED_PROPNAME = LayerImpl.class.getName() + ".LAST_MODIFIED_FILES"; //$NON-NLS-1$
     public static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
     public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
-    public static final String MODULECACHEIFNO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
+    public static final String MODULECACHEINFO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
     
     protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
@@ -109,6 +109,9 @@ public class LayerImpl implements ILayer {
     }));
     	
     public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):");
+    
+    static int LAYERBUILD_REMOVE_DELAY_SECONDS = 10;
+    
     /**
      * Map of cache dependency objects for module classes included in this layer.
      * Cloned by reference since cache key generators are immutable.
@@ -150,7 +153,7 @@ public class LayerImpl implements ILayer {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayer#getKey()
+	 * @see com.ibm.servlets.amd.aggregator.layer.ILayer#getKey()
 	 */
 	@Override
 	public String getKey() {
@@ -170,6 +173,7 @@ public class LayerImpl implements ILayer {
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayer#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public InputStream getInputStream(HttpServletRequest request, 
 			HttpServletResponse response) throws IOException {
@@ -177,6 +181,13 @@ public class LayerImpl implements ILayer {
 		CacheEntry entry = null;
 		String key = null;
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		List<String> cacheInfoReport = null;
+		if (this._isReportCacheInfo) {
+			cacheInfoReport = (List<String>)request.getAttribute(LAYERCACHEINFO_PROPNAME);
+			if (cacheInfoReport != null) {
+				cacheInfoReport.clear();
+			}
+		}
 		try {
 			final boolean isLogLevelFiner = log.isLoggable(Level.FINER);
 			IOptions options = aggr.getOptions();
@@ -224,8 +235,8 @@ public class LayerImpl implements ILayer {
 				        	if (isLogLevelFiner) {
 				        		log.finer("returning cached layer build with cache key: " + key); //$NON-NLS-1$
 				        	}
-				        	if (_isReportCacheInfo)
-				        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_1"); //$NON-NLS-1$
+				        	if (cacheInfoReport != null)
+				        		cacheInfoReport.add("hit_1"); //$NON-NLS-1$
 				        	setResponseHeaders(request, response, existingEntry.size);
 							return result;
 			        	} 
@@ -241,6 +252,10 @@ public class LayerImpl implements ILayer {
 			boolean replaced = false;
 	        if (existingEntry != null) {
 	        	replaced = _layerBuilds.replace(key, existingEntry, newEntry);
+	        	if (cacheInfoReport != null) {
+	        		cacheInfoReport.add(replaced ? "replaced_1" : "not_replaced_1");
+	        	}
+
 	        }
     		existingEntry = null;
 			// Try to retrieve an existing layer build using the blocking putIfAbsent.  If the return 
@@ -248,20 +263,19 @@ public class LayerImpl implements ILayer {
 			// existing entry is returned in the buildReader and newEntry was not added.
 			if (!replaced && !ignoreCached && key != null) {
 				existingEntry = _layerBuilds.putIfAbsent(key, newEntry, options.isDevelopmentMode());
+	        	if (cacheInfoReport != null) {
+	        		cacheInfoReport.add(existingEntry != null ? "hit_2" : "added");
+	        	}
+				
 			}
 			if (!ignoreCached && existingEntry != null 
 				&& (result = existingEntry.tryGetInputStream(request)) != null) {
 	        	if (isLogLevelFiner) {
 	        		log.finer("returning cached layer build with cache key: " + key); //$NON-NLS-1$
 	        	}
-	        	if (_isReportCacheInfo) {
-	        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_2"); //$NON-NLS-1$
-	        	}
 				setResponseHeaders(request, response, existingEntry.size);
 				return result;
 			}
-	    	if (_isReportCacheInfo)
-	    		request.setAttribute(LAYERCACHEINFO_PROPNAME, "add"); //$NON-NLS-1$
 	
 			// putIfAbsent() succeeded and the new entry was added to the cache
 			entry = (existingEntry != null) ? existingEntry : newEntry;
@@ -285,8 +299,8 @@ public class LayerImpl implements ILayer {
 	            	if (isLogLevelFiner) {
 	            		log.finer("returning built layer with cache key: " + key); //$NON-NLS-1$
 	            	}
-		        	if (_isReportCacheInfo) {
-		        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_3"); //$NON-NLS-1$
+		        	if (cacheInfoReport != null) {
+		        		cacheInfoReport.add("hit_3"); //$NON-NLS-1$
 		        	}
 	            	setResponseHeaders(request, response, entry.size);
 	        		return result;
@@ -318,8 +332,8 @@ public class LayerImpl implements ILayer {
 			        	if (isLogLevelFiner) {
 			        		log.finer("Zipping unzipped response from cache"); //$NON-NLS-1$
 			        	}
-			        	if (_isReportCacheInfo) {
-			        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_4"); //$NON-NLS-1$
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add("zip_unzipped");
 			        	}
 		        		// We need gzipped and the cached entry is unzipped
 						// Create the compression stream for the output
@@ -333,8 +347,8 @@ public class LayerImpl implements ILayer {
 			        	if (isLogLevelFiner) {
 			        		log.finer("Unzipping zipped response from cache"); //$NON-NLS-1$
 			        	}
-			        	if (_isReportCacheInfo) {
-			        		request.setAttribute(LAYERCACHEINFO_PROPNAME, "hit_5"); //$NON-NLS-1$
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add("unzip_zipped");
 			        	}
 		        		// We need unzipped and the cached entry is zipped.  Just unzip it
 		        		CopyUtil.copy(new GZIPInputStream(otherEntry.getInputStream(request)), bos);
@@ -342,7 +356,10 @@ public class LayerImpl implements ILayer {
 		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
 		            entry.setBytes(bos.toByteArray());
 		            if (!ignoreCached) {
-	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
+	            		replaced = _layerBuilds.replace(key, entry, entry);	// updates entry weight in map
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add(replaced ? "replaced_2" : "not_replaced_2");
+			        	}
 		            	entry.persist(mgr);
 		            }
 		        } else {
@@ -355,6 +372,9 @@ public class LayerImpl implements ILayer {
 					in = new BuildListReader(futures);
 					
 			        if (isGzip) {
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add("zip");
+			        	}
 				        VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
 				        compress.setLevel(Deflater.BEST_COMPRESSION);
 				        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
@@ -374,6 +394,9 @@ public class LayerImpl implements ILayer {
 	    	// if any of the readers included an error response, then don't cache the layer.
 	        if (in != null && in.hasErrors()) {
 	        	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+	        	if (cacheInfoReport != null) {
+	        		cacheInfoReport.add(key == null ? "error_noaction" : "error_remove");
+	        	}
 	        	if (key != null) {
 	        		_layerBuilds.remove(key, entry);
 	        	}
@@ -399,10 +422,16 @@ public class LayerImpl implements ILayer {
 		        			}
 	        				_cacheKeyGenerators = Collections.unmodifiableMap(newKeyGens);
 				        }
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add("update_keygen");
+			        	}
 	        			cacheKeyGeneratorsUpdated = true;
 	        		}
 	        		final String originalKey = key;
 	        		if (key == null || cacheKeyGeneratorsUpdated) {
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add("update_key");
+			        	}
 			            key = generateCacheKey(request, newKeyGens);
 	        		}
 	            	if (originalKey == null || !originalKey.equals(key)) {
@@ -417,6 +446,9 @@ public class LayerImpl implements ILayer {
 	        			final CacheEntry originalEntry = entry;
 	        			CacheEntry updateEntry = (originalKey == null) ? entry : new CacheEntry(entry);
 		        		CacheEntry previousEntry = _layerBuilds.putIfAbsent(key, updateEntry, options.isDevelopmentMode());
+		    	    	if (cacheInfoReport != null) {
+		    	    		cacheInfoReport.add(previousEntry == null ? "update_add" : "update_hit"); //$NON-NLS-1$ //$NON-NLS-2$
+		    	    	}
 			            // Write the file to disk only if the LayerBuild was successfully added to the cache
 			        	if (previousEntry == null) {
 			        		// Updated entry was added to the cache.
@@ -431,9 +463,12 @@ public class LayerImpl implements ILayer {
 			        			public void run() {
 			        				_layerBuilds.remove(originalKey, originalEntry);
 			        			}
-			        		}, 10, TimeUnit.SECONDS);
+			        		}, LAYERBUILD_REMOVE_DELAY_SECONDS, TimeUnit.SECONDS);
 			        	}
 	            	} else {
+	        	    	if (cacheInfoReport != null) {
+	        	    		cacheInfoReport.add("update_weights"); //$NON-NLS-1$
+	        	    	}
 	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 	            		entry.persist(mgr);
 	            	}
@@ -470,9 +505,9 @@ public class LayerImpl implements ILayer {
 		
         IModuleCache moduleCache = aggr.getCacheManager().getCache().getModules();
         Map<String, String> moduleCacheInfo = null;
-        if (_isReportCacheInfo) {
+        if (request.getAttribute(LAYERCACHEINFO_PROPNAME) != null) {
         	moduleCacheInfo = new HashMap<String, String>();
-        	request.setAttribute(MODULECACHEIFNO_PROPNAME, moduleCacheInfo);
+        	request.setAttribute(MODULECACHEINFO_PROPNAME, moduleCacheInfo);
         }
 
         // Add the application specified notice to the beginning of the response
