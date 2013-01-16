@@ -38,12 +38,12 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	/**
 	 * Element constructor.
 	 * 
-	 * @param dependentFeatures
-	 *            Set of feature names that this cache key generator depends on.
+	 * @param availableLocales
+	 *            Set of available locales that this cache key generator depends on.
 	 *            The key output by this key generator will contain only those
-	 *            features from the request that are included in
-	 *            {@code dependentFeatures}.  If the value is null, then all
-	 *            the features specified in the request are included in the 
+	 *            locales from the request that are included in
+	 *            {@code availableLocales}.  If the value is null, then all
+	 *            the locales specified in the request are included in the 
 	 *            generated cache key.
 	 * @param provisional
 	 *            True if this is a provisional cache key generator.
