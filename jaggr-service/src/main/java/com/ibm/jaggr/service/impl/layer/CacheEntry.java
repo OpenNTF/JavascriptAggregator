@@ -45,8 +45,8 @@ class CacheEntry implements Serializable {
 	private static final long serialVersionUID = -2129350665073838766L;
 
 	private transient volatile byte[] bytes = null;
-	volatile String filename = null;
-	volatile int size;
+	private volatile String filename = null;
+	private volatile int size;
 	private volatile boolean delete = false;
 	final int layerId;
 	final String layerKey;
@@ -137,6 +137,27 @@ class CacheEntry implements Serializable {
 	}
 	
 	/**
+	 * @return True if the file for this entry has been deleted.
+	 */
+	public boolean isDeleted() {
+		return delete;
+	}
+	
+	/**
+	 * @return The name of the cache file for this entry
+	 */
+	public String getFilename() {
+		return filename;
+	}
+	
+	/**
+	 * @return The size of the data for this cache entry
+	 */
+	public int getSize() {
+		return size;
+	}
+	
+	/**
 	 * Asynchronously write the layer build content to disk and set filename to the 
 	 * name of the cache files when done.
 	 * 
@@ -167,5 +188,16 @@ class CacheEntry implements Serializable {
 				}
 			}
 		});
+	}
+
+	@Override
+	public String toString() {
+		return new StringBuffer("CacheEntry(")
+		.append("layerId:").append(layerId).append(",")
+		.append("layerKey:").append(layerKey).append(",")
+		.append("lastMod:").append(lastModified).append(",")
+		.append("file:").append(filename).append(",")
+		.append("size:").append(size).append(",")
+		.append("deleted:").append(delete).append(")").toString();
 	}
 }

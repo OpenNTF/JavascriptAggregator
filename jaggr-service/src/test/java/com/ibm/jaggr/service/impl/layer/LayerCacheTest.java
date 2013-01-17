@@ -187,8 +187,8 @@ public class LayerCacheTest {
 		serializedKeys = new LinkedList<String>(layerCache.getLayerBuildKeys());
 		((TestCacheManager)mockAggregator.getCacheManager()).serializeCache();
 		
-		String filename1 = layerCache.getLayerBuildMap().get(serializedKeys.get(0)).filename;
-		String filename2 = layerCache.getLayerBuildMap().get(serializedKeys.get(1)).filename;
+		String filename1 = layerCache.getLayerBuildMap().get(serializedKeys.get(0)).getFilename();
+		String filename2 = layerCache.getLayerBuildMap().get(serializedKeys.get(1)).getFilename();
 		Assert.assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), filename1).exists());
 		Assert.assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), filename2).exists());
 		
@@ -231,7 +231,7 @@ public class LayerCacheTest {
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/a"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		String key = layerCache.getLayerBuildKeys().iterator().next();
-		String filename = layerCache.getLayerBuildMap().get(key).filename;
+		String filename = layerCache.getLayerBuildMap().get(key).getFilename();
 		layer = layerCache.getLayer(mockRequest);
 		Assert.assertEquals(5, layerCache.size());
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -240,7 +240,7 @@ public class LayerCacheTest {
 		String result = writer.toString();
 		System.out.println(result);
 		Assert.assertTrue(result.contains("Hello from a.js"));
-		String newFilename = layerCache.getLayerBuildMap().get(key).filename;
+		String newFilename = layerCache.getLayerBuildMap().get(key).getFilename();
 		Assert.assertNotSame(filename, newFilename);
 		Reader reader = new FileReader(new File(mockAggregator.getCacheManager().getCacheDir(), newFilename));
 		writer = new StringWriter();

@@ -121,7 +121,7 @@ class LayerBuildsAccessor {
 	 * will be replaced with the specified value if the specified value's lastModified
 	 * date is later than the existing value's lastModified date.  If the value is 
 	 * replace, then the return value is null, indicating that the specified 
-	 * value was added to the map.  
+	 * value was added to the map, and the previous entry's cache file is deleted.  
 	 * <p>If this method is called for a layer that has been evicted, then the
 	 * method returns null without adding the value to the cache.
 	 * <p>
