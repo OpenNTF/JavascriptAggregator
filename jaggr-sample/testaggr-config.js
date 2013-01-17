@@ -21,15 +21,15 @@
 	packages: [
 		{
 			name: 'dojo',
-			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.8.0-src/dojo'
+			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/source_1.8.0-20120830-IBM_dojo/dojo'
 		},
 		{
 			name: 'dijit',
-			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.8.0-src/dijit'
+			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/source_1.8.0-20120830-IBM_dojo/dijit'
 		},
 		{
 			name: 'dojox',
-			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo-release-1.8.0-src/dojox'
+			location: 'namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/source_1.8.0-20120830-IBM_dojo/dojox'
 		}
 	],
 	paths: {

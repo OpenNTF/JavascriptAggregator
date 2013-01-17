@@ -33,6 +33,7 @@
   <properties>
     <bundle.symbolicName>com.ibm.jaggr.sample.dojo</bundle.symbolicName>
     <bundle.namespace>com.ibm.jaggr.sample.dojo</bundle.namespace>
+    <tmp>${java.io.tmpdir}</tmp>
   </properties>
 
   <build>
@@ -89,18 +90,19 @@
 			                <goal>copy</goal>
 			            </goals>
 			            <configuration>
+			            	<runIf>{{ !new File(project.basedir, "WebContent/source_1.8.0-20120830-IBM_dojo" ).isDirectory() }}</runIf>
 			            	<resources>
+			            		<!-- This is done in 2 steps because on windows, TrueZip throws IOExceptions about last modified. -->
 			            		<resource>
-			            			<directory>${basedir}</directory>
-			            			<runIf>{{ !new File(project.basedir, "WebContent/dojo-release-1.8.0-src" ).isDirectory() }}</runIf>
-								    <targetPath>${basedir}/WebContent</targetPath>
-								    <file>http://download.dojotoolkit.org/release-1.8.0/dojo-release-1.8.0-src.zip</file>
-								    <zipEntries>
-									    <zipEntry>dojo-release-1.8.0-src/dojo/**</zipEntry>
-									    <zipEntry>dojo-release-1.8.0-src/dojox/**</zipEntry>
-									    <zipEntry>dojo-release-1.8.0-src/dijit/**</zipEntry>
-								    </zipEntries>
+								    <targetPath>${tmp}/source_1.8.0-20120830-IBM_dojo</targetPath>
+								    <file>${basedir}/source_1.8.0-20120830-IBM_dojo.zip</file>
 								    <unpack>true</unpack>
+								    <preservePath>true</preservePath>
+								</resource>
+								<resource>
+								    <targetPath>${basedir}/WebContent/source_1.8.0-20120830-IBM_dojo</targetPath>
+								    <directory>${tmp}/source_1.8.0-20120830-IBM_dojo</directory>
+								    <move>true</move>
 								    <preservePath>true</preservePath>
 								</resource>
 			            	</resources>
@@ -129,7 +131,7 @@
           <version>0.8</version>
           <configuration>
             <excludes>
-              <exclude>WebContent/dojo*/**</exclude>
+              <exclude>WebContent/*dojo*/**</exclude>
             </excludes>
           </configuration>
         </plugin>

@@ -19,12 +19,12 @@
 	<extension point="org.eclipse.equinox.http.registry.resources">
         <resource
               alias="/testaggr/dojo"
-              base-name="/WebContent/dojo-release-1.8.0-src/dojo"/>
+              base-name="/WebContent/source_1.8.0-20120830-IBM_dojo/dojo"/>
         <resource
               alias="/testaggr/dijit"
-              base-name="/WebContent/dojo-release-1.8.0-src/dijit"/>
+              base-name="/WebContent/source_1.8.0-20120830-IBM_dojo/dijit"/>
         <resource
               alias="/testaggr/dojox"
-              base-name="/WebContent/dojo-release-1.8.0-src/dojox"/>
+              base-name="/WebContent/source_1.8.0-20120830-IBM_dojo/dojox"/>
      </extension>
 </plugin>
