@@ -327,7 +327,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			@Override
 			public int weightOf(CacheEntry entry) {
 				// ConcurrentLinkedHashMap barfs on size == 0
-				return entry.size > 0 ? entry.size : 1;
+				return entry.getSize() > 0 ? entry.getSize() : 1;
 			}
 		};
 	}

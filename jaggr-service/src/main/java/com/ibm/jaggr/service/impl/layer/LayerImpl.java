@@ -87,6 +87,7 @@ public class LayerImpl implements ILayer {
     public static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
     public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
     public static final String MODULECACHEINFO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
+    public static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
     
     protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
@@ -182,23 +183,24 @@ public class LayerImpl implements ILayer {
 		String key = null;
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<String> cacheInfoReport = null;
-		if (this._isReportCacheInfo) {
+		if (_isReportCacheInfo) {
 			cacheInfoReport = (List<String>)request.getAttribute(LAYERCACHEINFO_PROPNAME);
 			if (cacheInfoReport != null) {
 				cacheInfoReport.clear();
 			}
 		}
+		if (log.isLoggable(Level.FINEST) && cacheInfoReport == null) {
+			cacheInfoReport = new LinkedList<String>();
+		}
 		try {
-			final boolean isLogLevelFiner = log.isLoggable(Level.FINER);
 			IOptions options = aggr.getOptions();
 			ICacheManager mgr = aggr.getCacheManager();
 			boolean ignoreCached = RequestUtil.isIgnoreCached(request);
 	        InputStream result;
 	        long lastModified = getLastModified(request);
+			CacheEntry newEntry = new CacheEntry(_id, _cacheKey, lastModified);
+			CacheEntry existingEntry = null;
 	
-	        if (isLogLevelFiner) { 
-	        	log.log(Level.FINER, "Request = " + request.getQueryString());
-	        }
 	        if (ignoreCached) {
 	        	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 	        }
@@ -206,11 +208,9 @@ public class LayerImpl implements ILayer {
 		        synchronized(this) {
 		        	// See if we need to discard previously built LayerBuilds
 		        	if (lastModified > _lastModified) {
-		        		if (isLogLevelFiner){
-		        			log.finer("Resetting cached layer builds for layer " +  //$NON-NLS-1$
-		        					request.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString() + 
-		        					"\nOld last modified=" + _lastModified + ", new last modified=" + lastModified); //$NON-NLS-1$ //$NON-NLS-2$
-		        		}
+			        	if (cacheInfoReport != null) {
+			        		cacheInfoReport.add("update_lastmod");
+			        	}
 		        		if (lastModified != Long.MAX_VALUE) {
 		        			// max value means missing requested source
 		        			_lastModified = lastModified;
@@ -224,57 +224,50 @@ public class LayerImpl implements ILayer {
 	        // Creata a cache key.
 	        key = generateCacheKey(request, cacheKeyGenerators);
 	
-	        // Try retrieving the cached layer build first using get() since it doesn't block.  If that fails,
-	        // then try again using the locking putIfAbsent()
-	        CacheEntry existingEntry = (key != null) ? _layerBuilds.get(key) : null;
-	        if (existingEntry != null) {
-	        	if (!ignoreCached) {
-		        	try {
-			        	result = existingEntry.tryGetInputStream(request);
-			        	if (result != null) {
-				        	if (isLogLevelFiner) {
-				        		log.finer("returning cached layer build with cache key: " + key); //$NON-NLS-1$
-				        	}
-				        	if (cacheInfoReport != null)
-				        		cacheInfoReport.add("hit_1"); //$NON-NLS-1$
-				        	setResponseHeaders(request, response, existingEntry.size);
+			if (!ignoreCached && key != null) {
+				int loopGuard = 5;
+				do {
+					// Try to retrieve an existing layer build using the blocking putIfAbsent.  If the return 
+					// value is null, then the newEntry was successfully added to the map, otherwise the 
+					// existing entry is returned in the buildReader and newEntry was not added.
+					existingEntry = _layerBuilds.putIfAbsent(key, newEntry, options.isDevelopmentMode());
+		        	if (cacheInfoReport != null) {
+		        		cacheInfoReport.add(existingEntry != null ? "hit_1" : "added");
+		        	}
+					if (existingEntry != null) { 
+						if ((result = existingEntry.tryGetInputStream(request)) != null) {
+							setResponseHeaders(request, response, existingEntry.getSize());
+					        if (log.isLoggable(Level.FINEST)) {
+					        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + existingEntry.toString());
+					        }
+					        if (_isReportCacheInfo) {
+					        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
+					        }
 							return result;
-			        	} 
-		        	} catch (IOException e) {
-		        		// Something happened to the cached result (deleted???)  
-			        	if (log.isLoggable(Level.WARNING)) {
-			        		log.log(Level.WARNING, e.getMessage(), e);
-			        	}
-			        }
-	        	}
-	        }
-			CacheEntry newEntry = new CacheEntry(_id, _cacheKey, lastModified);
-			boolean replaced = false;
-	        if (existingEntry != null) {
-	        	replaced = _layerBuilds.replace(key, existingEntry, newEntry);
-	        	if (cacheInfoReport != null) {
-	        		cacheInfoReport.add(replaced ? "replaced_1" : "not_replaced_1");
-	        	}
-
-	        }
-    		existingEntry = null;
-			// Try to retrieve an existing layer build using the blocking putIfAbsent.  If the return 
-			// value is null, then the newEntry was successfully added to the map, otherwise the 
-			// existing entry is returned in the buildReader and newEntry was not added.
-			if (!replaced && !ignoreCached && key != null) {
-				existingEntry = _layerBuilds.putIfAbsent(key, newEntry, options.isDevelopmentMode());
-	        	if (cacheInfoReport != null) {
-	        		cacheInfoReport.add(existingEntry != null ? "hit_2" : "added");
-	        	}
-				
-			}
-			if (!ignoreCached && existingEntry != null 
-				&& (result = existingEntry.tryGetInputStream(request)) != null) {
-	        	if (isLogLevelFiner) {
-	        		log.finer("returning cached layer build with cache key: " + key); //$NON-NLS-1$
-	        	}
-				setResponseHeaders(request, response, existingEntry.size);
-				return result;
+						} else if (existingEntry.isDeleted()) {
+							if (_layerBuilds.replace(key, existingEntry, newEntry)) {
+								// entry was replaced, use newEntry
+					        	if (cacheInfoReport != null) {
+					        		cacheInfoReport.add("replace_1");
+					        	}
+								existingEntry = null;
+							} else {
+								// Existing entry was removed from the cache by another thread
+								// between the time we retrieved it and the time we tried to
+								// replace it.  Try to add the new entry again.  
+					        	if (cacheInfoReport != null) {
+					        		cacheInfoReport.add("retry_add");
+					        	}
+					        	if (--loopGuard == 0) {
+					        		// Should never happen, but just in case
+					        		throw new IllegalStateException();
+					        	}
+								continue;
+							}
+						}
+					}
+					break;
+				} while (true);
 			}
 	
 			// putIfAbsent() succeeded and the new entry was added to the cache
@@ -296,18 +289,17 @@ public class LayerImpl implements ILayer {
 	        	// Check to see if data is available one more time in case a different thread finished
 				// building the output while we were blocked on the sync object.
 	        	if (!ignoreCached && key != null && (result = entry.tryGetInputStream(request)) != null) {
-	            	if (isLogLevelFiner) {
-	            		log.finer("returning built layer with cache key: " + key); //$NON-NLS-1$
-	            	}
 		        	if (cacheInfoReport != null) {
-		        		cacheInfoReport.add("hit_3"); //$NON-NLS-1$
+		        		cacheInfoReport.add("hit_2"); //$NON-NLS-1$
 		        	}
-	            	setResponseHeaders(request, response, entry.size);
+	            	setResponseHeaders(request, response, entry.getSize());
+	    	        if (log.isLoggable(Level.FINEST)) {
+	    	        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + entry.toString());
+	    	        }
+			        if (_isReportCacheInfo) {
+			        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
+			        }
 	        		return result;
-	        	}
-	
-	        	if (isLogLevelFiner) {
-	        		log.finer("Building layer with cache key: " + key); //$NON-NLS-1$
 	        	}
 	        	
 	        	boolean isGzip = RequestUtil.isGzipEncoding(request);
@@ -329,9 +321,6 @@ public class LayerImpl implements ILayer {
 	        	}
 		        if (otherEntry != null) {
 		        	if (isGzip) {
-			        	if (isLogLevelFiner) {
-			        		log.finer("Zipping unzipped response from cache"); //$NON-NLS-1$
-			        	}
 			        	if (cacheInfoReport != null) {
 			        		cacheInfoReport.add("zip_unzipped");
 			        	}
@@ -344,9 +333,6 @@ public class LayerImpl implements ILayer {
 				        // Copy the data from the input stream to the output, compressing as we go.
 				        CopyUtil.copy(otherEntry.getInputStream(request), writer);
 		        	} else {
-			        	if (isLogLevelFiner) {
-			        		log.finer("Unzipping zipped response from cache"); //$NON-NLS-1$
-			        	}
 			        	if (cacheInfoReport != null) {
 			        		cacheInfoReport.add("unzip_zipped");
 			        	}
@@ -356,9 +342,9 @@ public class LayerImpl implements ILayer {
 		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
 		            entry.setBytes(bos.toByteArray());
 		            if (!ignoreCached) {
-	            		replaced = _layerBuilds.replace(key, entry, entry);	// updates entry weight in map
+	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add(replaced ? "replaced_2" : "not_replaced_2");
+			        		cacheInfoReport.add("update_weights_1");
 			        	}
 		            	entry.persist(mgr);
 		            }
@@ -467,16 +453,23 @@ public class LayerImpl implements ILayer {
 			        	}
 	            	} else {
 	        	    	if (cacheInfoReport != null) {
-	        	    		cacheInfoReport.add("update_weights"); //$NON-NLS-1$
+	        	    		cacheInfoReport.add("update_weights_2"); //$NON-NLS-1$
 	        	    	}
 	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 	            		entry.persist(mgr);
 	            	}
 	        	}
 	        }
-	        // return the input stream to the LayerBuild
 			result = entry.getInputStream(request);
-	        setResponseHeaders(request, response, entry.size);
+	        setResponseHeaders(request, response, entry.getSize());
+
+	        // return the input stream to the LayerBuild
+	        if (log.isLoggable(Level.FINEST)) {
+	        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + entry.toString());
+	        }
+	        if (_isReportCacheInfo) {
+	        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
+	        }
 	        return result;
 		} catch (IOException e) {
 			_layerBuilds.remove(key, entry);
@@ -813,7 +806,7 @@ public class LayerImpl implements ILayer {
 		  .append(linesep); //$NON-NLS-1$
 		if (_layerBuilds != null) {
 			for (Map.Entry<String, CacheEntry> entry : _layerBuilds.entrySet()) {
-				sb.append("\t").append(entry.getKey()).append(" : ").append(entry.getValue().filename).append(linesep); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				sb.append("\t").append(entry.getKey()).append(" : ").append(entry.getValue().getFilename()).append(linesep); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 		}
 		sb.append(linesep);
@@ -955,6 +948,7 @@ public class LayerImpl implements ILayer {
 	Map<String, CacheEntry> getLayerBuildMap() {
 		return _layerBuilds.getMap();
 	}
+	
     /**
      * Static factory method for layer cache objects
      * 
