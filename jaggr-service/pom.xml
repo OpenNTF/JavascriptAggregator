@@ -111,22 +111,7 @@
 		              org.apache.felix.gogo.commands;resolution:=optional,
 		              org.apache.karaf.shell.console;resolution:=optional,
 		              org.osgi.service.blueprint;resolution:=optional,
-		            	!org.apache.tools.*,
-		            	!org.apache.xmlbeans.*,
-		            	!javax.*,
-		            	!com.google.protobuf.*,
-		            	!com.google.common.collect.*,
-		            	!com.google.common.primitives.*,
-		            	!com.google.common.io.*,
-		            	!com.google.common.base.*,
-	            		!org.json.*,
-		            	!org.kohsuke.*,
-		            	!org.w3c.*,
-		            	!org.xml.*,
-		            	!org.eclipse.*,
-		            	!sun.*,
-		            	!org.osgi.util.tracker,
-		            	*
+		            	!*
 		            </Import-Package>
 		            <!-- embed dependencies -->
 		            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,js</Embed-Dependency>
