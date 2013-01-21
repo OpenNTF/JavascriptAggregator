@@ -371,7 +371,7 @@ public class LayerTest extends EasyMock {
 		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		assertEquals(saveResult, result);
 		
-		Thread.sleep(1000L);   // Wait long enough for systems with coarse grain last-mod
+		Thread.sleep(1500L);   // Wait long enough for systems with coarse grain last-mod
 		                       // times to recognize that the file has changed.
 		// Touch a file and make sure the layer is rebuilt
 		new File(tmpdir, "p1/b.js").setLastModified(new Date().getTime());
@@ -431,7 +431,7 @@ public class LayerTest extends EasyMock {
 		long testLastMod = layer.getLastModified(mockRequest);
 		assertTrue("Last modifieds don't match", lastMod == testLastMod);
 
-		Thread.sleep(1000L);	// Wait long enough for systems with coarse grain last-mod
+		Thread.sleep(1500L);	// Wait long enough for systems with coarse grain last-mod
         // times to recognize that the file has changed
 		lastMod = new Date().getTime();
 		new File(tmpdir, "p1/a.js").setLastModified(new Date().getTime());

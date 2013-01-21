@@ -224,7 +224,7 @@ public class LayerCacheTest {
 		
 		mockAggregator.getOptions().setOption("developmentMode", "true");
 		
-		Thread.sleep(1000L);  // wait long enough for systems with coarse grain last-mod times
+		Thread.sleep(1500L);  // wait long enough for systems with coarse grain last-mod times
 		                      // to recognize that the file has changed
 		TestUtils.createTestFile(tmpdir, "p1/a.js", TestUtils.a.replace("hello", "Hello"));
 		requestAttributes.clear();
