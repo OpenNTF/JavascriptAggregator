@@ -593,10 +593,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);
 			}
-			// Use newResource to convert the bundleresource uri into a file uri if the
-			// platform supports it.  File uri's are more stable across server restarts
-			// than bundleresource uri's.
-			configUri = aggregator.newResource(PathUtil.url2uri(configUrl)).getURI();
+			configUri = PathUtil.url2uri(configUrl);
 		}
 		return configUri;
 	}
