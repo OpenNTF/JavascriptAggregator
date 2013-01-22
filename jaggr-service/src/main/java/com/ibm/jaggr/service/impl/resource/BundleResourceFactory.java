@@ -20,8 +20,6 @@ import java.io.FileNotFoundException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -48,10 +46,6 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	private ServiceReference urlConverterSR;
 	private IAggregator aggregator = null;
 
-	private static ConcurrentMap<URI, Object> rootResources = new ConcurrentHashMap<URI, Object>();
-	private static Object dummyEntry = new Object();
-
-
 	public BundleResourceFactory() {
 	}
 
@@ -66,21 +60,6 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 			if (converter != null) {
 				URL fileUrl = null;
 				try {
-					if (rootResources.putIfAbsent(uri.resolve("/"), dummyEntry) == null) {
-						/*
-						 * Workaround for bug on some platforms that shows up
-						 * when a file resource is requested from the converter
-						 * before the directory containing the file is requested
-						 * for the first time. In this case, subsequent requests
-						 * for files or directories that are children of the
-						 * containing directory will return a valid file
-						 * resource URL, but the files or directories will not
-						 * be found because the resources were not written to
-						 * disk. Requesting the root folder first works around
-						 * this bug.
-						 */
-						converter.toFileURL(uri.resolve("/").toURL());
-					}
 					fileUrl = converter.toFileURL(uri.toURL());
 					result = getAggregator().newResource(PathUtil.url2uri(fileUrl));
 				} catch (FileNotFoundException e) {
