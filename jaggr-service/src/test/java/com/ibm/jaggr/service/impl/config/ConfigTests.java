@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -706,12 +705,12 @@ public class ConfigTests {
 		
 		String config = "{paths:{foo:'fooloc'}}"; 
 		URI cfgUri = tmpDir.resolve("config.js");
+		File cfgFile = new File(cfgUri);
 		Writer fileWriter = new FileWriter(new File(cfgUri));
 		fileWriter.append(config);
 		fileWriter.close();
-		long today = new Date().getTime();
+		long today = cfgFile.lastModified();
 		long yesterday = today - 24 * 60 * 60 * 1000;
-		File cfgFile = new File(cfgUri);
 		cfgFile.setLastModified(yesterday);
 		
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
