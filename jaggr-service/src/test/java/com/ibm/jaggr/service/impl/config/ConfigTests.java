@@ -710,8 +710,8 @@ public class ConfigTests {
 		fileWriter.append(config);
 		fileWriter.close();
 		long today = cfgFile.lastModified();
-		long yesterday = today - 24 * 60 * 60 * 1000;
-		cfgFile.setLastModified(yesterday);
+		Assert.assertTrue(cfgFile.setLastModified(today - 24 * 60 * 60 * 1000));
+		long yesterday = cfgFile.lastModified();
 		
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, cfgUri.toString()));
@@ -720,7 +720,7 @@ public class ConfigTests {
 		ConfigImpl cfg = new ConfigImpl(mockAggregator);
 		Assert.assertEquals(yesterday, cfg.lastModified());
 
-		cfgFile.setLastModified(today);
+		Assert.assertTrue(cfgFile.setLastModified(today));
 		cfg = new ConfigImpl(mockAggregator);
 		Assert.assertEquals(today, cfg.lastModified());
 	}
