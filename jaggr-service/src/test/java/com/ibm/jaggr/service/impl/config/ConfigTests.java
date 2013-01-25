@@ -23,7 +23,6 @@ import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -706,13 +705,13 @@ public class ConfigTests {
 		
 		String config = "{paths:{foo:'fooloc'}}"; 
 		URI cfgUri = tmpDir.resolve("config.js");
+		File cfgFile = new File(cfgUri);
 		Writer fileWriter = new FileWriter(new File(cfgUri));
 		fileWriter.append(config);
 		fileWriter.close();
-		long today = new Date().getTime();
-		long yesterday = today - 24 * 60 * 60 * 1000;
-		File cfgFile = new File(cfgUri);
-		cfgFile.setLastModified(yesterday);
+		long today = cfgFile.lastModified();
+		Assert.assertTrue(cfgFile.setLastModified(today - 24 * 60 * 60 * 1000));
+		long yesterday = cfgFile.lastModified();
 		
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, cfgUri.toString()));
@@ -721,7 +720,7 @@ public class ConfigTests {
 		ConfigImpl cfg = new ConfigImpl(mockAggregator);
 		Assert.assertEquals(yesterday, cfg.lastModified());
 
-		cfgFile.setLastModified(today);
+		Assert.assertTrue(cfgFile.setLastModified(today));
 		cfg = new ConfigImpl(mockAggregator);
 		Assert.assertEquals(today, cfg.lastModified());
 	}

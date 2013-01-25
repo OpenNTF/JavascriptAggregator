@@ -255,7 +255,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		assertEquals("[expn:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}]",
 				cacheKeys.toString());
 		
-		Thread.sleep(1000L);   // Wait long enough for systems with coarse grained last-mod
+		Thread.sleep(1500L);   // Wait long enough for systems with coarse grained last-mod
 		                       // times to notice the file has been updated
 		// Now touch the source file and assert that the cached results are cleared
 		new File(tmpdir, "p1/p1.js").setLastModified(new Date().getTime());
