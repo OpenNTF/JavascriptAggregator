@@ -51,7 +51,7 @@ function(has, lang, md5, cookie) {
 			}
 			cookie('has', haslist, {
 				expire: haslist ? 1 : -1,
-				domain: window.location.host,
+				domain: window.location.hostname,
 				path: contextPath
 			});
 			return ret;
