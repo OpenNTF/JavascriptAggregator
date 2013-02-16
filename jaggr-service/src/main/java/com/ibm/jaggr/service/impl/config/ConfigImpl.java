@@ -1240,7 +1240,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/**
 	 * Console logger for javascript runtime.
 	 */
-	static protected class Console {
+	static public class Console {
 		private static final Logger console = Logger.getLogger(Console.class.getName());
 		public void log(String msg) {console.info(msg);}
 		public void info(String msg) {console.info(msg);}
