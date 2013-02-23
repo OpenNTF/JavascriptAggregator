@@ -800,7 +800,12 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	    		if (transformer != null) {
 	    			propValue = transformer.transform(propName, propValue);
 	    		}
-	    		matcher.appendReplacement(buf, propValue.replace("\\", "\\\\")); //$NON-NLS-1$ //$NON-NLS-2$
+	    		matcher.appendReplacement(
+	    				buf, 
+	    				propValue
+	    					.replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
+	    					.replace("$", "\\$")  //$NON-NLS-1$ //$NON-NLS-2$
+	    		);
 	    	} else {
 	    		matcher.appendReplacement(buf, "\\${"+propName+"}"); //$NON-NLS-1$ //$NON-NLS-2$
 	    	}
