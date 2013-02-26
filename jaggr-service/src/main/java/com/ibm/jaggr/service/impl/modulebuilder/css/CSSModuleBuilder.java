@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
@@ -40,13 +39,12 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.mozilla.javascript.Scriptable;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
-
-import sun.misc.BASE64Encoder;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
@@ -587,22 +585,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	protected String getBase64(URLConnection connection) throws IOException {
 		InputStream in = connection.getInputStream();
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		BASE64Encoder encoder = new BASE64Encoder() {
-			@Override
-			protected void encodeLineSuffix(OutputStream aStream) throws IOException {
-			}
-			@Override 
-			protected void encodeLinePrefix(OutputStream aStream, int aLength) throws IOException {
-			}
-		};
-
-		try {
-			encoder.encode(in, out);
-		} finally {
-			try {in.close();} catch (IOException ignore) {};
-			try {out.close();} catch (IOException ignore) {};
-		}
-		return out.toString("US-ASCII").replaceAll("[\\n\\r]", ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		CopyUtil.copy(in, out);
+		return new String(Base64.encodeBase64(out.toByteArray()), "UTF-8");
 	}
 	
 	protected Pattern toRegexp(String filespec) {
