@@ -75,7 +75,7 @@ define([
 							}
 						}
 					}
-					url = parts.join("/");
+					url = require.toUrl(parts.join("/")); // Apply dojo's cache bust (if any)
 				}
 				return url;
 			};
