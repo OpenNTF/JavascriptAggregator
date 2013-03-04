@@ -66,6 +66,7 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.options.IOptions;
@@ -76,6 +77,7 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.service.util.RequestUtil;
 
 public class JsModuleContentProviderTest extends EasyMock {
 	
@@ -97,10 +99,10 @@ public class JsModuleContentProviderTest extends EasyMock {
 	public void setup() throws Exception {
 		tmpdir = Files.createTempDir();
 		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		expect(mockDependencies.getExpandedDependencies((String)anyObject(), (Features)anyObject(), (Set<String>)anyObject(), anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
-			public Map<String, String> answer() throws Throwable {
+		expect(mockDependencies.getExpandedDependencies((String)anyObject(), (Features)anyObject(), (Set<String>)anyObject(), anyBoolean(), anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
+			public ModuleDeps answer() throws Throwable {
 				String name = (String)getCurrentArguments()[0];
-				Map<String, String> result = TestUtils.testDepMap.get(name);
+				ModuleDeps result = TestUtils.testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}
@@ -200,6 +202,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		String cacheFile1 = p1.getCachedFileName(KeyGenUtil.generateKey(mockRequest, gens));
 		assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), cacheFile1).exists());
 		
+		System.out.println(compiled);
 		// validate that require list was expanded and has blocks were removed
 		Matcher m = Pattern.compile("require\\(\\[\\\"([^\"]*)\\\",\\\"([^\"]*)\\\",\\\"([^\"]*)\\\"\\]").matcher(compiled);
 		Assert.assertTrue(m.find());
@@ -423,34 +426,34 @@ public class JsModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isHasFiltering(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.servlets.amd.aggregator.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isHasFiltering(javax.servlet.http.HttpServletRequest)}.
 	 * @throws IOException 
 	 */
 	@Test
 	public void testIsHasFiltering() throws Exception {
-		assertTrue(JavaScriptModuleBuilder.s_isHasFiltering(mockRequest));
+		assertTrue(RequestUtil.isHasFiltering(mockRequest));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		assertTrue(JavaScriptModuleBuilder.s_isHasFiltering(mockRequest));
-		mockAggregator.getOptions().setOption(IOptions.SKIP_HASFILTERING, true);
-		assertFalse(JavaScriptModuleBuilder.s_isHasFiltering(mockRequest));
+		assertTrue(RequestUtil.isHasFiltering(mockRequest));
+		mockAggregator.getOptions().setOption(IOptions.DISABLE_HASFILTERING, true);
+		assertFalse(RequestUtil.isHasFiltering(mockRequest));
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isExplodeRequires(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.servlets.amd.aggregator.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isExplodeRequires(javax.servlet.http.HttpServletRequest)}.
 	 * @throws IOException 
 	 */
 	@Test
 	public void testIsExplodeRequires() throws Exception {
-		assertFalse(JavaScriptModuleBuilder.s_isExplodeRequires(mockRequest));
-		assertFalse(JavaScriptModuleBuilder.s_isExplodeRequires(mockRequest));
+		assertFalse(RequestUtil.isExplodeRequires(mockRequest));
+		assertFalse(RequestUtil.isExplodeRequires(mockRequest));
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		assertTrue(JavaScriptModuleBuilder.s_isExplodeRequires(mockRequest));
+		assertTrue(RequestUtil.isExplodeRequires(mockRequest));
 		requestAttributes.remove(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME);
-		assertFalse(JavaScriptModuleBuilder.s_isExplodeRequires(mockRequest));
+		assertFalse(RequestUtil.isExplodeRequires(mockRequest));
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		assertTrue(JavaScriptModuleBuilder.s_isExplodeRequires(mockRequest));
-		mockAggregator.getOptions().setOption(IOptions.SKIP_REQUIRELISTEXPANSION, true);
-		assertFalse(JavaScriptModuleBuilder.s_isExplodeRequires(mockRequest));
+		assertTrue(RequestUtil.isExplodeRequires(mockRequest));
+		mockAggregator.getOptions().setOption(IOptions.DISABLE_REQUIRELISTEXPANSION, true);
+		assertFalse(RequestUtil.isExplodeRequires(mockRequest));
 	}
 	
 	/**

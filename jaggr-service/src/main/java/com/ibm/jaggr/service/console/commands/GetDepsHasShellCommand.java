@@ -25,8 +25,8 @@ import org.apache.felix.gogo.commands.Command;
 import com.google.common.collect.Lists;
 import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
 
-@Command(scope = "aggregator", name = "getdeps", description="<servlet> <module> [<feature list>] - false features begin with !")
-public class GetDepsShellCommand extends AbstractOsgiCommandSupport {
+@Command(scope = "aggregator", name = "getdeps!has", description="<servlet> <module> [<feature list>] - with has plugin branching")
+public class GetDepsHasShellCommand extends AbstractOsgiCommandSupport {
 	
 	@Argument(index = 0, name = "servlet", description = "The servlet to find the module in", required = true, multiValued = false)
     String servlet = null;
@@ -50,6 +50,6 @@ public class GetDepsShellCommand extends AbstractOsgiCommandSupport {
 			public String nextArgument() {
 				return it.next();
 			}
-		}, false);
+		}, true);
 	}
 }

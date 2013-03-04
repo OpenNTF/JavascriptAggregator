@@ -51,6 +51,7 @@ import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
@@ -292,10 +293,10 @@ public class LayerCacheTest {
 		}).anyTimes();
 		
 		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
-			public Map<String, String> answer() throws Throwable {
+		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
+			public ModuleDeps answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
-				Map<String, String> result = TestUtils.testDepMap.get(name);
+				ModuleDeps result = TestUtils.testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}

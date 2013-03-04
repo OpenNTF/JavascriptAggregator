@@ -56,6 +56,7 @@ import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
@@ -847,10 +848,10 @@ public class LayerImpl implements ILayer {
 	    				aggr.getConfig(),
 	    				deps,
 	    				features,
-	    				false);
+	    				false, false);
 				result.setRequiredModuleId(required);
 	    		result.setDependenentFeatures(dependentFeatures);
-	    		Map<String, String> combined = depList.getExpandedDeps();
+	    		ModuleDeps combined = depList.getExpandedDeps();
 	    		combined.putAll(depList.getExplicitDeps());
 	    		for (String name : combined.keySet()) {
 	    			if (!name.contains("!")) { //$NON-NLS-1$

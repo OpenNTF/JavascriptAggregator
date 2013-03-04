@@ -249,7 +249,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		// Add server option settings that we care about
 		IOptions options = getAggregator().getOptions();
 		sb.append("combo.serverOptions={skipHasFiltering:") //$NON-NLS-1$
-		  .append(Boolean.toString(options.isSkipHasFiltering()))
+		  .append(Boolean.toString(options.isDisableHasFiltering()))
 		  .append("};\r\n"); //$NON-NLS-1$
 		
 		// add in the super class's contribution

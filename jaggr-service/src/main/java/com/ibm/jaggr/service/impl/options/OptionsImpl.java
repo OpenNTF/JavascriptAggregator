@@ -46,8 +46,9 @@ public class OptionsImpl  implements IOptions {
 	static {
 		Map<String, String> map = new HashMap<String, String>();
 		map.put(DEVELOPMENT_MODE,	Boolean.FALSE.toString());
-		map.put(SKIP_HASFILTERING,	Boolean.FALSE.toString());
-		map.put(SKIP_REQUIRELISTEXPANSION,	Boolean.FALSE.toString());
+		map.put(DISABLE_HASFILTERING,	Boolean.FALSE.toString());
+		map.put(DISABLE_REQUIRELISTEXPANSION,	Boolean.FALSE.toString());
+		map.put(DISABLE_HASPLUGINBRANCHING, Boolean.FALSE.toString());
 		map.put(VERIFY_DEPS,		Boolean.TRUE.toString());
 		map.put(DELETE_DELAY, 		Integer.toString(DEFAULT_DELETE_DELAY));
 		defaults = Collections.unmodifiableMap(map);
@@ -92,8 +93,8 @@ public class OptionsImpl  implements IOptions {
 	}
 
 	@Override
-	public boolean isSkipRequireListExpansion() {
-		return Boolean.parseBoolean(getOption(SKIP_REQUIRELISTEXPANSION));
+	public boolean isDisableRequireListExpansion() {
+		return Boolean.parseBoolean(getOption(DISABLE_REQUIRELISTEXPANSION));
 	}
 
 	@Override
@@ -107,8 +108,13 @@ public class OptionsImpl  implements IOptions {
 	}
 
 	@Override
-	public boolean isSkipHasFiltering() {
-		return Boolean.parseBoolean(getOption(SKIP_HASFILTERING));
+	public boolean isDisableHasFiltering() {
+		return Boolean.parseBoolean(getOption(DISABLE_HASFILTERING));
+	}
+	
+	@Override
+	public boolean isDisableHasPluginBranching() {
+		return Boolean.parseBoolean(getOption(DISABLE_HASPLUGINBRANCHING));
 	}
 	
 	@Override

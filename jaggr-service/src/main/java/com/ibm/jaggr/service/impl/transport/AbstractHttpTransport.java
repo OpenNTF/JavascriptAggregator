@@ -99,6 +99,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 
 	public static final String[] REQUESTEDLOCALES_REQPARAMS = {"locales", "locs"}; //$NON-NLS-1$ //$NON-NLS-2$
 	
+	public static final String[] HASPLUGINBRANCHING_REQPARAMS = {"hasBranching", "hb"}; //$NON-NLS-1$ //$NON-NLS-2$ 
+	
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 	
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
@@ -149,6 +151,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
    		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
    		
    		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));
+   		
+   		request.setAttribute(HASPLUGINBRANCHING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, HASPLUGINBRANCHING_REQPARAMS), true));
    		
    		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
 

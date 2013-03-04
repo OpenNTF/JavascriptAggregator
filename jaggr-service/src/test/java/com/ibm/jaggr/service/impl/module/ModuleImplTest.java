@@ -46,8 +46,10 @@ import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
@@ -63,12 +65,12 @@ public class ModuleImplTest {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 	IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
-	static final Map<String, Map<String, String>> testDepMap;
+	static final Map<String, ModuleDeps> testDepMap;
 	
 	static {
-		testDepMap = new HashMap<String, Map<String, String>>();
-		for (Map.Entry<String, Map<String, String>> entry : TestUtils.testDepMap.entrySet()) {
-			testDepMap.put(entry.getKey(), new HashMap<String, String>(entry.getValue()));
+		testDepMap = new HashMap<String, ModuleDeps>();
+		for (Map.Entry<String, ModuleDeps> entry : TestUtils.testDepMap.entrySet()) {
+			testDepMap.put(entry.getKey(), new ModuleDeps(entry.getValue()));
 		}
 	}
 
@@ -98,22 +100,22 @@ public class ModuleImplTest {
 		}).anyTimes();
 		
 		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
-			public Map<String, String> answer() throws Throwable {
+		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
+			public ModuleDeps answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
 				Features features = (Features)EasyMock.getCurrentArguments()[1];
 				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
-				Map<String, String> result = testDepMap.get(name);
+				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}
 				// resolve aliases
-				Map<String, String> temp = new HashMap<String, String>();
+				ModuleDeps temp = new ModuleDeps();
 				IConfig config = mockAggregator.getConfig();
-				for (Map.Entry<String, String> entry : result.entrySet()) {
+				for (Map.Entry<String, ModuleDepInfo> entry : result.entrySet()) {
 					String depName = entry.getKey();
 					String resolved = config.resolve(depName, features, dependentFeatures, null);
-					temp.put(resolved != null ? resolved : depName, entry.getValue());
+					temp.add(resolved != null ? resolved : depName, entry.getValue());
 				}
 				return temp;
 			}
@@ -150,7 +152,7 @@ public class ModuleImplTest {
 	 */
 	@Test
 	public void testModuleImpl() throws Exception {
-		testDepMap.get("p2/a").put("p1/aliased/d", "");
+		testDepMap.get("p2/a").add("p1/aliased/d", new ModuleDepInfo(null, null, ""));
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		
@@ -167,6 +169,7 @@ public class ModuleImplTest {
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		String compiled = writer.toString();
+		System.out.println(compiled);
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
 		
 		features.put("foo", false);

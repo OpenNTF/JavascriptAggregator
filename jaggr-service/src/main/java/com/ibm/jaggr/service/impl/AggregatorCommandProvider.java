@@ -39,6 +39,7 @@ import org.osgi.framework.ServiceReference;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.util.ConsoleService;
 import com.ibm.jaggr.service.util.Features;
 
@@ -64,6 +65,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 	static final String CMD_GETOPTIONS = "getoptions"; //$NON-NLS-1$
 	static final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
 	static final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
+	static final String CMD_GETDEPSWITHHASBRANCHING = "getdeps!has"; //$NON-NLS-1$
 	
 	@Override
 	public String getHelp() {
@@ -84,6 +86,9 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		  .append(MessageFormat.format(
 				Messages.CommandProvider_5, 
 				new Object[]{EYECATCHER, CMD_GETDEPS})).append(newline)
+		  .append(MessageFormat.format(
+				Messages.CommandProvider_16, 
+				new Object[]{EYECATCHER, CMD_GETDEPSWITHHASBRANCHING, CMD_GETDEPS})).append(newline)
 		  .append(MessageFormat.format(
 				Messages.CommandProvider_6, 
 				new Object[]{EYECATCHER, CMD_CLEARCACHE})).append(newline)
@@ -117,7 +122,9 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 			} else if (command.equals(CMD_VALIDATEDEPS)) {
 				doReloadDepsCmd(ci);
 			} else if (command.equals(CMD_GETDEPS)) {
-				doGetDepsCmd(ci);
+				doGetDepsCmd(ci, false);
+			} else if (command.equals(CMD_GETDEPSWITHHASBRANCHING)) {
+				doGetDepsCmd(ci, true);
 			} else if (command.equals(CMD_CLEARCACHE)){
 				doClearCacheCmd(ci);
 			} else if (command.equals(CMD_DUMPCACHE)) {
@@ -175,7 +182,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 				IDependencies deps = aggregator.getDependencies();
 				while (true) {
 					try {
-						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false);
+						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false);
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
@@ -203,7 +210,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 				// displayed.  If in development mode, we'll get a ProcessingDependenciesException.
 				while (true) {
 					try {
-						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false);
+						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false);
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
@@ -216,8 +223,8 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 		}
 	}
 	
-	public void doGetDepsCmd(CommandInterpreter ci) throws InvalidSyntaxException, IOException {
-		Map<String, String> moduleDeps = null;
+	public void doGetDepsCmd(CommandInterpreter ci, boolean performHasPluginBranching) throws InvalidSyntaxException, IOException {
+		ModuleDeps moduleDeps = null;
 		ServiceReference ref = getServiceRef(ci);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
@@ -246,13 +253,19 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 			try {
 				IDependencies deps = aggregator.getDependencies();
 				if (deps != null) {
-					moduleDeps = deps.getExpandedDependencies(moduleName, features, new HashSet<String>(), true);
+					moduleDeps = deps.getExpandedDependencies(
+							moduleName, 
+							features, 
+							new HashSet<String>(), 
+							true, 
+							performHasPluginBranching);
 				}
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
 			if (moduleDeps != null) {
-				for (Map.Entry<String, String> entry : moduleDeps.entrySet()) {
+				moduleDeps.simplify();
+				for (Map.Entry<String, String> entry : moduleDeps.getModuleIdsWithComments().entrySet()) {
 					ci.println("\"" + entry.getKey() + "\" /*" + entry.getValue() + " */"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				}
 			}

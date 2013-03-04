@@ -26,7 +26,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -37,7 +37,12 @@ import java.util.regex.Pattern;
 
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.util.BooleanTerm;
+import com.ibm.jaggr.service.util.BooleanVar;
 import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.service.util.HasNode;
 import com.ibm.jaggr.service.util.PathUtil;
 
 /**
@@ -512,17 +517,18 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 *            strings for debugging.
 	 * @return The map of expanded dependencies/debug comment pairs.
 	 */
-	public Map<String, String> getExpandedDependencies(
+	public ModuleDeps getExpandedDependencies(
 			Features features,
 			Set<String> dependentFeatures, 
-			boolean includeComments) throws IOException {
+			boolean includeComments,
+			boolean performHasBranching) throws IOException {
 		
 		// Create the Dependencies map.  Use a LinkedHashMap to maintain ordering
 		// of dependencies as some types of modules (i.e. css) are sensitive to 
 		// the order that modules are required relative to one another.
-		Map<String, String> deps = new LinkedHashMap<String, String>();
+		ModuleDeps deps = new ModuleDeps();
 		if (dependencies != null) {
-			expandDependencies(deps, features, dependentFeatures, includeComments);
+			expandDependencies(deps, features, dependentFeatures, includeComments, performHasBranching, null, null);
 			deps.keySet().removeAll(IDependencies.excludes);
 		}
 		return deps;
@@ -585,14 +591,14 @@ public class DepTreeNode implements Cloneable, Serializable {
 	}
 
 	/**
-	 * Recursively called to follow dependency references, accumulating a buildReader
-	 * map of module-name/debug-comment pairs representing the requested set of
+	 * Recursively called to follow dependency references, accumulating 
+	 * module dependency info representing the requested set of
 	 * expanded dependencies.
 	 * 
 	 * @param result
-	 *            Map of module-name/debug-comment pairs for the expanded set of
-	 *            dependencies. Newly discovered dependencies are added to this
-	 *            map.
+	 *            {@link ModuleDeps} object containing the mapping of 
+	 *            module-name to {@link ModuleDepinfo} pairs. Newly discovered 
+	 *            dependencies are added to this map.
 	 * @param features
 	 *            The features defined in the request.
 	 *            Used to resolve dependencies specified using the has! plugin.
@@ -601,19 +607,31 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * @param includeComments
 	 *            True if debug comments should be included. If false, the map
 	 *            valueSet will be a set of empty strings.
+	 * @param performHasBranching
+	 *            True if has! loader plugin branching should be performed
+	 * @param term
+	 *            The boolean term representing the accumulated has! plugin 
+	 *            branching variables for the current dependency.  May be null
+	 *            if not terms have been accumulated or if 
+	 *            <code>performHasBranching</code> is false.
+	 * @param hasPluginName
+	 *            The name of the has! plugin module that initiated 
+	 *            <code>term</code>
 	 */
 	private void expandDependencies(
-			Map<String, String> result,
+			ModuleDeps result,
 			Features features,
-			Set<String> dependentFeatures, 
-			boolean includeComments) throws IOException {
+			Set<String> dependentFeatures,
+			boolean includeComments,
+			boolean performHasBranching,
+			BooleanTerm term, String hasPluginName) throws IOException {
 		if (dependencies != null) {
 			if (depRefs == null) {
 				// Module dependencies must be resolved by calling resolveDepenedencyRefs() 
 				// before you can call getExpandedDependencies()
 				throw new NullPointerException();
 			}
-			List<DepTreeNode> childNodes = new ArrayList<DepTreeNode>(dependencies.length);
+			List<ChildNode> childNodes = new ArrayList<ChildNode>(dependencies.length);
 			for (int i = 0; i < dependencies.length; i++) {
 				// provide a StringBuffer for comments if requested
 				StringBuffer comment = (includeComments ? new StringBuffer(MessageFormat.format(
@@ -630,39 +648,76 @@ public class DepTreeNode implements Cloneable, Serializable {
 					depName = resolved;
 					node = getRoot().getDescendent(depName);
 				}
-				if (depName.length() > 0 && !result.containsKey(depName)) {
-					// We need to check for containment here in order to avoid 
-					// infinite recursion resulting from circular dependencies.
-					if (node != null && !depName.contains("!" )) { //$NON-NLS-1$
-						childNodes.add(node);
-						if (comment != null) {
-							comment.append(", ").append(Messages.DepTreeNode_1); //$NON-NLS-1$
+				if (depName.length() > 0) {
+					int idx = depName.indexOf("!");
+					if (node != null && idx == -1) { //$NON-NLS-1$
+						// We need to check for containment here in order to avoid 
+						// infinite recursion resulting from circular dependencies.
+						if (!result.containsDep(depName, term)) {
+							childNodes.add(new ChildNode(node, term, hasPluginName));
+							if (comment != null) {
+								comment.append(", ").append(Messages.DepTreeNode_1); //$NON-NLS-1$
+							}
+							result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null)); //$NON-NLS-1$
 						}
+					} else if (performHasBranching && 
+							idx > 0 && 
+							hasPattern.matcher(depName.substring(0, idx)).find()) {
+						// Handle has plugin
+						String pluginName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment);
+						HasNode hasNode = new HasNode(depName.substring(idx+1));
+						ModuleDeps deps = hasNode.evaluateAll(
+								pluginName, 
+								features, 
+								dependentFeatures, 
+								term,
+								comment != null ? 
+									comment.toString() : 
+									null
+						);
+						for (Map.Entry<String, ModuleDepInfo> entry : deps.entrySet()) {
+							DepTreeNode depNode = getRoot().getDescendent(entry.getKey());
+							if (depNode != null) {
+								for (BooleanTerm depTerm : entry.getValue().getTerms()) {
+									if (term != null) {
+										Set<BooleanVar> vars = new HashSet<BooleanVar>(depTerm);
+										vars.addAll(term);
+										depTerm = new BooleanTerm(vars);
+									}
+									// We need to check for containment here in order to avoid 
+									// infinite recursion resulting from circular dependencies.
+									if (!result.containsDep(depNode.getFullPathName(), depTerm)) {
+										childNodes.add(new ChildNode(depNode, depTerm, pluginName));
+									}
+								}
+							}
+						}
+						result.addAll(deps);
 					} else {
 						if (comment != null) {
 							comment.append(", ").append(Messages.DepTreeNode_2); //$NON-NLS-1$
 						}
+						result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null)); //$NON-NLS-1$
 					}
-					result.put(depName, (comment != null ? comment.toString() : "")); //$NON-NLS-1$
 				}
 				// If depName specifies a plugin, then add the plugin module to the expanded
 				// dependencies
 				int idx = depName.indexOf("!"); //$NON-NLS-1$
 				if (idx != -1 && idx > 0 && !hasPattern.matcher(depName.substring(0, idx)).find()) {
-					depName = depName.substring(0, idx);
-					if (!result.containsKey(depName)) {
+					depName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment);
+					if (!result.containsDep(depName, term)) {
 						// We need to check for containment here in order to avoid 
 						// infinite recursion resulting from circular dependencies.
 						node = getRoot().getDescendent(depName);
 						if (node != null) {
-							result.put(depName, includeComments ? Messages.DepTreeNode_4 : null);
-							childNodes.add(node);
+							result.add(depName, new ModuleDepInfo(hasPluginName, term, includeComments ? Messages.DepTreeNode_4 : null));
+							childNodes.add(new ChildNode(node, term, hasPluginName));
 						}
 					}
 				}
 			}
-			for (DepTreeNode node : childNodes) {
-				node.expandDependencies(result, features, dependentFeatures, includeComments);
+			for (ChildNode child : childNodes) {
+				child.node.expandDependencies(result, features, dependentFeatures, includeComments, performHasBranching, child.term, child.hasPluginName);
 			}
 		}
 	}
@@ -707,6 +762,18 @@ public class DepTreeNode implements Cloneable, Serializable {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
 				entry.getValue().setParent(this);
 			}
+		}
+	}
+	
+	private class ChildNode {
+		final DepTreeNode node;
+		final BooleanTerm term;
+		final String hasPluginName;
+		
+		ChildNode(DepTreeNode node, BooleanTerm term, String hasPluginName) {
+			this.node = node;
+			this.term = term;
+			this.hasPluginName = hasPluginName;
 		}
 	}
 }

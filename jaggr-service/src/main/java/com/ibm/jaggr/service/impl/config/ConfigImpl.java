@@ -403,7 +403,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.config.IConfig#resolveAlias(java.lang.String, com.ibm.jaggr.service.util.Features, java.util.Set)
+	 * @see com.ibm.servlets.amd.aggregator.config.IConfig#resolve(java.lang.String, com.ibm.servlets.amd.aggregator.util.Features, java.util.Set, java.lang.StringBuffer)
 	 */
 	@Override
 	public String resolve(
@@ -411,6 +411,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Features features, 
 			Set<String> dependentFeatures,
 			StringBuffer sb) {
+		
+		// Resolve has plugin first
+		mid = resolveHasPlugin(mid, features, dependentFeatures, sb);
 		
 		String aliased = null;
 		try {
@@ -420,16 +423,55 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-		if (aliased != null && aliased != mid) {
+		if (!mid.equals(aliased)) {
 			if (sb != null) {
 				sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
 						Messages.ConfigImpl_6,
 						new Object[]{mid}
 				));
 			}
-			mid = aliased;
+			// If alias resolution introduced a has plugin, then try to resolve it
+			int idx = mid.indexOf("!"); //$NON-NLS-1$
+			if (idx == -1 || !HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
+				mid = resolveHasPlugin(aliased, features, dependentFeatures, sb);
+			} else {
+				mid = aliased;
+			}
 		}
 
+		// check for package name and replace with the package's main module id
+		IPackage pkg = packages.get(mid);
+		if (pkg != null) {
+			mid = pkg.getMain();
+		}
+		return mid;
+	}
+
+	/**
+	 * Resolves has! loader plugin based on the specified feature set
+	 * 
+	 * @param mid
+	 *            The module id to resolve.  May specify plugins
+	 * @param features
+	 *            Features that are defined in the request
+	 * @param dependentFeatures
+	 *            Output - Set of feature names that the returned value is
+	 *            conditioned on. Used for cache management.
+	 * @param sb
+	 *            If not null, then a reference to a string buffer that can 
+	 *            be used by the resolver to indicate debug/diagnostic information 
+	 *            about the alias resolution.  For example, the resolver may
+	 *            indicate that alias resolution was not performed due to
+	 *            a missing required feature.
+	 * 
+	 * @return The module id with has! loader plugin resolved, or {@code mid} if the 
+	 *         features specified by the loader plugin are not defined.
+	 */
+	protected String resolveHasPlugin(
+		String mid, 
+		Features features, 
+		Set<String> dependentFeatures,
+		StringBuffer sb) {
 		int idx = mid.indexOf("!"); //$NON-NLS-1$
 		if (idx != -1 && HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
 			Set<String> depFeatures = new HashSet<String>();
@@ -466,12 +508,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				}
 			}
 		}
-		// check for package name and replace with the package's main module id
-		IPackage pkg = packages.get(mid);
-		if (pkg != null) {
-			mid = pkg.getMain();
-		}
-		
 		return mid;
 	}
 
@@ -685,7 +721,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				}), getConfigUri().toString(), 1, null); //$NON-NLS-1$
 			config = (Scriptable)sharedScope.get("config", sharedScope); //$NON-NLS-1$
 			if (config == Scriptable.NOT_FOUND) {
-				System.out.println("config is not defined."); //$NON-NLS-1$
+				throw new IllegalStateException("config is not defined."); //$NON-NLS-1$
 			}
 		} finally {
 			Context.exit();

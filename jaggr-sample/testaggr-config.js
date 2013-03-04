@@ -34,6 +34,8 @@
 	],
 	paths: {
 	},
+	
+	deps: ["js/bootstrap"],
 
 	depsIncludeBaseUrl: true,		// include baseUrl in scan for dependencies
 

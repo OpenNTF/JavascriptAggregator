@@ -99,6 +99,13 @@ public interface IHttpTransport extends IExtensionInitializer {
 
 	/**
 	 * Name of the request attribute specifying the Boolean flag indicating if
+	 * has! plugin branching should be performed during require list expansion.
+	 */
+	public static final String HASPLUGINBRANCHING_REQATTRNAME = IHttpTransport.class
+			.getName() + ".HasPluginBranching"; //$NON-NLS-1$
+	
+	/**
+	 * Name of the request attribute specifying the Boolean flag indicating if
 	 * the response should be annotated with comments indicating the names of
 	 * the module source files.
 	 */

@@ -20,9 +20,7 @@ package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +33,9 @@ import com.ibm.jaggr.service.DependencyVerificationException;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.util.BooleanTerm;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.PathUtil;
@@ -86,6 +87,10 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 */
 	private boolean logDebug;
 	
+	/**
+	 * True if has! loader plugin branching should be performed
+	 */
+	private final boolean performHasBranching;
 	
 	/**
 	 * Constructs a instance of this class for a specific module that is being compiled.
@@ -104,7 +109,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			Set<String> dependentFeatures,
 			DependencyList configDeps,
 			String configVarName,
-			boolean logDebug) {
+			boolean logDebug,
+			boolean performHasBranching) {
 		
 		this.aggregator = aggregator;
 		this.hasFeatures = features;
@@ -113,6 +119,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		this.configVarName = configVarName;
 		this.consoleDebugOutput = logDebug ? new LinkedList<List<String>>() : null;
 		this.logDebug = logDebug;
+		this.performHasBranching = performHasBranching;
 		
 		if (configVarName == null || configVarName.length() == 0) {
 			this.configVarName = "require"; //$NON-NLS-1$
@@ -245,7 +252,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 								aggregator.getConfig(), 
 								aggregator.getDependencies(), 
 								hasFeatures, 
-								logDebug);
+								logDebug, performHasBranching);
 						depList.setLabel(MessageFormat.format(
 							Messages.RequireExpansionCompilerPass_1,
 							new Object[] {cursor.getLineno()}
@@ -363,8 +370,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				Arrays.asList(normalizedNames), 
 				aggregator.getConfig(), 
 				aggregator.getDependencies(), 
-				hasFeatures, 
-				logDebug);
+				hasFeatures,  
+				logDebug, performHasBranching);
 		depList.setLabel(detail);
 
 		if (logDebug) {
@@ -373,7 +380,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("color:blue"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 			StringBuffer sb = new StringBuffer();
-			for (Map.Entry<String, String> entry : depList.getExplicitDeps().entrySet()) {
+			for (Map.Entry<String, String> entry : depList.getExplicitDeps().getModuleIdsWithComments().entrySet()) {
 				sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			msg = new LinkedList<String>();
@@ -381,9 +388,10 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("font-size:x-small"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 		}		
-		Set<String> filterSet = new HashSet<String>();
-		filterSet.addAll(depList.getExplicitDeps().keySet());
-
+		ModuleDeps filter = depList.getExplicitDeps();
+		for (String exclude : IDependencies.excludes) {
+			filter.add(exclude, new ModuleDepInfo(null, (BooleanTerm)null, null));
+		}
 		int i = 0;
 		for (DependencyList encDep : enclosingDependencies) {
 			if (logDebug) {
@@ -396,15 +404,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				));
 				msg.add("color:blue"); //$NON-NLS-1$
 				consoleDebugOutput.add(msg);
-				Map<String, String> depMap = new LinkedHashMap<String, String>();
-				depMap.putAll(encDep.getExplicitDeps());
-				for (Map.Entry<String, String> entry : encDep.getExpandedDeps().entrySet()) {
-					if (!depMap.containsKey(entry.getKey()) && !filterSet.contains(entry.getKey())) {
-						depMap.put(entry.getKey(), entry.getValue());
-					}
-				}
+				ModuleDeps depMap = encDep.getExplicitDeps();
+				depMap.addAll(encDep.getExpandedDeps());
+				depMap.subtractAll(filter);
 				StringBuffer sb = new StringBuffer();
-				for (Map.Entry<String, String> entry : depMap.entrySet()) {
+				for (Map.Entry<String, String> entry : depMap.getModuleIdsWithComments().entrySet()) {
 					sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				}
 				msg = new LinkedList<String>();
@@ -412,11 +416,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				msg.add("font-size:x-small"); //$NON-NLS-1$
 				consoleDebugOutput.add(msg);
 			}
-			filterSet.addAll(encDep.getExplicitDeps().keySet());
-			filterSet.addAll(encDep.getExpandedDeps().keySet());
+			filter.addAll(encDep.getExplicitDeps());
+			filter.addAll(encDep.getExpandedDeps());
 		}
 		
-		Map<String, String> expandedDeps = depList.getExpandedDeps();
+		ModuleDeps expandedDeps = depList.getExpandedDeps();
 		
 		if (logDebug) {
 			msg = new LinkedList<String>();
@@ -424,7 +428,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("color:blue"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 			StringBuffer sb = new StringBuffer();
-			for (Map.Entry<String, String> entry : expandedDeps.entrySet()) {
+			for (Map.Entry<String, String> entry : expandedDeps.getModuleIdsWithComments().entrySet()) {
 				sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			msg = new LinkedList<String>();
@@ -439,13 +443,20 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		}
 		
 		/*
+		 * Simplify invariant has! conditionals (those that evaluate to true
+		 * or false) but don't simplify non-invariants.  This makes it easier
+		 * to match terms when subsequently calling subtactAll to remove filter
+		 * terms.
+		 */
+		expandedDeps.simplifyInvariants();
+		/*
 		 * Use LinkedHashMap to maintain ordering of expanded dependencies
 		 * as some types of modules (i.e. css) are sensitive to the order
 		 * that modules are required relative to one another.
 		 */
-		Set<String> depsToAdd = new LinkedHashSet<String>(expandedDeps.keySet());
-		depsToAdd.removeAll(filterSet);
-		depsToAdd.removeAll(IDependencies.excludes);
+		expandedDeps.subtractAll(filter);
+		expandedDeps.simplify();
+		Collection<String> depsToAdd = expandedDeps.getModuleIds();
 		if (logDebug) {
 			msg = new LinkedList<String>();
 			msg.add("%c" + Messages.RequireExpansionCompilerPass_11); //$NON-NLS-1$

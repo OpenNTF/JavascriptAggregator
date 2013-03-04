@@ -34,8 +34,8 @@
 		],
 		params = {
 			expandRequire: 1,
-			exportNames: 1,
-			required: "combo/featureCookie" // required module that will be loaded
+			//exportNames: 1,
+			required: "js/bootstrap" // required module that will be loaded
 											// along with all of it's nested dependencies
 		},
 		features = {
@@ -45,6 +45,7 @@
 			"host-node" : 0,
 			"dojo-sniff" : 0,
 			"dojo-test-sniff" : 0,
+			"dojo-undef-api" : 1,
 			"host-browser" : 1,
 			"config-deferredInstrumentation" : 1
 		},
