@@ -23,10 +23,16 @@
       <init-param name="config" value="testaggr-config.js"/>
     </servlet>
   </extension>
-  <extension point="org.eclipse.equinox.http.registry.resources">
-    <resource alias="/testaggr/res" base-name="/WebContent" />
+
+  <extension point="org.eclipse.equinox.http.registry.httpcontexts">
+    <httpcontext id="resources" />
   </extension>
+    
   <extension point="org.eclipse.equinox.http.registry.filters">
-    <filter alias="/testaggr/res" class="com.ibm.jaggr.sample.Filter" />
+    <filter alias="/testaggr/res/*" class="com.ibm.jaggr.sample.BasicFilter" httpcontextId="resources" />
+  </extension>
+  
+  <extension point="org.eclipse.equinox.http.registry.resources">
+    <resource alias="/testaggr/res" base-name="/WebContent" httpcontextId="resources" />
   </extension>
 </plugin>
