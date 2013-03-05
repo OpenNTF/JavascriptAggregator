@@ -58,8 +58,16 @@
       <resource>
         <directory>${basedir}</directory>
         <includes>
-          <include>testaggr-config.js</include>
           <include>embed.txt</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${basedir}</directory>
+        <!-- Rewrite maven variables contained in this resource. -->
+        <filtering>true</filtering>
+        <includes>
+          <include>testaggr-config.js</include>
+          <include>WebContent/js/loaderConfig.js</include>
         </includes>
       </resource>
     </resources>

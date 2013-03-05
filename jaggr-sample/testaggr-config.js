@@ -39,6 +39,7 @@
 
 	inlinedImageSizeThreshold: 1024,	// max image size to inline in CSS
 
-	notice: 'embed.txt'
+	notice: 'embed.txt',
 
+	cacheBust: '${project.version}'
 }

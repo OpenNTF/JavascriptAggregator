@@ -64,8 +64,11 @@
 	
 		combo: {
 			contextPath: "/testaggr",
-			expandRequire: true
+			expandRequire: true,
+			cacheBust: '${project.version}'
 		},
+		
+		cacheBust: '${project.version}',
 		
 		deps: [
 	       "dojo/ready",
