@@ -68,8 +68,6 @@
 			cacheBust: '${project.version}'
 		},
 		
-		cacheBust: '${project.version}',
-		
 		deps: [
 	       "dojo/ready",
 	       "dojo/parser", 
