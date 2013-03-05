@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.sample;
+package com.ibm.jaggr.sample.dojo;
 
 import java.io.IOException;
 import java.util.logging.Logger;
@@ -46,8 +46,8 @@ public class BasicFilter implements Filter {
 		LOGGER.entering(CLAZZ, method);
 		
 		HttpServletResponse resp = (HttpServletResponse)response;
-		// Unversioned resources, always revalidate.
-		resp.setHeader("Cache-Control", "public, max-age=0");
+		// Versioned resource, cache for 1 year.
+		resp.setHeader("Cache-Control", "public, max-age=31536000");
 		chain.doFilter(request, response);
 		
 		LOGGER.exiting(CLAZZ, method);
