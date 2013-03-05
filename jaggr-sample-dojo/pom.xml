@@ -65,6 +65,7 @@
 		            <Require-Bundle>org.eclipse.core.runtime,org.eclipse.equinox.http.registry</Require-Bundle>
 		            <Import-Package>
 		            	javax.servlet;version="[2,4)",
+		            	javax.servlet.http;version="[2,4)",
 		            	*
 		            </Import-Package>
 				</instructions>
