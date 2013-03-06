@@ -63,7 +63,7 @@
 		waitSeconds: 10,
 	
 		combo: {
-			contextPath: "/testaggr",
+			contextPath: "/test/aggr",
 			expandRequire: true,
 			cacheBust: '${project.version}'
 		},
