@@ -25,14 +25,14 @@
   </extension>
 
   <extension point="org.eclipse.equinox.http.registry.httpcontexts">
-    <httpcontext id="resources" />
+    <httpcontext id="com.ibm.jaggr.sample.context.resources" />
   </extension>
     
   <extension point="org.eclipse.equinox.http.registry.filters">
-    <filter alias="/test/res/*" class="com.ibm.jaggr.sample.BasicFilter" httpcontextId="resources" />
+    <filter alias="/test/res/*" class="com.ibm.jaggr.sample.BasicFilter" httpcontextId="com.ibm.jaggr.sample.context.resources" />
   </extension>
   
   <extension point="org.eclipse.equinox.http.registry.resources">
-    <resource alias="/test/res" base-name="/WebContent" httpcontextId="resources" />
+    <resource alias="/test/res" base-name="/WebContent" httpcontextId="com.ibm.jaggr.sample.context.resources" />
   </extension>
 </plugin>
