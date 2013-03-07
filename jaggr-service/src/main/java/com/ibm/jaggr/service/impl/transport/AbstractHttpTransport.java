@@ -31,6 +31,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -103,6 +104,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 	
+	static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
+	
+
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
     private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
     
@@ -571,7 +575,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 */
 	@Override
 	public abstract String getLayerContribution(HttpServletRequest request,
-			LayerContributionType type, String mid);
+			LayerContributionType type, Object arg);
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.transport.IHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
+	 */
+	public abstract boolean isServerExpandable(HttpServletRequest request, String mid);
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#getCacheKeyGenerators()
@@ -611,6 +620,100 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		return sb.toString();
 	}
 	
+	/**
+	 * Validate the {@link LayerContributionState} and argument type specified
+	 * in a call to
+	 * {@link #getLayerContribution(HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, Object)}
+	 * 
+	 * @param request
+	 *            The http request object
+	 * @param type
+	 *            The layer contribution (see
+	 *            {@link IHttpTransport.LayerContributionType})
+	 * @param arg
+	 *            The argument value
+	 */
+    protected void validateLayerContributionState(HttpServletRequest request, 
+    		LayerContributionType type, Object arg) {
+
+    	LayerContributionType previousType = (LayerContributionType)request.getAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME);
+    	switch (type) {
+    	case BEGIN_RESPONSE:
+    		if (previousType != null) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case BEGIN_MODULES:
+    		if (previousType != LayerContributionType.BEGIN_RESPONSE) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case BEFORE_FIRST_MODULE:
+    		if (previousType != LayerContributionType.BEGIN_MODULES || 
+    			!(arg instanceof String)) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case BEFORE_SUBSEQUENT_MODULE:
+    		if (previousType != LayerContributionType.AFTER_MODULE || 
+    			!(arg instanceof String)) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case AFTER_MODULE:
+    		if (previousType != LayerContributionType.BEFORE_FIRST_MODULE &&
+				previousType != LayerContributionType.BEFORE_SUBSEQUENT_MODULE ||
+				!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+    	case END_MODULES:
+    		if (previousType != LayerContributionType.AFTER_MODULE) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case BEGIN_REQUIRED_MODULES:
+    		if (previousType != LayerContributionType.BEGIN_RESPONSE &&
+    			previousType != LayerContributionType.END_MODULES ||
+    			!(arg instanceof Set)) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case BEFORE_FIRST_REQUIRED_MODULE:
+    		if (previousType != LayerContributionType.BEGIN_REQUIRED_MODULES || 
+    			!(arg instanceof String)) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
+    		if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE || 
+    			!(arg instanceof String)) {
+   			    throw new IllegalStateException();
+    		}
+    		break;
+    	case AFTER_REQUIRED_MODULE:
+    		if (previousType != LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE &&
+    			previousType != LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE || 
+    			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+    	case END_REQUIRED_MODULES:
+    		if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
+    			!(arg instanceof Set)) {
+    			throw new IllegalStateException();
+    		}
+    		break;
+    	case END_RESPONSE:
+    		if (previousType != LayerContributionType.END_MODULES &&
+   			    previousType != LayerContributionType.END_REQUIRED_MODULES) {
+   			    throw new IllegalStateException();
+    		}
+    		break;
+    	}
+    	request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
+    }
+    
 	/**
 	 * Implementation of an {@link IResource} that aggregates the various 
 	 * sources (dynamic and static content) of the loader extension 

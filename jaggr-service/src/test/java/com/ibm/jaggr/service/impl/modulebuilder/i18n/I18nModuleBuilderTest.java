@@ -20,8 +20,10 @@ import java.io.File;
 import java.io.FileWriter;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -43,6 +45,7 @@ import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
+import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
@@ -73,6 +76,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 	I18nModuleBuilder builder;
 	IResource res;
 	List<ICacheKeyGenerator> keyGens = null;
+	
+	static String expectedOutput = "define(\"nls/strings\",{locale_label:\"root\"});";
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -129,17 +134,20 @@ public class I18nModuleBuilderTest extends EasyMock {
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
 				Arrays.asList(new String[]{"en"}));
+		requestAttributes.put(IHttpTransport.NOI18NEXPANSION_REQATTRNAME, Boolean.TRUE);
 		builder = new I18nModuleBuilder();
 		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n:null:provisional"));
 		keyGens = null;
-		output = buildIt();
+		ModuleBuild build = buildIt();
+		output = build.getBuildOutput();
 		
 		Assert.assertTrue(builder.handles("nls/strings", new FileResource(new File(nls, "strings.js").toURI())));
+		Assert.assertEquals(0, build.getExtraModules().size());
 
-		// build the module.  Should not get locale expansion without module name exporting
+		// build the module.  Should not get locale expansion with no expansion attribute
 		// enabled
 		System.out.println(output);
 		Assert.assertEquals("define({locale_label:\"root\"});", output);
@@ -151,13 +159,17 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertFalse(s.contains("i18n"));
 		
 		// Now enable module name exporting
+		requestAttributes.put(IHttpTransport.NOI18NEXPANSION_REQATTRNAME, Boolean.FALSE);
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en}"));
-		output = buildIt();
+		build = buildIt();
+		output = build.getBuildOutput();
 		System.out.println(output);
-		Assert.assertEquals("define(\"nls/en/strings\",{locale_label:\"en\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/en/strings", build.getExtraModules().get(0).getModuleId());
 
 		// Test with an unavailable locale
 		requestAttributes.put(
@@ -167,24 +179,29 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertFalse(s.contains("i18n"));
-		output = buildIt();
+		build = buildIt();
+		output = build.getBuildOutput();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals(0, build.getExtraModules().size());
 		
 		// Now add the locale,  make sure the change isn't detected without development
 		// mode being enabled (because we're using the list cached in the key generator).
 		File eb = new File(nls, "eb");
 		eb.mkdir();
 		CopyUtil.copy("define({locale_label:'eb'});", new FileWriter(new File(eb, "strings.js")));
-		output = buildIt();
+		build = buildIt();
+		output = build.getBuildOutput();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals(0, build.getExtraModules().size());
 
 		// Now enable development mode and make sure the addition of the new locale is detected
 		TestUtils.deleteRecursively(eb);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		keyGens = null;
-		output = buildIt();
+		build = buildIt();
+		output = build.getBuildOutput();
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n:null"));
@@ -195,20 +212,25 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{eb}"));
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals(0, build.getExtraModules().size());
 		// Now add the missing locale resources and make sure it's the new resource is
 		// returned in the build.
 		eb = new File(nls, "eb");
 		eb.mkdir();
-		CopyUtil.copy("define({locale_label:'eb'});", new FileWriter(new File(eb, "strings.js")));
-		output = buildIt();
+		File file = new File(eb, "strings.js");
+		CopyUtil.copy("define({locale_label:'eb'});", new FileWriter(file));
+		build = buildIt();
+		output = build.getBuildOutput();
 		System.out.println(output);
-		Assert.assertEquals("define(\"nls/eb/strings\",{locale_label:\"eb\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
-		
+		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/eb/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(file.toURI(), build.getExtraModules().get(0).getURI());
 	}
 	
 	@Test
 	public void testLocaleMatching() throws Exception {
-		String s, output;
+		String s;
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		builder = new I18nModuleBuilder();
 		
@@ -216,22 +238,23 @@ public class I18nModuleBuilderTest extends EasyMock {
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
 				Arrays.asList(new String[]{"en-us-var"}));
 		
-		output = buildIt();
+		ModuleBuild build = buildIt();
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en-us-var"));
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/en-us-var/strings\",{locale_label:\"en-us-var\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
-		
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/en-us-var/strings", build.getExtraModules().get(0).getModuleId());
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
 				Arrays.asList(new String[]{"en-ca-var"}));
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en-ca}"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/en-ca/strings\",{locale_label:\"en-ca\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/en-ca/strings", build.getExtraModules().get(0).getModuleId());
 		
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -239,9 +262,10 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{es}"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/es/strings\",{locale_label:\"es\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/es/strings", build.getExtraModules().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -249,9 +273,9 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertFalse(s.contains("i18n"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(0, build.getExtraModules().size());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -259,9 +283,10 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en-ca}"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/en-ca/strings\",{locale_label:\"en-ca\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/en-ca/strings", build.getExtraModules().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -269,9 +294,10 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en}"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/en/strings\",{locale_label:\"en\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/en/strings", build.getExtraModules().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -279,9 +305,10 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en}"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/en/strings\",{locale_label:\"en\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(1, build.getExtraModules().size());
+		Assert.assertEquals("nls/en/strings", build.getExtraModules().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -289,9 +316,9 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertFalse(s.contains("i18n"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(0, build.getExtraModules().size());
 
 		// Try with multiple locales
 		requestAttributes.put(
@@ -300,22 +327,54 @@ public class I18nModuleBuilderTest extends EasyMock {
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{es,en-us,en-ca}"));
-		output = buildIt();
-		System.out.println(output);
-		Assert.assertEquals("define(\"nls/es/strings\",{locale_label:\"es\"});define(\"nls/en-us/strings\",{locale_label:\"en-us\"});define(\"nls/en-ca/strings\",{locale_label:\"en-ca\"});define(\"nls/strings\",{locale_label:\"root\"});", output);
+		build = buildIt();
+		Assert.assertEquals(expectedOutput, build.getBuildOutput());
+		Assert.assertEquals(3, build.getExtraModules().size());
+		Set<String> mids = new HashSet<String>();
+		for (IModule module : build.getExtraModules()) {
+			mids.add(module.getModuleId());
+		}
+		Assert.assertEquals(
+			new HashSet<String>(Arrays.asList(new String[]{"nls/es/strings", "nls/en-us/strings", "nls/en-ca/strings"})),
+			mids);
 		
 		// Assert that the builder doesn't handle requests for locale specific resources
 		Assert.assertFalse(builder.handles("nls/en/strings", new FileResource(new File(en, "strings.js").toURI())));
 	}
 	
-	private String buildIt() throws Exception {
+	@Test
+	public void testParseAcceptLanguageHeader() {
+		HttpServletRequest mockRequest = EasyMock.createMock(HttpServletRequest.class);
+		EasyMock.expect(mockRequest.getHeader("Accept-Language")).andReturn("p05;q=0.5,p01;q=0.1,p1").anyTimes();
+		EasyMock.replay(mockRequest);
+		I18nModuleBuilder builder = new I18nModuleBuilder();
+		List<String> result = builder.parseAcceptLanguageHeader(mockRequest);
+		Assert.assertEquals(Arrays.asList(new String[]{"p1", "p05", "p01"}), result);
+		EasyMock.reset(mockRequest);
+		EasyMock.expect(mockRequest.getHeader("Accept-Language")).andReturn("p05;q=0.5,p1;q=1,p01;q=0.1").anyTimes();
+		EasyMock.replay(mockRequest);
+		result = builder.parseAcceptLanguageHeader(mockRequest);
+		Assert.assertEquals(Arrays.asList(new String[]{"p1", "p05", "p01"}), result);
+		EasyMock.reset(mockRequest);
+		EasyMock.expect(mockRequest.getHeader("Accept-Language")).andReturn("p05;q=0.5,p1;q=1,pX;q=foo,p01;q=0.1").anyTimes();
+		EasyMock.replay(mockRequest);
+		result = builder.parseAcceptLanguageHeader(mockRequest);
+		Assert.assertEquals(Arrays.asList(new String[]{"p1", "p05", "p01"}), result);
+		EasyMock.reset(mockRequest);
+		EasyMock.expect(mockRequest.getHeader("Accept-Language")).andReturn("p05;q=0.5,p1;q=1,pX;blah,p01;q=0.1").anyTimes();
+		EasyMock.replay(mockRequest);
+		result = builder.parseAcceptLanguageHeader(mockRequest);
+		Assert.assertEquals(Arrays.asList(new String[]{"p1", "p05", "p01"}), result);
+	}
+	
+	private ModuleBuild buildIt() throws Exception {
 		concurrentMap.clear();
 		ModuleBuild build = builder.build("nls/strings", res, mockRequest, keyGens);
 		keyGens = build.getCacheKeyGenerators();
 		if (build.isError()) {
 			throw new Exception("Build error");
 		}
-		return build.getBuildOutput();
+		return build;
 		
 	}
 }

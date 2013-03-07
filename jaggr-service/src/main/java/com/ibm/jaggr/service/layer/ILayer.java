@@ -51,6 +51,13 @@ public interface ILayer extends Serializable {
 	 * JavaScript code to invoke the console logger on the browser.
 	 */
 	public static final String NOCACHE_RESPONSE_REQATTRNAME = ILayer.class.getName() + ".nocache"; //$NON-NLS-1$
+	
+	/**
+	 * Name of the request attribute containing the queue of module build
+	 * futures. This queue is used to add additional modules specified by
+	 * builders to the response.
+	 */
+	public static final String BUILDFUTURESQUEUE_REQATTRNAME = ILayer.class.getName() + ".buildQueue"; //$NON-NLS-1$
 
 	/**
 	 * Returns the {@link InputStream} for the assembled and gzipped layer build

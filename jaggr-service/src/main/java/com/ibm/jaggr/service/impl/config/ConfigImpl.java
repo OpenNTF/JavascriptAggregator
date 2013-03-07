@@ -94,6 +94,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private int expires;
 	private String notice;
 	private String cacheBust;
+	private Set<String> textPluginDelegators;
+	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
 	
 	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
@@ -179,6 +181,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			expires = loadExpires(rawConfig);
 			notice = loadNotice(rawConfig);
 			cacheBust = loadCacheBust(rawConfig);
+			textPluginDelegators = loadTextPluginDelegators(rawConfig);
+			jsPluginDelegators = loadJsPluginDelegators(rawConfig);
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
@@ -281,6 +285,22 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public String getCacheBust() {
 		return cacheBust;
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.config.IConfig#getTextPluginDelegators()
+	 */
+	@Override
+	public Set<String> getTextPluginDelegators() {
+		return textPluginDelegators;
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.config.IConfig#getJsPluginDelegators()
+	 */
+	@Override
+	public Set<String> getJsPluginDelegators() {
+		return jsPluginDelegators;
 	}
 	
 	/* (non-Javadoc)
@@ -942,6 +962,36 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		return notice;
 	}
 	
+	/**
+	 * Common routine to load text or js plugin delegators
+	 */
+	protected Set<String> loadPluginDelegators(Scriptable cfg, String name) {
+		Set<String> result = null;
+		Object delegators = cfg.get(name, cfg);
+		if (delegators != Scriptable.NOT_FOUND  && delegators instanceof Scriptable) {
+			result = new HashSet<String>();
+			for (Object id : ((Scriptable)delegators).getIds()) {
+				if (id instanceof Number) {
+					Number i = (Number)id;
+					Object entry = ((Scriptable)delegators).get((Integer)i, (Scriptable)delegators);
+					result.add(entry.toString());
+				}
+			}
+			result = Collections.unmodifiableSet(result);
+		} else {
+			result = Collections.emptySet();
+		}
+		return result;
+	}
+	
+	protected Set<String> loadTextPluginDelegators(Scriptable cfg) {
+		return loadPluginDelegators(cfg, TEXTPLUGINDELEGATORS_CONFIGPARAM);
+	}
+	
+	protected Set<String> loadJsPluginDelegators(Scriptable cfg) {
+		return loadPluginDelegators(cfg, JSPLUGINDELEGATORS_CONFIGPARAM);
+	}
+
 	protected Location loadLocation(Object locObj, boolean isFolder) throws URISyntaxException {
 		Location result;
 		if (locObj instanceof Scriptable) {

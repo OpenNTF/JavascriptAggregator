@@ -20,24 +20,21 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
 import java.util.Set;
+import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.readers.ModuleBuildReader;
 
 /**
  * Interface for module cache object
  */
 public interface IModuleCache extends Serializable {
 	
-	/**
-	 * Adds the module to the cache if a module with the specified key
-	 * is not already in the cache
-	 * 
-	 * @param key the module key
-	 * @param newModule the module to add
-	 * @return the existing module, or null if the module was added
-	 */
-	IModule putIfAbsent(String key, IModule newModule);
+	public static final String MODULECACHEINFO_PROPNAME = IModuleCache.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
+
 	
 	/**
 	 * Returns the module with the specified key, or null if the 
@@ -49,6 +46,14 @@ public interface IModuleCache extends Serializable {
 	IModule get(String key);
 	
 	/**
+	 * Returns a future to the build reader for requested module.  If the build
+	 * already exists in the cache, then a completed future for the reader to the
+	 * cached build is returned.  Otherwise, a new build is started, and a future
+	 * that will complete when the build has finished is returned.
+	 */
+	Future<ModuleBuildReader> getBuild(HttpServletRequest request, IModule module) throws IOException;
+	
+	/**
 	 * Returns true if the module with the specified key is in the 
 	 * cache
 	 * 
@@ -56,14 +61,6 @@ public interface IModuleCache extends Serializable {
 	 * @return true if the specified module is in the cache
 	 */
 	boolean contains(String key);
-	
-	/**
-	 * Removes the module with the specified key from the cache
-	 * 
-	 * @param key the module key
-	 * @return The module that was removed, or null if not in the cache
-	 */
-	IModule remove(String key);
 
 	/**
 	 * Remove all modules in the cache 

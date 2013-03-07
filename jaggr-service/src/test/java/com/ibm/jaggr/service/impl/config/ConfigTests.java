@@ -766,6 +766,44 @@ public class ConfigTests {
 	}
 	
 	@Test
+	public void testGetTextPluginDelegators() throws Exception {
+		String config = "{textPluginDelegators:[\"foo/bar\", \"t2\"]}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getTextPluginDelegators());
+		
+		config = "{textPluginDelegators:\"t1\"}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
+		
+		config = "{textPluginDelegators:[]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
+
+		config = "{}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
+	}
+	
+	@Test
+	public void testGetJsPluginDelegators() throws Exception {
+		String config = "{jsPluginDelegators:[\"foo/bar\", \"t2\"]}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getJsPluginDelegators());
+		
+		config = "{jsPluginDelegators:\"t1\"}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
+
+		config = "{jsPluginDelegators:[]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
+
+		config = "{}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
+	}
+	
+	@Test
 	public void testResolve() throws Exception {
 		Features features = new Features();
 		Set<String> dependentFeatures = new HashSet<String>();

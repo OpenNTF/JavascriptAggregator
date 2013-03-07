@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceFactory;
 
@@ -129,17 +130,43 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * <p>
 	 * This feature is typically used to load a bootstrap layer of modules using
 	 * the same request that is used to load the loader and the loader config.
-	 * It is not used for aggregator generated requests.
+	 * It is not used for aggregator generated requests. In this scenario, the
+	 * loader together with any non-AMD modules like the client-side loader
+	 * config are specified using {@link #REQUESTEDMODULES_REQATTRNAME} and the
+	 * top level AMD modules are specified using {@link #REQUIRED_REQATTRNAME}.
 	 * <p>
-	 * Note: The module id(s) specified using this query arg may not specify a
-	 * loader plugin, and any expanded dependencies that specify a loader plugin
-	 * are not included in the response. The only exception to this is the has!
-	 * plugin, which will be resolved by the aggregator in expanded dependencies
-	 * as long as the specified feature is defined in the request.
+	 * Note: Modules specifying a loader plugin will be included in the response
+	 * only if the loader plugin is specified in the
+	 * {@link IConfig#TEXTPLUGINDELEGATORS_CONFIGPARAM} config param, or the
+	 * {@link IConfig#JSPLUGINDELEGATORS_CONFIGPARAM} config param. For the
+	 * {@code has} loader plugin, the module will be included only if the
+	 * feature specified by the plugin is defined in the feature set specified
+	 * in the request.
 	 */
 	public static final String REQUIRED_REQATTRNAME = IHttpTransport.class
 			.getName() + ".Required"; //$NON-NLS-1$
 
+	/**
+	 * Specifies that the text module builder should not wrap the text 
+	 * in an AMD define(...) function call, and instead should return
+	 * the text content as an unadorned string.  Some use cases (e.g.
+	 * Dojo's layer builder) require this functionality.
+	 */
+	public static final String NOTEXTADORN_REQATTRNAME = IHttpTransport.class
+			.getName() + ".NoTextAdorn"; //$NON-NLS-1$
+	
+	/**
+	 * Specifies that the i18n module builder should not add locale 
+	 * specific resources to the response based on the request locale(s).
+	 * This option may be set by the HTTP transport based on loader 
+	 * or compiler limitations.  For example, if module name exporting is
+	 * needed to add unrequested modules to the response but module name
+	 * exporting is not available because of other request params
+	 * (e.g. {@link #EXPORTMODULENAMES_REQATTRNAME} or 
+	 * {@link #OPTIMIZATIONLEVEL_REQATTRNAME}).
+	 */
+	public static final String NOI18NEXPANSION_REQATTRNAME = IHttpTransport.class
+			.getName() + ".NoI18nExpansion";
 	/**
 	 * Name of the request attribute specifying the config var name used to
 	 * configure the loader on the client.  The default value is "require". 
@@ -290,8 +317,8 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            The request object
 	 * @param type
 	 *            The layer contribution type
-	 * @param mid
-	 *            The module id. This parameter is specified for the following
+	 * @param arg
+	 *            This parameter specifies the module id as a string for the following
 	 *            {@code type} values:
 	 *            <ul>
 	 *            <li>{@link LayerContributionType#BEFORE_FIRST_MODULE}</li>
@@ -304,20 +331,41 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            </li>
 	 *            <li>{@link LayerContributionType#AFTER_REQUIRED_MODULE}</li>
 	 *            </ul>
-	 *            For the following values of {@code type}, {@code mid} specifies
-	 *            the comma separated list of required modules specified in the
-	 *            request.
+	 *            For the following values of {@code type}, {@code arg} specifies
+	 *            a {@code Set<String>} of required modules specified in the
+	 *            request via the {@link #REQUIRED_REQATTRNAME} request parameter.
 	 *            <ul>
 	 *            <li>{@link LayerContributionType#BEGIN_REQUIRED_MODULES}</li>
 	 *            <li>{@link LayerContributionType#END_REQUIRED_MODULES}</li>
 	 *            </ul>
 	 *            For all other values of {@code type}, {@code mid} is null.
+	 *            
 	 * @return A string value that is to be added to the layer in the location
 	 *         specified by {@code type}.
 	 */
 	public String getLayerContribution(HttpServletRequest request,
-			LayerContributionType type, String mid);
+			LayerContributionType type, Object arg);
 
+	/**
+	 * Returns true if the specified module can be included in a server expanded
+	 * layer (i.e. a layer constructed from the modules specified using by
+	 * {@link #REQUIRED_REQATTRNAME} plus it's dependencies).
+	 * <p>
+	 * Excluded modules include those that specify a loader plugin that is not
+	 * included in {@link IConfig#TEXTPLUGINDELEGATORS_CONFIGPARAM} or
+	 * {@link IConfig#JSPLUGINDELEGATORS_CONFIGPARAM}, and modules that specify
+	 * an absolute or server relative URL.
+	 * 
+	 * @param request
+	 *            The request object
+	 * @param mid
+	 *            The module id
+	 * @return True if the specified module can be included in a server expanded
+	 *         layer
+	 */
+	public boolean isServerExpandable(HttpServletRequest request, String mid);
+	
+	
 	/**
 	 * Returns a cache key generator for the JavaScript contained in the
 	 * loader extension JavaScript and output by 

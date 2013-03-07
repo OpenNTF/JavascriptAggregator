@@ -20,46 +20,43 @@ import java.util.LinkedList;
 import java.util.Set;
 
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.ModuleSpecifier;
 
 class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -4578312833010749563L;
 	
 	static class ModuleListEntry {
-		enum Type {
-			MODULES,
-			REQUIRED
-		};
 		final IModule module;
-		final Type type;
-		ModuleListEntry(IModule module, Type type) {
+		final ModuleSpecifier source;
+		ModuleListEntry(IModule module, ModuleSpecifier source) {
 			this.module = module;
-			this.type = type;
+			this.source = source;
 		}
-		Type getType() {
-			return type;
+		ModuleSpecifier getSource() {
+			return source;
 		}
 		IModule getModule() {
 			return module;
 		}
 	}
 	private Set<String> dependentFeatures;
-	private String requiredModuleId;
+	private Set<String> requiredModules;
 	
 	ModuleList() {
 		dependentFeatures = null;
-		requiredModuleId = null;
+		requiredModules = null;
 	}
 	
 	void setDependenentFeatures(Set<String> dependentFeatures) {
 		this.dependentFeatures = dependentFeatures;
 	}
 	
-	void setRequiredModuleId(String id) {
-		requiredModuleId = id;
+	void setRequiredModules(Set<String> requiredModules) {
+		this.requiredModules = requiredModules;
 	}
 	
-	String getRequiredModuleId() {
-		return requiredModuleId;
+	Set<String> getRequiredModules() {
+		return requiredModules;
 	}
 	
 	Set<String> getDependentFeatures() {

@@ -13,18 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["dojo/ready",
-       "dojo/parser", 
-       "dijit/layout/TabContainer",
-       "js/LazyContentPane",
-       "js/css!dijit/themes/claro/claro.css",
-       "combo/featureCookie",
-       /*
-        * preload selector lite implementation which is used by dojo/query and 
-        * supports modern browsers.  If the emulation library is required, it 
-        * will be required by the loader.
-        */
-       "dojo/selector/lite"		
-], function() {
-	return {};
-});
+
+package com.ibm.jaggr.service.module;
+
+import com.ibm.jaggr.service.transport.IHttpTransport;
+
+/**
+ * An enum specifying the possible sources from which a module 
+ * is specified.
+ */
+public enum ModuleSpecifier {
+	/**
+	 * The module was specified by {@link IHttpTransport#REQUESTEDMODULES_REQATTRNAME},
+	 * or is a dependency of such a module
+	 */
+	MODULES,	
+	/**
+	 * The module was specified by {@link IHttpTransport#REQUIRED_REQATTRNAME},
+	 * or is a dependency of such a module
+	 */
+	REQUIRED,
+	/**
+	 * The module was added by a module builder.
+	 */
+	BUILD_ADDED
+}

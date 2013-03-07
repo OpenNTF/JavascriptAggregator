@@ -66,6 +66,7 @@ import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
@@ -93,21 +94,15 @@ public class LayerTest extends EasyMock {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
 	IDependencies mockDependencies = createMock(IDependencies.class);
-	static final Map<String, ModuleDeps> testDepMap;
+	static Map<String, ModuleDeps> testDepMap;
 	
-	static {
-		testDepMap = new HashMap<String, ModuleDeps>();
-		for (Map.Entry<String, ModuleDeps> entry : TestUtils.testDepMap.entrySet()) {
-			testDepMap.put(entry.getKey(), entry.getValue());
-		}
-	}
-
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		LayerImpl.LAYERBUILD_REMOVE_DELAY_SECONDS = 0;
+		testDepMap = new HashMap<String, ModuleDeps>(TestUtils.testDepMap);
 	}
 
 	@AfterClass
@@ -230,7 +225,7 @@ public class LayerTest extends EasyMock {
 		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
 		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
-		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertTrue(result.contains("\"hello from a.js\""));
 		
 		// Request two modules
@@ -246,7 +241,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("add", moduleCacheInfo.get("p1/b"));
 		assertTrue(result.contains("\"hello from a.js\""));
@@ -268,7 +263,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("add", moduleCacheInfo.get("p1/hello.txt"));
@@ -293,7 +288,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_lastmod, update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
@@ -318,7 +313,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[hit_1]", layerCacheInfo.toString());
-		assertNull(requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME));
+		assertNull(requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME));
 		assertEquals(saveResult, result);
 		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
@@ -336,7 +331,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_lastmod, error_noaction]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("remove", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
@@ -364,7 +359,7 @@ public class LayerTest extends EasyMock {
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("[update_keygen, update_key, update_hit]", layerCacheInfo.toString());
 		assertEquals("add", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
@@ -388,7 +383,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_lastmod, update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));

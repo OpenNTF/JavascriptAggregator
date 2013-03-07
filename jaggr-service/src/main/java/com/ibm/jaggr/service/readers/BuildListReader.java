@@ -18,10 +18,8 @@ package com.ibm.jaggr.service.readers;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 
@@ -37,15 +35,15 @@ import java.util.concurrent.Future;
  * method.
  */
 public class BuildListReader extends AggregationReader {
-	final Iterator<Future<ModuleBuildReader>> iter;
+	final Iterator<ModuleBuildReader> iter;
 	boolean hasErrors = false;
 	IOException savedException = null;
 
 	/**
 	 * @param list
-	 *            The list of Futures from which to obtain the readers
+	 *            The list of build readers
 	 */
-	public BuildListReader(List<Future<ModuleBuildReader>> list) {
+	public BuildListReader(List<ModuleBuildReader> list) {
 		super();
 		this.iter = list.iterator();
 	}
@@ -63,35 +61,11 @@ public class BuildListReader extends AggregationReader {
 	@Override
 	protected Reader getNextInputReader() throws IOException {
 		if (!iter.hasNext()) {
-			if (savedException != null) {
-				throw savedException;
-			}
 			return null;
 		}
-		Future<ModuleBuildReader> future = iter.next();
-		if (future == null) {
-			if (savedException != null) {
-				throw savedException;
-			}
+		ModuleBuildReader reader = iter.next();
+		if (reader == null) {
 			return null;
-		}
-		ModuleBuildReader reader = null;
-		try {
-			reader = future.get();
-		} catch (InterruptedException e) {
-			if (savedException == null) {
-				// Only save first exception
-				savedException = new IOException(e);
-			}
-			return new StringReader(""); //$NON-NLS-1$
-		} catch (ExecutionException e) {
-			if (savedException == null) {
-				// Only save first exception
-				Throwable t = e.getCause();
-				savedException = (t instanceof IOException) ?
-					(IOException)t : new IOException(t);
-			}
-			return new StringReader(""); //$NON-NLS-1$
 		}
 		if (reader.isError()) {
 			hasErrors = true;
