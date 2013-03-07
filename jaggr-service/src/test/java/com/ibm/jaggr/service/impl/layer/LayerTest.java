@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -35,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +67,7 @@ import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
+import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.options.IOptions;
@@ -408,6 +411,24 @@ public class LayerTest extends EasyMock {
 		// make sure a new file was written out
 		file = new File(mockAggregator.getCacheManager().getCacheDir(), cacheEntry.getFilename());
 		Assert.assertTrue("missing cache file", file.exists());
+		
+		// Test required request parameter
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestAttributes.put(IHttpTransport.REQUIRED_REQATTRNAME, new HashSet<String>(Arrays.asList(new String[]{"p1/a"})));
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		System.out.println(result);
+		Pattern p = Pattern.compile(new StringBuffer()
+				.append("require\\(\\{cache:\\{")
+				.append("\\\"p1/b\\\":function\\(\\)\\{.*?\\},")
+				.append("\\\"p1/c\\\":function\\(\\)\\{.*?\\},")
+				.append("\\\"p1/a\\\":function\\(\\)\\{.*?\\},")
+				.append("\\\"p1/noexist\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
+				.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);").toString());
+		Assert.assertTrue(p.matcher(result).find());
 	}
 
 	/**
@@ -707,13 +728,26 @@ public class LayerTest extends EasyMock {
 					mockAggregator.getCacheManager(), 
 					new ReentrantReadWriteLock(), null, null));
 		}
+		@Override
 		public IModule newModule(HttpServletRequest request, String mid) {
 			return super.newModule(request, mid);
+		}
+		@Override
+		public InputStream getInputStream(HttpServletRequest request, HttpServletResponse response) throws IOException {
+			request.removeAttribute(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
+			return super.getInputStream(request, response);
 		}
 	};
 	
 	static private LayerImpl newLayerImpl(String layerKey, IAggregator aggregator) {
-		LayerImpl result = new LayerImpl(layerKey, ++id);
+		@SuppressWarnings("serial")
+		LayerImpl result = new LayerImpl(layerKey, ++id) {
+			@Override
+			public InputStream getInputStream(HttpServletRequest request, HttpServletResponse response) throws IOException {
+				request.removeAttribute(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
+				return super.getInputStream(request, response);
+			}
+		};
 		result.setLayerBuildsAccessor(new LayerBuildsAccessor(
 				id, 
 				(ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)aggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap(),

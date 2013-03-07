@@ -611,7 +611,7 @@ public class LayerImpl implements ILayer {
 			// Note that we depend on the behavior that all non-required
 			// modules in the module list appear before all required 
 			// modules in the iteration.
-			ModuleSpecifier source = future.getSource();
+			ModuleSpecifier source = future.getModuleSpecifier();
 			if (source == ModuleSpecifier.MODULES || source == ModuleSpecifier.BUILD_ADDED && !required) {
 				if (count == 0) {
 					addTransportContribution(request, transport, readerList, 
@@ -884,26 +884,28 @@ public class LayerImpl implements ILayer {
 	        result = new ModuleList();
     		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
     		Set<String> dependentFeatures = new HashSet<String>();
-	        for (String name : moduleNames) {
-	        	if (name != null) {
-	        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null);
-	        		result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
-	        	}
-	        }
+    		if (moduleNames != null) {
+		        for (String name : moduleNames) {
+		        	if (name != null) {
+		        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null);
+		        		result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
+		        	}
+		        }
+    		}
 	        // See if we need to add required modules.
-			String required = (String)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
+			@SuppressWarnings("unchecked")
+			Set<String> required = (Set<String>)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
 			if (required != null) {
 				// If there's a required module, then add it and its dependencies
 				// to the module list.  
 	    		IDependencies deps = aggr.getDependencies();
-	    		Set<String> requireSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*", 0)));  //$NON-NLS-1$
 	    		DependencyList depList = new DependencyList(
-	    				requireSet,
+	    				required,
 	    				aggr.getConfig(),
 	    				deps,
 	    				features,
 	    				false, false);
-				result.setRequiredModules(requireSet);
+				result.setRequiredModules(required);
 	    		result.setDependenentFeatures(dependentFeatures);
 	    		ModuleDeps combined = depList.getExpandedDeps();
 	    		combined.putAll(depList.getExplicitDeps());

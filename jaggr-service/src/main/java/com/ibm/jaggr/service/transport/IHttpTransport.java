@@ -123,8 +123,8 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".NoCache"; //$NON-NLS-1$
 
 	/**
-	 * Name of the request attribute specifying a comma delimited list of
-	 * modules that, together with their expanded dependencies, will be included
+	 * Name of the request attribute specifying a {@code Set<String>} of
+	 * modules ids that, together with their expanded dependencies, will be included
 	 * in the response in addition to the list of modules specified by
 	 * {@link #REQUESTEDMODULES_REQATTRNAME}.
 	 * <p>
