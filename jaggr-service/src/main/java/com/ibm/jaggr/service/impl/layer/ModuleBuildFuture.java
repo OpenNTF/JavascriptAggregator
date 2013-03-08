@@ -35,15 +35,15 @@ import com.ibm.jaggr.service.resource.IResource;
 public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 	
 	private final Future<ModuleBuildReader> future;
-	private final ModuleSpecifier source;
+	private final ModuleSpecifier moduleSpecifier;
 	private final IResource resource;
 	private final String mid;
 
-	public ModuleBuildFuture(String mid, IResource resource, Future<ModuleBuildReader> future, ModuleSpecifier source) {
+	public ModuleBuildFuture(String mid, IResource resource, Future<ModuleBuildReader> future, ModuleSpecifier moduleSpecifier) {
 		this.mid = mid;
 		this.resource = resource;
 		this.future = future;
-		this.source = source;
+		this.moduleSpecifier = moduleSpecifier;
 	}
 	
 	@Override
@@ -73,8 +73,8 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 		return future.get(timeout, unit);
 	}
 	
-	public ModuleSpecifier getSource() {
-		return source;
+	public ModuleSpecifier getModuleSpecifier() {
+		return moduleSpecifier;
 	}
 	
 	public String getModuleId() {

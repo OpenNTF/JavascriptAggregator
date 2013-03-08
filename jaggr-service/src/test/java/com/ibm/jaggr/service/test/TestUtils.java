@@ -53,6 +53,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuild
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
+import com.ibm.jaggr.service.impl.transport.DojoHttpTransport;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
@@ -214,14 +215,13 @@ public class TestUtils {
 			workingDirectory = new File(System.getProperty("java.io.tmpdir"));
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
-		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(EasyMock.createNiceMock(IHttpTransport.class));
+		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(new DojoHttpTransport());
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
 				new SynchronousExecutor(), 
 				null, 
 				new SynchronousScheduledExecutor(), 
 				new SynchronousScheduledExecutor()));
 		
-		EasyMock.replay(transportRef.get());
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test").anyTimes();
 		EasyMock.expect(mockAggregator.getOptions()).andReturn(options).anyTimes();

@@ -26,6 +26,7 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -104,7 +105,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 	
-	static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
+	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
 	
 
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
@@ -203,10 +204,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	        }
     	} else {  
         	// Hand crafted URL; get module names from one or more module query args
-    		moduleList.addAll(Arrays.asList(moduleQueryArg.split(","))); //$NON-NLS-1$
+    		moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
     		String required = request.getParameter(REQUIRED_REQPARAM);
     		if (required != null) {
-    			request.setAttribute(REQUIRED_REQATTRNAME, required);
+    			Set<String> requiredSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*")));
+    			request.setAttribute(REQUIRED_REQATTRNAME, Collections.unmodifiableSet(requiredSet));
     		}
     	}
 		return Collections.unmodifiableCollection(new ModuleList(moduleList, moduleQueryArg));
@@ -640,7 +642,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     	switch (type) {
     	case BEGIN_RESPONSE:
     		if (previousType != null) {
-    			throw new IllegalStateException();
+   				throw new IllegalStateException();
     		}
     		break;
     	case BEGIN_MODULES:

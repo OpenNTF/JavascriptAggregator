@@ -45,7 +45,7 @@ import com.ibm.jaggr.service.util.RequestUtil;
  * and adds methods for cloning and dumping the cache contents.
  */
 public class ModuleCacheImpl implements IModuleCache, Serializable {
-	private static final long serialVersionUID = 2506609170016466623L;
+	private static final long serialVersionUID = 1739429773011306523L;
 	
 	private ConcurrentMap<String, IModule> cacheMap = new ConcurrentHashMap<String, IModule>();
 

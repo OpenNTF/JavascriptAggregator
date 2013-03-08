@@ -159,9 +159,9 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	        		.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME)
 	        		.toString(); 
 	        
-			String requiredModule = (String)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
-			if (requiredModule != null) {
-				key += "{" + requiredModule + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+			Object requiredModules = request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
+			if (requiredModules != null) {
+				key += requiredModules.toString();
 			}
 			ILayer result = null;
 			boolean ignoreCached = RequestUtil.isIgnoreCached(request);

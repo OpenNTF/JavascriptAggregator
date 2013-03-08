@@ -23,7 +23,7 @@ import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 
 class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
-	private static final long serialVersionUID = -4578312833010749563L;
+	private static final long serialVersionUID = -5874021341817546757L;
 	
 	static class ModuleListEntry {
 		final IModule module;
