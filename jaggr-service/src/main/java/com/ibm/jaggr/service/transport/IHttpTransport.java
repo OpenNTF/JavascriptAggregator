@@ -24,6 +24,8 @@ import javax.servlet.http.HttpServletRequest;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceFactory;
 
@@ -156,17 +158,21 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".NoTextAdorn"; //$NON-NLS-1$
 	
 	/**
-	 * Specifies that the i18n module builder should not add locale 
-	 * specific resources to the response based on the request locale(s).
-	 * This option may be set by the HTTP transport based on loader 
-	 * or compiler limitations.  For example, if module name exporting is
-	 * needed to add unrequested modules to the response but module name
-	 * exporting is not available because of other request params
-	 * (e.g. {@link #EXPORTMODULENAMES_REQATTRNAME} or 
-	 * {@link #OPTIMIZATIONLEVEL_REQATTRNAME}).
+	 * Specifies that the module builders may not add module resources that were
+	 * not explicitly requested by the loader to the response. This option may
+	 * be set by the HTTP transport based on loader or compiler limitations. For
+	 * example, if module name exporting is needed to add unrequested modules to
+	 * the response but module name exporting is not available due to other
+	 * request parameters (e.g. {@link #EXPORTMODULENAMES_REQATTRNAME} or
+	 * {@link #OPTIMIZATIONLEVEL_REQATTRNAME}) then module expansion may not be
+	 * supported for the current request. Module builders may specify additional
+	 * modules to be included in the response using the {@link ModuleBuild}
+	 * constructor that accepts a list of {@link IModule} objects. If this
+	 * request attribute is true, then the list of additional modules specified
+	 * in the {@link ModuleBuild} constructor will be ignored.
 	 */
-	public static final String NOI18NEXPANSION_REQATTRNAME = IHttpTransport.class
-			.getName() + ".NoI18nExpansion";
+	public static final String NOADDMODULES_REQATTRNAME = IHttpTransport.class
+			.getName() + ".NoExpandModules";
 	/**
 	 * Name of the request attribute specifying the config var name used to
 	 * configure the loader on the client.  The default value is "require". 
@@ -369,7 +375,7 @@ public interface IHttpTransport extends IExtensionInitializer {
 	/**
 	 * Returns a cache key generator for the JavaScript contained in the
 	 * loader extension JavaScript and output by 
-	 * {@link #getLayerContribution(HttpServletRequest, LayerContributionType, String)}
+	 * {@link #getLayerContribution(HttpServletRequest, LayerContributionType, Object)}
 	 * . If the output JavaScript is invariant with regard to the request for
 	 * the same set of modules, then this function may return null.
 	 * 

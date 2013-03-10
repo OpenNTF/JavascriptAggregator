@@ -50,6 +50,7 @@ import java.util.zip.GZIPInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ibm.jaggr.service.BadRequestException;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
@@ -354,11 +355,13 @@ public class LayerImpl implements ILayer {
 		        	futures = new LinkedBlockingDeque<ModuleBuildFuture>();
 			        moduleKeyGens = new LinkedList<ICacheKeyGenerator>();
 
-			        request.setAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME, new LayerBuildQueueWrapper(futures));
+			        if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
+			        	request.setAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME, new LayerBuildQueueWrapper(futures));
+			        }
+					List<ModuleBuildFuture> collectedFutures = collectFutures(request);
 					// Add the collected futures to the front of the deque (back to front) so that
 					// the collected futures will be pulled from the queue before any futures added 
 					// by the builders via ILayer.BUILDQUEUE_REQATTRNAME
-					List<ModuleBuildFuture> collectedFutures = collectFutures(request);
 					for (int i = collectedFutures.size()-1; i >= 0; i--) {
 						futures.addFirst(collectedFutures.get(i));
 					}
@@ -919,6 +922,9 @@ public class LayerImpl implements ILayer {
 		        		);
 	    			}
 	    		}
+			}
+			if (result.isEmpty()) {
+				throw new BadRequestException();
 			}
 	        request.setAttribute(MODULE_FILES_PROPNAME, result);
     	}

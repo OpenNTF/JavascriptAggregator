@@ -267,6 +267,32 @@ public class JsModuleContentProviderTest extends EasyMock {
 		cacheKeys = p1.getKeys();
 		System.out.println(cacheKeys);
 		assertEquals("[expn:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
+		
+		// Test error handling.  In production mode, a js syntax error should throw an excepton
+		TestUtils.createTestFile(new File(tmpdir, "p1"), "err", TestUtils.err);
+		p1 = new JsModuleTester("p1/err", new File(tmpdir, "p1/err.js").toURI());
+		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
+		future = p1.getBuild(mockRequest);
+		boolean exceptionCaught = false;
+		try {
+			reader = future.get();
+		} catch (ExecutionException e) {
+			exceptionCaught = true;
+			Assert.assertTrue(e.getCause().getMessage().startsWith("Error compiling module:"));
+		}
+		Assert.assertTrue(exceptionCaught);
+		// In development mode, a js syntax error should return build containing a console.error()
+		//  call followed by the un-optimized module content.
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		future = p1.getBuild(mockRequest);
+		reader = future.get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		System.out.println(compiled);
+		Assert.assertTrue(Pattern.compile("\\sconsole\\.error\\(\\\"Error compiling module:[^\"]*\\\"\\);\\s*\\/\\* Comment \\*\\/").matcher(compiled).find());
+		Assert.assertTrue(compiled.endsWith(TestUtils.err));
+		
 	}
 
 	/**

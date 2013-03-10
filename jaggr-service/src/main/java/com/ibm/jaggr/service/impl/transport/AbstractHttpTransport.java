@@ -183,6 +183,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
         	count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
         }
         
+        if (moduleQueryArg == null) {
+        	return Collections.emptySet();
+        }
+        
         try {
 			moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
 		} catch (UnsupportedEncodingException e) {

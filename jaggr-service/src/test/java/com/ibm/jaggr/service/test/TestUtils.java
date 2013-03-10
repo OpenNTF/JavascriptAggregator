@@ -80,6 +80,7 @@ public class TestUtils {
 			+ "	}\n"
 			+ "	return null;\n"
 			+ "});";
+	public static String err = "/* Comment */define([\"p1/a\", \"p1/b\",], function(){}};";
 	static String hello = "Hello world text";
 
 	static public void deleteRecursively(File file) throws InterruptedException {

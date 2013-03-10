@@ -39,7 +39,10 @@ var params = {
 		showFilenames: [null, "fn"],
 	
 		// ignore cache files on client and on server
-		noCache: [null, "nc"]
+		noCache: [null, "nc"],
+		
+		// perform has branching in require list expansion
+		hasBranching: [null, "hb"]
 	},
 
 	extraArgs = {},

@@ -267,7 +267,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			// If we're not exporting module names and we aren't doing server side expansion
 			// of dependencies (i.e. using a prebuild cache), then we can't expand i18n
 			// resources.
-			request.setAttribute(IHttpTransport.NOI18NEXPANSION_REQATTRNAME, true);
+			request.setAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME, true);
 		}
 	}
 

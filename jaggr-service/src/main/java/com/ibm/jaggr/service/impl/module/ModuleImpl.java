@@ -476,16 +476,18 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		
 		List<IModule> extraModules = cacheEntry.getAdditionalModules();
 		if (!extraModules.isEmpty()) {
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			Queue<ModuleBuildFuture> queue = (Queue<ModuleBuildFuture>)request.getAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME);
-			for (IModule module : cacheEntry.getAdditionalModules()) {
-				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
-				ModuleBuildFuture mbf = new ModuleBuildFuture(
-						module.getModuleId(), 
-						module.getResource(aggr),
-						future,
-						ModuleSpecifier.BUILD_ADDED);
-				queue.offer(mbf);
+			if (queue != null) {
+				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+				for (IModule module : cacheEntry.getAdditionalModules()) {
+					Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
+					ModuleBuildFuture mbf = new ModuleBuildFuture(
+							module.getModuleId(), 
+							module.getResource(aggr),
+							future,
+							ModuleSpecifier.BUILD_ADDED);
+					queue.offer(mbf);
+				}
 			}
 		}
 	}

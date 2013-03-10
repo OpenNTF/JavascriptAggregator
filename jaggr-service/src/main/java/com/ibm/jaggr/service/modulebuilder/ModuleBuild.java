@@ -67,7 +67,7 @@ public final class ModuleBuild {
 	 */
 	@SuppressWarnings("unchecked")
 	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
-		this(buildOutput, keyGens, Collections.EMPTY_LIST, false);
+		this(buildOutput, keyGens, Collections.EMPTY_LIST, error);
 	}
 
 	/**

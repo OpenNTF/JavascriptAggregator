@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.ibm.jaggr.service.cache.ICache;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.transport.IHttpTransport;
 
 /**
  * A layer is an aggregation of modules. An ILayer object organizes a collection
@@ -55,7 +56,9 @@ public interface ILayer extends Serializable {
 	/**
 	 * Name of the request attribute containing the queue of module build
 	 * futures. This queue is used to add additional modules specified by
-	 * builders to the response.
+	 * builders to the response. Note that this attribute may be null if the
+	 * request does not support adding modules (i.e. if
+	 * {@link IHttpTransport#NOADDMODULES_REQATTRNAME} is true);
 	 */
 	public static final String BUILDFUTURESQUEUE_REQATTRNAME = ILayer.class.getName() + ".buildQueue"; //$NON-NLS-1$
 

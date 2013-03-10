@@ -134,7 +134,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
 				Arrays.asList(new String[]{"en"}));
-		requestAttributes.put(IHttpTransport.NOI18NEXPANSION_REQATTRNAME, Boolean.TRUE);
+		requestAttributes.put(IHttpTransport.NOADDMODULES_REQATTRNAME, Boolean.TRUE);
 		builder = new I18nModuleBuilder();
 		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		s = KeyGenUtil.toString(keyGens);
@@ -159,7 +159,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertFalse(s.contains("i18n"));
 		
 		// Now enable module name exporting
-		requestAttributes.put(IHttpTransport.NOI18NEXPANSION_REQATTRNAME, Boolean.FALSE);
+		requestAttributes.put(IHttpTransport.NOADDMODULES_REQATTRNAME, Boolean.FALSE);
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);

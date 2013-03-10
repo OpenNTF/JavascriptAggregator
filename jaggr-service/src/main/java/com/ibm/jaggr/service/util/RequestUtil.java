@@ -54,7 +54,7 @@ public class RequestUtil {
 	/**
 	 * Static class method for determining if require list explosion should be performed.
 	 *  
-	 * @param options
+	 * @param request The http request object
 	 * @return True if require list explosion should be performed.
 	 */
 	public static boolean isExplodeRequires(HttpServletRequest request) {
@@ -71,7 +71,7 @@ public class RequestUtil {
 	/**
 	 * Static method for determining if has filtering should be performed.
 	 * 
-	 * @param options
+	 * @param request The http request object
 	 * @return True if has filtering should be performed
 	 */
 	public static boolean isHasFiltering(HttpServletRequest request) {

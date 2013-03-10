@@ -39,11 +39,12 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
 import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.TypeUtil;
 import com.ibm.jaggr.service.util.Prioritized;
+import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
  * This class extends {@link JavaScriptModuleBuilder} to add support for expanding
@@ -59,6 +60,7 @@ import com.ibm.jaggr.service.util.Prioritized;
 public class I18nModuleBuilder 
 extends JavaScriptModuleBuilder {
 
+	public static String OPTION_DISABLE_LOCALE_EXPANSION = "disableLocaleExpansion"; //$NON-NLS-1$
 	// regexp for reconstructing the master bundle name from parts of the regexp match
 	// nlsRe.exec("foo/bar/baz/nls/en-ca/foo") gives:
 	// ["foo/bar/baz/nls/en-ca/foo", "foo/bar/baz/nls/", "/", "/", "en-ca", "foo"]
@@ -67,6 +69,7 @@ extends JavaScriptModuleBuilder {
 	// so, if match[5] is blank, it means this is the top bundle definition.
 	// courtesy of http://requirejs.org and the dojo i18n plugin
 	private static final Pattern re = Pattern.compile("(^.*(^|\\/)nls)(\\/|$)([^\\/]*)\\/?([^\\/]*)"); //$NON-NLS-1$
+
 	
 	private IAggregator aggregator = null;
 
@@ -171,7 +174,11 @@ extends JavaScriptModuleBuilder {
 		// we export module names in the define functions of anonymous modules, so don't 
 		// expand the response if module name exporting is disabled, or if the optimization
 		// level is set to 'none'.
-		return !TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOI18NEXPANSION_REQATTRNAME));
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		return 
+				!TypeUtil.asBoolean(options.getOption(OPTION_DISABLE_LOCALE_EXPANSION)) &&
+				!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME));
 	}
 	
 	@SuppressWarnings("unchecked")
