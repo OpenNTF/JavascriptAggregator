@@ -78,7 +78,36 @@
 				</instructions>
   			</configuration>
   		</plugin>
-  	</plugins>
+		<plugin>
+		  <!-- 
+		  Eclipse integration.  When running in eclipse, we want the eclipse project
+		  to be the bundle source so clean target/classes, otherwise resources will
+		  be loaded from there instead of from WebContent
+		  -->
+		  <artifactId>maven-clean-plugin</artifactId>
+		  <version>2.5</version>
+		  <executions>
+		    <execution>
+		      <id>auto-clean</id>
+		      <phase>package</phase>
+		      <goals>
+		        <goal>clean</goal>
+		      </goals>
+		      <configuration>
+		        <excludeDefaultDirectories>true</excludeDefaultDirectories>
+		        <filesets>
+		          <fileset>
+		            <directory>.</directory>
+		            <includes>
+		              <include>target/classes/**</include>
+		            </includes>
+		          </fileset>
+		         </filesets>
+		       </configuration>
+		    </execution>
+		  </executions>
+		</plugin>
+ 	 </plugins>
   </build>
   <dependencies>
     <dependency>
