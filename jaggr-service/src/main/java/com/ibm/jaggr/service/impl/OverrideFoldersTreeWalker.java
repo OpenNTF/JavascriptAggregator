@@ -50,7 +50,7 @@ public class OverrideFoldersTreeWalker implements Serializable {
 	private static final long serialVersionUID = -5957040347146874129L;
 	
 	private static final Logger log = Logger.getLogger(OverrideFoldersTreeWalker.class.getName());
-	private static final String CACHED_OVERRIDES_FILE = "overrides.ser";
+	private static final String CACHED_OVERRIDES_FILE = "overrides.ser"; //$NON-NLS-1$
 
 	public long getLastModified() {
 		return lastModified;
@@ -77,9 +77,9 @@ public class OverrideFoldersTreeWalker implements Serializable {
 			if (loc.getOverride() != null) {
 				URI uri = loc.getOverride();
 				uris.add(uri);
-				if (!uri.getPath().endsWith("/")) {
+				if (!uri.getPath().endsWith("/")) { //$NON-NLS-1$
 					try {
-						uris.add(PathUtil.appendToPath(uri, ".js"));
+						uris.add(PathUtil.appendToPath(uri, ".js")); //$NON-NLS-1$
 					} catch (URISyntaxException ignore) {
 					}
 				}
@@ -89,9 +89,9 @@ public class OverrideFoldersTreeWalker implements Serializable {
 			if (loc.getOverride() != null) {
 				URI uri = loc.getOverride();
 				uris.add(uri);
-				if (!uri.getPath().endsWith("/")) {
+				if (!uri.getPath().endsWith("/")) { //$NON-NLS-1$
 					try {
-						uris.add(PathUtil.appendToPath(uri, ".js"));
+						uris.add(PathUtil.appendToPath(uri, ".js")); //$NON-NLS-1$
 					} catch (URISyntaxException ignore) {
 					}
 				}
@@ -174,7 +174,7 @@ public class OverrideFoldersTreeWalker implements Serializable {
 		@Override
 		public boolean visitResource(Resource resource,	String pathName) throws IOException {
 			lastMod = Math.max(lastMod, resource.lastModified());
-			if (resource.isFolder() || pathName.endsWith(".js")) {
+			if (resource.isFolder() || pathName.endsWith(".js")) { //$NON-NLS-1$
 				lastModJS = Math.max(lastModJS, resource.lastModified());
 			}
 			return true;

@@ -212,4 +212,5 @@ public interface ICacheKeyGenerator extends Serializable {
 	 */
 	@Override
 	public boolean equals(Object other);
+	
 }

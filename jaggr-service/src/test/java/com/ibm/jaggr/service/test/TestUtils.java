@@ -24,7 +24,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -42,6 +41,8 @@ import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.InitParams.InitParam;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
@@ -52,6 +53,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuild
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
+import com.ibm.jaggr.service.impl.transport.DojoHttpTransport;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
@@ -61,30 +63,8 @@ import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
 public class TestUtils {
-	static public final Map<String, Map<String, String>> testDepMap;
-	static public final Map<String, String> emptyDepMap = Collections.unmodifiableMap(new HashMap<String, String>());
-	
-	static {
-		Map<String,String> temp = new HashMap<String, String>();
-		Map<String, Map<String, String>> depMap = new HashMap<String, Map<String, String>>();
-		temp.put("p2/b", "");
-		temp.put("p2/c", "");
-		depMap.put("p2/a",  Collections.unmodifiableMap(temp));
-		temp = new HashMap<String, String>();
-		temp.put("p1/b", "");
-		temp.put("p1/c", "");
-		temp.put("p1/a", "");
-		temp.put("p1/noexist", "");
-		depMap.put("p1/a", Collections.unmodifiableMap(temp));
-		temp = new HashMap<String, String>();
-		temp.put("p2/p1/p1/a", "");
-		temp.put("p2/p1/p1/b", "");
-		temp.put("p2/p1/p1/noexist", "");
-		temp.put("p2/p1/p1/c", "");
-		depMap.put("p2/p1/p1/c", Collections.unmodifiableMap(temp));
-		testDepMap = Collections.unmodifiableMap(depMap);
-	}
-	
+	static public Map<String, ModuleDeps> testDepMap;
+	static public final ModuleDeps emptyDepMap = new ModuleDeps();
 	
 	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
 	public static String b = "define([\"./c\"], function(a) {\nalert(\"hello from b.js\");\nreturn null;\n});";
@@ -100,6 +80,7 @@ public class TestUtils {
 			+ "	}\n"
 			+ "	return null;\n"
 			+ "});";
+	public static String err = "/* Comment */define([\"p1/a\", \"p1/b\",], function(){}};";
 	static String hello = "Hello world text";
 
 	static public void deleteRecursively(File file) throws InterruptedException {
@@ -125,6 +106,25 @@ public class TestUtils {
 
 	static public File createTestFile(File dir, String name, String content)
 			throws IOException {
+		ModuleDeps temp = new ModuleDeps();
+		Map<String, ModuleDeps> depMap = new HashMap<String, ModuleDeps>();
+		temp.add("p2/b", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/c", new ModuleDepInfo(null, null, ""));
+		depMap.put("p2/a",  temp);
+		temp = new ModuleDeps();
+		temp.add("p1/b", new ModuleDepInfo(null, null, ""));
+		temp.add("p1/c", new ModuleDepInfo(null, null, ""));
+		temp.add("p1/a", new ModuleDepInfo(null, null, ""));
+		temp.add("p1/noexist", new ModuleDepInfo(null, null, ""));
+		depMap.put("p1/a", temp);
+		temp = new ModuleDeps();
+		temp.add("p2/p1/p1/a", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/p1/p1/b", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/p1/p1/noexist", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/p1/p1/c", new ModuleDepInfo(null, null, ""));
+		depMap.put("p2/p1/p1/c", temp);
+
+		testDepMap = depMap;
 		if (!dir.exists())
 			dir.mkdirs();
 		String filename = name;
@@ -157,7 +157,7 @@ public class TestUtils {
 		createTestFile(p2p1p1, "foo", foo);
 		createTestFile(p1, "hello.txt", hello);
 	}
-
+	
 	static public long getDirListSize(File directory, FileFilter filter) {
 		File[] files = directory.listFiles(filter);
 		long result = 0;
@@ -216,14 +216,13 @@ public class TestUtils {
 			workingDirectory = new File(System.getProperty("java.io.tmpdir"));
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
-		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(EasyMock.createNiceMock(IHttpTransport.class));
+		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(new DojoHttpTransport());
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
 				new SynchronousExecutor(), 
 				null, 
 				new SynchronousScheduledExecutor(), 
 				new SynchronousScheduledExecutor()));
 		
-		EasyMock.replay(transportRef.get());
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test").anyTimes();
 		EasyMock.expect(mockAggregator.getOptions()).andReturn(options).anyTimes();

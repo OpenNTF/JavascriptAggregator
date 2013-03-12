@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import junit.framework.Assert;
+
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
@@ -362,7 +364,7 @@ public class DepTreeNodeTests extends EasyMock {
 		Set<String> expandedDeps = a.getExpandedDependencies(
 				Features.emptyFeatures, 
 				new HashSet<String>(),
-				false).keySet();
+				false, false).keySet();
 		assertEquals(6, expandedDeps.size());
 		assertTrue(expandedDeps.contains("pkg1/a"));
 		assertTrue(expandedDeps.contains("pkg1/b"));
@@ -396,10 +398,11 @@ public class DepTreeNodeTests extends EasyMock {
 		aa.setDependencies(new String[]{"has!foo?../c/a:./d", "has!feature?pkg2/z", "has!foo?pkg2/y"}, 0L, 0L);
 		
 		root.resolveDependencyRefs();
-		Set<String> expandedDeps = a.getExpandedDependencies(features, new HashSet<String>(), false).keySet();
+		Set<String> expandedDeps = a.getExpandedDependencies(features, new HashSet<String>(), false, false).simplify().getModuleIds();
+		System.out.println(expandedDeps);
 		Iterator<String> iter = expandedDeps.iterator();
 		assertEquals(8, expandedDeps.size());
-		// make sure the firs two deps are the ones specified for pkg1/a
+		// make sure the first two deps are the ones specified for pkg1/a
 		assertEquals(iter.next(), "pkg1/b");
 		assertEquals(iter.next(), "pkg1/c");
 		// The rest can appear in any order
@@ -407,5 +410,130 @@ public class DepTreeNodeTests extends EasyMock {
 		assertTrue(expandedDeps.contains("pkg2/z"));
 		assertTrue(expandedDeps.contains("pkg1/a/a"));
 		assertTrue(expandedDeps.contains("pkg2/z/x"));  // because pkg2/z/x is a dep of pkg2/z and pkg2/z is evaluated from the has!feature 
+	}
+
+	@Test
+	public void testGetExpandedDependenciesWithHasBranching() throws IOException {
+		DepTreeRoot root = new DepTreeRoot(configRef.get());
+		DepTreeNode top = root.createOrGet("top");
+		DepTreeNode a = top.createOrGet("a");
+		DepTreeNode b = top.createOrGet("b");
+		DepTreeNode c = top.createOrGet("c");
+		DepTreeNode d = top.createOrGet("d");
+		DepTreeNode dd = top.createOrGet("dd");
+		
+		top.setDependencies(new String[]{"top/zz", "has!foo?top/a:top/b"}, 0L, 0L);
+		a.setDependencies(new String[]{"./c", "has!bar?./d"}, 0L, 0L);
+		b.setDependencies(new String[]{"./c", "./e", "./zz"}, 0L, 0L);
+		c.setDependencies(new String[]{"./cc", "has!bar?./ee"}, 0L, 0L);
+		d.setDependencies(new String[]{"./dd", "has!bar?./ee"}, 0L, 0L);
+		dd.setDependencies(new String[]{"has!foo?:./nodep"}, 0L, 0L);	// foo and !foo should cancel
+		
+		root.resolveDependencyRefs();
+		Set<String> dependentFeatures = new HashSet<String>();
+		Set<String> expandedDeps = top.getExpandedDependencies(Features.emptyFeatures, dependentFeatures, false, true).simplify().getModuleIds();
+		System.out.println(expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(
+			new String[]{
+				"top/zz", 
+				"has!foo?top/a", 
+				"has!foo?:top/b", 
+				"top/c", 
+				"has!bar?foo?top/d", 
+				"top/cc", 
+				"has!bar?top/ee", 
+				"has!bar?foo?top/dd", 
+				"has!foo?:top/e"
+			})), expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo", "bar"})), dependentFeatures);
+
+		Features features = new Features();
+		features.put("foo", true);
+		root.resolveDependencyRefs();
+		dependentFeatures = new HashSet<String>();
+		expandedDeps = top.getExpandedDependencies(features, dependentFeatures, false, true).simplify().getModuleIds();
+		System.out.println(expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(
+				new String[]{
+						"top/zz", 
+						"top/a", 
+						"top/c", 
+						"has!bar?top/d", 
+						"top/cc", 
+						"has!bar?top/ee", 
+						"has!bar?top/dd", 
+				})), expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo", "bar"})), dependentFeatures);
+		
+		features.put("foo", false);
+		root.resolveDependencyRefs();
+		dependentFeatures = new HashSet<String>();
+		expandedDeps = top.getExpandedDependencies(features, dependentFeatures, false, true).simplify().getModuleIds();
+		System.out.println(expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(
+				new String[]{
+					"top/zz", 
+					"top/b", 
+					"top/c", 
+					"top/cc", 
+					"has!bar?top/ee", 
+					"top/e"
+				})), expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo", "bar"})), dependentFeatures);
+
+		features.put("foo", true);
+		features.put("bar", true);
+		root.resolveDependencyRefs();
+		dependentFeatures = new HashSet<String>();
+		expandedDeps = top.getExpandedDependencies(features, dependentFeatures, false, true).simplify().getModuleIds();
+		System.out.println(expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(
+				new String[]{
+					"top/zz", 
+					"top/a", 
+					"top/c", 
+					"top/d", 
+					"top/cc", 
+					"top/ee", 
+					"top/dd" 
+				})), expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo", "bar"})), dependentFeatures);
+
+		features = new Features();
+		features.put("bar", true);
+		root.resolveDependencyRefs();
+		dependentFeatures = new HashSet<String>();
+		expandedDeps = top.getExpandedDependencies(features, dependentFeatures, false, true).simplify().getModuleIds();
+		System.out.println(expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(
+				new String[]{
+					"top/zz", 
+					"has!foo?top/a", 
+					"has!foo?:top/b", 
+					"top/c", 
+					"has!foo?top/d", 
+					"top/cc", 
+					"top/ee", 
+					"has!foo?top/dd", 
+					"has!foo?:top/e"
+				})), expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo", "bar"})), dependentFeatures);
+
+		features = new Features();
+		features.put("bar", false);
+		root.resolveDependencyRefs();
+		dependentFeatures = new HashSet<String>();
+		expandedDeps = top.getExpandedDependencies(features, dependentFeatures, false, true).simplify().getModuleIds();
+		System.out.println(expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(
+				new String[]{
+					"top/zz", 
+					"has!foo?top/a", 
+					"has!foo?:top/b", 
+					"top/c", 
+					"top/cc", 
+					"has!foo?:top/e"
+				})), expandedDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo", "bar"})), dependentFeatures);
 	}
 }

@@ -17,7 +17,6 @@
 package com.ibm.jaggr.service.impl.modulebuilder.i18n;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -26,6 +25,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
@@ -33,16 +33,17 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.JSSourceFile;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.I18nCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
+import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
 import com.ibm.jaggr.service.transport.IHttpTransport;
+import com.ibm.jaggr.service.util.Prioritized;
 import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
@@ -59,6 +60,7 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class I18nModuleBuilder 
 extends JavaScriptModuleBuilder {
 
+	public static String OPTION_DISABLE_LOCALE_EXPANSION = "disableLocaleExpansion"; //$NON-NLS-1$
 	// regexp for reconstructing the master bundle name from parts of the regexp match
 	// nlsRe.exec("foo/bar/baz/nls/en-ca/foo") gives:
 	// ["foo/bar/baz/nls/en-ca/foo", "foo/bar/baz/nls/", "/", "/", "en-ca", "foo"]
@@ -67,6 +69,7 @@ extends JavaScriptModuleBuilder {
 	// so, if match[5] is blank, it means this is the top bundle definition.
 	// courtesy of http://requirejs.org and the dojo i18n plugin
 	private static final Pattern re = Pattern.compile("(^.*(^|\\/)nls)(\\/|$)([^\\/]*)\\/?([^\\/]*)"); //$NON-NLS-1$
+
 	
 	private IAggregator aggregator = null;
 
@@ -75,6 +78,7 @@ extends JavaScriptModuleBuilder {
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {
 	
 		ModuleBuild result = super.build(mid, resource, request, keyGens);
+		List<IModule> additionalModules = getExpandedModules(mid, resource, request, keyGens);
 		if (keyGens != result.getCacheKeyGenerators()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			List<ICacheKeyGenerator> newKeyGens = new ArrayList<ICacheKeyGenerator>();
@@ -92,75 +96,77 @@ extends JavaScriptModuleBuilder {
 			newKeyGens.add(new CacheKeyGenerator(availableLocales, false));
 			keyGens = newKeyGens;
 		}
-		return new ModuleBuild(result.getBuildOutput(), keyGens, result.isError());
+		return new ModuleBuild(result.getBuildOutput(), keyGens, additionalModules, result.isError());
 	}
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.impl.module.javascript.JavaScriptModuleBuilder#getJSSource(com.ibm.jaggr.service.module.IModule.Source, com.ibm.jaggr.service.resource.IResource, javax.servlet.http.HttpServletRequest)
-	 */
-	/**
-	 * Overrides the base class method to add the locale specific modules specified in the 
-	 * request when a non-locale specific i18n module is requested.
-	 */
-	@Override
-	protected List<JSSourceFile> getJSSource(String mid, IResource resource,
+
+	protected List<IModule> getExpandedModules(String mid, IResource resource,
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		
-		List<JSSourceFile> result;
+		List<IModule> result = Collections.emptyList();
 		if (isExpandLocaleResources(request)) {
 			Matcher m = re.matcher(mid);
 			m.matches();
 			Collection<String> availableLocales = Arrays.asList(getAvailableLocales(request, mid, resource, keyGens));
-			result = new LinkedList<JSSourceFile>();
+			result = new LinkedList<IModule>();
 			Set<String> added = new HashSet<String>();
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 
 			// Find the bundles that matche the requested locales.
 			@SuppressWarnings("unchecked")
 			Collection<String> locales = (Collection<String>)request.getAttribute(IHttpTransport.REQUESTEDLOCALES_REQATTRNAME);
-			if (locales != null) {
-				String bundleName = m.group(4);
+			String bundleName = m.group(4);
+			if (locales != null && !locales.isEmpty()) {
 				for (String locale : locales) {
-					String[] a = locale.split("-"); //$NON-NLS-1$
-					String language = a[0].toLowerCase();
-					String country = (a.length > 1) ? a[1].toLowerCase() : ""; //$NON-NLS-1$
-					String varient = (a.length > 2) ? a[2].toLowerCase() : ""; //$NON-NLS-1$
-					if (language.length() > 0 && varient.length() > 0 && country.length() > 0) {
-						// Try language + country + region code first
-						String tryLocale = language+"-"+country+"-"+varient; //$NON-NLS-1$ //$NON-NLS-2$
-						String path = tryLocale + "/" + bundleName; //$NON-NLS-1$
-						if (!added.contains(path) && tryAddJSSourceFile(aggr, result, m.group(1), resource, tryLocale, bundleName, availableLocales)) {
-							added.add(path);
-							continue;
-						}
-					}
-					if (language.length() > 0 && country.length() > 0) {
-						// Now try language + country code
-						String tryLocale = language+"-"+country; //$NON-NLS-1$
-						String path = tryLocale + bundleName;
-						if (!added.contains(path) && tryAddJSSourceFile(aggr, result, m.group(1), resource, tryLocale, bundleName, availableLocales)) {
-							added.add(path);
-							continue;
-						}
-					} 
-					if (language.length() > 0) {
-						// Now try just language code
-						String tryLocale = language;
-						String path = tryLocale+"/"+bundleName; //$NON-NLS-1$
-						if (!added.contains(path) && tryAddJSSourceFile(aggr, result, m.group(1), resource, tryLocale, bundleName, availableLocales)) {
-							added.add(path);
-						}
-					}
+					processLocale(resource, result, m, availableLocales, added,
+							aggr, bundleName, locale);
+				}
+			} else {
+				// Use the first locale we can match resources for in the Accept-Language header
+				locales = parseAcceptLanguageHeader(request);
+				for (String locale : locales) {
+					processLocale(resource, result, m, availableLocales, added,
+							aggr, bundleName, locale);
+					if (!result.isEmpty()) break;
 				}
 			}
-			// Add the root bundle.  Do this last so that the the dependent, language specific bundles
-			// will already be defined when the root bundle is processed.  That way, the loader won't
-			// try to load any of the language specific bundles that we already sent while it is
-			// processing the root bundle.
-			addJSSourceFile(result, m.group(0), resource);
-		} else {
-			result = super.getJSSource(mid, resource, request, keyGens);
 		}
 		return result;
+	}
+
+	private void processLocale(IResource resource, List<IModule> result,
+			Matcher m, Collection<String> availableLocales, Set<String> added,
+			IAggregator aggr, String bundleName, String locale)
+			throws IOException {
+		String[] a = locale.split("-"); //$NON-NLS-1$
+		String language = a[0].toLowerCase();
+		String country = (a.length > 1) ? a[1].toLowerCase() : ""; //$NON-NLS-1$
+		String varient = (a.length > 2) ? a[2].toLowerCase() : ""; //$NON-NLS-1$
+		if (language.length() > 0 && varient.length() > 0 && country.length() > 0) {
+			// Try language + country + region code first
+			String tryLocale = language+"-"+country+"-"+varient; //$NON-NLS-1$ //$NON-NLS-2$
+			String path = tryLocale + "/" + bundleName; //$NON-NLS-1$
+			if (!added.contains(path) && tryAddModule(aggr, result, m.group(1), resource, tryLocale, bundleName, availableLocales)) {
+				added.add(path);
+				return;
+			}
+		}
+		if (language.length() > 0 && country.length() > 0) {
+			// Now try language + country code
+			String tryLocale = language+"-"+country; //$NON-NLS-1$
+			String path = tryLocale + bundleName;
+			if (!added.contains(path) && tryAddModule(aggr, result, m.group(1), resource, tryLocale, bundleName, availableLocales)) {
+				added.add(path);
+				return;
+			}
+		} 
+		if (language.length() > 0) {
+			// Now try just language code
+			String tryLocale = language;
+			String path = tryLocale+"/"+bundleName; //$NON-NLS-1$
+			if (!added.contains(path) && tryAddModule(aggr, result, m.group(1), resource, tryLocale, bundleName, availableLocales)) {
+				added.add(path);
+			}
+		}
 	}
 
 	static boolean isExpandLocaleResources(HttpServletRequest request) {
@@ -168,9 +174,11 @@ extends JavaScriptModuleBuilder {
 		// we export module names in the define functions of anonymous modules, so don't 
 		// expand the response if module name exporting is disabled, or if the optimization
 		// level is set to 'none'.
-        CompilationLevel level = getCompilationLevel(request);
-		return (TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME))
-				&& level != null); 
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		return 
+				!TypeUtil.asBoolean(options.getOption(OPTION_DISABLE_LOCALE_EXPANSION)) &&
+				!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME));
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -226,24 +234,6 @@ extends JavaScriptModuleBuilder {
 		reqmap.put(key, availableLocales);
 		return availableLocales;
 	}
-	/**
-	 * Adds the source for the specified resource to the list
-	 * 
-	 * @param list
-	 *            The source file list to add to
-	 * @param mid
-	 *            The module id for the resource
-	 * @param res
-	 *            The resource object
-	 * @throws IOException
-	 */
-	private void addJSSourceFile(List<JSSourceFile> list, String mid, IResource res) throws IOException {
-		InputStream in = res.getInputStream();
-		JSSourceFile sf = JSSourceFile.fromInputStream(mid, in);
-		sf.setOriginalPath(res.getURI().toString());
-		in.close();
-		list.add(sf);
-	}
 	
 	/**
 	 * Adds the source for the locale specific i18n resource if it exists.
@@ -261,9 +251,9 @@ extends JavaScriptModuleBuilder {
 	 *         added
 	 * @throws IOException
 	 */
-	private boolean tryAddJSSourceFile(
+	private boolean tryAddModule(
 			IAggregator aggregator,
-			List<JSSourceFile> list, 
+			List<IModule> list, 
 			String bundleRoot, 
 			IResource bundleRootRes, 
 			String locale,
@@ -278,7 +268,9 @@ extends JavaScriptModuleBuilder {
 		URI testUri = uri.resolve(locale + "/" + resource + ".js"); //$NON-NLS-1$ //$NON-NLS-2$
 		IResource testResource = aggregator.newResource(testUri);
 		if (availableLocales != null || testResource.exists()) {
-			addJSSourceFile(list, bundleRoot+"/"+locale+"/"+resource, testResource); //$NON-NLS-1$ //$NON-NLS-2$
+			String mid = bundleRoot+"/"+locale+"/"+resource; //$NON-NLS-1$ //$NON-NLS-2$
+			IModule module = aggregator.newModule(mid, testUri); 
+			list.add(module); 
 			result = true;
 		}
 		return result;
@@ -308,6 +300,41 @@ extends JavaScriptModuleBuilder {
 	
 	protected IAggregator getAggregator() {
 		return aggregator;
+	}
+	
+	
+	List<String> parseAcceptLanguageHeader(HttpServletRequest request) {
+		String header = request.getHeader("Accept-Language"); //$NON-NLS-1$
+		List<String> result = Collections.emptyList();
+		if (header != null) {
+			PriorityQueue<Prioritized<String>> queue = new PriorityQueue<Prioritized<String>>(10, Prioritized.comparator);
+			String[] toks = header.split(","); //$NON-NLS-1$
+			for (String tok : toks) {
+				int idx = tok.indexOf(";"); //$NON-NLS-1$
+				String locale = tok;
+				double priority = 1.0;
+				if (idx != -1) {
+					locale = tok.substring(0, idx);
+					String q = tok.substring(idx+1);
+					if (q.startsWith("q=")) { //$NON-NLS-1$
+						try {
+							priority = Double.parseDouble(q.substring(2));
+						} catch (NumberFormatException e) {
+							continue;
+						}
+					} else {
+						continue;	// unrecognized q value
+					}
+				}
+				queue.offer(new Prioritized<String>(locale, priority));
+			}
+			result = new LinkedList<String>();
+			while (!queue.isEmpty()) {
+				result.add(queue.poll().value);
+			}
+			Collections.reverse(result);
+		}
+		return result;
 	}
 	
 	/**

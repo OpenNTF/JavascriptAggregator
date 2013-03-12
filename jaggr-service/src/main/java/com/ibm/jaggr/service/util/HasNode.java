@@ -16,9 +16,13 @@
 
 package com.ibm.jaggr.service.util;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 
 /**
  * Recursive has condition checking. Performs full ternary expression parsing
@@ -91,6 +95,37 @@ public class HasNode {
 	
 	public String evaluate(Features features, Set<String> discovered) {
 		return evaluate(features, discovered, false);
+	}
+	
+	public ModuleDeps evaluateAll(String pluginName, Features features, Set<String> discovered, BooleanTerm term, String comment) {
+		ModuleDeps results = new ModuleDeps();
+		evaluateAll(pluginName, features, discovered, term, results, comment);
+		return results;
+	}
+	private void evaluateAll(String pluginName, Features features, Set<String> discovered, BooleanTerm term, ModuleDeps results, String comment) {
+		if (feature != null && discovered != null) {
+			discovered.add(feature);
+		}
+		if (feature == null) {
+			if (nodeName != null && nodeName.length() > 0) {
+				results.add(nodeName, new ModuleDepInfo(pluginName, term, comment, true));
+			}
+		} else if (!features.contains(feature)) {
+			Set<BooleanVar> vars = (term != null ? new HashSet<BooleanVar>(term) : new HashSet<BooleanVar>());
+			vars.add(new BooleanVar(feature, true));
+			BooleanTerm newTerm = new BooleanTerm(vars);
+			trueNode.evaluateAll(pluginName, features, discovered, newTerm, results, comment);
+			vars = (term != null ? new HashSet<BooleanVar>(term) : new HashSet<BooleanVar>());
+			vars.add(new BooleanVar(feature, false));
+			newTerm = new BooleanTerm(vars);
+			falseNode.evaluateAll(pluginName, features, discovered, newTerm, results, comment);
+		} else {
+			if (features.isFeature(feature)) {
+				trueNode.evaluateAll(pluginName, features, discovered, term, results, comment);
+			} else {
+				falseNode.evaluateAll(pluginName, features, discovered, term, results, comment);
+			}
+		}
 	}
 	
 	/**

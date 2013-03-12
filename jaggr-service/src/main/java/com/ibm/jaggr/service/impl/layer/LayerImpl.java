@@ -32,10 +32,12 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -48,20 +50,21 @@ import java.util.zip.GZIPInputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ibm.jaggr.service.BadRequestException;
 import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.impl.module.NotFoundModule;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
+import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.BuildListReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
@@ -86,30 +89,29 @@ public class LayerImpl implements ILayer {
     public static final String LAST_MODIFIED_PROPNAME = LayerImpl.class.getName() + ".LAST_MODIFIED_FILES"; //$NON-NLS-1$
     public static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
     public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
-    public static final String MODULECACHEINFO_PROPNAME = LayerImpl.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
     public static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
     
     protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
     		// This is a singleton, so default equals() will do
 			private static final long serialVersionUID = 2013098945317787755L;
-			private static final String eyeCatcher = "lyr";
+			private static final String eyeCatcher = "lyr"; //$NON-NLS-1$
 			@Override
 			public String generateKey(HttpServletRequest request) {
 				boolean showFilenames =  TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
 				return new StringBuffer(eyeCatcher).append(":") //$NON-NLS-1$
-						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 						.append(showFilenames ? "1" : "0").toString(); //$NON-NLS-1$ //$NON-NLS-2$
 
 			}
 			@Override
 			public String toString() {
-				return eyeCatcher; //$NON-NLS-1$
+				return eyeCatcher;
 			}
     	}
     }));
     	
-    public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):");
+    public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):"); //$NON-NLS-1$
     
     static int LAYERBUILD_REMOVE_DELAY_SECONDS = 10;
     
@@ -209,7 +211,7 @@ public class LayerImpl implements ILayer {
 		        	// See if we need to discard previously built LayerBuilds
 		        	if (lastModified > _lastModified) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_lastmod");
+			        		cacheInfoReport.add("update_lastmod"); //$NON-NLS-1$
 			        	}
 		        		if (lastModified != Long.MAX_VALUE) {
 		        			// max value means missing requested source
@@ -232,13 +234,15 @@ public class LayerImpl implements ILayer {
 					// existing entry is returned in the buildReader and newEntry was not added.
 					existingEntry = _layerBuilds.putIfAbsent(key, newEntry, options.isDevelopmentMode());
 		        	if (cacheInfoReport != null) {
-		        		cacheInfoReport.add(existingEntry != null ? "hit_1" : "added");
+		        		cacheInfoReport.add(existingEntry != null ? "hit_1" : "added"); //$NON-NLS-1$ //$NON-NLS-2$
 		        	}
 					if (existingEntry != null) { 
 						if ((result = existingEntry.tryGetInputStream(request)) != null) {
 							setResponseHeaders(request, response, existingEntry.getSize());
 					        if (log.isLoggable(Level.FINEST)) {
-					        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + existingEntry.toString());
+					        	log.finest(cacheInfoReport.toString() + "\n" +  //$NON-NLS-1$ 
+					        			"key:" + key +  //$NON-NLS-1$
+					        			"\n" + existingEntry.toString()); //$NON-NLS-1$
 					        }
 					        if (_isReportCacheInfo) {
 					        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
@@ -248,7 +252,7 @@ public class LayerImpl implements ILayer {
 							if (_layerBuilds.replace(key, existingEntry, newEntry)) {
 								// entry was replaced, use newEntry
 					        	if (cacheInfoReport != null) {
-					        		cacheInfoReport.add("replace_1");
+					        		cacheInfoReport.add("replace_1"); //$NON-NLS-1$
 					        	}
 								existingEntry = null;
 							} else {
@@ -256,7 +260,7 @@ public class LayerImpl implements ILayer {
 								// between the time we retrieved it and the time we tried to
 								// replace it.  Try to add the new entry again.  
 					        	if (cacheInfoReport != null) {
-					        		cacheInfoReport.add("retry_add");
+					        		cacheInfoReport.add("retry_add"); //$NON-NLS-1$
 					        	}
 					        	if (--loopGuard == 0) {
 					        		// Should never happen, but just in case
@@ -277,7 +281,8 @@ public class LayerImpl implements ILayer {
 			
 	        // List of Future<IModule.ModuleReader> objects that will be used to read the module
 	        // data from
-	        List<Future<ModuleBuildReader>> futures = null;
+	        LinkedBlockingDeque<ModuleBuildFuture> futures = null;
+	        List<ICacheKeyGenerator> moduleKeyGens = null;
 	
 	        // Synchronize on the LayerBuild object for the build.  This will prevent multiple
 			// threads from building the same output.  If more than one thread requests the same
@@ -294,7 +299,9 @@ public class LayerImpl implements ILayer {
 		        	}
 	            	setResponseHeaders(request, response, entry.getSize());
 	    	        if (log.isLoggable(Level.FINEST)) {
-	    	        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + entry.toString());
+	    	        	log.finest(cacheInfoReport.toString() + "\n" + //$NON-NLS-1$ 
+	    	        			"key:" + key +  //$NON-NLS-1$
+	    	        			"\n" + entry.toString()); //$NON-NLS-1$
 	    	        }
 			        if (_isReportCacheInfo) {
 			        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
@@ -314,15 +321,17 @@ public class LayerImpl implements ILayer {
 		        	Matcher m = GZIPFLAG_KEY_PATTERN.matcher(key);
 		        	m.find();
 		        	m.appendReplacement(sb, 
-		        			new StringBuffer(s_layerCacheKeyGenerators.get(0).toString()).append(":")
-		        				.append("1".equals(m.group(1)) ? "0" : "1").append(":").toString()
+		        			new StringBuffer(s_layerCacheKeyGenerators.get(0).toString())
+		        				.append(":") //$NON-NLS-1$
+		        				.append("1".equals(m.group(1)) ? "0" : "1") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		        				.append(":").toString() //$NON-NLS-1$
 		        	).appendTail(sb);
 			        otherEntry = _layerBuilds.get(sb.toString());
 	        	}
 		        if (otherEntry != null) {
 		        	if (isGzip) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("zip_unzipped");
+			        		cacheInfoReport.add("zip_unzipped"); //$NON-NLS-1$
 			        	}
 		        		// We need gzipped and the cached entry is unzipped
 						// Create the compression stream for the output
@@ -334,7 +343,7 @@ public class LayerImpl implements ILayer {
 				        CopyUtil.copy(otherEntry.getInputStream(request), writer);
 		        	} else {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("unzip_zipped");
+			        		cacheInfoReport.add("unzip_zipped"); //$NON-NLS-1$
 			        	}
 		        		// We need unzipped and the cached entry is zipped.  Just unzip it
 		        		CopyUtil.copy(new GZIPInputStream(otherEntry.getInputStream(request)), bos);
@@ -344,22 +353,34 @@ public class LayerImpl implements ILayer {
 		            if (!ignoreCached) {
 	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_weights_1");
+			        		cacheInfoReport.add("update_weights_1"); //$NON-NLS-1$
 			        	}
 		            	entry.persist(mgr);
 		            }
 		        } else {
-					futures = collectFutures(request, ignoreCached);
-		
+		        	futures = new LinkedBlockingDeque<ModuleBuildFuture>();
+			        moduleKeyGens = new LinkedList<ICacheKeyGenerator>();
+
+			        if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
+			        	request.setAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME, new LayerBuildQueueWrapper(futures));
+			        }
+					List<ModuleBuildFuture> collectedFutures = collectFutures(request);
+					// Add the collected futures to the front of the deque (back to front) so that
+					// the collected futures will be pulled from the queue before any futures added 
+					// by the builders via ILayer.BUILDQUEUE_REQATTRNAME
+					for (int i = collectedFutures.size()-1; i >= 0; i--) {
+						futures.addFirst(collectedFutures.get(i));
+					}
+					
 			        // Create a BuildListReader from the list of Futures.  This reader will obtain a 
 			        // ModuleReader from each of the Futures in the list and read data from each one in
 			        // succession until all the data has been read, blocking on each Future until the 
 			        // reader becomes available.
-					in = new BuildListReader(futures);
+					in = createBuildListReader(futures, request, moduleKeyGens);
 					
 			        if (isGzip) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("zip");
+			        		cacheInfoReport.add("zip"); //$NON-NLS-1$
 			        	}
 				        VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
 				        compress.setLevel(Deflater.BEST_COMPRESSION);
@@ -381,7 +402,7 @@ public class LayerImpl implements ILayer {
 	        if (in != null && in.hasErrors()) {
 	        	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 	        	if (cacheInfoReport != null) {
-	        		cacheInfoReport.add(key == null ? "error_noaction" : "error_remove");
+	        		cacheInfoReport.add(key == null ? "error_noaction" : "error_remove"); //$NON-NLS-1$ //$NON-NLS-2$
 	        	}
 	        	if (key != null) {
 	        		_layerBuilds.remove(key, entry);
@@ -394,7 +415,7 @@ public class LayerImpl implements ILayer {
 		        	addCacheKeyGenerators(newKeyGens, s_layerCacheKeyGenerators);
 	        		addCacheKeyGenerators(newKeyGens, aggr.getTransport().getCacheKeyGenerators());
         			addCacheKeyGenerators(newKeyGens, Arrays.asList(new ICacheKeyGenerator[]{new FeatureSetCacheKeyGenerator(requiredModuleListDeps, false)}));
-        			addCacheKeyGenerators(newKeyGens, getCacheKeyGenerators(futures));
+        			addCacheKeyGenerators(newKeyGens, moduleKeyGens);
 
         			boolean cacheKeyGeneratorsUpdated = false;
 	        		if (!newKeyGens.equals(cacheKeyGenerators)) {
@@ -409,14 +430,14 @@ public class LayerImpl implements ILayer {
 	        				_cacheKeyGenerators = Collections.unmodifiableMap(newKeyGens);
 				        }
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_keygen");
+			        		cacheInfoReport.add("update_keygen"); //$NON-NLS-1$
 			        	}
 	        			cacheKeyGeneratorsUpdated = true;
 	        		}
 	        		final String originalKey = key;
 	        		if (key == null || cacheKeyGeneratorsUpdated) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_key");
+			        		cacheInfoReport.add("update_key"); //$NON-NLS-1$
 			        	}
 			            key = generateCacheKey(request, newKeyGens);
 	        		}
@@ -465,7 +486,9 @@ public class LayerImpl implements ILayer {
 
 	        // return the input stream to the LayerBuild
 	        if (log.isLoggable(Level.FINEST)) {
-	        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + entry.toString());
+	        	log.finest(cacheInfoReport.toString() + "\n" + //$NON-NLS-1$ 
+	        			"key:" + key +  //$NON-NLS-1$
+	        			"\n" + entry.toString()); //$NON-NLS-1$
 	        }
 	        if (_isReportCacheInfo) {
 	        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
@@ -484,9 +507,65 @@ public class LayerImpl implements ILayer {
 		}
 	}
 
-	protected List<Future<ModuleBuildReader>> collectFutures(
-			HttpServletRequest request, boolean ignoreCached)
-			throws IOException, NotFoundException {
+	/**
+	 * Dispatch the modules specified in the request to the module builders and
+	 * collect the build futures returned by the builders into the returned
+	 * list.
+	 * 
+	 * @param request
+	 *            The request object
+	 * @return The list of {@link ModuleBuildFuture} objects.
+	 * @throws IOException
+	 */
+	protected List<ModuleBuildFuture> collectFutures(HttpServletRequest request)
+			throws IOException {
+
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		ModuleList moduleList = getModules(request);
+		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>(); 
+		
+        IModuleCache moduleCache = aggr.getCacheManager().getCache().getModules();
+        Map<String, String> moduleCacheInfo = null;
+        if (request.getAttribute(LAYERCACHEINFO_PROPNAME) != null) {
+        	moduleCacheInfo = new HashMap<String, String>();
+        	request.setAttribute(IModuleCache.MODULECACHEINFO_PROPNAME, moduleCacheInfo);
+        }
+
+		// For each source file, add a Future<IModule.ModuleReader> to the list 
+		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
+			IModule module = moduleListEntry.getModule();
+			Future<ModuleBuildReader> future = moduleCache.getBuild(request, module);
+			IResource resource = module.getResource(aggr);
+			futures.add(new ModuleBuildFuture(
+					moduleListEntry.getModule().getModuleId(),
+					resource,
+					future, 
+					moduleListEntry.getSource()
+			));
+		}
+		return futures;
+	}
+
+	/**
+	 * Creates and returns the reader object for the response
+	 * 
+	 * @param futures
+	 *            The queue of {@link ModuleBuildFuture} objects. This includes
+	 *            the entries for modules identified in the request as well as
+	 *            entries added by module builders via the
+	 *            {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME} request
+	 *            attribute.
+	 * @param request
+	 *            The request object
+	 * @param keyGens
+	 *            A list that will be populated with the cache key generators
+	 *            associated with the response
+	 * @return The reader object for the response.
+	 * @throws IOException
+	 */
+	protected BuildListReader createBuildListReader(Queue<ModuleBuildFuture> futures,
+			HttpServletRequest request, List<ICacheKeyGenerator> keyGens)
+			throws IOException {
 
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
@@ -494,155 +573,127 @@ public class LayerImpl implements ILayer {
 		IHttpTransport transport = aggr.getTransport();
 		int count = 0;
 		boolean required = false;
-		List<Future<ModuleBuildReader>> futures = new LinkedList<Future<ModuleBuildReader>>(); 
+		List<ModuleBuildReader> readerList = new LinkedList<ModuleBuildReader>();
 		
-        IModuleCache moduleCache = aggr.getCacheManager().getCache().getModules();
-        Map<String, String> moduleCacheInfo = null;
-        if (request.getAttribute(LAYERCACHEINFO_PROPNAME) != null) {
-        	moduleCacheInfo = new HashMap<String, String>();
-        	request.setAttribute(MODULECACHEINFO_PROPNAME, moduleCacheInfo);
-        }
-
         // Add the application specified notice to the beginning of the response
         String notice = aggr.getConfig().getNotice();
         if (notice != null) {
-			futures.add(
-				new CompletedFuture<ModuleBuildReader>(
-					new ModuleBuildReader(notice + "\r\n") //$NON-NLS-1$ //$NON-NLS-2$
-				)
+			readerList.add(
+				new ModuleBuildReader(notice + "\r\n") //$NON-NLS-1$
 			);
         }
         // If development mode is enabled, say so
 		if (options.isDevelopmentMode() || options.isDebugMode()) {
-			futures.add(
-				new CompletedFuture<ModuleBuildReader>(
-					new ModuleBuildReader("/* " + //$NON-NLS-1$
-							(options.isDevelopmentMode() ? Messages.LayerImpl_1 : Messages.LayerImpl_2) +
-							" */\r\n") //$NON-NLS-1$ 
-				)
+			readerList.add(
+				new ModuleBuildReader("/* " + //$NON-NLS-1$
+						(options.isDevelopmentMode() ? Messages.LayerImpl_1 : Messages.LayerImpl_2) +
+						" */\r\n") //$NON-NLS-1$ 
 			);
 		}
 		
-		addTransportContribution(request, transport, futures, LayerContributionType.BEGIN_RESPONSE, null);
+		addTransportContribution(request, transport, readerList, LayerContributionType.BEGIN_RESPONSE, null);
 		// For each source file, add a Future<IModule.ModuleReader> to the list 
-		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
-			IModule module = moduleListEntry.getModule();
+		while (!futures.isEmpty()) {
+			ModuleBuildFuture future = futures.remove();
+			ModuleBuildReader reader;
+			try {
+				reader = future.get();
+			} catch (InterruptedException e) {
+				throw new IOException(e);
+			} catch (ExecutionException e) {
+				if (e.getCause() instanceof IOException) {
+					throw (IOException)e.getCause();
+				}
+				throw new IOException(e.getCause());
+			}
+			
+			List<ICacheKeyGenerator> keyGenList = reader.getCacheKeyGenerators();
+			if (keyGenList != null) {
+	        	keyGens.addAll(keyGenList);
+			}
+			
 			// Include the filename preamble if requested.
 			if ((options.isDebugMode() || options.isDevelopmentMode()) && TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))) {
-				futures.add(
-					new CompletedFuture<ModuleBuildReader>(
-						new ModuleBuildReader(String.format(PREAMBLEFMT, module.getURI().toString()))
-					)
+				readerList.add(
+					new ModuleBuildReader(String.format(PREAMBLEFMT, future.getResource().getURI().toString()))
 				);
 			}
-			String cacheKey = new ModuleIdentifier(module.getModuleId()).getModuleName();
-			// Try to get the module from the module cache first
-			IModule cachedModule = null;
-			IResource resource = module.getResource(aggr);
-			if (!resource.exists()) {
-				// Source file doesn't exist.
-				if (!options.isDevelopmentMode()) {
-					// Avoid the potential for DoS attack in production mode by throwing
-					// an exceptions instead of letting the cache grow unbounded
-					throw new NotFoundException(resource.getURI().toString());
-				}
-				// NotFound modules are not cached.  If the module is in the cache (because a 
-				// source file has been deleted), then remove the cached module.
-	    		cachedModule = moduleCache.remove(cacheKey);
-	    		if (cachedModule != null) {
-		        	if (moduleCacheInfo != null) {
-		        		moduleCacheInfo.put(cacheKey, "remove"); //$NON-NLS-1$
-		        	}
-		        	cachedModule.clearCached(aggr.getCacheManager());
-	    		}
-				// create a new NotFoundModule
-				module = new NotFoundModule(module.getModuleId(), module.getURI());
-		    	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
-			} else {
-				// add it to the module cache if not already there
-				if (!RequestUtil.isIgnoreCached(request)) {
-					cachedModule = moduleCache.putIfAbsent(cacheKey, module);
-				}
-	        	if (moduleCacheInfo != null) {
-    				moduleCacheInfo.put(cacheKey, (cachedModule != null) ? "hit" : "add"); //$NON-NLS-1$ //$NON-NLS-2$
-	        	}
-				module = cachedModule != null ? cachedModule : module;
-			}
-			ModuleList.ModuleListEntry.Type type = moduleListEntry.getType();
 			// Get the layer contribution from the transport
 			// Note that we depend on the behavior that all non-required
 			// modules in the module list appear before all required 
 			// modules in the iteration.
-			switch (type) {
-			case MODULES:
+			ModuleSpecifier source = future.getModuleSpecifier();
+			if (source == ModuleSpecifier.MODULES || source == ModuleSpecifier.BUILD_ADDED && !required) {
 				if (count == 0) {
-					addTransportContribution(request, transport, futures, 
+					addTransportContribution(request, transport, readerList, 
 							LayerContributionType.BEGIN_MODULES, null);
-					addTransportContribution(request, transport, futures, 
+					addTransportContribution(request, transport, readerList, 
 							LayerContributionType.BEFORE_FIRST_MODULE, 
-							moduleListEntry.getModule().getModuleId());
+							future.getModuleId());
 				} else {	        			
-					addTransportContribution(request, transport, futures, 
+					addTransportContribution(request, transport, readerList, 
 							LayerContributionType.BEFORE_SUBSEQUENT_MODULE, 
-							moduleListEntry.getModule().getModuleId());
+							future.getModuleId());
 				}
 				count++;
-				break;
-			case REQUIRED:
+			} else if (source == ModuleSpecifier.REQUIRED || source == ModuleSpecifier.BUILD_ADDED && required) {
 				if (!required) {
 					required = true;
 					if (count > 0) {
-		    			addTransportContribution(request, transport, futures, 
+		    			addTransportContribution(request, transport, readerList, 
 		    					LayerContributionType.END_MODULES, null);
 					}
 					count = 0;
 				}
 				if (count == 0) {
-					addTransportContribution(request, transport, futures, 
+					addTransportContribution(request, transport, readerList, 
 							LayerContributionType.BEGIN_REQUIRED_MODULES,
-							moduleList.getRequiredModuleId());
-					addTransportContribution(request, transport, futures, 
+							moduleList.getRequiredModules());
+					addTransportContribution(request, transport, readerList, 
 							LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE, 
-							moduleListEntry.getModule().getModuleId());
+							future.getModuleId());
 				} else {	        			
-					addTransportContribution(request, transport, futures, 
+					addTransportContribution(request, transport, readerList, 
 							LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE, 
-							moduleListEntry.getModule().getModuleId());
+							future.getModuleId());
 				}
 				count++;
-				break;
 			}
 			// Call module.get and add the returned Future to the list
-			futures.add(module.getBuild(request));
-			switch (type) {
-			case MODULES:
-				addTransportContribution(request, transport, futures, 
-						LayerContributionType.AFTER_MODULE,
-						moduleListEntry.getModule().getModuleId());
-				break;
-			case REQUIRED:
-				addTransportContribution(request, transport, futures, 
-						LayerContributionType.AFTER_REQUIRED_MODULE, 
-						moduleListEntry.getModule().getModuleId());
-				break;
+			readerList.add(reader);
+			if (source == ModuleSpecifier.MODULES || source == ModuleSpecifier.BUILD_ADDED && !required) {
+				addTransportContribution(request, transport, readerList, 
+						LayerContributionType.AFTER_MODULE, future.getModuleId());
+			} else if (source == ModuleSpecifier.REQUIRED || source == ModuleSpecifier.BUILD_ADDED && required) {
+				addTransportContribution(request, transport, readerList, 
+						LayerContributionType.AFTER_REQUIRED_MODULE, future.getModuleId()); 
 			}
 		}
 		if (count > 0) {
 			if (required) {
-				addTransportContribution(request, transport, futures, 
+				addTransportContribution(request, transport, readerList, 
 					LayerContributionType.END_REQUIRED_MODULES,
-					moduleList.getRequiredModuleId());
+					moduleList.getRequiredModules());
 			} else {
-				addTransportContribution(request, transport, futures, 
+				addTransportContribution(request, transport, readerList, 
 						LayerContributionType.END_MODULES, null);
 			}
 		}
-		addTransportContribution(request, transport, futures, 
+		addTransportContribution(request, transport, readerList, 
 				LayerContributionType.END_RESPONSE, null);
 		
-		return futures;
+		return new BuildListReader(readerList);
 	}
 
+	/**
+	 * Adds the cache key generators specified in {@code gens} to the map of
+	 * classname/key-generator pairs, combining key-generators as needed.
+	 * 
+	 * @param cacheKeyGenerators
+	 *            Map of classname/key-generator pairs to add to.
+	 * @param gens
+	 *            the cache key generators to add.
+	 */
 	protected void addCacheKeyGenerators(
 			Map<String, ICacheKeyGenerator> cacheKeyGenerators,
 			Iterable<ICacheKeyGenerator> gens) 
@@ -657,23 +708,37 @@ public class LayerImpl implements ILayer {
 		}		        			
 	}
 
+	/**
+	 * Appends the reader for the layer contribution specified by {@code type}
+	 * (contributed by the transport) to the end of {@code readerList}.
+	 * 
+	 * @param request
+	 *            The http request object
+	 * @param transport
+	 *            The transport object
+	 * @param readerList
+	 *            The reader list to append to
+	 * @param type
+	 *            The layer contribution type
+	 * @param arg
+	 *            The argument value (see
+	 *            {@link IHttpTransport#contributeLoaderExtensionJavaScript(String)}
+	 */
 	protected void addTransportContribution(
 			HttpServletRequest request,
 			IHttpTransport transport, 
-			List<Future<ModuleBuildReader>> futures, 
+			List<ModuleBuildReader> readerList, 
 			LayerContributionType type,
-			String mid) {
+			Object arg) {
 
 		String transportContrib = transport.getLayerContribution(
 				request, 
 				type, 
-				mid
+				arg
 		);
 		if (transportContrib != null) {
-    		futures.add(
-    			new CompletedFuture<ModuleBuildReader>(
-    				new ModuleBuildReader(transportContrib)
-    			)
+    		readerList.add(
+   				new ModuleBuildReader(transportContrib)
         	);
 		}
 	}
@@ -801,12 +866,13 @@ public class LayerImpl implements ILayer {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\nModified: ") //$NON-NLS-1$
 		  .append(new Date(_lastModified).toString()).append(linesep)
-		  .append("KeyGen: ").append(
+		  .append("KeyGen: ").append( //$NON-NLS-1$
 				  _cacheKeyGenerators != null ? KeyGenUtil.toString(_cacheKeyGenerators.values()) : "null") //$NON-NLS-1$
-		  .append(linesep); //$NON-NLS-1$
+		  .append(linesep);
 		if (_layerBuilds != null) {
 			for (Map.Entry<String, CacheEntry> entry : _layerBuilds.entrySet()) {
-				sb.append("\t").append(entry.getKey()).append(" : ").append(entry.getValue().getFilename()).append(linesep); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				sb.append("\t").append(entry.getKey()) //$NON-NLS-1$
+				.append(" : ").append(entry.getValue().getFilename()).append(linesep); //$NON-NLS-1$
 			}
 		}
 		sb.append(linesep);
@@ -830,38 +896,44 @@ public class LayerImpl implements ILayer {
 	        result = new ModuleList();
     		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
     		Set<String> dependentFeatures = new HashSet<String>();
-	        for (String name : moduleNames) {
-	        	if (name != null) {
-	        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null);
-	        		result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleList.ModuleListEntry.Type.MODULES));
-	        	}
-	        }
+    		if (moduleNames != null) {
+		        for (String name : moduleNames) {
+		        	if (name != null) {
+		        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null);
+		        		result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
+		        	}
+		        }
+    		}
 	        // See if we need to add required modules.
-			String required = (String)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
+			@SuppressWarnings("unchecked")
+			Set<String> required = (Set<String>)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
 			if (required != null) {
 				// If there's a required module, then add it and its dependencies
 				// to the module list.  
 	    		IDependencies deps = aggr.getDependencies();
 	    		DependencyList depList = new DependencyList(
-	    				Arrays.asList(required.split(",")), //$NON-NLS-1$
+	    				required,
 	    				aggr.getConfig(),
 	    				deps,
 	    				features,
-	    				false);
-				result.setRequiredModuleId(required);
+	    				false, false);
+				result.setRequiredModules(required);
 	    		result.setDependenentFeatures(dependentFeatures);
-	    		Map<String, String> combined = depList.getExpandedDeps();
+	    		ModuleDeps combined = depList.getExpandedDeps();
 	    		combined.putAll(depList.getExplicitDeps());
 	    		for (String name : combined.keySet()) {
-	    			if (!name.contains("!")) { //$NON-NLS-1$
+	    			if (aggr.getTransport().isServerExpandable(request, name)) {
 		        		result.add(
 		        				new ModuleList.ModuleListEntry(
 		        						newModule(request, name), 
-	        							ModuleList.ModuleListEntry.Type.REQUIRED 
+	        							ModuleSpecifier.REQUIRED 
 		        				)
 		        		);
 	    			}
 	    		}
+			}
+			if (result.isEmpty()) {
+				throw new BadRequestException();
 			}
 	        request.setAttribute(MODULE_FILES_PROPNAME, result);
     	}
@@ -898,7 +970,7 @@ public class LayerImpl implements ILayer {
     	return result;
     }
     
-    protected List<ICacheKeyGenerator> getCacheKeyGenerators(List<Future<ModuleBuildReader>> futures) throws IOException {
+    protected List<ICacheKeyGenerator> getCacheKeyGenerators(List<ModuleBuildFuture> futures) throws IOException {
     	List<ICacheKeyGenerator> result = new LinkedList<ICacheKeyGenerator>();
 		for (Future<ModuleBuildReader> future : futures) {
 			ModuleBuildReader reader;

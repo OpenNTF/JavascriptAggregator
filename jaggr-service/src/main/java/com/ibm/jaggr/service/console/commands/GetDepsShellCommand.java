@@ -50,6 +50,6 @@ public class GetDepsShellCommand extends AbstractOsgiCommandSupport {
 			public String nextArgument() {
 				return it.next();
 			}
-		});
+		}, false);
 	}
 }

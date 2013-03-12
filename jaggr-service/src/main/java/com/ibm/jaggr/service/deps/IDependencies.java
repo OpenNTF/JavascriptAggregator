@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import com.ibm.jaggr.service.ProcessingDependenciesException;
@@ -92,11 +91,12 @@ public interface IDependencies {
 	 *         was not specified.
 	 * 
 	 */
-	public Map<String, String> getExpandedDependencies(
+	public ModuleDeps getExpandedDependencies(
 			String mid,
 			Features features,
 			Set<String> dependentFeatures, 
-			boolean includeDetails
+			boolean includeDetails,
+			boolean performHasBranching
 	) throws IOException;
 	
 	/**

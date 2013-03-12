@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.service.modulebuilder;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -23,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.resource.IResource;
 
 /**
@@ -32,22 +34,24 @@ import com.ibm.jaggr.service.resource.IResource;
  */
 public final class ModuleBuild {
 	private String buildOutput;
+	private List<IModule> extraModules;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private boolean error;
 
 	/**
 	 * Convenience constructor utilizing a null cache key generator and no
-	 * error.
+	 * error and no extra modules.
 	 * 
 	 * @param buildOutput
 	 *            The built output for the module
 	 */
+	@SuppressWarnings("unchecked")
 	public ModuleBuild(String buildOutput) {
-		this(buildOutput, null, false);
+		this(buildOutput, null, Collections.EMPTY_LIST, false);
 	}
 
 	/**
-	 * Full arguments constructor
+	 * Convenience constructor specifying no extra modules.
 	 * 
 	 * @param buildOutput
 	 *            The build output for the module
@@ -61,9 +65,36 @@ public final class ModuleBuild {
 	 * @param error
 	 *            True if an error occurred while generating the build
 	 */
+	@SuppressWarnings("unchecked")
 	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
+		this(buildOutput, keyGens, Collections.EMPTY_LIST, error);
+	}
+
+	/**
+	 * Full arguments constructor
+	 * 
+	 * @param buildOutput
+	 *            The build output for the module
+	 * @param keyGens
+	 *            Array of cache key generators. If a non-provisional cache key
+	 *            generator was supplied in the preceding call for this same
+	 *            request to
+	 *            {@link IModuleBuilder#getCacheKeyGenerators(IAggregator)} , or
+	 *            the built output for the module is invariant with regard to
+	 *            the request, then <code>keyGens</code> may be null.
+	 * @param extraModules
+	 *            A list of additional modules that should be included in the
+	 *            response. For example, the i18n modules builder specifies that
+	 *            modules for additional locales be added to the response based
+	 *            on the request locales and available locales by specifying the
+	 *            modules here.
+	 * @param error
+	 *            True if an error occurred while generating the build
+	 */
+	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, List<IModule> extraModules, boolean error) {
 		this.buildOutput = buildOutput;
 		this.keyGenerators = keyGens;
+		this.extraModules = extraModules;
 		this.error = error;
 		if (keyGens != null && KeyGenUtil.isProvisional(keyGens)) {
 			throw new IllegalStateException();
@@ -100,5 +131,15 @@ public final class ModuleBuild {
 	 */
 	public boolean isError() {
 		return error;
+	}
+	
+	/**
+	 * Returns the list of additional modules that should be included in 
+	 * the response. 
+	 * 
+	 * @return The list of additional modules.
+	 */
+	public List<IModule> getExtraModules() {
+		return extraModules;
 	}
 }

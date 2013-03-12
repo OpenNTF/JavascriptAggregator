@@ -34,6 +34,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -54,9 +55,12 @@ import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.impl.layer.CompletedFuture;
+import com.ibm.jaggr.service.impl.layer.ModuleBuildFuture;
+import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
+import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.options.IOptions;
@@ -190,7 +194,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 *            The http servlet request object
 	 * @param fromCacheOnly
 	 *            If true, an exception is thrown if the the requested module
-	 *            cannot be returned from cache
+	 *            cannot be returned from cache.  Used by unit tests.
 	 * @return
 	 * @throws IOException
 	 *             if source resource OR cached output file is not found
@@ -284,6 +288,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
+				processExtraModules(request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
 						cacheKeyGenerators, false));
 			}
@@ -304,6 +309,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
+				processExtraModules(request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
 						cacheKeyGenerators, false));
 			}
@@ -349,6 +355,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 								log.finer("returning built module with cache key: " //$NON-NLS-1$
 										+ key);
 							}
+							processExtraModules(request, cacheEntry);
 							return new ModuleBuildReader(reader,
 									_cacheKeyGenerators, false);
 						}
@@ -364,7 +371,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							return new ModuleBuildReader(new StringReader(build
 									.getBuildOutput()), null, true);
 						}
-						cacheEntry.setData(build.getBuildOutput());
+						cacheEntry.setData(build.getBuildOutput(), build.getExtraModules());
 						
 						// If the cache key generator has changed, then update the 
 						if (newCacheKeyGenerators == null || !newCacheKeyGenerators.equals(build.getCacheKeyGenerators())) {
@@ -443,7 +450,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						}
 					}
 				}
-				// return a Build object
+				processExtraModules(request, cacheEntry);
+				// return a build reader object
 				return new ModuleBuildReader(
 						cacheEntry.getReader(mgr.getCacheDir()),
 						newCacheKeyGenerators, false);
@@ -451,6 +459,38 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		});
 	}
 
+	/**
+	 * For any extra modules specified by {@code cacheEntry}, obtain a build
+	 * future from the module cache manager and add it to the build futures
+	 * queue specified by {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME}.
+	 * 
+	 * @param request
+	 *            The http request
+	 * @param cacheEntry
+	 *            The cache entry object for the current module
+	 * @throws IOException
+	 */
+	@SuppressWarnings("unchecked")
+	public void processExtraModules(HttpServletRequest request, CacheEntry cacheEntry) 
+			throws IOException {
+		
+		List<IModule> extraModules = cacheEntry.getAdditionalModules();
+		if (!extraModules.isEmpty()) {
+			Queue<ModuleBuildFuture> queue = (Queue<ModuleBuildFuture>)request.getAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME);
+			if (queue != null) {
+				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+				for (IModule module : cacheEntry.getAdditionalModules()) {
+					Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
+					ModuleBuildFuture mbf = new ModuleBuildFuture(
+							module.getModuleId(), 
+							module.getResource(aggr),
+							future,
+							ModuleSpecifier.BUILD_ADDED);
+					queue.offer(mbf);
+				}
+			}
+		}
+	}
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -569,7 +609,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	}
 
 	private void readObject(ObjectInputStream stream) throws InvalidObjectException {
-	    throw new InvalidObjectException("Proxy required");
+	    throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
 	}
 
 	protected static class SerializationProxy extends ModuleIdentifier implements Serializable {
@@ -627,6 +667,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 		private volatile transient String content = null;
 		private volatile String filename = null;
+		private volatile List<IModule> additionalModules = Collections.emptyList();
 
 		/**
 		 * @return The filename of the cached module build
@@ -662,10 +703,15 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 * @param content
 		 *            The built output
 		 */
-		public void setData(String content) {
+		public void setData(String content, List<IModule> additionalModules) {
+			this.additionalModules = additionalModules;
 			this.content = content;
 		}
 
+		public List<IModule> getAdditionalModules()  {
+			return additionalModules;
+		}
+		
 		/**
 		 * A version of getReader that can fail, but won't throw
 		 * 

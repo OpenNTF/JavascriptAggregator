@@ -88,11 +88,11 @@ public class CacheImpl implements ICache {
     	_layerCache.dump(writer, filter);
     	_moduleCache.dump(writer, filter);
     }
-    
 
 	@Override
 	public void setAggregator(IAggregator aggregator) {
 		_layerCache.setAggregator(aggregator);
 		_moduleCache.setAggregator(aggregator);
 	}
+    
 }

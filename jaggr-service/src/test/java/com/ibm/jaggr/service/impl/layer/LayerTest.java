@@ -25,6 +25,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileFilter;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
@@ -35,6 +36,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -61,9 +63,13 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
+import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.module.IModule;
+import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
@@ -91,21 +97,15 @@ public class LayerTest extends EasyMock {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
 	IDependencies mockDependencies = createMock(IDependencies.class);
-	static final Map<String, Map<String, String>> testDepMap;
+	static Map<String, ModuleDeps> testDepMap;
 	
-	static {
-		testDepMap = new HashMap<String, Map<String, String>>();
-		for (Map.Entry<String, Map<String, String>> entry : TestUtils.testDepMap.entrySet()) {
-			testDepMap.put(entry.getKey(), new HashMap<String, String>(entry.getValue()));
-		}
-	}
-
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		LayerImpl.LAYERBUILD_REMOVE_DELAY_SECONDS = 0;
+		testDepMap = new HashMap<String, ModuleDeps>(TestUtils.testDepMap);
 	}
 
 	@AfterClass
@@ -131,22 +131,22 @@ public class LayerTest extends EasyMock {
 		
 		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
 		expect(mockDependencies.getDelcaredDependencies(eq("p1/a"))).andReturn(Arrays.asList(new String[]{"p1/b"})).anyTimes();
-		expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
-			public Map<String, String> answer() throws Throwable {
+		expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
+			public ModuleDeps answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
 				Features features = (Features)EasyMock.getCurrentArguments()[1];
 				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
-				Map<String, String> result = testDepMap.get(name);
+				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}
 				// resolve aliases
-				Map<String, String> temp = new HashMap<String, String>();
+				ModuleDeps temp = new ModuleDeps();
 				IConfig config = mockAggregator.getConfig();
-				for (Map.Entry<String, String> entry : result.entrySet()) {
+				for (Map.Entry<String, ModuleDepInfo> entry : result.entrySet()) {
 					String depName = entry.getKey();
 					String resolved = config.resolve(depName, features, dependentFeatures, null);
-					temp.put(resolved != null ? resolved : depName, entry.getValue());
+					temp.add(resolved != null ? resolved : depName, entry.getValue());
 				}
 				return temp;
 			}
@@ -228,7 +228,7 @@ public class LayerTest extends EasyMock {
 		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
 		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
-		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		Map<String, String> moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertTrue(result.contains("\"hello from a.js\""));
 		
 		// Request two modules
@@ -244,7 +244,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("add", moduleCacheInfo.get("p1/b"));
 		assertTrue(result.contains("\"hello from a.js\""));
@@ -266,7 +266,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("add", moduleCacheInfo.get("p1/hello.txt"));
@@ -291,7 +291,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_lastmod, update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
@@ -316,7 +316,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[hit_1]", layerCacheInfo.toString());
-		assertNull(requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME));
+		assertNull(requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME));
 		assertEquals(saveResult, result);
 		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
@@ -334,7 +334,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_lastmod, error_noaction]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("remove", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
@@ -362,7 +362,7 @@ public class LayerTest extends EasyMock {
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
 		System.out.println(result);
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("[update_keygen, update_key, update_hit]", layerCacheInfo.toString());
 		assertEquals("add", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
@@ -386,7 +386,7 @@ public class LayerTest extends EasyMock {
 		result = writer.toString();
 		System.out.println(result);
 		assertEquals("[update_lastmod, update_keygen, update_key, update_add]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(LayerImpl.MODULECACHEINFO_PROPNAME);
+		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
@@ -411,6 +411,24 @@ public class LayerTest extends EasyMock {
 		// make sure a new file was written out
 		file = new File(mockAggregator.getCacheManager().getCacheDir(), cacheEntry.getFilename());
 		Assert.assertTrue("missing cache file", file.exists());
+		
+		// Test required request parameter
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestAttributes.put(IHttpTransport.REQUIRED_REQATTRNAME, new HashSet<String>(Arrays.asList(new String[]{"p1/a"})));
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		System.out.println(result);
+		Pattern p = Pattern.compile(new StringBuffer()
+				.append("require\\(\\{cache:\\{")
+				.append("\\\"p1/b\\\":function\\(\\)\\{.*?\\},")
+				.append("\\\"p1/c\\\":function\\(\\)\\{.*?\\},")
+				.append("\\\"p1/a\\\":function\\(\\)\\{.*?\\},")
+				.append("\\\"p1/noexist\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
+				.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);").toString());
+		Assert.assertTrue(p.matcher(result).find());
 	}
 
 	/**
@@ -484,7 +502,7 @@ public class LayerTest extends EasyMock {
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		long totalSize = 0;
-		testDepMap.get("p2/a").put("p1/aliased/d", "");
+		testDepMap.get("p2/a").add("p1/aliased/d", new ModuleDepInfo(null, null, ""));
 		List<String> layerCacheInfo = new LinkedList<String>();
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
@@ -591,7 +609,7 @@ public class LayerTest extends EasyMock {
 	
 	@Test
 	public void gzipTests() throws Exception {
-		testDepMap.get("p2/a").put("p1/aliased/d", "");
+		testDepMap.get("p2/a").add("p1/aliased/d", new ModuleDepInfo(null, null, ""));
 		String configJson = "{paths:{p1:'p1',p2:'p2'}}";
 		List<String> layerCacheInfo = new LinkedList<String>();
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
@@ -710,13 +728,26 @@ public class LayerTest extends EasyMock {
 					mockAggregator.getCacheManager(), 
 					new ReentrantReadWriteLock(), null, null));
 		}
+		@Override
 		public IModule newModule(HttpServletRequest request, String mid) {
 			return super.newModule(request, mid);
+		}
+		@Override
+		public InputStream getInputStream(HttpServletRequest request, HttpServletResponse response) throws IOException {
+			request.removeAttribute(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
+			return super.getInputStream(request, response);
 		}
 	};
 	
 	static private LayerImpl newLayerImpl(String layerKey, IAggregator aggregator) {
-		LayerImpl result = new LayerImpl(layerKey, ++id);
+		@SuppressWarnings("serial")
+		LayerImpl result = new LayerImpl(layerKey, ++id) {
+			@Override
+			public InputStream getInputStream(HttpServletRequest request, HttpServletResponse response) throws IOException {
+				request.removeAttribute(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
+				return super.getInputStream(request, response);
+			}
+		};
 		result.setLayerBuildsAccessor(new LayerBuildsAccessor(
 				id, 
 				(ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)aggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap(),

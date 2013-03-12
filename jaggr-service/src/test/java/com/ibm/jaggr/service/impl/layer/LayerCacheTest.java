@@ -51,7 +51,9 @@ import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
@@ -133,6 +135,7 @@ public class LayerCacheTest {
 		Assert.assertEquals(10, layerCache.getLayerBuildMap().size());
 		Assert.assertNotNull(layerCache.get("[p1/a]"));
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
+		requestAttributes.remove(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		in.close();
 		Assert.assertEquals(2, layerCache.getNumEvictions());
@@ -258,6 +261,7 @@ public class LayerCacheTest {
 		// Test recovery from deleted cache entry data
 		layerCache.getLayerBuildMap().get(key).delete(mockAggregator.getCacheManager());
 		Assert.assertEquals(9, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
+		requestAttributes.remove(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		in.close();
 		Assert.assertEquals(0, layerCache.getNumEvictions());
@@ -292,10 +296,10 @@ public class LayerCacheTest {
 		}).anyTimes();
 		
 		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
-			public Map<String, String> answer() throws Throwable {
+		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
+			public ModuleDeps answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
-				Map<String, String> result = TestUtils.testDepMap.get(name);
+				ModuleDeps result = TestUtils.testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}
@@ -337,6 +341,7 @@ public class LayerCacheTest {
 			in.close();
 			System.out.println(layerCache.getLayerBuildKeys());
 			Assert.assertEquals(i*2-1, layerCache.getLayerBuildMap().size());
+			requestAttributes.remove(AbstractHttpTransport.LAYERCONTRIBUTIONSTATE_REQATTRNAME);
 			requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 			in = layer.getInputStream(mockRequest, mockResponse);
 			in.close();

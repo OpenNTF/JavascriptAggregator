@@ -19,14 +19,14 @@ package com.ibm.jaggr.service.util;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 
 /**
  * Container class for the set of expanded dependencies for a list of modules. 
@@ -42,7 +42,7 @@ public class DependencyList {
 	 * any additional modules resulting from has! plugin evaluation and alias
 	 * resolution.
 	 */
-	private Map<String, String> explicitDeps = null;
+	private ModuleDeps explicitDeps = null;
 	
 	/**
 	 * The expanded dependences for the modules in explicitDeps.  This does not 
@@ -50,7 +50,7 @@ public class DependencyList {
 	 * that list either (i.e. modules listed in explicitDeps may also be included
 	 * here by virtue of being a dependency of another module).
 	 */
-	private Map<String, String> expandedDeps = null;
+	private ModuleDeps expandedDeps = null;
 	
 	/**
 	 * The list of features that were evaluated when resolving any has! plugin
@@ -87,6 +87,11 @@ public class DependencyList {
 	private final boolean includeDetails;
 	
 	/**
+	 * True if has! plugin branching should be performed
+	 */
+	private final boolean performHasBranching;
+
+	/**
 	 * Flag indicating if this object has been initialized.
 	 */
 	private boolean initialized = false;
@@ -116,12 +121,13 @@ public class DependencyList {
 	 *            the expanded dependencies
 	 */
 	@SuppressWarnings("unchecked")
-	public DependencyList(Iterable<String> names, IConfig config, IDependencies deps, Features features, boolean includeDetails) {
+	public DependencyList(Iterable<String> names, IConfig config, IDependencies deps, Features features, boolean includeDetails, boolean performHasBranching) {
 		this.names = (Iterable<String>) (names != null ? names : Collections.emptySet());
 		this.deps = deps;
 		this.config = config;
 		this.features = features;
 		this.includeDetails = includeDetails;
+		this.performHasBranching = performHasBranching;
 	}
 	
 	/**
@@ -138,7 +144,7 @@ public class DependencyList {
 	 * @return The explicit dependencies for the modules specified in
 	 *         <code>names</code>.
 	 */
-	public Map<String, String> getExplicitDeps() throws IOException {
+	public ModuleDeps getExplicitDeps() throws IOException {
 		if (!initialized) {
 			initialize();
 		}
@@ -161,7 +167,7 @@ public class DependencyList {
 	 * @return The expanded dependencies for the modules specified in
 	 *         <code>names</code>.
 	 */
-	public Map<String, String> getExpandedDeps() throws IOException { 
+	public ModuleDeps getExpandedDeps() throws IOException { 
 		if (!initialized) {
 			initialize();
 		}
@@ -217,38 +223,55 @@ public class DependencyList {
 			 * as some types of modules (i.e. css) are sensitive to the order
 			 * that modules are required relative to one another.
 			 */
-			explicitDeps = new LinkedHashMap<String, String>();
-			expandedDeps = new LinkedHashMap<String, String>();
+			explicitDeps = new ModuleDeps();
+			expandedDeps = new ModuleDeps();
 			for (String name : names) {
 				StringBuffer sb1 = null, sb2 = null;
 				if (includeDetails) {
 					sb1 = new StringBuffer(Messages.DependencyList_0);
 					sb2 = new StringBuffer();
 				}
+				int idx = (name != null) ? name.indexOf("!") : -1; //$NON-NLS-1$
 				String resolved = config.resolve(name, features, dependentFeatures, sb2);
-				if (name != resolved && resolved != null) {
-					explicitDeps.put(name, sb1 != null ? sb1.toString() : null);
-					explicitDeps.put(resolved, sb2 != null ? sb2.toString() : null);
+				String pluginName = idx > 0 ? name.substring(0, idx) : null;
+				if (resolved != null && !resolved.equals(name)) {
+					explicitDeps.add(name, new ModuleDepInfo(null, null, sb1 != null ? sb1.toString() : null));
+					explicitDeps.add(resolved, new ModuleDepInfo(null, null, sb2 != null ? sb2.toString() : null));
 					name = resolved;
 				} else {
-					explicitDeps.put(name, sb1 != null ? sb1.append(sb2).toString() : null);
+					explicitDeps.add(name, new ModuleDepInfo(null, null, sb1 != null ? sb1.append(sb2).toString() : null));
 				}
-				
+				if (pluginName != null) {
+					String resolvedPluginName = config.resolve(pluginName, features, dependentFeatures, null);
+					expandedDeps.add(resolvedPluginName, new ModuleDepInfo(null, null, includeDetails ? Messages.DependencyList_1 : null));
+					expandedDeps.addAll(
+							deps.getExpandedDependencies(resolvedPluginName, features, dependentFeatures, includeDetails, performHasBranching));
+				}
 				if (name != null && name.length() > 0) {
-					int idx = name.indexOf("!"); //$NON-NLS-1$
+					idx = name.indexOf("!"); //$NON-NLS-1$
 					if (idx == -1) { 
-						expandedDeps.putAll(
-								deps.getExpandedDependencies(name, features, dependentFeatures, includeDetails));
+						expandedDeps.addAll(
+								deps.getExpandedDependencies(name, features, dependentFeatures, includeDetails, performHasBranching));
 					} else {
-						if (!hasPattern.matcher(name.substring(0, idx)).find()) {
-							// If a plugin module is specified (not the has plugin), then add it 
-							// and its expanded dependencies.
-							name = name.substring(0, idx);
-							if (!expandedDeps.containsKey(name)) {
-								expandedDeps.put(name, includeDetails ? Messages.DependencyList_1 : null);
-								expandedDeps.putAll(
-										deps.getExpandedDependencies(name, features, dependentFeatures, includeDetails));
-							}
+						if (hasPattern.matcher(name.substring(0, idx)).find()) {
+							explicitDeps.addAll(
+								new HasNode(name.substring(idx+1)).evaluateAll(
+										pluginName, 
+										features, 
+										dependentFeatures, 
+										null,
+										includeDetails ? Messages.DependencyList_0 : null
+								)
+							);
+						}
+						// If a plugin module is specified, then add it and its expanded dependencies.
+						
+						String pluginName2 = name.substring(0, idx);
+						if (!pluginName2.equals(pluginName)) {
+							String resolvedPluginName2 = config.resolve(pluginName2, features, dependentFeatures, null);
+							expandedDeps.add(resolvedPluginName2, new ModuleDepInfo(null, null, includeDetails ? Messages.DependencyList_1 : null));
+							expandedDeps.addAll(
+									deps.getExpandedDependencies(resolvedPluginName2, features, dependentFeatures, includeDetails, performHasBranching));
 						}
 					}
 				}
