@@ -55,10 +55,11 @@ class Formula {
     }
 
     public String toString() {
-        String result = "";
-        result += termList.size() + " terms, " + termList.get(0).getNumVars() + " variables\n";
+        String result = ""; //$NON-NLS-1$
+        result += termList.size() + " terms, " +  //$NON-NLS-1$
+        		termList.get(0).getNumVars() + " variables\n"; //$NON-NLS-1$
         for(int i=0; i<termList.size(); i++) {
-            result += termList.get(i) + "\n";
+            result += termList.get(i) + "\n"; //$NON-NLS-1$
         }
         return result;
     }

@@ -211,7 +211,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     		moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
     		String required = request.getParameter(REQUIRED_REQPARAM);
     		if (required != null) {
-    			Set<String> requiredSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*")));
+    			Set<String> requiredSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*"))); //$NON-NLS-1$
     			request.setAttribute(REQUIRED_REQATTRNAME, Collections.unmodifiableSet(requiredSet));
     		}
     	}
@@ -618,10 +618,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		String cacheBust = aggregator.getConfig().getCacheBust();
 		String optionsCb = aggregator.getOptions().getCacheBust();
 		if (optionsCb != null && optionsCb.length() > 0) {
-			cacheBust = (cacheBust != null && cacheBust.length() > 0) ? (cacheBust + "-" + optionsCb) : optionsCb;
+			cacheBust = (cacheBust != null && cacheBust.length() > 0) ? 
+					(cacheBust + "-" + optionsCb) : optionsCb; //$NON-NLS-1$
 		}
 		if (cacheBust != null && cacheBust.length() > 0) {
-			sb.append("if (!combo.cacheBust){combo.cacheBust = '" + cacheBust + "';}\r\n");
+			sb.append("if (!combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
+				.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
 		return sb.toString();
 	}

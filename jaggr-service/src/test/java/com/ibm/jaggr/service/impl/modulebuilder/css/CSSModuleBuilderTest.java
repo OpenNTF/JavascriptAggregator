@@ -486,6 +486,31 @@ public class CSSModuleBuilderTest extends EasyMock {
 		Assert.assertEquals("expn:1;css:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
 	}
 	
+	@Test
+	public void testToRegexp() {
+		CSSModuleBuilder builder = new CSSModuleBuilder() {
+			@Override
+			public Pattern toRegexp(String filespec) {
+				return super.toRegexp(filespec);
+			}
+		};
+		Pattern regexp = builder.toRegexp("test?.*");
+		Assert.assertEquals("(^|/)test[^/]\\.[^/]*?$", regexp.toString());
+		Assert.assertTrue(regexp.matcher("test1.abc").find());
+		Assert.assertFalse(regexp.matcher("test11.abc").find());
+		Assert.assertTrue(regexp.matcher("/test1.abc").find());
+		Assert.assertTrue(regexp.matcher("/some/path/test1.abc").find());
+		regexp = builder.toRegexp("test/*/hello@$!.???");
+		Assert.assertEquals("(^|/)test/[^/]*?/hello@\\$!\\.[^/][^/][^/]$", regexp.toString());
+		Assert.assertTrue(regexp.matcher("test/abc/hello@$!.foo").find());
+		Assert.assertTrue(regexp.matcher("/test/xyz/hello@$!.123").find());
+		Assert.assertTrue(regexp.matcher("somepath/test/xyz/hello@$!.123").find());
+		Assert.assertFalse(regexp.matcher("/test/xyz/hello@$!.ab").find());
+		Assert.assertFalse(regexp.matcher("/test/hello@$!.123").find());
+		regexp = builder.toRegexp("/a?c");
+		Assert.assertEquals("/a[^/]c$", regexp.toString());
+	}
+	
 	private String buildCss(IResource css) throws Exception {
 		Reader reader = builder.getContentReader("test", css, mockRequest, keyGens);
 		StringWriter writer = new StringWriter();

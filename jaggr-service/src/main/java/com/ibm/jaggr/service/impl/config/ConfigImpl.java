@@ -375,7 +375,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				// Check for illegal relative path. Throws exception if an
 				// attempt is made to use relitive path components to go 
 				// outside the path defined by the base url.
-				PathUtil.normalizePaths("", new String[]{mid});
+				PathUtil.normalizePaths("", new String[]{mid});  //$NON-NLS-1$
 				// not match.  Return a URI relative to the config base URI
 				Location base = getBase();
 				location = new Location(
@@ -531,6 +531,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		return mid;
 	}
 
+	private static final Pattern plugins1 = Pattern.compile("[!?:]"); //$NON-NLS-1$
+	private static final Pattern plugins2 = Pattern.compile("[^!?:]*"); //$NON-NLS-1$
+	
 	/**
 	 * Applies alias mappings to the specified name and returns the result
 	 * 
@@ -565,9 +568,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		if (name == null || name.length() == 0) {
 			return name;
 		}
-		
-		final Pattern plugins1 = Pattern.compile("[!?:]");
-		final Pattern plugins2 = Pattern.compile("[^!?:]*");
 		
 		String result = name;
 		if (getAliases() != null) {
@@ -731,14 +731,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 			
-			cx.evaluateString(sharedScope, "var config = " + 
+			cx.evaluateString(sharedScope, "var config = " +  //$NON-NLS-1$
 				aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
 					@Override
 					public String transform(String name, String value) {
 						// escape forward slashes for javascript literals
-						return value.replace("\\", "\\\\");
+						return value.replace("\\", "\\\\"); //$NON-NLS-1$ //$NON-NLS-2$
 					}
-				}), getConfigUri().toString(), 1, null); //$NON-NLS-1$
+				}), getConfigUri().toString(), 1, null);
 			config = (Scriptable)sharedScope.get("config", sharedScope); //$NON-NLS-1$
 			if (config == Scriptable.NOT_FOUND) {
 				throw new IllegalStateException("config is not defined."); //$NON-NLS-1$
@@ -825,7 +825,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						if (pattern == Scriptable.NOT_FOUND || replacement == Scriptable.NOT_FOUND) {
 							throw new IllegalArgumentException(Context.toString(entry));
 						}
-						if (pattern instanceof Scriptable && "RegExp".equals(((Scriptable)pattern).getClassName())) {
+						if (pattern instanceof Scriptable && "RegExp".equals(((Scriptable)pattern).getClassName())) { //$NON-NLS-1$
 							String regexlit = Context.toString(pattern);
 							String regex = regexlit.substring(1, regexlit.lastIndexOf("/")); //$NON-NLS-1$
 							String flags = regexlit.substring(regexlit.lastIndexOf("/")+1); //$NON-NLS-1$
@@ -837,7 +837,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						} else {
 							pattern = Context.toString(pattern);
 						}
-						if (!(replacement instanceof Scriptable) || !"Function".equals(((Scriptable)replacement).getClassName())) {
+						if (!(replacement instanceof Scriptable) || !"Function".equals(((Scriptable)replacement).getClassName())) { //$NON-NLS-1$
 							replacement = Context.toString(replacement);
 						}
 						aliases.add(newAlias(pattern, replacement));

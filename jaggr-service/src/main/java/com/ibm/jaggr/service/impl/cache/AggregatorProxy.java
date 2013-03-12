@@ -51,7 +51,7 @@ public class AggregatorProxy implements java.lang.reflect.InvocationHandler {
         Object result;
 		try {
 		    result = m.invoke(aggr, args);
-			if (result == null && "getCacheManager".equals(m.getName())) {
+			if (result == null && "getCacheManager".equals(m.getName())) { //$NON-NLS-1$
 				return cacheMgr;
 			}
         } catch (InvocationTargetException e) {

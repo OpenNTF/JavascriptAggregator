@@ -192,12 +192,12 @@ class CacheEntry implements Serializable {
 
 	@Override
 	public String toString() {
-		return new StringBuffer("CacheEntry(")
-		.append("layerId:").append(layerId).append(",")
-		.append("layerKey:").append(layerKey).append(",")
-		.append("lastMod:").append(lastModified).append(",")
-		.append("file:").append(filename).append(",")
-		.append("size:").append(size).append(",")
-		.append("deleted:").append(delete).append(")").toString();
+		return new StringBuffer("CacheEntry(") //$NON-NLS-1$
+		.append("layerId:").append(layerId).append(",") //$NON-NLS-1$ //$NON-NLS-2$
+		.append("layerKey:").append(layerKey).append(",") //$NON-NLS-1$ //$NON-NLS-2$
+		.append("lastMod:").append(lastModified).append(",") //$NON-NLS-1$ //$NON-NLS-2$
+		.append("file:").append(filename).append(",") //$NON-NLS-1$ //$NON-NLS-2$
+		.append("size:").append(size).append(",") //$NON-NLS-1$ //$NON-NLS-2$
+		.append("deleted:").append(delete).append(")").toString(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

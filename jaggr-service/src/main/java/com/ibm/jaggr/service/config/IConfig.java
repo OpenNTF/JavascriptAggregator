@@ -524,7 +524,8 @@ public interface IConfig {
 		public String toString() {
 			if (override == null) return primary.toString();
 			StringBuffer sb = new StringBuffer('[');
-			return sb.append(primary).append(",").append(override).append("]").toString();
+			return sb.append(primary).append(",") //$NON-NLS-1$
+					.append(override).append("]").toString(); //$NON-NLS-1$
 		}
 	}
 

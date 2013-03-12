@@ -56,14 +56,14 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	 * @param str the boolean term in string form.
 	 */
 	public BooleanTerm(String str) {
-		if (str.contains("+")) {
+		if (str.contains("+")) { //$NON-NLS-1$
 			throw new IllegalArgumentException(str);
 		}
-		str = str.replaceAll("\\s", "");
+		str = str.replaceAll("\\s", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		if (str.charAt(0) == '(' && str.charAt(str.length()-1) == ')') {
 			str = str.substring(1, str.length()-1);
 		}
-		String[] strVars = str.split("\\*");
+		String[] strVars = str.split("\\*"); //$NON-NLS-1$
 		for (String strVar : strVars) {
 			boolean state = (strVar.charAt(0) != '!');
 			String name = state ? strVar : strVar.substring(1);
@@ -84,12 +84,12 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		if (size() > 1) sb.append("(");
+		if (size() > 1) sb.append("("); //$NON-NLS-1$
 		int i = 0;
 		for (BooleanVar var : this) {
-			sb.append(i++ > 0 ? "*" : "").append(var);
+			sb.append(i++ > 0 ? "*" : "").append(var); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		if (size() > 1) sb.append(")");
+		if (size() > 1) sb.append(")"); //$NON-NLS-1$
 		return sb.toString();
 	}
 

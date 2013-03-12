@@ -649,8 +649,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 					node = getRoot().getDescendent(depName);
 				}
 				if (depName.length() > 0) {
-					int idx = depName.indexOf("!");
-					if (node != null && idx == -1) { //$NON-NLS-1$
+					int idx = depName.indexOf("!"); //$NON-NLS-1$
+					if (node != null && idx == -1) {
 						// We need to check for containment here in order to avoid 
 						// infinite recursion resulting from circular dependencies.
 						if (!result.containsDep(depName, term)) {
@@ -658,7 +658,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 							if (comment != null) {
 								comment.append(", ").append(Messages.DepTreeNode_1); //$NON-NLS-1$
 							}
-							result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null)); //$NON-NLS-1$
+							result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null));
 						}
 					} else if (performHasBranching && 
 							idx > 0 && 
@@ -697,7 +697,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 						if (comment != null) {
 							comment.append(", ").append(Messages.DepTreeNode_2); //$NON-NLS-1$
 						}
-						result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null)); //$NON-NLS-1$
+						result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null));
 					}
 				}
 				// If depName specifies a plugin, then add the plugin module to the expanded

@@ -42,6 +42,6 @@ public class Prioritized<T> {
 	}
 	@Override
 	public String toString() {
-		return value.toString() + ";" + Double.toString(priority);
+		return value.toString() + ";" + Double.toString(priority); //$NON-NLS-1$
 	}
 }

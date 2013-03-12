@@ -58,6 +58,6 @@ public class BooleanVar {
 	 */
 	@Override
 	public String toString() {
-		return (state ? "" : "!") + name; 
+		return (state ? "" : "!") + name; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

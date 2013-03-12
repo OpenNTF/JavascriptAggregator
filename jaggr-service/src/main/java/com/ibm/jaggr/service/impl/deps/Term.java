@@ -58,15 +58,15 @@ class Term {
     }
 
     public String toString() {
-        String result = "{";
+        String result = "{"; //$NON-NLS-1$
         for(int i=0; i<varVals.length; i++) {
             if (varVals[i] == DontCare)
-                result += "X";
+                result += "X"; //$NON-NLS-1$
             else
                 result += varVals[i];
-            result += " ";
+            result += " "; //$NON-NLS-1$
         }
-        result += "}";
+        result += "}"; //$NON-NLS-1$
         return result;
     }
 

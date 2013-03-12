@@ -64,7 +64,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 		Boolean exportMid = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
 		Boolean noTextAdorn = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
 		if (noTextAdorn) {
-			sb.append("'");
+			sb.append("'"); //$NON-NLS-1$
 		} else if (exportMid != null && exportMid.booleanValue()) {
 			sb.append("define(\"").append(mid).append("\",'"); //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
@@ -78,7 +78,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 				writer
 		);
 		sb.append(writer.toString());
-		sb.append(noTextAdorn ? "'" : "');"); //$NON-NLS-1$
+		sb.append(noTextAdorn ? "'" : "');"); //$NON-NLS-1$ //$NON-NLS-2$
 		return new ModuleBuild(sb.toString(), keyGens, false);
 	}
 	

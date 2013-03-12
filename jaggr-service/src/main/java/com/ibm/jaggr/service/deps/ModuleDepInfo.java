@@ -134,11 +134,11 @@ public class ModuleDepInfo {
 		}
 		Set<String> result = new TreeSet<String>();
 		for (BooleanTerm term : formula) {
-			StringBuffer sb = new StringBuffer(pluginName).append("!");
+			StringBuffer sb = new StringBuffer(pluginName).append("!"); //$NON-NLS-1$
 			for (BooleanVar featureVar : term) {
-				sb.append(featureVar.name).append("?");
+				sb.append(featureVar.name).append("?"); //$NON-NLS-1$
 				if (!featureVar.state) {
-					sb.append(":");
+					sb.append(":"); //$NON-NLS-1$
 				}
 			}
 			result.add(sb.toString());
@@ -322,7 +322,7 @@ public class ModuleDepInfo {
 	 */
 	@Override
 	public String toString() {
-		return formula != null ? formula.toString() : "TRUE";
+		return formula != null ? formula.toString() : "TRUE"; //$NON-NLS-1$
 	}
 
 	/**

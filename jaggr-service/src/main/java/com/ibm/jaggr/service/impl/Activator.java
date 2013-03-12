@@ -44,7 +44,7 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 	 * bundle name as a string that can be accessed by other classes in the bundle
 	 * in a static way.  This is used to filter services to bundle scope.
 	 */
-	public static String BUNDLE_NAME = "com.ibm.jaggr.service";
+	public static String BUNDLE_NAME = "com.ibm.jaggr.service"; //$NON-NLS-1$
 
 	private Collection<ServiceRegistration> serviceRegistrations;
 	private BundleContext context = null;
@@ -78,7 +78,7 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
     	}
     	
     	dict = new Properties();
-		dict.setProperty("name", BUNDLE_NAME);
+		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
 		// Create an options object and register the service
     	IOptions options = newOptions();
 		serviceRegistrations.add(
@@ -88,7 +88,7 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 		// activator primarily to allow executors to be shared by all of the 
 		// aggregators created by this bundle.
     	dict = new Properties();
-		dict.setProperty("name", BUNDLE_NAME);
+		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
 		executors = newExecutors(options);
 		serviceRegistrations.add(
 				context.registerService(IExecutors.class.getName(), executors, dict));

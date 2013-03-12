@@ -304,19 +304,19 @@ extends JavaScriptModuleBuilder {
 	
 	
 	List<String> parseAcceptLanguageHeader(HttpServletRequest request) {
-		String header = request.getHeader("Accept-Language");
+		String header = request.getHeader("Accept-Language"); //$NON-NLS-1$
 		List<String> result = Collections.emptyList();
 		if (header != null) {
 			PriorityQueue<Prioritized<String>> queue = new PriorityQueue<Prioritized<String>>(10, Prioritized.comparator);
-			String[] toks = header.split(",");
+			String[] toks = header.split(","); //$NON-NLS-1$
 			for (String tok : toks) {
-				int idx = tok.indexOf(";");
+				int idx = tok.indexOf(";"); //$NON-NLS-1$
 				String locale = tok;
 				double priority = 1.0;
 				if (idx != -1) {
 					locale = tok.substring(0, idx);
 					String q = tok.substring(idx+1);
-					if (q.startsWith("q=")) {
+					if (q.startsWith("q=")) { //$NON-NLS-1$
 						try {
 							priority = Double.parseDouble(q.substring(2));
 						} catch (NumberFormatException e) {

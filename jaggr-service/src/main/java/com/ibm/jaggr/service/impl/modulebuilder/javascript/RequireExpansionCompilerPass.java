@@ -355,7 +355,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		String moduleName = array.getParent().getProp(Node.SOURCENAME_PROP).toString();
 		if (logDebug) {
 			msg.add("%c" + MessageFormat.format( //$NON-NLS-1$
-				Messages.RequireExpansionCompilerPass_6, //$NON-NLS-1$
+				Messages.RequireExpansionCompilerPass_6,
 				new Object[]{detail, moduleName}
 			));
 			msg.add("color:blue;background-color:yellow"); //$NON-NLS-1$

@@ -609,7 +609,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	}
 
 	private void readObject(ObjectInputStream stream) throws InvalidObjectException {
-	    throw new InvalidObjectException("Proxy required");
+	    throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
 	}
 
 	protected static class SerializationProxy extends ModuleIdentifier implements Serializable {

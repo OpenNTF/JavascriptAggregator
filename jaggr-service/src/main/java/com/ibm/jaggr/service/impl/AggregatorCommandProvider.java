@@ -102,7 +102,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 				Messages.CommandProvider_9, 
 				new Object[]{EYECATCHER, CMD_SETOPTION})).append(newline)
 		  .append(MessageFormat.format(
-				"\t{0} {1} <servlet> - config for the servlet",
+				Messages.CommandProvider_17,
 				new Object[]{EYECATCHER, CMD_SHOWCONFIG})).append(newline);
 		
 		return sb.toString();
@@ -182,7 +182,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 				IDependencies deps = aggregator.getDependencies();
 				while (true) {
 					try {
-						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false);
+						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false); //$NON-NLS-1$
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
@@ -210,7 +210,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 				// displayed.  If in development mode, we'll get a ProcessingDependenciesException.
 				while (true) {
 					try {
-						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false);
+						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false); //$NON-NLS-1$
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
@@ -241,7 +241,7 @@ public abstract class AggregatorCommandProvider extends Plugin implements
 			String feature;
 			while ((feature = ci.nextArgument()) != null) {
 				boolean value = true;
-				if (feature.startsWith("!")) {
+				if (feature.startsWith("!")) { //$NON-NLS-1$
 					feature = feature.substring(1);
 					value = false;
 				}

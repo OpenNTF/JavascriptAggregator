@@ -98,7 +98,7 @@ public class BooleanFormula implements Set<BooleanTerm> {
 	 */
 	public BooleanFormula(String str) {
 		booleanTerms = new HashSet<BooleanTerm>();
-		String[] strTerms = str.split("\\+");
+		String[] strTerms = str.split("\\+"); //$NON-NLS-1$
 		for (String strTerm : strTerms) {
 			booleanTerms.add(new BooleanTerm(strTerm));
 		}
@@ -451,14 +451,14 @@ public class BooleanFormula implements Set<BooleanTerm> {
 	@Override
 	public String toString() {
 		if (booleanTerms == null) {
-			return "TRUE";
+			return "TRUE"; //$NON-NLS-1$
 		} else if (booleanTerms.size() == 0) {
-			return "FALSE";
+			return "FALSE"; //$NON-NLS-1$
 		}
 		StringBuffer sb = new StringBuffer();
 		int i = 0;
 		for (BooleanTerm term : booleanTerms) {
-			sb.append(i++ > 0 ? "|" : "").append(term);
+			sb.append(i++ > 0 ? "|" : "").append(term); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return sb.toString();
 	}

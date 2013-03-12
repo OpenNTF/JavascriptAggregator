@@ -95,23 +95,23 @@ public class LayerImpl implements ILayer {
     	new AbstractCacheKeyGenerator() {
     		// This is a singleton, so default equals() will do
 			private static final long serialVersionUID = 2013098945317787755L;
-			private static final String eyeCatcher = "lyr";
+			private static final String eyeCatcher = "lyr"; //$NON-NLS-1$
 			@Override
 			public String generateKey(HttpServletRequest request) {
 				boolean showFilenames =  TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
 				return new StringBuffer(eyeCatcher).append(":") //$NON-NLS-1$
-						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+						.append(RequestUtil.isGzipEncoding(request) ? "1" : "0").append(":") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 						.append(showFilenames ? "1" : "0").toString(); //$NON-NLS-1$ //$NON-NLS-2$
 
 			}
 			@Override
 			public String toString() {
-				return eyeCatcher; //$NON-NLS-1$
+				return eyeCatcher;
 			}
     	}
     }));
     	
-    public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):");
+    public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):"); //$NON-NLS-1$
     
     static int LAYERBUILD_REMOVE_DELAY_SECONDS = 10;
     
@@ -211,7 +211,7 @@ public class LayerImpl implements ILayer {
 		        	// See if we need to discard previously built LayerBuilds
 		        	if (lastModified > _lastModified) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_lastmod");
+			        		cacheInfoReport.add("update_lastmod"); //$NON-NLS-1$
 			        	}
 		        		if (lastModified != Long.MAX_VALUE) {
 		        			// max value means missing requested source
@@ -234,13 +234,15 @@ public class LayerImpl implements ILayer {
 					// existing entry is returned in the buildReader and newEntry was not added.
 					existingEntry = _layerBuilds.putIfAbsent(key, newEntry, options.isDevelopmentMode());
 		        	if (cacheInfoReport != null) {
-		        		cacheInfoReport.add(existingEntry != null ? "hit_1" : "added");
+		        		cacheInfoReport.add(existingEntry != null ? "hit_1" : "added"); //$NON-NLS-1$ //$NON-NLS-2$
 		        	}
 					if (existingEntry != null) { 
 						if ((result = existingEntry.tryGetInputStream(request)) != null) {
 							setResponseHeaders(request, response, existingEntry.getSize());
 					        if (log.isLoggable(Level.FINEST)) {
-					        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + existingEntry.toString());
+					        	log.finest(cacheInfoReport.toString() + "\n" +  //$NON-NLS-1$ 
+					        			"key:" + key +  //$NON-NLS-1$
+					        			"\n" + existingEntry.toString()); //$NON-NLS-1$
 					        }
 					        if (_isReportCacheInfo) {
 					        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
@@ -250,7 +252,7 @@ public class LayerImpl implements ILayer {
 							if (_layerBuilds.replace(key, existingEntry, newEntry)) {
 								// entry was replaced, use newEntry
 					        	if (cacheInfoReport != null) {
-					        		cacheInfoReport.add("replace_1");
+					        		cacheInfoReport.add("replace_1"); //$NON-NLS-1$
 					        	}
 								existingEntry = null;
 							} else {
@@ -258,7 +260,7 @@ public class LayerImpl implements ILayer {
 								// between the time we retrieved it and the time we tried to
 								// replace it.  Try to add the new entry again.  
 					        	if (cacheInfoReport != null) {
-					        		cacheInfoReport.add("retry_add");
+					        		cacheInfoReport.add("retry_add"); //$NON-NLS-1$
 					        	}
 					        	if (--loopGuard == 0) {
 					        		// Should never happen, but just in case
@@ -297,7 +299,9 @@ public class LayerImpl implements ILayer {
 		        	}
 	            	setResponseHeaders(request, response, entry.getSize());
 	    	        if (log.isLoggable(Level.FINEST)) {
-	    	        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + entry.toString());
+	    	        	log.finest(cacheInfoReport.toString() + "\n" + //$NON-NLS-1$ 
+	    	        			"key:" + key +  //$NON-NLS-1$
+	    	        			"\n" + entry.toString()); //$NON-NLS-1$
 	    	        }
 			        if (_isReportCacheInfo) {
 			        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
@@ -317,15 +321,17 @@ public class LayerImpl implements ILayer {
 		        	Matcher m = GZIPFLAG_KEY_PATTERN.matcher(key);
 		        	m.find();
 		        	m.appendReplacement(sb, 
-		        			new StringBuffer(s_layerCacheKeyGenerators.get(0).toString()).append(":")
-		        				.append("1".equals(m.group(1)) ? "0" : "1").append(":").toString()
+		        			new StringBuffer(s_layerCacheKeyGenerators.get(0).toString())
+		        				.append(":") //$NON-NLS-1$
+		        				.append("1".equals(m.group(1)) ? "0" : "1") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		        				.append(":").toString() //$NON-NLS-1$
 		        	).appendTail(sb);
 			        otherEntry = _layerBuilds.get(sb.toString());
 	        	}
 		        if (otherEntry != null) {
 		        	if (isGzip) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("zip_unzipped");
+			        		cacheInfoReport.add("zip_unzipped"); //$NON-NLS-1$
 			        	}
 		        		// We need gzipped and the cached entry is unzipped
 						// Create the compression stream for the output
@@ -337,7 +343,7 @@ public class LayerImpl implements ILayer {
 				        CopyUtil.copy(otherEntry.getInputStream(request), writer);
 		        	} else {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("unzip_zipped");
+			        		cacheInfoReport.add("unzip_zipped"); //$NON-NLS-1$
 			        	}
 		        		// We need unzipped and the cached entry is zipped.  Just unzip it
 		        		CopyUtil.copy(new GZIPInputStream(otherEntry.getInputStream(request)), bos);
@@ -347,7 +353,7 @@ public class LayerImpl implements ILayer {
 		            if (!ignoreCached) {
 	            		_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_weights_1");
+			        		cacheInfoReport.add("update_weights_1"); //$NON-NLS-1$
 			        	}
 		            	entry.persist(mgr);
 		            }
@@ -374,7 +380,7 @@ public class LayerImpl implements ILayer {
 					
 			        if (isGzip) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("zip");
+			        		cacheInfoReport.add("zip"); //$NON-NLS-1$
 			        	}
 				        VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
 				        compress.setLevel(Deflater.BEST_COMPRESSION);
@@ -396,7 +402,7 @@ public class LayerImpl implements ILayer {
 	        if (in != null && in.hasErrors()) {
 	        	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 	        	if (cacheInfoReport != null) {
-	        		cacheInfoReport.add(key == null ? "error_noaction" : "error_remove");
+	        		cacheInfoReport.add(key == null ? "error_noaction" : "error_remove"); //$NON-NLS-1$ //$NON-NLS-2$
 	        	}
 	        	if (key != null) {
 	        		_layerBuilds.remove(key, entry);
@@ -424,14 +430,14 @@ public class LayerImpl implements ILayer {
 	        				_cacheKeyGenerators = Collections.unmodifiableMap(newKeyGens);
 				        }
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_keygen");
+			        		cacheInfoReport.add("update_keygen"); //$NON-NLS-1$
 			        	}
 	        			cacheKeyGeneratorsUpdated = true;
 	        		}
 	        		final String originalKey = key;
 	        		if (key == null || cacheKeyGeneratorsUpdated) {
 			        	if (cacheInfoReport != null) {
-			        		cacheInfoReport.add("update_key");
+			        		cacheInfoReport.add("update_key"); //$NON-NLS-1$
 			        	}
 			            key = generateCacheKey(request, newKeyGens);
 	        		}
@@ -480,7 +486,9 @@ public class LayerImpl implements ILayer {
 
 	        // return the input stream to the LayerBuild
 	        if (log.isLoggable(Level.FINEST)) {
-	        	log.finest(cacheInfoReport.toString() + "\n" + "key:" + key + "\n" + entry.toString());
+	        	log.finest(cacheInfoReport.toString() + "\n" + //$NON-NLS-1$ 
+	        			"key:" + key +  //$NON-NLS-1$
+	        			"\n" + entry.toString()); //$NON-NLS-1$
 	        }
 	        if (_isReportCacheInfo) {
 	        	request.setAttribute(LAYERBUILDCACHEKEY_PROPNAME, key);
@@ -571,7 +579,7 @@ public class LayerImpl implements ILayer {
         String notice = aggr.getConfig().getNotice();
         if (notice != null) {
 			readerList.add(
-				new ModuleBuildReader(notice + "\r\n") //$NON-NLS-1$ //$NON-NLS-2$
+				new ModuleBuildReader(notice + "\r\n") //$NON-NLS-1$
 			);
         }
         // If development mode is enabled, say so
@@ -858,12 +866,13 @@ public class LayerImpl implements ILayer {
 		StringBuffer sb = new StringBuffer();
 		sb.append("\nModified: ") //$NON-NLS-1$
 		  .append(new Date(_lastModified).toString()).append(linesep)
-		  .append("KeyGen: ").append(
+		  .append("KeyGen: ").append( //$NON-NLS-1$
 				  _cacheKeyGenerators != null ? KeyGenUtil.toString(_cacheKeyGenerators.values()) : "null") //$NON-NLS-1$
-		  .append(linesep); //$NON-NLS-1$
+		  .append(linesep);
 		if (_layerBuilds != null) {
 			for (Map.Entry<String, CacheEntry> entry : _layerBuilds.entrySet()) {
-				sb.append("\t").append(entry.getKey()).append(" : ").append(entry.getValue().getFilename()).append(linesep); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				sb.append("\t").append(entry.getKey()) //$NON-NLS-1$
+				.append(" : ").append(entry.getValue().getFilename()).append(linesep); //$NON-NLS-1$
 			}
 		}
 		sb.append(linesep);

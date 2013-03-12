@@ -60,24 +60,24 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 	
-    static String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-    static String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
-    static String loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
-    static String[] loaderExtensionResources = {
+    static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
+    static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
+    static final String loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+    static final String[] loaderExtensionResources = {
     	"../loaderExtCommon.js", //$NON-NLS-1$
     	"./_loaderExt.js" //$NON-NLS-1$
     };
-    static String dojo = "dojo"; //$NON-NLS-1$
-    static String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
-    static String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
-    static String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
-    static String dojoTextPluginName = "text"; //$NON-NLS-1$
-    static String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
-    static URI dojoPluginUri;
+    static final String dojo = "dojo"; //$NON-NLS-1$
+    static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
+    static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
+    static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
+    static final String dojoTextPluginName = "text"; //$NON-NLS-1$
+    static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
+    static final URI dojoPluginUri;
 
     static {
     	try {
-    		dojoPluginUri = new URI("./"+dojoTextPluginName);
+    		dojoPluginUri = new URI("./"+dojoTextPluginName); //$NON-NLS-1$
     	} catch (URISyntaxException e) {
     		// Should never happen
     		throw new RuntimeException(e);
@@ -135,7 +135,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     }
     
     protected String getAggregatorTextPluginName() {
-    	return getResourcePathId() + "/text";
+    	return getResourcePathId() + "/text"; //$NON-NLS-1$
     }
     
     /* (non-Javadoc)
@@ -155,7 +155,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		case BEFORE_FIRST_REQUIRED_MODULE:
 			return getBeforeRequiredModule(request, arg.toString());
 		case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
-			return "," + getBeforeRequiredModule(request, arg.toString());
+			return "," + getBeforeRequiredModule(request, arg.toString()); //$NON-NLS-1$
 		case AFTER_REQUIRED_MODULE:
 			return getAfterRequiredModule(request, arg.toString());
 		case END_REQUIRED_MODULES:
@@ -165,7 +165,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				int i = 0;
 				@SuppressWarnings("unchecked")
 				Set<String> requiredModules = (Set<String>)arg;
-				for (String name : requiredModules) { //$NON-NLS-1$ 
+				for (String name : requiredModules) {
 					sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ 
 				}
 				sb.append("]);"); //$NON-NLS-1$
@@ -175,16 +175,16 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		return null;
 	}
     
-    public static Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/");
+    static final Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/"); //$NON-NLS-1$
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
      */
     @Override
 	public boolean isServerExpandable(HttpServletRequest request, String mid) {
-    	int idx = mid.indexOf("!");
+    	int idx = mid.indexOf("!"); //$NON-NLS-1$
     	String plugin = idx != -1 ? mid.substring(0, idx) : null;
     	String name = idx != -1 ? mid.substring(idx+1) : mid;
-    	if (name.startsWith("/") || urlId.matcher(name).find() || name.contains("?")) {
+    	if (name.startsWith("/") || urlId.matcher(name).find() || name.contains("?")) { //$NON-NLS-1$ //$NON-NLS-2$
     		return false;
     	}
     	if (plugin != null) {
@@ -199,7 +199,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 
 	protected String getBeforeRequiredModule(HttpServletRequest request, String mid) {
     	String result;
-    	int idx = mid.indexOf("!");
+    	int idx = mid.indexOf("!"); //$NON-NLS-1$
     	if (idx == -1) {
     		result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
     	} else {
@@ -218,14 +218,14 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     }
     
     protected String getAfterRequiredModule(HttpServletRequest request, String mid) {
-    	int idx = mid.indexOf("!");
+    	int idx = mid.indexOf("!"); //$NON-NLS-1$
     	String plugin = idx == -1 ? null : mid.substring(0, idx);
     	String result = "}";//$NON-NLS-1$
     	if (plugin != null) {
     		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
     		IConfig config = aggr.getConfig();
     		if (config.getTextPluginDelegators().contains(plugin)) {
-    			result = "";
+    			result = ""; //$NON-NLS-1$
     		}
     	}
     	return result;
@@ -403,12 +403,12 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 							} else if (dojoLocObj instanceof Scriptable) {
 								Scriptable values = (Scriptable)dojoLocObj;
 								String str = Context.toString(values.get(0, values));
-								if (!str.endsWith("/")) str += '/';
+								if (!str.endsWith("/")) str += '/'; //$NON-NLS-1$
 								URI primary = new URI(str).normalize(), override = null;
 								Object obj = values.get(1, values);
 								if (obj != Scriptable.NOT_FOUND) {
 									str = Context.toString(obj);
-									if (!str.endsWith("/")) str += '/';
+									if (!str.endsWith("/")) str += '/'; //$NON-NLS-1$
 									try {
 										override = new URI(str).normalize();
 									} catch (URISyntaxException ignore) {}
@@ -416,7 +416,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 								dojoLoc = new Location(primary, override);
 							} else {
 								String str = Context.toString(dojoLocObj);
-								if (!str.endsWith("/")) str += '/';
+								if (!str.endsWith("/")) str += '/'; //$NON-NLS-1$
 								dojoLoc = new Location(new URI(str).normalize());
 							}
 						} catch (URISyntaxException e) {
@@ -521,8 +521,8 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			for (Object id : textPluginDelegators.getIds()) {
 				if (id instanceof Number) max = Math.max(max, (Integer)((Number)id));
 			}
-			textPluginDelegators.put(max+1, textPluginDelegators, "dojo/text");
-			jsPluginDelegators.put(max+1, jsPluginDelegators, "dojo/i18n");
+			textPluginDelegators.put(max+1, textPluginDelegators, "dojo/text"); //$NON-NLS-1$
+			jsPluginDelegators.put(max+1, jsPluginDelegators, "dojo/i18n"); //$NON-NLS-1$
 		} finally {
 			Context.exit();
 		}

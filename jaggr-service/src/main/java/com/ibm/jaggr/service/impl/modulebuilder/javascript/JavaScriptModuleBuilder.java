@@ -85,8 +85,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		new ExportNamesCacheKeyGenerator();
 
 	static {
-		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING);
-		Logger.getLogger("com.google.javascript.jscomp.PhaseOptimizer").setLevel(Level.WARNING);	
+		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING); //$NON-NLS-1$
+		Logger.getLogger("com.google.javascript.jscomp.PhaseOptimizer").setLevel(Level.WARNING); //$NON-NLS-1$
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
 
