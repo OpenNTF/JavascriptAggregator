@@ -167,7 +167,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		css = "@import  'funny name  \"with double\"  quote.css'   .foo { color : black }";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals("@import 'funny name  \"with double\"  quote.css' .foo{color:black}", output);
-		
+
 		css = ".foo:after{content:\"\\a\";white-space:pre}";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(css, output);

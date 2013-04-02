@@ -16,15 +16,19 @@
    limitations under the License.
 -->
 <plugin>
-	<extension point="org.eclipse.equinox.http.registry.resources">
-        <resource
-              alias="/testaggr/dojo"
-              base-name="/WebContent/source_1.8.0-20120830-IBM_dojo/dojo"/>
-        <resource
-              alias="/testaggr/dijit"
-              base-name="/WebContent/source_1.8.0-20120830-IBM_dojo/dijit"/>
-        <resource
-              alias="/testaggr/dojox"
-              base-name="/WebContent/source_1.8.0-20120830-IBM_dojo/dojox"/>
-     </extension>
+  <extension point="org.eclipse.equinox.http.registry.httpcontexts">
+    <httpcontext id="resources">
+      <resource-mapping path="/WebContent" />
+    </httpcontext>
+  </extension>
+  
+  <extension point="org.eclipse.equinox.http.registry.filters">
+    <filter alias="/test/dojo-1.8.0/*" class="com.ibm.jaggr.sample.dojo.BasicFilter" httpcontextId="resources" />
+  </extension>
+  
+  <extension point="org.eclipse.equinox.http.registry.resources">
+    <resource alias="/test/dojo-1.8.0/dojo" base-name="/source_1.8.0-20120830-IBM_dojo/dojo" httpcontextId="resources" />
+    <resource alias="/test/dojo-1.8.0/dijit" base-name="/source_1.8.0-20120830-IBM_dojo/dijit" httpcontextId="resources" />
+    <resource alias="/test/dojo-1.8.0/dojox" base-name="/source_1.8.0-20120830-IBM_dojo/dojox" httpcontextId="resources" />
+  </extension>
 </plugin>

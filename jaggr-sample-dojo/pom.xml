@@ -65,10 +65,20 @@
 		            <Require-Bundle>org.eclipse.core.runtime,org.eclipse.equinox.http.registry</Require-Bundle>
 		            <Import-Package>
 		            	javax.servlet;version="[2,4)",
+		            	javax.servlet.http;version="[2,4)",
 		            	*
 		            </Import-Package>
 				</instructions>
   			</configuration>
+  		</plugin>
+  		<plugin>
+  			<groupId>org.apache.maven.plugins</groupId>
+  			<artifactId>maven-compiler-plugin</artifactId>
+  			<version>2.4</version>
+  			<configuration>
+		       <source>1.6</source>
+		       <target>1.6</target>
+		   </configuration>
   		</plugin>
   		<plugin>
   			<groupId>org.apache.maven.plugins</groupId>

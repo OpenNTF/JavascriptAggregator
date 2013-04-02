@@ -58,8 +58,16 @@
       <resource>
         <directory>${basedir}</directory>
         <includes>
-          <include>testaggr-config.js</include>
           <include>embed.txt</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${basedir}</directory>
+        <!-- Rewrite maven variables contained in this resource. -->
+        <filtering>true</filtering>
+        <includes>
+          <include>testaggr-config.js</include>
+          <include>WebContent/js/loaderConfig.js</include>
         </includes>
       </resource>
     </resources>
@@ -115,12 +123,12 @@
     	<version>3.3.100-v20070530</version>
     	<scope>provided</scope>
     </dependency>
-    <dependency>
-    	<groupId>org.eclipse</groupId>
-    	<artifactId>osgi</artifactId>
-    	<version>3.3.0-v20070530</version>
-    	<scope>provided</scope>
-    </dependency>
+	<dependency>
+		<groupId>org.osgi</groupId>
+		<artifactId>org.osgi</artifactId>
+		<version>3.0.0</version>
+		<scope>provided</scope>
+	</dependency>
     <dependency>
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-service</artifactId>
