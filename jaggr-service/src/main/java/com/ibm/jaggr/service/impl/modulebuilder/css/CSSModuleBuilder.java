@@ -164,6 +164,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static final protected Pattern urlPattern = Pattern.compile("url\\(\\s*([^\\)]+)\\s*\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
 	
+	static final private Pattern importPattern = Pattern.compile("\\@import\\s+(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
+	static final private Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|url\\(([^)]+)\\)"); //$NON-NLS-1$
+	static final private Pattern quotedStringReplacerPattern = Pattern.compile("%%__qUoTeDsTrInG([0-9]*)__%%"); //$NON-NLS-1$
+	static final private Pattern whitespacePattern = Pattern.compile("\\s+", Pattern.MULTILINE); //$NON-NLS-1$
+	static final private Pattern endsPattern = Pattern.compile("^\\s|\\s$"); //$NON-NLS-1$
+	static final private Pattern closeBracePattern = Pattern.compile("[;\\s]+\\}"); //$NON-NLS-1$
+	static final private Pattern delimitersPattern = Pattern.compile("(\\s?[;:,{]\\s?)"); //$NON-NLS-1$
+	static final private  Pattern escaper = Pattern.compile("([^a-zA-z0-9])"); //$NON-NLS-1$
+	
 	static final protected Collection<String> s_inlineableImageTypes;
 	static {
 		s_inlineableImageTypes = new ArrayList<String>();
@@ -257,12 +266,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @return
 	 */
 	protected String minify(String css, URI uri) {
-		final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|url\\(([^)]+)\\)"); //$NON-NLS-1$
-		final Pattern whitespacePattern = Pattern.compile("\\s+", Pattern.MULTILINE); //$NON-NLS-1$
-		final Pattern endsPattern = Pattern.compile("^\\s|\\s$"); //$NON-NLS-1$
-		final Pattern closeBracePattern = Pattern.compile("[;\\s]+\\}"); //$NON-NLS-1$
-		final Pattern delimitersPattern = Pattern.compile("(\\s?[;:,{]\\s?)"); //$NON-NLS-1$
-		
 		// replace all quoted strings and url(...) patterns with unique ids so that 
 		// they won't be affected by whitespace removal.
 		LinkedList<String> quotedStringReplacements = new LinkedList<String>();
@@ -275,7 +278,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					m.group(0);
 			quotedStringReplacements.add(i, text);
 			String replacement = "%%__qUoTeDsTrInG" + (i++) + "__%%"; //$NON-NLS-1$ //$NON-NLS-2$
-			m.appendReplacement(sb, replacement);
+			m.appendReplacement(sb, "");
+			sb.append(replacement);
 		}
 		m.appendTail(sb);
 		css = sb.toString();
@@ -288,17 +292,19 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		sb = new StringBuffer();
 		while (m.find()) {
 			String text = m.group(1);
-			m.appendReplacement(sb, text.length() == 1 ? text : text.replace(" ", "")); //$NON-NLS-1$ //$NON-NLS-2$
+			m.appendReplacement(sb, "");
+			sb.append(text.length() == 1 ? text : text.replace(" ", "")); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		m.appendTail(sb);
 		css = sb.toString();
 
 		// restore quoted strings and url(...) patterns
-		m = Pattern.compile("%%__qUoTeDsTrInG([0-9]*)__%%").matcher(css); //$NON-NLS-1$
+		m = quotedStringReplacerPattern.matcher(css);
 		sb = new StringBuffer();
 		while (m.find()) {
 			i = Integer.parseInt(m.group(1));
-			m.appendReplacement(sb, quotedStringReplacements.get(i));
+			m.appendReplacement(sb, "");
+			sb.append(quotedStringReplacements.get(i));
 		}
 		m.appendTail(sb);
 		css = sb.toString();
@@ -327,8 +333,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @throws IOException
 	 */
 	protected String inlineImports(HttpServletRequest req, String css, URI uri, String path) throws IOException {
-		final Pattern importPattern = Pattern.compile("\\@import\\s+(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
-		
 		// In-lining of imports can be disabled by request parameter for debugging
 		if (!TypeUtil.asBoolean(req.getParameter(INLINEIMPORTS_REQPARAM_NAME), true)) {
 			return css;
@@ -368,7 +372,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			//Only process media type "all" or empty media type rules.
 			if(mediaTypes.length() > 0 && !"all".equals(mediaTypes.replaceFirst("^\\s\\s*", "").replaceFirst("\\s\\s*$", ""))){ //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			// remove quotes and leading or trailing whitespace.
@@ -376,7 +381,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			
 			// if name is not relative, then bail
 			if (importNameMatch.startsWith("/") || protocolPattern.matcher(importNameMatch).find()) { //$NON-NLS-1$
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			
@@ -397,7 +403,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			if (inlineImports) {
 				importCss = inlineImports(req, importCss, importUri, importNameMatch);
 			}
-			m.appendReplacement(buf, importCss);
+			m.appendReplacement(buf, "");
+			buf.append(importCss);
 		}
 		m.appendTail(buf);
 		
@@ -429,7 +436,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				
 				// Don't modify non-relative URLs
 				if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
-					m.appendReplacement(buf, fullMatch);
+					m.appendReplacement(buf, "");
+					buf.append(fullMatch);
 					continue;
 				}
 				
@@ -446,14 +454,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 						}
 					}
 				}
-				m.appendReplacement(
-						buf, 
-						new StringBuffer("url(") //$NON-NLS-1$
-							.append(quoted)  
-							.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
-							.append(quoted)
-							.append(")") //$NON-NLS-1$
-							.toString()
+				m.appendReplacement(buf, "");
+				buf.append(new StringBuffer("url(") //$NON-NLS-1$
+					.append(quoted)  
+					.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
+					.append(quoted)
+					.append(")") //$NON-NLS-1$
+					.toString()
 				); 
 			}
 			m.appendTail(buf);
@@ -498,7 +505,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			// Don't do anything with non-relative URLs
 			if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			
@@ -529,7 +537,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// If there's an include list, then only the files in the include list
 			// will be inlined
 			if (inlinedImageIncludeList.size() > 0 && !include || exclude) {
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			
@@ -546,7 +555,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				}
 				if (include || inlineableImageTypes.contains(type) && size <= imageSizeThreshold) {
 					String base64 = getBase64(connection);
-					m.appendReplacement(buf, "url('data:" + type + //$NON-NLS-1$
+					m.appendReplacement(buf, "");
+					buf.append("url('data:" + type + //$NON-NLS-1$
 							";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
 					imageInlined = true;
 				}
@@ -568,7 +578,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 			if (!imageInlined) {
 				// Image not in-lined.  Write the original URL
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 			}
 		} 
 		m.appendTail(buf);
@@ -606,7 +617,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	}
 	
 	protected Pattern toRegexp(String filespec) {
-		final Pattern escaper = Pattern.compile("([^a-zA-z0-9])"); //$NON-NLS-1$
 		return Pattern.compile("^" + escaper.matcher(filespec) //$NON-NLS-1$
 					.replaceAll("\\\\$1") //$NON-NLS-1$
 					.replaceAll("\\\\\\*", ".*") //$NON-NLS-1$ //$NON-NLS-2$
