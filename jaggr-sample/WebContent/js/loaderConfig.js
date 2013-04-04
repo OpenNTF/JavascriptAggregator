@@ -22,17 +22,17 @@
 		packages: [
 	   		{
 	   			name: 'dojo',
-	   			location: '../dojo',
+	   			location: '../dojo-1.8.0/dojo',
 	   			lib: '.'
 	   		},
 	   		{
 	   			name: 'dijit',
-	   			location: '../dijit',
+	   			location: '../dojo-1.8.0/dijit',
 	   			lib: '.'
 	   		},
 	   		{
 	   			name: 'dojox',
-	   			location: '../dojox',
+	   			location: '../dojo-1.8.0/dojox',
 	   			lib: '.'
 	   		}
 	   	],
@@ -63,8 +63,9 @@
 		waitSeconds: 10,
 	
 		combo: {
-			contextPath: "/testaggr",
-			expandRequire: true
+			contextPath: "/test/aggr",
+			expandRequire: true,
+			cacheBust: '${project.version}'
 		},
 		
 		deps: [

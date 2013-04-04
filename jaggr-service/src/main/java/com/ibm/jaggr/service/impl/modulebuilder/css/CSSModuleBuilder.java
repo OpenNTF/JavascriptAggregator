@@ -279,7 +279,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					m.group(0);
 			quotedStringReplacements.add(i, text);
 			String replacement = "%%" + QUOTED_STRING_MARKER + (i++) + "__%%"; //$NON-NLS-1$ //$NON-NLS-2$
-			m.appendReplacement(sb, replacement);
+			m.appendReplacement(sb, "");
+			sb.append(replacement);
 		}
 		m.appendTail(sb);
 		css = sb.toString();
@@ -292,7 +293,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		sb = new StringBuffer();
 		while (m.find()) {
 			String text = m.group(1);
-			m.appendReplacement(sb, text.length() == 1 ? text : text.replace(" ", "")); //$NON-NLS-1$ //$NON-NLS-2$
+			m.appendReplacement(sb, "");
+			sb.append(text.length() == 1 ? text : text.replace(" ", "")); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		m.appendTail(sb);
 		css = sb.toString();
@@ -302,7 +304,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		sb = new StringBuffer();
 		while (m.find()) {
 			i = Integer.parseInt(m.group(1));
-			m.appendReplacement(sb, quotedStringReplacements.get(i));
+			m.appendReplacement(sb, "");
+			sb.append(quotedStringReplacements.get(i));
 		}
 		m.appendTail(sb);
 		css = sb.toString();
@@ -372,7 +375,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			//Only process media type "all" or empty media type rules.
 			if(mediaTypes.length() > 0 && !"all".equals(StringUtils.trim(mediaTypes))){ //$NON-NLS-1$
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			// remove quotes.
@@ -381,7 +385,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			
 			// if name is not relative, then bail
 			if (importNameMatch.startsWith("/") || protocolPattern.matcher(importNameMatch).find()) { //$NON-NLS-1$
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			
@@ -402,7 +407,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			if (inlineImports) {
 				importCss = inlineImports(req, importCss, importUri, importNameMatch);
 			}
-			m.appendReplacement(buf, importCss);
+			m.appendReplacement(buf, "");
+			buf.append(importCss);
 		}
 		m.appendTail(buf);
 		
@@ -434,7 +440,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				
 				// Don't modify non-relative URLs
 				if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
-					m.appendReplacement(buf, fullMatch);
+					m.appendReplacement(buf, "");
+					buf.append(fullMatch);
 					continue;
 				}
 				
@@ -451,14 +458,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 						}
 					}
 				}
-				m.appendReplacement(
-						buf, 
-						new StringBuffer("url(") //$NON-NLS-1$
-							.append(quoted)  
-							.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
-							.append(quoted)
-							.append(")") //$NON-NLS-1$
-							.toString()
+				m.appendReplacement(buf, "");
+				buf.append(new StringBuffer("url(") //$NON-NLS-1$
+					.append(quoted)  
+					.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
+					.append(quoted)
+					.append(")") //$NON-NLS-1$
+					.toString()
 				); 
 			}
 			m.appendTail(buf);
@@ -504,7 +510,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			// Don't do anything with non-relative URLs
 			if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			
@@ -529,7 +536,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// If there's an include list, then only the files in the include list
 			// will be inlined
 			if (inlinedImageIncludeList.size() > 0 && !include || exclude) {
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 				continue;
 			}
 			
@@ -546,7 +554,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				}
 				if (include || inlineableImageTypes.contains(type) && size <= imageSizeThreshold) {
 					String base64 = getBase64(connection);
-					m.appendReplacement(buf, "url('data:" + type + //$NON-NLS-1$
+					m.appendReplacement(buf, "");
+					buf.append("url('data:" + type + //$NON-NLS-1$
 							";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
 					imageInlined = true;
 				}
@@ -568,7 +577,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 			if (!imageInlined) {
 				// Image not in-lined.  Write the original URL
-				m.appendReplacement(buf, fullMatch);
+				m.appendReplacement(buf, "");
+				buf.append(fullMatch);
 			}
 		} 
 		m.appendTail(buf);

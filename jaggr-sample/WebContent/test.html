@@ -60,7 +60,7 @@
 		}
 	}
 	// write out the script tag to use the aggregator to load our modules
-	document.write('<script src="../../testaggr?modules=');
+	document.write('<script src="../../test/aggr?modules=');
 	for (var s in modules) {
 		document.write((i++ ? "," : "") + encodeURIComponent(modules[s]));
 	}

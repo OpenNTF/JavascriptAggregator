@@ -16,16 +16,25 @@
    limitations under the License.
 -->
 <plugin>
-	<extension point="org.eclipse.equinox.http.registry.servlets">
-		<servlet alias="/testaggr" class="com.ibm.jaggr.service.impl.AggregatorImpl" load-on-startup="true">
-			<!-- No scheme on the URI means the resource is located 
-			     in the same resource bundle as this file -->
-			<init-param name="config" value="testaggr-config.js"/>
-		</servlet>
-	</extension>
-	<extension point="org.eclipse.equinox.http.registry.resources">
-        <resource
-              alias="/testaggr/res"
-              base-name="/WebContent"/>
-     </extension>
+  <extension point="org.eclipse.equinox.http.registry.servlets">
+    <servlet alias="/test/aggr" class="com.ibm.jaggr.service.impl.AggregatorImpl" load-on-startup="true">
+      <!-- No scheme on the URI means the resource is located 
+           in the same resource bundle as this file -->
+      <init-param name="config" value="testaggr-config.js"/>
+    </servlet>
+  </extension>
+
+  <extension point="org.eclipse.equinox.http.registry.httpcontexts">
+    <httpcontext id="resources">
+      <resource-mapping path="/WebContent" />
+    </httpcontext>
+  </extension>
+    
+  <extension point="org.eclipse.equinox.http.registry.filters">
+    <filter alias="/test/res/*" class="com.ibm.jaggr.sample.BasicFilter" httpcontextId="resources" />
+  </extension>
+  
+  <extension point="org.eclipse.equinox.http.registry.resources">
+    <resource alias="/test/res" base-name="/" httpcontextId="resources" />
+  </extension>
 </plugin>
