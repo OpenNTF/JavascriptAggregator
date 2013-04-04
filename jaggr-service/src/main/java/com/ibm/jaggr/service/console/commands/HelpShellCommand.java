@@ -24,6 +24,6 @@ import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
 public class HelpShellCommand extends AbstractOsgiCommandSupport {
 	@Override
 	protected void exec(AggregatorCommandProvider provider) throws Exception {
-		System.out.println(provider.getHelp().replaceAll("\taggregator ", "\taggregator:"));
+		System.out.println(provider.getHelp().replaceAll("\taggregator ", "\taggregator:")); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 }

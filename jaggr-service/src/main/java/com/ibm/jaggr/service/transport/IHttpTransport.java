@@ -172,7 +172,7 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * in the {@link ModuleBuild} constructor will be ignored.
 	 */
 	public static final String NOADDMODULES_REQATTRNAME = IHttpTransport.class
-			.getName() + ".NoExpandModules";
+			.getName() + ".NoExpandModules"; //$NON-NLS-1$
 	/**
 	 * Name of the request attribute specifying the config var name used to
 	 * configure the loader on the client.  The default value is "require". 

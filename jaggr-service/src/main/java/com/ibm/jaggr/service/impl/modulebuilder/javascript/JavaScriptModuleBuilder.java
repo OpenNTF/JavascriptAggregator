@@ -473,7 +473,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		
 		@Override
 		public String toString() {
-			return eyecatcher + (featureKeyGen != null ? (":(" + featureKeyGen.toString()) + ")" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-2$
+			return eyecatcher + (featureKeyGen != null ? (":(" + featureKeyGen.toString()) + ")" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
 		@Override
