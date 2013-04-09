@@ -284,7 +284,7 @@ public class LayerCacheTest {
 	
 	@SuppressWarnings("unchecked")
 	private void createMockObjects(List<InitParams.InitParam> initParams) throws Exception {
-		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class);
+		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
 		mockAggregator = new Proxy(easyMockAggregator);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);

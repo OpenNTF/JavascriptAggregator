@@ -181,28 +181,34 @@ public class TestUtils {
 	}
 
 	public static IAggregator createMockAggregator() throws Exception {
-		return createMockAggregator(null, null, null, null);
+		return createMockAggregator(null, null, null, null, null);
 	}
 	
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
 		
-		return createMockAggregator(configRef, workingDirectory, null, null);
+		return createMockAggregator(configRef, workingDirectory, null, null, null);
 	}
 
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory, List<InitParam> initParams) throws Exception {
 		
-		return createMockAggregator(configRef, workingDirectory, initParams, null);
+		return createMockAggregator(configRef, workingDirectory, initParams, null, null);
 	}
 
+	public static IAggregator createMockAggregator(
+			IHttpTransport transport) throws Exception {
+		
+		return createMockAggregator(null, null, null, null, transport);
+	}
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory,
 			List<InitParam> initParams,
-			Class<?> aggregatorProxyClass) throws Exception {
+			Class<?> aggregatorProxyClass,
+			IHttpTransport transport) throws Exception {
 
 		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
 		IOptions options = new OptionsImpl(null, "test", false);
@@ -216,7 +222,7 @@ public class TestUtils {
 			workingDirectory = new File(System.getProperty("java.io.tmpdir"));
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
-		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(new DojoHttpTransport());
+		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new DojoHttpTransport() : transport);
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
 				new SynchronousExecutor(), 
 				null, 

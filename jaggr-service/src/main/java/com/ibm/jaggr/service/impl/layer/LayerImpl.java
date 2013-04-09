@@ -32,12 +32,10 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
@@ -70,7 +68,6 @@ import com.ibm.jaggr.service.readers.BuildListReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
@@ -85,7 +82,6 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class LayerImpl implements ILayer {
 	private static final long serialVersionUID = 2491460740123061848L;
 	static final Logger log = Logger.getLogger(LayerImpl.class.getName());
-    public static final String PREAMBLEFMT = "\n/*-------- %s --------*/\n"; //$NON-NLS-1$
     public static final String LAST_MODIFIED_PROPNAME = LayerImpl.class.getName() + ".LAST_MODIFIED_FILES"; //$NON-NLS-1$
     public static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
     public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
@@ -281,7 +277,7 @@ public class LayerImpl implements ILayer {
 			
 	        // List of Future<IModule.ModuleReader> objects that will be used to read the module
 	        // data from
-	        LinkedBlockingDeque<ModuleBuildFuture> futures = null;
+	        List<ModuleBuildFuture> futures = null;
 	        List<ICacheKeyGenerator> moduleKeyGens = null;
 	
 	        // Synchronize on the LayerBuild object for the build.  This will prevent multiple
@@ -358,25 +354,16 @@ public class LayerImpl implements ILayer {
 		            	entry.persist(mgr);
 		            }
 		        } else {
-		        	futures = new LinkedBlockingDeque<ModuleBuildFuture>();
 			        moduleKeyGens = new LinkedList<ICacheKeyGenerator>();
 
-			        if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
-			        	request.setAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME, new LayerBuildQueueWrapper(futures));
-			        }
-					List<ModuleBuildFuture> collectedFutures = collectFutures(request);
-					// Add the collected futures to the front of the deque (back to front) so that
-					// the collected futures will be pulled from the queue before any futures added 
-					// by the builders via ILayer.BUILDQUEUE_REQATTRNAME
-					for (int i = collectedFutures.size()-1; i >= 0; i--) {
-						futures.addFirst(collectedFutures.get(i));
-					}
+					futures = collectFutures(request);
 					
 			        // Create a BuildListReader from the list of Futures.  This reader will obtain a 
 			        // ModuleReader from each of the Futures in the list and read data from each one in
 			        // succession until all the data has been read, blocking on each Future until the 
 			        // reader becomes available.
-					in = createBuildListReader(futures, request, moduleKeyGens);
+					LayerBuilder layerBuilder = new LayerBuilder(request, moduleKeyGens, getModules(request).getRequiredModules());
+					in = layerBuilder.build(futures);
 					
 			        if (isGzip) {
 			        	if (cacheInfoReport != null) {
@@ -547,145 +534,6 @@ public class LayerImpl implements ILayer {
 	}
 
 	/**
-	 * Creates and returns the reader object for the response
-	 * 
-	 * @param futures
-	 *            The queue of {@link ModuleBuildFuture} objects. This includes
-	 *            the entries for modules identified in the request as well as
-	 *            entries added by module builders via the
-	 *            {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME} request
-	 *            attribute.
-	 * @param request
-	 *            The request object
-	 * @param keyGens
-	 *            A list that will be populated with the cache key generators
-	 *            associated with the response
-	 * @return The reader object for the response.
-	 * @throws IOException
-	 */
-	protected BuildListReader createBuildListReader(Queue<ModuleBuildFuture> futures,
-			HttpServletRequest request, List<ICacheKeyGenerator> keyGens)
-			throws IOException {
-
-		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		IOptions options = aggr.getOptions();
-		ModuleList moduleList = getModules(request);
-		IHttpTransport transport = aggr.getTransport();
-		int count = 0;
-		boolean required = false;
-		List<ModuleBuildReader> readerList = new LinkedList<ModuleBuildReader>();
-		
-        // Add the application specified notice to the beginning of the response
-        String notice = aggr.getConfig().getNotice();
-        if (notice != null) {
-			readerList.add(
-				new ModuleBuildReader(notice + "\r\n") //$NON-NLS-1$
-			);
-        }
-        // If development mode is enabled, say so
-		if (options.isDevelopmentMode() || options.isDebugMode()) {
-			readerList.add(
-				new ModuleBuildReader("/* " + //$NON-NLS-1$
-						(options.isDevelopmentMode() ? Messages.LayerImpl_1 : Messages.LayerImpl_2) +
-						" */\r\n") //$NON-NLS-1$ 
-			);
-		}
-		
-		addTransportContribution(request, transport, readerList, LayerContributionType.BEGIN_RESPONSE, null);
-		// For each source file, add a Future<IModule.ModuleReader> to the list 
-		while (!futures.isEmpty()) {
-			ModuleBuildFuture future = futures.remove();
-			ModuleBuildReader reader;
-			try {
-				reader = future.get();
-			} catch (InterruptedException e) {
-				throw new IOException(e);
-			} catch (ExecutionException e) {
-				if (e.getCause() instanceof IOException) {
-					throw (IOException)e.getCause();
-				}
-				throw new IOException(e.getCause());
-			}
-			
-			List<ICacheKeyGenerator> keyGenList = reader.getCacheKeyGenerators();
-			if (keyGenList != null) {
-	        	keyGens.addAll(keyGenList);
-			}
-			
-			// Include the filename preamble if requested.
-			if ((options.isDebugMode() || options.isDevelopmentMode()) && TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))) {
-				readerList.add(
-					new ModuleBuildReader(String.format(PREAMBLEFMT, future.getResource().getURI().toString()))
-				);
-			}
-			// Get the layer contribution from the transport
-			// Note that we depend on the behavior that all non-required
-			// modules in the module list appear before all required 
-			// modules in the iteration.
-			ModuleSpecifier source = future.getModuleSpecifier();
-			if (source == ModuleSpecifier.MODULES || source == ModuleSpecifier.BUILD_ADDED && !required) {
-				if (count == 0) {
-					addTransportContribution(request, transport, readerList, 
-							LayerContributionType.BEGIN_MODULES, null);
-					addTransportContribution(request, transport, readerList, 
-							LayerContributionType.BEFORE_FIRST_MODULE, 
-							future.getModuleId());
-				} else {	        			
-					addTransportContribution(request, transport, readerList, 
-							LayerContributionType.BEFORE_SUBSEQUENT_MODULE, 
-							future.getModuleId());
-				}
-				count++;
-			} else if (source == ModuleSpecifier.REQUIRED || source == ModuleSpecifier.BUILD_ADDED && required) {
-				if (!required) {
-					required = true;
-					if (count > 0) {
-		    			addTransportContribution(request, transport, readerList, 
-		    					LayerContributionType.END_MODULES, null);
-					}
-					count = 0;
-				}
-				if (count == 0) {
-					addTransportContribution(request, transport, readerList, 
-							LayerContributionType.BEGIN_REQUIRED_MODULES,
-							moduleList.getRequiredModules());
-					addTransportContribution(request, transport, readerList, 
-							LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE, 
-							future.getModuleId());
-				} else {	        			
-					addTransportContribution(request, transport, readerList, 
-							LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE, 
-							future.getModuleId());
-				}
-				count++;
-			}
-			// Call module.get and add the returned Future to the list
-			readerList.add(reader);
-			if (source == ModuleSpecifier.MODULES || source == ModuleSpecifier.BUILD_ADDED && !required) {
-				addTransportContribution(request, transport, readerList, 
-						LayerContributionType.AFTER_MODULE, future.getModuleId());
-			} else if (source == ModuleSpecifier.REQUIRED || source == ModuleSpecifier.BUILD_ADDED && required) {
-				addTransportContribution(request, transport, readerList, 
-						LayerContributionType.AFTER_REQUIRED_MODULE, future.getModuleId()); 
-			}
-		}
-		if (count > 0) {
-			if (required) {
-				addTransportContribution(request, transport, readerList, 
-					LayerContributionType.END_REQUIRED_MODULES,
-					moduleList.getRequiredModules());
-			} else {
-				addTransportContribution(request, transport, readerList, 
-						LayerContributionType.END_MODULES, null);
-			}
-		}
-		addTransportContribution(request, transport, readerList, 
-				LayerContributionType.END_RESPONSE, null);
-		
-		return new BuildListReader(readerList);
-	}
-
-	/**
 	 * Adds the cache key generators specified in {@code gens} to the map of
 	 * classname/key-generator pairs, combining key-generators as needed.
 	 * 
@@ -708,41 +556,6 @@ public class LayerImpl implements ILayer {
 		}		        			
 	}
 
-	/**
-	 * Appends the reader for the layer contribution specified by {@code type}
-	 * (contributed by the transport) to the end of {@code readerList}.
-	 * 
-	 * @param request
-	 *            The http request object
-	 * @param transport
-	 *            The transport object
-	 * @param readerList
-	 *            The reader list to append to
-	 * @param type
-	 *            The layer contribution type
-	 * @param arg
-	 *            The argument value (see
-	 *            {@link IHttpTransport#contributeLoaderExtensionJavaScript(String)}
-	 */
-	protected void addTransportContribution(
-			HttpServletRequest request,
-			IHttpTransport transport, 
-			List<ModuleBuildReader> readerList, 
-			LayerContributionType type,
-			Object arg) {
-
-		String transportContrib = transport.getLayerContribution(
-				request, 
-				type, 
-				arg
-		);
-		if (transportContrib != null) {
-    		readerList.add(
-   				new ModuleBuildReader(transportContrib)
-        	);
-		}
-	}
-	
 	/**
 	 * Generates a cache key for the layer.
 	 * 

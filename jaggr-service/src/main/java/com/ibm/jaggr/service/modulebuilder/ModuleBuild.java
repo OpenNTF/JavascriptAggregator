@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.modulebuilder;
 
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -34,40 +35,20 @@ import com.ibm.jaggr.service.resource.IResource;
  */
 public final class ModuleBuild {
 	private String buildOutput;
-	private List<IModule> extraModules;
+	private List<IModule> before;
+	private List<IModule> after;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private boolean error;
 
 	/**
 	 * Convenience constructor utilizing a null cache key generator and no
-	 * error and no extra modules.
+	 * error.
 	 * 
 	 * @param buildOutput
 	 *            The built output for the module
 	 */
-	@SuppressWarnings("unchecked")
 	public ModuleBuild(String buildOutput) {
-		this(buildOutput, null, Collections.EMPTY_LIST, false);
-	}
-
-	/**
-	 * Convenience constructor specifying no extra modules.
-	 * 
-	 * @param buildOutput
-	 *            The build output for the module
-	 * @param keyGens
-	 *            Array of cache key generators. If a non-provisional
-	 *            cache key generator was supplied in the preceding call for
-	 *            this same request to
-	 *            {@link IModuleBuilder#getCacheKeyGenerators(IAggregator)} , or
-	 *            the built output for the module is invariant with regard to
-	 *            the request, then <code>keyGens</code> may be null.
-	 * @param error
-	 *            True if an error occurred while generating the build
-	 */
-	@SuppressWarnings("unchecked")
-	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
-		this(buildOutput, keyGens, Collections.EMPTY_LIST, error);
+		this(buildOutput, null, false);
 	}
 
 	/**
@@ -82,19 +63,13 @@ public final class ModuleBuild {
 	 *            {@link IModuleBuilder#getCacheKeyGenerators(IAggregator)} , or
 	 *            the built output for the module is invariant with regard to
 	 *            the request, then <code>keyGens</code> may be null.
-	 * @param extraModules
-	 *            A list of additional modules that should be included in the
-	 *            response. For example, the i18n modules builder specifies that
-	 *            modules for additional locales be added to the response based
-	 *            on the request locales and available locales by specifying the
-	 *            modules here.
 	 * @param error
 	 *            True if an error occurred while generating the build
 	 */
-	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, List<IModule> extraModules, boolean error) {
+	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
 		this.buildOutput = buildOutput;
 		this.keyGenerators = keyGens;
-		this.extraModules = extraModules;
+		this.before = this.after = null;
 		this.error = error;
 		if (keyGens != null && KeyGenUtil.isProvisional(keyGens)) {
 			throw new IllegalStateException();
@@ -134,12 +109,52 @@ public final class ModuleBuild {
 	}
 	
 	/**
-	 * Returns the list of additional modules that should be included in 
-	 * the response. 
+	 * Adds the specified module to the list of before modules.
+	 * <p>
+	 * Before modules are included in the layer build that contains this
+	 * module build ahead of this module build.
 	 * 
-	 * @return The list of additional modules.
+	 * @param module The module to add to the before list
 	 */
-	public List<IModule> getExtraModules() {
-		return extraModules;
+	public void addBefore(IModule module) {
+		if (before == null) {
+			before = new LinkedList<IModule>();
+		}
+		before.add(module);
+	}
+
+	/**
+	 * Adds the specified module to the list of after modules.
+	 * <p>
+	 * After modules are included in the layer build that contains this
+	 * module build following this module build.
+	 * 
+	 * @param module The module to add to the after list
+	 */
+	public void addAfter(IModule module) {
+		if (after == null) {
+			after = new LinkedList<IModule>();
+		}
+		after.add(module);
+	}
+	
+	/**
+	 * Returns the list of additional modules that should be included ahead 
+	 * of this module build in the layer
+	 * 
+	 * @return The list of before modules.
+	 */
+	public List<IModule> getBefore() {
+		return before == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(before);
+	}
+	
+	/**
+	 * Returns the list of additional modules that should be included following 
+	 * this module build in the layer
+	 * 
+	 * @return The list of after modules.
+	 */
+	public List<IModule> getAfter() {
+		return after == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(after);
 	}
 }

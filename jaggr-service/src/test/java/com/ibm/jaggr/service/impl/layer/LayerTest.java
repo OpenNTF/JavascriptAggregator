@@ -295,9 +295,9 @@ public class LayerTest extends EasyMock {
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
-		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
-		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
-		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
+		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
+		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
+		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
 		totalSize += result.length();
 		Assert.assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		Assert.assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
@@ -338,9 +338,9 @@ public class LayerTest extends EasyMock {
 		assertEquals("remove", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
-		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
-		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
-		assertTrue(result.contains(String.format(LayerImpl.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
+		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
+		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
+		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
 		URI uri = new File(tmpdir, "p1/a.js").toURI();
 		NotFoundModule nfm = new NotFoundModule("p1/a.js", uri);
 		Reader rdr = nfm.getBuild(mockRequest).get();

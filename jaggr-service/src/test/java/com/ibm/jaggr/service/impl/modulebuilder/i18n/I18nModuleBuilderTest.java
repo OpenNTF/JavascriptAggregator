@@ -145,7 +145,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		output = build.getBuildOutput();
 		
 		Assert.assertTrue(builder.handles("nls/strings", new FileResource(new File(nls, "strings.js").toURI())));
-		Assert.assertEquals(0, build.getExtraModules().size());
+		Assert.assertEquals(0, build.getBefore().size());
 
 		// build the module.  Should not get locale expansion with no expansion attribute
 		// enabled
@@ -168,8 +168,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		output = build.getBuildOutput();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/en/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/en/strings", build.getBefore().get(0).getModuleId());
 
 		// Test with an unavailable locale
 		requestAttributes.put(
@@ -183,7 +183,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		output = build.getBuildOutput();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
-		Assert.assertEquals(0, build.getExtraModules().size());
+		Assert.assertEquals(0, build.getBefore().size());
 		
 		// Now add the locale,  make sure the change isn't detected without development
 		// mode being enabled (because we're using the list cached in the key generator).
@@ -194,7 +194,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		output = build.getBuildOutput();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
-		Assert.assertEquals(0, build.getExtraModules().size());
+		Assert.assertEquals(0, build.getBefore().size());
 
 		// Now enable development mode and make sure the addition of the new locale is detected
 		TestUtils.deleteRecursively(eb);
@@ -212,7 +212,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{eb}"));
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
-		Assert.assertEquals(0, build.getExtraModules().size());
+		Assert.assertEquals(0, build.getBefore().size());
 		// Now add the missing locale resources and make sure it's the new resource is
 		// returned in the build.
 		eb = new File(nls, "eb");
@@ -223,9 +223,9 @@ public class I18nModuleBuilderTest extends EasyMock {
 		output = build.getBuildOutput();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/eb/strings", build.getExtraModules().get(0).getModuleId());
-		Assert.assertEquals(file.toURI(), build.getExtraModules().get(0).getURI());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/eb/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals(file.toURI(), build.getBefore().get(0).getURI());
 	}
 	
 	@Test
@@ -243,8 +243,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en-us-var"));
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/en-us-var/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/en-us-var/strings", build.getBefore().get(0).getModuleId());
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
 				Arrays.asList(new String[]{"en-ca-var"}));
@@ -253,8 +253,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{en-ca}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/en-ca/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/en-ca/strings", build.getBefore().get(0).getModuleId());
 		
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -264,8 +264,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{es}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/es/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/es/strings", build.getBefore().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -275,7 +275,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertFalse(s.contains("i18n"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(0, build.getExtraModules().size());
+		Assert.assertEquals(0, build.getBefore().size());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -285,8 +285,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{en-ca}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/en-ca/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/en-ca/strings", build.getBefore().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -296,8 +296,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{en}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/en/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/en/strings", build.getBefore().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -307,8 +307,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{en}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(1, build.getExtraModules().size());
-		Assert.assertEquals("nls/en/strings", build.getExtraModules().get(0).getModuleId());
+		Assert.assertEquals(1, build.getBefore().size());
+		Assert.assertEquals("nls/en/strings", build.getBefore().get(0).getModuleId());
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME, 
@@ -318,7 +318,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertFalse(s.contains("i18n"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(0, build.getExtraModules().size());
+		Assert.assertEquals(0, build.getBefore().size());
 
 		// Try with multiple locales
 		requestAttributes.put(
@@ -329,9 +329,9 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{es,en-us,en-ca}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
-		Assert.assertEquals(3, build.getExtraModules().size());
+		Assert.assertEquals(3, build.getBefore().size());
 		Set<String> mids = new HashSet<String>();
-		for (IModule module : build.getExtraModules()) {
+		for (IModule module : build.getBefore()) {
 			mids.add(module.getModuleId());
 		}
 		Assert.assertEquals(

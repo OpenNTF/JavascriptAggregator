@@ -34,7 +34,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Queue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -288,9 +287,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
-				processExtraModules(request, existingEntry);
-				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
-						cacheKeyGenerators, false));
+				ModuleBuildReader mbr = new ModuleBuildReader(reader,
+						cacheKeyGenerators, false);
+				processExtraModules(mbr, request, existingEntry);
+				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
 		}
 
@@ -309,9 +309,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
-				processExtraModules(request, existingEntry);
-				return new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(reader,
-						cacheKeyGenerators, false));
+				ModuleBuildReader mbr = new ModuleBuildReader(reader,
+						cacheKeyGenerators, false);
+				processExtraModules(mbr, request, existingEntry);
+				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
 		}
 
@@ -355,9 +356,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 								log.finer("returning built module with cache key: " //$NON-NLS-1$
 										+ key);
 							}
-							processExtraModules(request, cacheEntry);
-							return new ModuleBuildReader(reader,
-									_cacheKeyGenerators, false);
+							ModuleBuildReader mbr = new ModuleBuildReader(reader,
+									_cacheKeyGenerators, false); 
+							processExtraModules(mbr, request, cacheEntry);
+							return mbr;
 						}
 						// Build the output
 						IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
@@ -371,7 +373,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							return new ModuleBuildReader(new StringReader(build
 									.getBuildOutput()), null, true);
 						}
-						cacheEntry.setData(build.getBuildOutput(), build.getExtraModules());
+						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
 						
 						// If the cache key generator has changed, then update the 
 						if (newCacheKeyGenerators == null || !newCacheKeyGenerators.equals(build.getCacheKeyGenerators())) {
@@ -450,11 +452,12 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						}
 					}
 				}
-				processExtraModules(request, cacheEntry);
-				// return a build reader object
-				return new ModuleBuildReader(
+				ModuleBuildReader mbr = new ModuleBuildReader(
 						cacheEntry.getReader(mgr.getCacheDir()),
-						newCacheKeyGenerators, false);
+						newCacheKeyGenerators, false); 
+				processExtraModules(mbr, request, cacheEntry);
+				// return a build reader object
+				return mbr;
 			}
 		});
 	}
@@ -470,24 +473,29 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 *            The cache entry object for the current module
 	 * @throws IOException
 	 */
-	@SuppressWarnings("unchecked")
-	public void processExtraModules(HttpServletRequest request, CacheEntry cacheEntry) 
+	public void processExtraModules(ModuleBuildReader reader, HttpServletRequest request, CacheEntry cacheEntry) 
 			throws IOException {
 		
-		List<IModule> extraModules = cacheEntry.getAdditionalModules();
-		if (!extraModules.isEmpty()) {
-			Queue<ModuleBuildFuture> queue = (Queue<ModuleBuildFuture>)request.getAttribute(ILayer.BUILDFUTURESQUEUE_REQATTRNAME);
-			if (queue != null) {
-				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-				for (IModule module : cacheEntry.getAdditionalModules()) {
-					Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
-					ModuleBuildFuture mbf = new ModuleBuildFuture(
-							module.getModuleId(), 
-							module.getResource(aggr),
-							future,
-							ModuleSpecifier.BUILD_ADDED);
-					queue.offer(mbf);
-				}
+		List<IModule> before = cacheEntry.getBefore(), after = cacheEntry.getAfter();
+		if (!before.isEmpty() || !after.isEmpty()) {
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			for (IModule module : cacheEntry.getBefore()) {
+				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
+				ModuleBuildFuture mbf = new ModuleBuildFuture(
+						module.getModuleId(), 
+						module.getResource(aggr),
+						future,
+						ModuleSpecifier.BUILD_ADDED);
+				reader.addBefore(mbf);
+			}
+			for (IModule module : cacheEntry.getAfter()) {
+				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
+				ModuleBuildFuture mbf = new ModuleBuildFuture(
+						module.getModuleId(), 
+						module.getResource(aggr),
+						future,
+						ModuleSpecifier.BUILD_ADDED);
+				reader.addAfter(mbf);
 			}
 		}
 	}
@@ -667,7 +675,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 		private volatile transient String content = null;
 		private volatile String filename = null;
-		private volatile List<IModule> additionalModules = Collections.emptyList();
+		private volatile List<IModule> beforeModules = Collections.emptyList();
+		private volatile List<IModule> afterModules = Collections.emptyList();
 
 		/**
 		 * @return The filename of the cached module build
@@ -702,14 +711,35 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		/**
 		 * @param content
 		 *            The built output
+		 * @param before
+		 *            The list of before modules for this module build
+		 * @param after
+		 *            The list of after modules for this module build
 		 */
-		public void setData(String content, List<IModule> additionalModules) {
-			this.additionalModules = additionalModules;
+		public void setData(String content, List<IModule> before, List<IModule> after) {
+			this.beforeModules = before;
+			this.afterModules = after;
 			this.content = content;
 		}
 
-		public List<IModule> getAdditionalModules()  {
-			return additionalModules;
+		/**
+		 * Returns the list of module IDs to include in a layer build before
+		 * this module
+		 * 
+		 * @return The list of before modules
+		 */
+		public List<IModule> getBefore()  {
+			return beforeModules == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(beforeModules);
+		}
+		
+		/**
+		 * Returns the list of module IDs to include in a layer build after
+		 * this module
+		 * 
+		 * @return The list of after modules
+		 */
+		public List<IModule> getAfter()  {
+			return afterModules == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(afterModules);
 		}
 		
 		/**
