@@ -671,7 +671,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * I/O if the live cache objects were serialized.
 	 */
 	static final private class CacheEntry implements Cloneable, Serializable {
-		private static final long serialVersionUID = -8117783999830131470L;
+		private static final long serialVersionUID = -8079746606394403358L;
 
 		private volatile transient String content = null;
 		private volatile String filename = null;
