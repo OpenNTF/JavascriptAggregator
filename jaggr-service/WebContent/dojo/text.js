@@ -25,9 +25,15 @@ define(["dojo/_base/lang", "__original_text_plugin"], function(lang, original_te
 			if (/^(\/)|([^:\/]+:[\/]{2})/.test(id)) {
 				original_text_plugin.load(id, require, load);
 			} else {
-				require(["__aggregator_text_plugin!"+id], function(text) {
-					load(text);
-				});
+				var url = require.toUrl(id),
+				    requireCacheUrl = "url:" + url;
+				if (requireCacheUrl in require.cache) {
+					load(require.cache[requireCacheUrl]);
+				} else {
+					require(["__aggregator_text_plugin!"+id], function(text) {
+						load(text);
+					});
+				}
 			}			
 		}
 	});

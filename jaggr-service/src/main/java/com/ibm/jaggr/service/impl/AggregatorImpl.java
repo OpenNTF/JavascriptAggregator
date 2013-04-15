@@ -761,6 +761,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		return substituteProps(str, null);
 	}
 
+	private final Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}"); //$NON-NLS-1$
 	/* (non-Javadoc)
 	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String, com.ibm.servlets.amd.aggregator.IAggregator.SubstitutionTransformer)
 	 */
@@ -770,7 +771,6 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			return null;
 		}
 		StringBuffer buf = new StringBuffer();
-		final Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}"); //$NON-NLS-1$
 		Matcher matcher = pattern.matcher(str);
 	    while ( matcher.find() ) {
 	    	String propName = matcher.group(1);

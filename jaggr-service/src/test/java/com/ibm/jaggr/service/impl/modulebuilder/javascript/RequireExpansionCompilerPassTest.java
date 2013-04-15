@@ -19,7 +19,6 @@ package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +39,8 @@ import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.util.DependencyList;
@@ -82,8 +83,9 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				(String)anyObject(), 
 				(Features)anyObject(), 
 				(Set<String>)anyObject(), 
-				anyBoolean())).andAnswer(new IAnswer<Map<String, String>>() {
-			public Map<String, String> answer() throws Throwable {
+				anyBoolean(),
+				anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
+			public ModuleDeps answer() throws Throwable {
 				return getExpandedDependencies(getCurrentArguments());
 			}
 		}).anyTimes();
@@ -96,7 +98,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
 				mockAggregator,
 				new Features(),
-				null, null, null, false);
+				null, null, null, false, false);
 
 		String code, output;
 		
@@ -165,13 +167,13 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		
 		// Ensure dependencies in config deps are not expanded
 		List<String> configDepNames = Arrays.asList(new String[]{"a/b"});
-		DependencyList configDepList = new DependencyList(configDepNames, mockAggregator.getConfig(), mockDependencies, new Features(), false);
+		DependencyList configDepList = new DependencyList(configDepNames, mockAggregator.getConfig(), mockDependencies, new Features(), false, false);
 		
 		RequireExpansionCompilerPass configDepPass = new RequireExpansionCompilerPass(
 				mockAggregator,
 				new Features(),
 				new HashSet<String>(),
-				configDepList, null, false);
+				configDepList, null, false, false);
 
 		output = runPass(configDepPass, code);
 		System.out.println(output);
@@ -236,7 +238,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
 				mockAggregator,
 				new Features(),
-				null, null, null, false);
+				null, null, null, false, false);
 
 		String code, output;
 		
@@ -338,7 +340,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				mockAggregator,
 				new Features(),
 				new HashSet<String>(),
-				null, "djConfig", false);
+				null, "djConfig", false, false);
 		
 		code = "djConfig.deps = [\"foo\"];";
 		output = runPass(pass, code);
@@ -356,43 +358,44 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				mockAggregator,
 				features,
 				dependentFeatures,
-				null, null, false);
+				null, null, false, false);
 
 		String code, output;
 		code = "require([\"has!feature1?has1\",\"has!feature2?has2\"]);";
 		output = runPass(pass, code);
+		System.out.println(output);
 		Assert.assertEquals("[feature1, feature2]", dependentFeatures.toString());
-		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"dep1\",\"dep2\"]);", output);
+		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"has\",\"dep1\",\"dep2\"]);", output);
 		
 		features.put("feature2", false);
 		dependentFeatures.clear();
 		output = runPass(pass, code);
 		Assert.assertEquals("[feature1, feature2]", dependentFeatures.toString());
-		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"dep1\"]);", output);
+		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"has\",\"dep1\"]);", output);
 		
 		features.put("feature1", false);
 		dependentFeatures.clear();
 		output = runPass(pass, code);
 		Assert.assertEquals("[feature1, feature2]", dependentFeatures.toString());
-		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\"]);", output);
+		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"has\"]);", output);
 		
 		features.remove("feature2");
 		dependentFeatures.clear();
 		output = runPass(pass, code);
 		Assert.assertEquals("[feature1, feature2]", dependentFeatures.toString());
-		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\"]);", output);
+		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"has\"]);", output);
 		
 		features.put("feature1", true);
 		dependentFeatures.clear();
 		output = runPass(pass, code);
 		Assert.assertEquals("[feature1, feature2]", dependentFeatures.toString());
-		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"dep1\"]);", output);
+		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"has\",\"dep1\"]);", output);
 		
 		features.remove("feature1");
 		dependentFeatures.clear();
 		output = runPass(pass, code);
 		Assert.assertEquals("[feature1, feature2]", dependentFeatures.toString());
-		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\"]);", output);
+		Assert.assertEquals("require([\"has!feature1?has1\",\"has!feature2?has2\",\"has\"]);", output);
 		
 	}
 
@@ -402,7 +405,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
 				mockAggregator,
 				new Features(),
-				null, null, null, true);
+				null, null, null, true, false);
 
 		String code, output;
 		code = "require([\"foo\"],function(){});";
@@ -433,18 +436,18 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		return result;
 	}
 	
-	private Map<String, String> getExpandedDependencies(Object[] args) throws Throwable {
+	private ModuleDeps getExpandedDependencies(Object[] args) throws Throwable {
 		String id = (String)args[0];
 		boolean includeComments = (Boolean)args[3];
 		List<String> declaredDeps = mockDependencies.getDelcaredDependencies(id);
-		Map<String, String> result = new LinkedHashMap<String, String>();
+		ModuleDeps result = new ModuleDeps();
 		for (String declaredDep : declaredDeps) {
-			result.put(declaredDep, includeComments ? "Declared." : null);
+			result.add(declaredDep, new ModuleDepInfo(null, null, includeComments ? "Declared." : null));
 		}
 		String[] expandedDeps = expandedDependencies.get(id);
 		if (expandedDeps != null) {
 			for (String expandedDep : expandedDeps) {
-				result.put(expandedDep, includeComments ? ("From: " + id) : null);
+				result.add(expandedDep, new ModuleDepInfo(null, null, includeComments ? ("From: " + id) : null));
 			}
 		}
 		return result;

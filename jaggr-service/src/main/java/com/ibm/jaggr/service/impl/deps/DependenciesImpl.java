@@ -21,7 +21,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -50,6 +49,7 @@ import com.ibm.jaggr.service.config.IConfig.Location;
 import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.IDependenciesListener;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.options.IOptionsListener;
 import com.ibm.jaggr.service.resource.IResource;
@@ -130,11 +130,11 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	}
 	
 	@Override
-	public Map<String, String> getExpandedDependencies(String modulePath,
+	public ModuleDeps getExpandedDependencies(String modulePath,
 			Features features, Set<String> dependentFeatures,
-			boolean includeDetails) throws IOException {
+			boolean includeDetails, boolean performHasBranching) throws IOException {
 
-		Map<String, String> result = Collections.emptyMap();
+		ModuleDeps result = new ModuleDeps();
 		try {
 			DepTreeNode node;
 			getReadLock();
@@ -142,7 +142,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 				modulePath = aggregator.getConfig().resolve(modulePath, features, dependentFeatures, null);
 				node = depTree.getDescendent(modulePath);
 				if (node != null) {
-					result = node.getExpandedDependencies(features, dependentFeatures, includeDetails);
+					result = node.getExpandedDependencies(features, dependentFeatures, includeDetails, performHasBranching);
 				}
 			} finally {
 				releaseReadLock();

@@ -48,7 +48,7 @@ public class FileResource implements IResource {
 	public FileResource(URI uri) {
 		if (uri.getAuthority() != null && File.separatorChar == '\\') {
 			// Special case for UNC filenames on Windows
-			file = new File("\\\\" + uri.getAuthority() + '/' + uri.getPath());
+			file = new File("\\\\" + uri.getAuthority() + '/' + uri.getPath()); //$NON-NLS-1$
 		} else {
 			file = new File(uri);
 		}
@@ -62,12 +62,12 @@ public class FileResource implements IResource {
 	@Override
 	public URI getURI() {
 		URI uri = file.toURI();
-		if (uri.toString().startsWith("file:////")) {
+		if (uri.toString().startsWith("file:////")) { //$NON-NLS-1$
 			// Special case for UNC filenames on Windows.  Convert back
 			// to authority based URI due to issues with URI.resolve()
 			// when using UNC form of the URI.
 			try {
-				uri = new URI("file:" + uri.getPath());
+				uri = new URI("file:" + uri.getPath()); //$NON-NLS-1$
 			} catch (URISyntaxException e) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.log(Level.WARNING, e.getMessage(), e);
@@ -221,12 +221,12 @@ public class FileResource implements IResource {
 		@Override
 		public URI getURI() {
 			URI uri = file.toURI();
-			if (uri.toString().startsWith("file:////")) {
+			if (uri.toString().startsWith("file:////")) { //$NON-NLS-1$
 				// Special case for UNC filenames on Windows.  Convert back
 				// to authority based URI due to issues with URI.resolve()
 				// when using UNC form of the URI.
 				try {
-					uri = new URI("file:" + uri.getPath());
+					uri = new URI("file:" + uri.getPath()); //$NON-NLS-1$
 				} catch (URISyntaxException e) {
 					if (log.isLoggable(Level.WARNING)) {
 						log.log(Level.WARNING, e.getMessage(), e);

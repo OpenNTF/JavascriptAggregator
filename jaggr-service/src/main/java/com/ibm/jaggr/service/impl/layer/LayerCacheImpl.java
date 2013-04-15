@@ -147,8 +147,8 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
     		writer.append("ILayer key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
     		writer.append(entry.getValue().toString()).append(linesep).append(linesep);
     	}
-    	writer.append("Number of layer cache entires = ").append(Integer.toString(layerMap.size())).append(linesep);
-    	writer.append("Number of layer cache evictions = ").append(Integer.toString(numEvictions.get())).append(linesep);
+    	writer.append("Number of layer cache entires = ").append(Integer.toString(layerMap.size())).append(linesep); //$NON-NLS-1$
+    	writer.append("Number of layer cache evictions = ").append(Integer.toString(numEvictions.get())).append(linesep); //$NON-NLS-1$
 	}
 
 	@Override
@@ -159,9 +159,9 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	        		.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME)
 	        		.toString(); 
 	        
-			String requiredModule = (String)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
-			if (requiredModule != null) {
-				key += "{" + requiredModule + "}"; //$NON-NLS-1$ //$NON-NLS-2$
+			Object requiredModules = request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
+			if (requiredModules != null) {
+				key += requiredModules.toString();
 			}
 			ILayer result = null;
 			boolean ignoreCached = RequestUtil.isIgnoreCached(request);
@@ -356,7 +356,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	}
 
 	private void readObject(ObjectInputStream stream) throws InvalidObjectException {
-	    throw new InvalidObjectException("Proxy required");
+	    throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
 	}
 
 	protected static class SerializationProxy implements Serializable {

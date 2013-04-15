@@ -71,9 +71,7 @@
 		deps: [
 	       "dojo/ready",
 	       "dojo/parser", 
-	       "dijit/layout/TabContainer",
-	       "js/LazyContentPane",
-	       "js/css!dijit/themes/claro/claro.css" 
+		    "js/bootstrap"
 		],
 		
 		callback: function(ready, parser) {
