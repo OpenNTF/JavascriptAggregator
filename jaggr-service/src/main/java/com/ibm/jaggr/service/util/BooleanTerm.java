@@ -21,15 +21,15 @@ import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * A collection of BooleanVar objects which are logically anded together.
  * Implements an unmodifiable set of BooleanVar objects. 
  */
 @SuppressWarnings("serial")
-public class BooleanTerm extends HashSet<BooleanVar> {
+public class BooleanTerm extends TreeSet<BooleanVar> {
 	
 	public static BooleanTerm emptyTerm = new BooleanTerm(Collections.<BooleanVar> emptySet());
 
@@ -84,12 +84,12 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		if (size() > 1) sb.append("("); //$NON-NLS-1$
+		if (size() > 1) sb.append("(");
 		int i = 0;
 		for (BooleanVar var : this) {
-			sb.append(i++ > 0 ? "*" : "").append(var); //$NON-NLS-1$ //$NON-NLS-2$
+			sb.append(i++ > 0 ? "*" : "").append(var);
 		}
-		if (size() > 1) sb.append(")"); //$NON-NLS-1$
+		if (size() > 1) sb.append(")");
 		return sb.toString();
 	}
 

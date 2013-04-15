@@ -20,7 +20,7 @@ package com.ibm.jaggr.service.util;
  *	Represents the state of a boolean variable.  Instances of this
  *	object are immutable.
  */
-public class BooleanVar {
+public class BooleanVar implements Comparable<BooleanVar> {
 	public final String name;
 	public final boolean state;
 	
@@ -60,4 +60,10 @@ public class BooleanVar {
 	public String toString() {
 		return (state ? "" : "!") + name; //$NON-NLS-1$ //$NON-NLS-2$
 	}
+
+	@Override
+	public int compareTo(BooleanVar o) {
+		return (toString()).compareTo(o.toString());
+	}
+
 }
