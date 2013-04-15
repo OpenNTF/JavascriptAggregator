@@ -45,7 +45,7 @@ public final class ExportNamesCacheKeyGenerator extends
 	public String toString() {
 		return eyecatcher;
 	}
-
+	
 	@Override
 	public boolean equals(Object other) {
 		return other != null && this.getClass().equals(other.getClass());

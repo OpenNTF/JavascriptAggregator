@@ -24,6 +24,10 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 
 public class RequestUtil {
 
+	/**
+	 * @param request
+	 * @return True if the server side cached should be ignored
+	 */
 	public static boolean isIgnoreCached(HttpServletRequest request) {
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
@@ -32,6 +36,10 @@ public class RequestUtil {
 		
 	}
 	
+	/**
+	 * @param request
+	 * @return True if the response should be gzip encoded
+	 */
 	public static boolean isGzipEncoding(HttpServletRequest request) {
 		boolean result = false;
 		String accept = request.getHeader("Accept-Encoding"); //$NON-NLS-1$
@@ -41,5 +49,74 @@ public class RequestUtil {
         	result = true;
         }
         return result;
+	}
+
+	/**
+	 * Static class method for determining if require list explosion should be performed.
+	 *  
+	 * @param request The http request object
+	 * @return True if require list explosion should be performed.
+	 */
+	public static boolean isExplodeRequires(HttpServletRequest request) {
+		boolean result = false;
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		Boolean reqattr = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME));
+		result = (options == null || !options.isDisableRequireListExpansion()) 
+				&& reqattr != null && reqattr
+				&& aggr.getDependencies() != null;
+		return result;
+	}
+
+	/**
+	 * Static method for determining if has filtering should be performed.
+	 * 
+	 * @param request The http request object
+	 * @return True if has filtering should be performed
+	 */
+	public static boolean isHasFiltering(HttpServletRequest request) {
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		return (options != null) ? !options.isDisableHasFiltering() : true;
+	}
+
+	/**
+	 * @param request
+	 * @return True if require expansion logging should be enabled for the request
+	 */
+	public static boolean isRequireExpLogging(HttpServletRequest request) {
+		boolean result = false;
+		if (isExplodeRequires(request) ) {
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			IOptions options = aggr.getOptions();
+			if (options.isDebugMode() || options.isDevelopmentMode()) {
+				result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME));
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * @param request
+	 * @return True if module names should be exported in the response
+	 */
+	public static boolean isExportModuleName(HttpServletRequest request) {
+		Boolean value = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
+		return value != null ? value : false;
+	}
+
+	/**
+	 * @param request
+	 * @return True if has! plugin branching should be performed as part of
+	 *         require list expansion
+	 */
+	public static boolean isPerformHasBranching(HttpServletRequest request) {
+		boolean result = false;
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		if (!options.isDisableHasPluginBranching()) {
+			result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.HASPLUGINBRANCHING_REQATTRNAME));
+		}
+		return result;
 	}
 }

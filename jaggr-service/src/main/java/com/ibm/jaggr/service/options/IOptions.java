@@ -87,7 +87,7 @@ public interface IOptions {
 	 * <p>
 	 * Valid values: <code>true/false</code>
 	 */
-	public static final String SKIP_HASFILTERING = "skipHasFiltering"; //$NON-NLS-1$
+	public static final String DISABLE_HASFILTERING = "disableHasFiltering"; //$NON-NLS-1$
 	
 	/**
 	 * Name of property that specifies if the dependency lists in require()
@@ -95,7 +95,13 @@ public interface IOptions {
 	 * <p>
 	 * Valid values: <code>true/false</code>
 	 */
-	public static final String SKIP_REQUIRELISTEXPANSION = "skipRequireListExpansion"; //$NON-NLS-1$
+	public static final String DISABLE_REQUIRELISTEXPANSION = "disableRequireListExpansion"; //$NON-NLS-1$
+	
+	/**
+	 * Name of property that specifies if has! plugin branching should be
+	 * disabled during require list expansion.
+	 */
+	public static final String DISABLE_HASPLUGINBRANCHING = "disableHasPluginBranching"; //$NON-NLS-1$
 	
 	/**
 	 * Name of property that specifies a cache bust string. This is an arbitrary
@@ -161,13 +167,13 @@ public interface IOptions {
 	public boolean isVerifyDeps();
 
 	/**
-	 * Convenience method for reading the {@link #SKIP_REQUIRELISTEXPANSION} 
+	 * Convenience method for reading the {@link #DISABLE_REQUIRELISTEXPANSION} 
 	 * options property.
 	 * 
-	 * @return The value of the {@link #SKIP_REQUIRELISTEXPANSION} property 
+	 * @return The value of the {@link #DISABLE_REQUIRELISTEXPANSION} property 
 	 * as a boolean
 	 */
-	public boolean isSkipRequireListExpansion();
+	public boolean isDisableRequireListExpansion();
 
 	/**
 	 * Convenience method for reading the {@link #DEVELOPMENT_MODE} 
@@ -186,14 +192,25 @@ public interface IOptions {
 	 * as a boolean
 	 */
 	public boolean isDebugMode();
+
 	/**
-	 * Convenience method for reading the {@link #SKIP_HASFILTERING} 
+	 * Convenience method for reading the {@link #DISABLE_HASFILTERING} 
 	 * options property.
 	 * 
-	 * @return The value of the {@link #SKIP_HASFILTERING} property 
+	 * @return The value of the {@link #DISABLE_HASFILTERING} property 
 	 * as a boolean
 	 */
-	public boolean isSkipHasFiltering();
+	public boolean isDisableHasFiltering();
+	
+	
+	/**
+	 * Convenience method for reading the {@link #DISABLE_HASPLUGINBRANCHING} 
+	 * options property.
+	 * 
+	 * @return The value of the {@link #DISABLE_HASPLUGINBRANCHING} property 
+	 * as a boolean
+	 */
+	public boolean isDisableHasPluginBranching();
 
 	/**
 	 * Convenience method for reading the {@link #CACHEBUST} options

@@ -331,26 +331,28 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     
     private void clean(File directory) {
     	final File[] oldCacheFiles = directory.listFiles();
-    	_aggregator.getExecutors().getScheduledExecutor().submit(new Runnable() {
-    		public void run() {
-    			for (File file : oldCacheFiles) {
-    				try {
-    					if (!file.delete()) {
-    						if (log.isLoggable(Level.WARNING)) {
-    							log.warning(MessageFormat.format(
-    								Messages.CacheManagerImpl_8,
-    								new Object[]{file.getAbsolutePath()}
-    							));
-    						}
-    					}
-    				} catch (Exception e) {
-						if (log.isLoggable(Level.WARNING)) {
-							log.log(Level.WARNING, e.getMessage(), e);
-						}
-    				}
-    			}
-    		}
-    	});
+    	if (oldCacheFiles != null) {
+	    	_aggregator.getExecutors().getScheduledExecutor().submit(new Runnable() {
+	    		public void run() {
+	    			for (File file : oldCacheFiles) {
+	    				try {
+	    					if (!file.delete()) {
+	    						if (log.isLoggable(Level.WARNING)) {
+	    							log.warning(MessageFormat.format(
+	    								Messages.CacheManagerImpl_8,
+	    								new Object[]{file.getAbsolutePath()}
+	    							));
+	    						}
+	    					}
+	    				} catch (Exception e) {
+							if (log.isLoggable(Level.WARNING)) {
+								log.log(Level.WARNING, e.getMessage(), e);
+							}
+	    				}
+	    			}
+	    		}
+	    	});
+    	}
     }
 
     /* (non-Javadoc)

@@ -16,26 +16,26 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.css;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
 
-import org.apache.commons.io.input.ReaderInputStream;
+import org.apache.commons.codec.binary.Base64;
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -43,8 +43,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mozilla.javascript.Scriptable;
-
-import sun.misc.BASE64Decoder;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
@@ -310,15 +308,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 		URI resuri = testdir.toURI();
 
 		// Test image inlining options
+		byte[] bytes = Base64.decodeBase64(base64PngData.getBytes());
 		File images = new File(testdir, "images");
 		images.mkdir();
 		File image = new File(images, "testImage.png");
-		BASE64Decoder decoder = new BASE64Decoder();
-		InputStream in = new ReaderInputStream(new StringReader(base64PngData));
 		OutputStream out = new FileOutputStream(image);
-		decoder.decodeBuffer(in, out);
-		in.close();
-		out.close();
+		ByteArrayInputStream in = new ByteArrayInputStream(bytes);
+		CopyUtil.copy(in, out);
 		
 		css = ".foo {background-image:url(images/testImage.png)}";
 		output = buildCss(new StringResource(css, resuri));
@@ -493,6 +489,31 @@ public class CSSModuleBuilderTest extends EasyMock {
 		Assert.assertEquals("expn:1;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		Assert.assertEquals("expn:1;css:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
+	}
+	
+	@Test
+	public void testToRegexp() {
+		CSSModuleBuilder builder = new CSSModuleBuilder() {
+			@Override
+			public Pattern toRegexp(String filespec) {
+				return super.toRegexp(filespec);
+			}
+		};
+		Pattern regexp = builder.toRegexp("test?.*");
+		Assert.assertEquals("(^|/)test[^/]\\.[^/]*?$", regexp.toString());
+		Assert.assertTrue(regexp.matcher("test1.abc").find());
+		Assert.assertFalse(regexp.matcher("test11.abc").find());
+		Assert.assertTrue(regexp.matcher("/test1.abc").find());
+		Assert.assertTrue(regexp.matcher("/some/path/test1.abc").find());
+		regexp = builder.toRegexp("test/*/hello@$!.???");
+		Assert.assertEquals("(^|/)test/[^/]*?/hello@\\$!\\.[^/][^/][^/]$", regexp.toString());
+		Assert.assertTrue(regexp.matcher("test/abc/hello@$!.foo").find());
+		Assert.assertTrue(regexp.matcher("/test/xyz/hello@$!.123").find());
+		Assert.assertTrue(regexp.matcher("somepath/test/xyz/hello@$!.123").find());
+		Assert.assertFalse(regexp.matcher("/test/xyz/hello@$!.ab").find());
+		Assert.assertFalse(regexp.matcher("/test/hello@$!.123").find());
+		regexp = builder.toRegexp("/a?c");
+		Assert.assertEquals("/a[^/]c$", regexp.toString());
 	}
 	
 	private String buildCss(IResource css) throws Exception {

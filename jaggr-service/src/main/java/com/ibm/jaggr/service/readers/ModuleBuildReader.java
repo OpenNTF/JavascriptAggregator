@@ -19,6 +19,8 @@ package com.ibm.jaggr.service.readers;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -26,6 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.service.impl.layer.ModuleBuildFuture;
 import com.ibm.jaggr.service.module.IModule;
 
 /**
@@ -35,6 +38,8 @@ import com.ibm.jaggr.service.module.IModule;
  */
 public class ModuleBuildReader extends Reader {
 	private Reader reader;
+	private List<ModuleBuildFuture> before;
+	private List<ModuleBuildFuture> after;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private boolean error;
 	
@@ -50,6 +55,7 @@ public class ModuleBuildReader extends Reader {
 		this.reader = reader;
 		this.keyGenerators = keyGens;
 		this.error = error;
+		before = after = null;
 		if (keyGenerators != null && KeyGenUtil.isProvisional(keyGenerators)) {
 			throw new IllegalStateException();
 		}
@@ -109,5 +115,53 @@ public class ModuleBuildReader extends Reader {
 	@Override
 	public void close() throws IOException {
 		reader.close();
+	}
+	
+	/**
+	 * Adds the specified future to the list of before futures.
+	 * <p>
+	 * Before futures are processed ahead of this future.
+	 * 
+	 * @param future The future to add to the before list
+	 */
+	public void addBefore(ModuleBuildFuture future) {
+		if (before == null) {
+			before = new LinkedList<ModuleBuildFuture>();
+		}
+		before.add(future);
+	}
+	
+	/**
+	 * Adds the specified future to the list of after futures.
+	 * <p>
+	 * After futures are processed following this future.
+	 * 
+	 * @param future The future to add to the before after
+	 */
+	public void addAfter(ModuleBuildFuture future) {
+		if (after == null) {
+			after = new LinkedList<ModuleBuildFuture>();
+		}
+		after.add(future);
+	}
+	
+	/**
+	 * Returns the list of additional futures that should be processed ahead 
+	 * of this future
+	 * 
+	 * @return The list of before futures.
+	 */
+	public List<ModuleBuildFuture> getBefore() {
+		return before == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(before);
+	}
+	
+	/**
+	 * Returns the list of additional futures that should be processed following 
+	 * this future
+	 * 
+	 * @return The list of after futures.
+	 */
+	public List<ModuleBuildFuture> getAfter() {
+		return after == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(after);
 	}
 }

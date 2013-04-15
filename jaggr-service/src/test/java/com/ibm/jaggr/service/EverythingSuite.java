@@ -19,12 +19,16 @@ package com.ibm.jaggr.service;
 import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
+import com.ibm.jaggr.service.deps.ModuleDepInfoTest;
+import com.ibm.jaggr.service.deps.ModuleDepsTest;
 import com.ibm.jaggr.service.impl.AggregatorImplTest;
 import com.ibm.jaggr.service.impl.config.ConfigTests;
+import com.ibm.jaggr.service.impl.deps.BooleanFormulaTest;
 import com.ibm.jaggr.service.impl.deps.DepTreeNodeTests;
 import com.ibm.jaggr.service.impl.deps.DepUtilsTest;
 import com.ibm.jaggr.service.impl.deps.DependenciesTest;
 import com.ibm.jaggr.service.impl.deps.HasNodeTests;
+import com.ibm.jaggr.service.impl.layer.LayerBuilderTest;
 import com.ibm.jaggr.service.impl.layer.LayerCacheTest;
 import com.ibm.jaggr.service.impl.layer.LayerTest;
 import com.ibm.jaggr.service.impl.module.ModuleImplTest;
@@ -40,13 +44,17 @@ import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(value = { 
+	BooleanFormulaTest.class,
 	ConfigTests.class,
 	DependenciesTest.class,
 	DepTreeNodeTests.class,
+	ModuleDepInfoTest.class,
+	ModuleDepsTest.class,
 	DepUtilsTest.class,
 	HasNodeTests.class,
 	LayerTest.class,
 	LayerCacheTest.class,
+	LayerBuilderTest.class,
 	ModuleImplTest.class,
 	CSSModuleBuilderTest.class,
 	I18nModuleBuilderTest.class,

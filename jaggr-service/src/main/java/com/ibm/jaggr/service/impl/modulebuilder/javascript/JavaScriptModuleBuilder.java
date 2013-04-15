@@ -63,8 +63,8 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.service.util.RequestUtil;
 import com.ibm.jaggr.service.util.StringUtil;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
  * This class minifies a javacript module.  The modules is assumed to use the AMD
@@ -85,8 +85,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		new ExportNamesCacheKeyGenerator();
 
 	static {
-		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING);
-		Logger.getLogger("com.google.javascript.jscomp.PhaseOptimizer").setLevel(Level.WARNING);	
+		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING); //$NON-NLS-1$
+		Logger.getLogger("com.google.javascript.jscomp.PhaseOptimizer").setLevel(Level.WARNING); //$NON-NLS-1$
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
 
@@ -108,53 +108,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
         }
         return level;
 	}
-	/**
-	 * Static class method for determining if require list explosion should be performed.
-	 *  
-	 * @param options
-	 * @return True if require list explosion should be performed.
-	 */
-	public static boolean s_isExplodeRequires(HttpServletRequest request) {
-		boolean result = false;
-		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		IOptions options = aggr.getOptions();
-		Boolean reqattr = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME));
-		result = (options == null || !options.isSkipRequireListExpansion()) 
-				&& reqattr != null && reqattr
-				&& aggr.getDependencies() != null;
-		return result;
-	}
-	
-	
-	/**
-	 * Static method for determining if has filtering should be performed.
-	 * 
-	 * @param options
-	 * @return True if has filtering should be performed
-	 */
-	public static boolean s_isHasFiltering(HttpServletRequest request) {
-		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		IOptions options = aggr.getOptions();
-		return (options != null) ? !options.isSkipHasFiltering() : true;
-	}
-	
-	public static boolean s_isExportModuleName(HttpServletRequest request) {
-		Boolean value = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
-		return value != null ? value : false;
-	}
-	
-	public static boolean s_isRequireExpLogging(HttpServletRequest request) {
-		boolean result = false;
-		if (s_isExplodeRequires(request) ) {
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			IOptions options = aggr.getOptions();
-			if (options.isDebugMode() || options.isDevelopmentMode()) {
-				result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME));
-			}
-		}
-		return result;
-	}
-	
 	
 	@Override
 	public void initialize(IAggregator aggregator,
@@ -177,7 +130,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		if (level  == null) {
 			// optimization is disabled, so disable exporting of module name
 			request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
-		} else if (s_isExplodeRequires(request)) {
+		} else if (RequestUtil.isExplodeRequires(request)) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
 			if (features == null) {
@@ -189,7 +142,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						aggr.getConfig(), 
 						aggr.getDependencies(), 
 						features, 
-						s_isRequireExpLogging(request));
+						RequestUtil.isRequireExpLogging(request), 
+						RequestUtil.isPerformHasBranching(request));
 			expandedConfigDeps.setLabel("require.deps"); //$NON-NLS-1$
 			request.setAttribute(EXPANDEDCONFIGDEPS_THREADSAFEREQATTRNAME, expandedConfigDeps);
 		}
@@ -218,7 +172,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		// Get the parameters from the request
         CompilationLevel level = getCompilationLevel(request);
 		boolean createNewKeyGen = (keyGens == null); 
-    	boolean isHasFiltering = s_isHasFiltering(request);
+    	boolean isHasFiltering = RequestUtil.isHasFiltering(request);
 		// If the source doesn't exist, throw an exception.
 		if (!resource.exists()) {
 			if (log.isLoggable(Level.WARNING)) {
@@ -251,7 +205,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 		boolean coerceUndefinedToFalse = aggr.getConfig().isCoerceUndefinedToFalse();
 		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-		if (features == null || level == null || !s_isHasFiltering(request)) {
+		if (features == null || level == null || !RequestUtil.isHasFiltering(request)) {
 			// If no features specified or we're only processing features to
 			// get the dependency list for the cache key generator, then use
 			// an empty feature set.
@@ -278,8 +232,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
    			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
 		}
 
-		boolean isReqExpLogging = s_isRequireExpLogging(request);
-		if (s_isExplodeRequires(request) && level != null) {
+		boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
+		if (RequestUtil.isExplodeRequires(request) && level != null) {
 			DependencyList expandedConfigDeps = (DependencyList)request.getAttribute(EXPANDEDCONFIGDEPS_THREADSAFEREQATTRNAME);
 			/*
 			 * Register the RequireExpansionCompilerPass if we're exploding 
@@ -295,11 +249,12 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						discoveredHasConditionals,
 						expandedConfigDeps,
 						(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
-						isReqExpLogging);
+						isReqExpLogging,
+						RequestUtil.isPerformHasBranching(request));
 			
 			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, recp);
 		}
-		if (s_isExportModuleName(request) && level != null) {
+		if (RequestUtil.isExportModuleName(request) && level != null) {
 			compiler_options.customPasses.put(
 					CustomPassExecutionTime.BEFORE_CHECKS,
 					new ExportModuleNameCompilerPass()
@@ -446,7 +401,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		 * <code>&lt;<i>level</i>&gt;:&lt;0|1&gt;{&lt;<i>has-conditions</i>&gt;}</code>
 		 * where <i>level</i> is the {@link CompilationLevel} specified by the
 		 * request attribute {@link #COMPILATION_LEVEL} or {@code NONE} if null, and
-		 * the {@code 0|1} is the value returned by {@link #s_isExplodeRequires(HttpServletRequest)}. The
+		 * the {@code 0|1} is the value returned by {@link RequestUtil#isExplodeRequires(HttpServletRequest)}. The
 		 * has-conditions are listed in alphabetical order. The key will contain
 		 * only has-conditions from {@code hasMap} that are also members of
 		 * {@code includedHas} (i.e. only has-conditions that are relevant to this
@@ -461,9 +416,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		@Override
 		public String generateKey(HttpServletRequest request) {
 	        CompilationLevel level = getCompilationLevel(request);
-			boolean requireListExpansion = s_isExplodeRequires(request);
-			boolean reqExpLogging = s_isRequireExpLogging(request);
-			boolean hasFiltering = s_isHasFiltering(request);
+			boolean requireListExpansion = RequestUtil.isExplodeRequires(request);
+			boolean reqExpLogging = RequestUtil.isRequireExpLogging(request);
+			boolean hasFiltering = RequestUtil.isHasFiltering(request);
 			
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest("Creating cache key: level=" +  //$NON-NLS-1$
@@ -481,7 +436,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				  .append(hasFiltering ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 			
 			if (featureKeyGen != null && 
-					s_isHasFiltering(request) && 
+					RequestUtil.isHasFiltering(request) && 
 					getCompilationLevel(request) != null) 
 			{
 				String s = featureKeyGen.generateKey(request);
@@ -518,7 +473,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		
 		@Override
 		public String toString() {
-			return eyecatcher + (featureKeyGen != null ? (":(" + featureKeyGen.toString()) + ")" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-2$
+			return eyecatcher + (featureKeyGen != null ? (":(" + featureKeyGen.toString()) + ")" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
 		@Override
@@ -529,7 +484,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			List<ICacheKeyGenerator> result = new LinkedList<ICacheKeyGenerator>();
 			result.add(new CacheKeyGenerator(null));
-			if (s_isHasFiltering(request) && getCompilationLevel(request) != null) {
+			if (RequestUtil.isHasFiltering(request) && getCompilationLevel(request) != null) {
 				List<ICacheKeyGenerator> gens = featureKeyGen.getCacheKeyGenerators(request);
 				if (gens == null) {
 					result.add(featureKeyGen);

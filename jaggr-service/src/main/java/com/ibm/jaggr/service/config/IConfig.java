@@ -26,6 +26,7 @@ import org.mozilla.javascript.Scriptable;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.Features;
 
 /**
@@ -136,6 +137,18 @@ public interface IConfig {
 	 */
 	public static final String CACHEBUST_CONFIGPARAM = "cacheBust"; //$NON-NLS-1$
 
+	/**
+	 * Static constant specifying the name of the {@code textPluginDelegators}
+	 * config param.
+	 */
+	public static final String TEXTPLUGINDELEGATORS_CONFIGPARAM = "textPluginDelegators"; //$NON-NLS-1$
+
+	/**
+	 * Static constant specifying the name of the {@code jsPluginDelegators}
+	 * config param.
+	 */
+	public static final String JSPLUGINDELEGATORS_CONFIGPARAM = "jsPluginDelegators"; //$NON-NLS-1$
+	
 	/**
 	 * Returns the value of the {@code baseUrl} config param. This is the base
 	 * URI to use for all relative URIs specified in this config. If baseUrl is
@@ -302,6 +315,35 @@ public interface IConfig {
 	 * @return The config JavaScript URI
 	 */
 	public URI getConfigUri();
+	
+	/**
+	 * Returns the list of plugin names specified with the
+	 * {@link #TEXTPLUGINDELEGATORS_CONFIGPARAM} config param. Loader plugins
+	 * specified here delegate the loading of the resources they handle to the
+	 * text module loader. When doing server-side expansion of module
+	 * dependencies (see {@link IHttpTransport#REQUIRED_REQATTRNAME}, resources
+	 * specifying loader plugins included in this list will be included in the
+	 * response as a text resource.
+	 * 
+	 * @return The list of loader plugins that delegate to the text module
+	 *         loader.
+	 */
+	public Set<String> getTextPluginDelegators();
+	
+	/**
+	 * Returns the list of plugin names specified with the
+	 * {@link #JSPLUGINDELEGATORS_CONFIGPARAM} config param. Loader plugins
+	 * specified here delegate the loading of the resources they handle to the
+	 * javascript module loader (e.g. the i18n plugin). When doing server-side
+	 * expansion of module dependencies (see
+	 * {@link IHttpTransport#REQUIRED_REQATTRNAME}, resources specifying loader
+	 * plugins included in this list will be included in the response as a
+	 * javascript resources.
+	 * 
+	 * @return The list of loader plugins that delegate to the javascript module
+	 *         loader.
+	 */
+	public Set<String> getJsPluginDelegators(); 
 
 	/**
 	 * Returns the raw config data as an instance of {@link Scriptable}, after the
@@ -482,7 +524,8 @@ public interface IConfig {
 		public String toString() {
 			if (override == null) return primary.toString();
 			StringBuffer sb = new StringBuffer('[');
-			return sb.append(primary).append(",").append(override).append("]").toString();
+			return sb.append(primary).append(",") //$NON-NLS-1$
+					.append(override).append("]").toString(); //$NON-NLS-1$
 		}
 	}
 

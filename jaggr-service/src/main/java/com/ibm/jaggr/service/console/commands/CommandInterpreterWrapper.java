@@ -40,12 +40,12 @@ public class CommandInterpreterWrapper implements CommandInterpreter {
 	
 	@Override
 	public void printDictionary(@SuppressWarnings("rawtypes") Dictionary arg0, String arg1) {
-		throw new RuntimeException("Not Implemented.");
+		throw new RuntimeException("Not Implemented."); //$NON-NLS-1$
 	}
 	
 	@Override
 	public void printBundleResource(Bundle arg0, String arg1) {
-		throw new RuntimeException("Not Implemented.");
+		throw new RuntimeException("Not Implemented."); //$NON-NLS-1$
 	}
 	
 	@Override
@@ -60,7 +60,7 @@ public class CommandInterpreterWrapper implements CommandInterpreter {
 	
 	@Override
 	public Object execute(String arg0) {
-		throw new RuntimeException("Not Implemented.");
+		throw new RuntimeException("Not Implemented."); //$NON-NLS-1$
 	}
 	
 }

@@ -18,7 +18,7 @@ package com.ibm.jaggr.service.impl.deps;
 
 import java.io.IOException;
 import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.util.PathUtil;
@@ -47,14 +47,13 @@ public class DepTreeRoot extends DepTreeNode {
 	 * base class is serializable, so we need to throw an
 	 * exception here if an attempt is made to serialize this class.
 	 * 
-	 * @param in The {@link ObjectInputStream} to read from
+	 * @param out The {@link ObjectOutputStream} to read from
 	 * @throws IOException
-	 * @throws ClassNotFoundException
+	 * @throws NotSerializableException
 	 */
-	private void readObject(ObjectInputStream in) throws IOException,
-			ClassNotFoundException {
-		throw new NotSerializableException(this.getClass().getName());
-	}	
+	private void writeObject(ObjectOutputStream out) throws IOException {
+		throw new NotSerializableException();
+	}
 
 	/**
 	 * Resolves dependency references.  This method must be called on a root

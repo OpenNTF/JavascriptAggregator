@@ -23,6 +23,7 @@ import java.io.Writer;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.HashSet;
 import java.util.Hashtable;
@@ -765,13 +766,61 @@ public class ConfigTests {
 	}
 	
 	@Test
+	public void testGetTextPluginDelegators() throws Exception {
+		String config = "{textPluginDelegators:[\"foo/bar\", \"t2\"]}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getTextPluginDelegators());
+		
+		config = "{textPluginDelegators:\"t1\"}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
+		
+		config = "{textPluginDelegators:[]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
+
+		config = "{}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
+	}
+	
+	@Test
+	public void testGetJsPluginDelegators() throws Exception {
+		String config = "{jsPluginDelegators:[\"foo/bar\", \"t2\"]}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getJsPluginDelegators());
+		
+		config = "{jsPluginDelegators:\"t1\"}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
+
+		config = "{jsPluginDelegators:[]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
+
+		config = "{}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
+	}
+	
+	@Test
 	public void testResolve() throws Exception {
 		Features features = new Features();
 		Set<String> dependentFeatures = new HashSet<String>();
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals("foo", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals("has!xxx?foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
+		features.put("xxx", true);
+		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
+		features.put("", false);
+		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
 		
+		features = new Features();
+		dependentFeatures = new HashSet<String>();
 		config = "{aliases:[['foo', 'bar']]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals("bar", cfg.resolve("foo", features, dependentFeatures, null));
@@ -795,7 +844,8 @@ public class ConfigTests {
 		Assert.assertEquals("bar", dependentFeatures.iterator().next());
 		features.put("bar", false);
 		Assert.assertEquals("mainloc", cfg.resolve("foo", features, dependentFeatures, null));
-		
+		features.put("xxx", true);
+		Assert.assertEquals("mainloc", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
 		
 	}
 	
@@ -804,18 +854,22 @@ public class ConfigTests {
 		List<String> getLogged() {
 			return logged;
 		}
+		@Override
 		public void log(String msg) {
 			super.log(msg);
 			logged.add("log: " + msg);
 		}
+		@Override
 		public void info(String msg) {
 			super.info(msg);
 			logged.add("info: " + msg);
 		}
+		@Override
 		public void warn(String msg) {
 			super.warn(msg);
 			logged.add("warn: " + msg);
 		}
+		@Override
 		public void error(String msg) {
 			super.error(msg);
 			logged.add("error: " + msg);
