@@ -63,7 +63,11 @@ public class BooleanVar implements Comparable<BooleanVar> {
 
 	@Override
 	public int compareTo(BooleanVar o) {
-		return (toString()).compareTo(o.toString());
+		int result = name.compareTo(o.name);
+		if (result == 0 && state != o.state) {
+			result = (state ? 1 : -1); 
+		}
+		return result;
 	}
 
 }
