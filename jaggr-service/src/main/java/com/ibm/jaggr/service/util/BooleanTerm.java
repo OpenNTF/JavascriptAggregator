@@ -84,12 +84,12 @@ public class BooleanTerm extends TreeSet<BooleanVar> {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		if (size() > 1) sb.append("(");
+		if (size() > 1) sb.append("("); //$NON-NLS-1$
 		int i = 0;
 		for (BooleanVar var : this) {
-			sb.append(i++ > 0 ? "*" : "").append(var);
+			sb.append(i++ > 0 ? "*" : "").append(var); //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		if (size() > 1) sb.append(")");
+		if (size() > 1) sb.append(")"); //$NON-NLS-1$
 		return sb.toString();
 	}
 
