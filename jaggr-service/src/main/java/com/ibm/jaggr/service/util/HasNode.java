@@ -29,7 +29,7 @@ import com.ibm.jaggr.service.deps.ModuleDeps;
  * for the has plugin.
  */
 public class HasNode {
-	private static Pattern p = Pattern.compile("([^:?]*)([:?]?)"); //$NON-NLS-1$
+	private static final Pattern p = Pattern.compile("([^:?]*)([:?]?)"); //$NON-NLS-1$
 	private String feature = null, nodeName;
 	private HasNode trueNode, falseNode;
 
