@@ -1,0 +1,18 @@
+<html>
+<head>
+<meta http-equiv="X-UA-Compatible" content="IE=7" />
+<script>
+function alertCallerLength() {
+	alert(arguments.caller.length);
+}
+
+function callingFunction() {
+	alertCallerLength();
+}
+</script>
+</head>
+<body>
+<button onclick="callingFunction(1)">Push me</button>
+Pushing this button will result in an alert in IE7 Standards mode and a javascript error in IE9 Standards mode.
+</body>
+</html>
