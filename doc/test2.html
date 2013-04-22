@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script>
+
+function showBodyClass() {
+	alert(document.body.getAttribute("className"));
+}
+</script>
+</head>
+<body class="test">
+<button onclick="showBodyClass()">Push me</button>
+Pushing this button will result in an alert with the message "test" in IE7 Standards mode and the message null in IE8 standards mode.
+<br>
+<br>
+<a href="./iframe.html">./iframe.html</a>
+<br>
+<iframe src="./iframe.html"></iframe>
+</body>
+</html>
