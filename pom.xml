@@ -33,6 +33,7 @@
   <url>https://github.com/OpenNTF/JavascriptAggregator</url>
   <inceptionYear>2011</inceptionYear>
   <scm>
+  	<developerConnection>scm:git:https://github.com/OpenNTF/JavascriptAggregator.git</developerConnection>
   	<url>https://github.com/OpenNTF/JavascriptAggregator</url>
   </scm>
   <organization>
@@ -90,6 +91,11 @@
             </goals>
           </execution>
         </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.4.1</version>
       </plugin>
   	</plugins>
   </build>
