@@ -18,7 +18,7 @@
   
   <groupId>com.ibm.jaggr</groupId>
   <artifactId>jaggr</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <modules>
@@ -34,7 +34,7 @@
   <scm>
   	<developerConnection>scm:git:https://github.com/OpenNTF/JavascriptAggregator.git</developerConnection>
   	<url>https://github.com/OpenNTF/JavascriptAggregator</url>
-    <tag>jaggr-1.0.0</tag>
+    <tag>HEAD</tag>
   </scm>
   <organization>
   	<name>IBM</name>
