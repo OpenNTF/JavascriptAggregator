@@ -132,13 +132,13 @@
     <dependency>
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-service</artifactId>
-    	<version>${parent.version}</version>
+    	<version>1.0.0-SNAPSHOT</version>
     	<scope>provided</scope>
     </dependency>
     <dependency>
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-sample-dojo</artifactId>
-    	<version>${parent.version}</version>
+    	<version>1.0.0-SNAPSHOT</version>
     	<scope>provided</scope>
     </dependency>
   </dependencies>
