@@ -29,7 +29,7 @@ The Aggregator supports the Eclipse plugin extension architecture to allow the a
 * New types of module builders/minifiers
 * New AMD loaders
 
-See the [wiki](/OpenNTF/JavascriptAggregator/wiki) for more details.
+See the [wiki](http://github.com/OpenNTF/JavascriptAggregator/wiki) for more details.
 
 ###OPENNTF###
 This project is an OpenNTF project, and is available under the Apache License V2.0. All other aspects of the project, including contributions, defect reports, discussions, feature requests and reviews are subject to the [OpenNTF Terms of Use](http://openntf.org/Internal/home.nsf/dx/Terms_of_Use).
