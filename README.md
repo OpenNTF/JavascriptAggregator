@@ -33,3 +33,7 @@ See the [wiki](https://github.com/OpenNTF/JavascriptAggregator/wiki) for more de
 
 ###OPENNTF###
 This project is an OpenNTF project, and is available under the Apache License V2.0. All other aspects of the project, including contributions, defect reports, discussions, feature requests and reviews are subject to the [OpenNTF Terms of Use](http://openntf.org/Internal/home.nsf/dx/Terms_of_Use).
+
+###UPGRADING###
+####From 1.0.0 to 1.0.1####
+* Resources defined in the server-side amd config file that use a "namedbundleresource" scheme url should leave the authority section of the uri blank and have the bundle name be the first segment in the path. (ex: namedbundleresource:///bundle.name/path/to/file)
