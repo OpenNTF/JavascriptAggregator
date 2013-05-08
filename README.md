@@ -14,6 +14,8 @@
    limitations under the License.
 -->
 
+[![Build Status](https://buildhive.cloudbees.com/job/OpenNTF/job/JavascriptAggregator/badge/icon)](https://buildhive.cloudbees.com/job/OpenNTF/job/JavascriptAggregator/)
+
 The JavaScript Aggregator is an OSGi servlet that provides aggregation and code minification 
 services to AMDs loaders that supports the loader extension API.  Features include:
 
