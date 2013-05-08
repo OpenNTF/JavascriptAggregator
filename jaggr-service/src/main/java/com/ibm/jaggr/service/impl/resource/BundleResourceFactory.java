@@ -77,10 +77,10 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 			}
 		} else if ("namedbundleresource".equals(scheme)) { //$NON-NLS-1$
 			// Support aggregator specific URI scheme for named bundles
-			String bundleSymbolicName = uri.getHost();
-			Bundle bundle = Platform.getBundle(bundleSymbolicName);
+			String bundleName = getNBRBundleName(uri);
+			Bundle bundle = Platform.getBundle(bundleName);
 			if (bundle != null) {
-				URL url = bundle.getEntry(uri.getPath());
+				URL url = bundle.getEntry(getNBRPath(bundleName, uri));
 				if (url != null) {
 					try {
 						uri = PathUtil.url2uri(url);
@@ -119,5 +119,47 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 		return scheme.equals("bundleentry") ||  //$NON-NLS-1$
 		       scheme.equals("bundleresource") || //$NON-NLS-1$
 		       scheme.equals("namedbundleresource"); //$NON-NLS-1$
+	}
+	
+	
+	/**
+	 * Extracts the bundle's symbolic name from a uri with the <code>namedbundleresource<code> scheme.
+	 * 
+	 * Supports backwards compatibility for names from 1.0.0 release (for now).
+	 * 
+	 * @param uri The uri with a <code>namedbundleresource<code> scheme.
+	 * @return The bundle's symbolic name within the uri.
+	 */
+	protected String getNBRBundleName(URI uri) {
+		String ret = null;
+		
+		String host = uri.getHost();
+		String authority;
+		if (host != null) {
+			ret = host;
+		} else if ((authority = uri.getAuthority()) != null) {
+			ret = authority;
+		} else {
+			String path = uri.getPath();
+			if (path.startsWith("/"))
+				path = path.substring(1);
+			ret = path.substring(0, path.indexOf('/'));
+		}
+		
+		return ret;
+	}
+	
+	/**
+	 * Extracts the path of the file resource from a uri with the <code>namedbundleresource<code> scheme.
+	 * 
+	 * Supports backwards compatibility for names from 1.0.0 release (for now).
+	 * 
+	 * @param bundle The name of the bundle within the uri from {@link BundleResourceFactory#getNBRBundleName(URI)}
+	 * @param uri The uri with a <code>namedbundleresource<code> scheme.
+	 * @return The path of the file resource within the uri.
+	 */
+	protected String getNBRPath(String bundle, URI uri) {
+		String path = uri.getPath();
+		return path.startsWith("/" + bundle) ? path.substring(bundle.length() + 1) : path;
 	}
 }
