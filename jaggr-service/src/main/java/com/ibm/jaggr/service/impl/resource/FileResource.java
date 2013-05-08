@@ -29,6 +29,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.service.resource.IResourceFactory;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
 
 /**
@@ -37,7 +38,9 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
 public class FileResource implements IResource {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());
 
-	File file;
+	final File file;
+	URI ref;
+	IResourceFactory factory;
 
 	/**
 	 * Public constructor used by factory
@@ -51,6 +54,17 @@ public class FileResource implements IResource {
 			file = new File("\\\\" + uri.getAuthority() + '/' + uri.getPath()); //$NON-NLS-1$
 		} else {
 			file = new File(uri);
+		}
+		ref = null;
+		factory = null;
+	}
+	
+	public FileResource(URI ref, IResourceFactory factory, URI uri) {
+		this(uri);
+		this.ref = ref;
+		this.factory = factory;
+		if (ref == null || factory == null) {
+			throw new IllegalArgumentException();
 		}
 	}
 
@@ -95,6 +109,20 @@ public class FileResource implements IResource {
 	@Override
 	public long lastModified() {
 		return file.lastModified();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.net.URI)
+	 */
+	@Override
+	public IResource resolve(String relative) {
+		IResource result = null;
+		if (ref == null) {
+			result = new FileResource(getURI().resolve(relative));
+		} else {
+			result = factory.newResource(ref.resolve(relative));
+		}
+		return result;
 	}
 
 	/*

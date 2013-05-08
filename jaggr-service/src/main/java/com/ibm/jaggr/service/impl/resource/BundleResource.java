@@ -35,8 +35,8 @@ import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.service.util.PathUtil;
 
 public class BundleResource implements IResource {
-	URI uri;
-	String symname = null;
+	final URI uri;
+	final String symname;
 	
 	public BundleResource(URI uri, BundleContext context) {
 		this.uri = uri;
@@ -50,9 +50,12 @@ public class BundleResource implements IResource {
 			bundle = context.getBundle(bundleid);
 		} catch (NumberFormatException ignore) {
 		}
-		if (bundle != null) {
-			this.symname = bundle.getSymbolicName();
-		}
+		symname = (bundle != null) ? bundle.getSymbolicName() : null;
+	}
+	
+	private BundleResource(URI uri, String symname) {
+		this.uri = uri;
+		this.symname = symname;
 	}
 	
 	/* (non-Javadoc)
@@ -83,6 +86,14 @@ public class BundleResource implements IResource {
 		return lastmod;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.lang.String)
+	 */
+	@Override
+	public IResource resolve(String relative) {
+		return new BundleResource(getURI().resolve(relative), symname);
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResource#getReader()
 	 */

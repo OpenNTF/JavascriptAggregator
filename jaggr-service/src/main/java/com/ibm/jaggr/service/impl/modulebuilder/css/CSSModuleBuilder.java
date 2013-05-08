@@ -221,14 +221,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
 		// whitespace
-		css = minify(css, resource.getURI());
+		css = minify(css, resource);
 		
 		// Inline images
-		css = inlineImageUrls(request, css, resource.getURI());
+		css = inlineImageUrls(request, css, resource);
 		
 		// in-line @imports
 		if (inlineImports) {
-			css = inlineImports(request, css, resource.getURI(), ""); //$NON-NLS-1$
+			css = inlineImports(request, css, resource, ""); //$NON-NLS-1$
 		}
 		return new StringReader(css);
 	}
@@ -265,7 +265,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @param uri The URI for the CSS file
 	 * @return
 	 */
-	protected String minify(String css, URI uri) {
+	protected String minify(String css, IResource res) {
 		
 		// replace all quoted strings and url(...) patterns with unique ids so that 
 		// they won't be affected by whitespace removal.
@@ -334,7 +334,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * 
 	 * @throws IOException
 	 */
-	protected String inlineImports(HttpServletRequest req, String css, URI uri, String path) throws IOException {
+	protected String inlineImports(HttpServletRequest req, String css, IResource res, String path) throws IOException {
 		
 		// In-lining of imports can be disabled by request parameter for debugging
 		if (!TypeUtil.asBoolean(req.getParameter(INLINEIMPORTS_REQPARAM_NAME), true)) {
@@ -390,22 +390,22 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 			
-			URI importUri = uri.resolve(importNameMatch);
+			IResource importRes = res.resolve(importNameMatch);
 			String importCss = null;
 			importCss = readToString(
 					new CommentStrippingReader(
 							new InputStreamReader(
-									importUri.toURL().openStream(),
+									importRes.getURI().toURL().openStream(),
 									"UTF-8" //$NON-NLS-1$
 							)
 					)
 			);
-			importCss = minify(importCss, importUri);
+			importCss = minify(importCss, importRes);
 			// Inline images
-			importCss = inlineImageUrls(req, importCss, importUri);
+			importCss = inlineImageUrls(req, importCss, importRes);
 			
 			if (inlineImports) {
-				importCss = inlineImports(req, importCss, importUri, importNameMatch);
+				importCss = inlineImports(req, importCss, importRes, importNameMatch);
 			}
 			m.appendReplacement(buf, ""); //$NON-NLS-1$
 			buf.append(importCss);
@@ -485,7 +485,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @return The transformed CSS with images in-lined as determined by option
 	 *         settings.
 	 */
-	protected String inlineImageUrls(HttpServletRequest req, String css, URI uri) {
+	protected String inlineImageUrls(HttpServletRequest req, String css, IResource res) {
 		if (imageSizeThreshold == 0 && inlinedImageIncludeList.size() == 0) {
 			// nothing to do
 			return css;
@@ -513,7 +513,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 			
-			URI imageUri = uri.resolve(urlMatch);
+			URI imageUri = res.getURI().resolve(urlMatch);
 			boolean exclude = false, include = false;
 			
 			// Determine if this image is in the include list

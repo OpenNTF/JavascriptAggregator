@@ -44,7 +44,6 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	
 	private BundleContext context;
 	private ServiceReference urlConverterSR;
-	private IAggregator aggregator = null;
 
 	public BundleResourceFactory() {
 	}
@@ -61,7 +60,7 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 				URL fileUrl = null;
 				try {
 					fileUrl = converter.toFileURL(uri.toURL());
-					result = getAggregator().newResource(PathUtil.url2uri(fileUrl));
+					result = new FileResource(uri, this, PathUtil.url2uri(fileUrl));
 				} catch (FileNotFoundException e) {
 					if (log.isLoggable(Level.FINE)) {
 						log.log(Level.FINE, uri.toString(), e);
@@ -112,13 +111,8 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 
 	@Override
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		this.aggregator = aggregator;
 	}
 	
-	protected IAggregator getAggregator() {
-		return aggregator;
-	}
-
 	@Override
 	public boolean handles(URI uri) {
 		String scheme = uri.getScheme();
