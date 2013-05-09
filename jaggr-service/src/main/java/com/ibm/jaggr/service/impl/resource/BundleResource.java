@@ -53,7 +53,7 @@ public class BundleResource implements IResource {
 		symname = (bundle != null) ? bundle.getSymbolicName() : null;
 	}
 	
-	private BundleResource(URI uri, String symname) {
+	protected BundleResource(URI uri, String symname) {
 		this.uri = uri;
 		this.symname = symname;
 	}
