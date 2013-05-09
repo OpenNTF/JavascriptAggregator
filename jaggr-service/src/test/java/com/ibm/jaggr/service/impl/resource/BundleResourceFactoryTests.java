@@ -50,6 +50,10 @@ public class BundleResourceFactoryTests {
 		protected URLConnection openConnection(URL u) throws IOException {
 			throw new UnsupportedOperationException();
 		}
+		@Override
+		public boolean equals(URL url1, URL url2) {
+			return url1.toString().equals(url2.toString());
+		}
 	}
 
 	private BundleResourceFactory factory = new TestBundleResourceFactory();
