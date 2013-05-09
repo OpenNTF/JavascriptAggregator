@@ -40,6 +40,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.JsModuleContentProvid
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.RequireExpansionCompilerPassTest;
 import com.ibm.jaggr.service.impl.modulebuilder.text.TxtModuleContentProviderTest;
 import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
+import com.ibm.jaggr.service.impl.resource.FileResourceTests;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
 import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 
@@ -67,6 +68,7 @@ import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 	AbstractHttpTransportTest.class,
 	DojoHttpTransportTest.class,
 	AggregatorImplTest.class,
-	BundleResourceFactoryTests.class
+	BundleResourceFactoryTests.class,
+	FileResourceTests.class
 })
 public class EverythingSuite { }
