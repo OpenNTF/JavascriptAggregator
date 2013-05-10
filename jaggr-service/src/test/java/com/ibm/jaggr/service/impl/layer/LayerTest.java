@@ -105,7 +105,7 @@ public class LayerTest extends EasyMock {
 		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		LayerImpl.LAYERBUILD_REMOVE_DELAY_SECONDS = 0;
-		testDepMap = new HashMap<String, ModuleDeps>(TestUtils.testDepMap);
+		testDepMap = TestUtils.createTestDepMap();
 	}
 
 	@AfterClass

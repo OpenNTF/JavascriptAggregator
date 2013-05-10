@@ -65,14 +65,7 @@ public class ModuleImplTest {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 	IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
-	static final Map<String, ModuleDeps> testDepMap;
-	
-	static {
-		testDepMap = new HashMap<String, ModuleDeps>();
-		for (Map.Entry<String, ModuleDeps> entry : TestUtils.testDepMap.entrySet()) {
-			testDepMap.put(entry.getKey(), new ModuleDeps(entry.getValue()));
-		}
-	}
+	static final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
