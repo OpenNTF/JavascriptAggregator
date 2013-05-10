@@ -284,6 +284,7 @@ public class LayerCacheTest {
 	
 	@SuppressWarnings("unchecked")
 	private void createMockObjects(List<InitParams.InitParam> initParams) throws Exception {
+		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
 		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
 		mockAggregator = new Proxy(easyMockAggregator);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
@@ -299,7 +300,7 @@ public class LayerCacheTest {
 		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
 			public ModuleDeps answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
-				ModuleDeps result = TestUtils.testDepMap.get(name);
+				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}

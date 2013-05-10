@@ -74,4 +74,9 @@ public class ExceptionResource implements IResource, IResourceVisitor.Resource {
 		return false;
 	}
 
+	@Override
+	public IResource resolve(String relative) {
+		throw new UnsupportedOperationException();
+	}
+
 }

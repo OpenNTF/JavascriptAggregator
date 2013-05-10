@@ -63,9 +63,6 @@ import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
 public class TestUtils {
-	static public Map<String, ModuleDeps> testDepMap;
-	static public final ModuleDeps emptyDepMap = new ModuleDeps();
-	
 	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
 	public static String b = "define([\"./c\"], function(a) {\nalert(\"hello from b.js\");\nreturn null;\n});";
 	public static String c = "define([\"./a\", \"./b\", \"./noexist\"], function(a, b, d) {\nalert(\"hello from c.js\");\nreturn null;\n});";
@@ -83,6 +80,29 @@ public class TestUtils {
 	public static String err = "/* Comment */define([\"p1/a\", \"p1/b\",], function(){}};";
 	static String hello = "Hello world text";
 
+	static public final ModuleDeps emptyDepMap = new ModuleDeps();
+
+	static  public Map<String, ModuleDeps> createTestDepMap() {
+		ModuleDeps temp = new ModuleDeps();
+		Map<String, ModuleDeps> depMap = new HashMap<String, ModuleDeps>();
+		temp.add("p2/b", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/c", new ModuleDepInfo(null, null, ""));
+		depMap.put("p2/a",  temp);
+		temp = new ModuleDeps();
+		temp.add("p1/b", new ModuleDepInfo(null, null, ""));
+		temp.add("p1/c", new ModuleDepInfo(null, null, ""));
+		temp.add("p1/a", new ModuleDepInfo(null, null, ""));
+		temp.add("p1/noexist", new ModuleDepInfo(null, null, ""));
+		depMap.put("p1/a", temp);
+		temp = new ModuleDeps();
+		temp.add("p2/p1/p1/a", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/p1/p1/b", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/p1/p1/noexist", new ModuleDepInfo(null, null, ""));
+		temp.add("p2/p1/p1/c", new ModuleDepInfo(null, null, ""));
+		depMap.put("p2/p1/p1/c", temp);
+
+		return depMap;
+	}
 	static public void deleteRecursively(File file) throws InterruptedException {
 		boolean deleted = false;
 		int retryCount = 5;
@@ -106,25 +126,6 @@ public class TestUtils {
 
 	static public File createTestFile(File dir, String name, String content)
 			throws IOException {
-		ModuleDeps temp = new ModuleDeps();
-		Map<String, ModuleDeps> depMap = new HashMap<String, ModuleDeps>();
-		temp.add("p2/b", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/c", new ModuleDepInfo(null, null, ""));
-		depMap.put("p2/a",  temp);
-		temp = new ModuleDeps();
-		temp.add("p1/b", new ModuleDepInfo(null, null, ""));
-		temp.add("p1/c", new ModuleDepInfo(null, null, ""));
-		temp.add("p1/a", new ModuleDepInfo(null, null, ""));
-		temp.add("p1/noexist", new ModuleDepInfo(null, null, ""));
-		depMap.put("p1/a", temp);
-		temp = new ModuleDeps();
-		temp.add("p2/p1/p1/a", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/p1/p1/b", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/p1/p1/noexist", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/p1/p1/c", new ModuleDepInfo(null, null, ""));
-		depMap.put("p2/p1/p1/c", temp);
-
-		testDepMap = depMap;
 		if (!dir.exists())
 			dir.mkdirs();
 		String filename = name;
