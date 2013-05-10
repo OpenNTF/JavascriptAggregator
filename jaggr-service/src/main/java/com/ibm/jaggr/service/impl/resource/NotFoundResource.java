@@ -66,4 +66,9 @@ public class NotFoundResource implements IResource {
 		throw new IOException(uri.toString());
 	}
 
+	@Override
+	public IResource resolve(String relative) {
+		throw new UnsupportedOperationException();
+	}
+
 }

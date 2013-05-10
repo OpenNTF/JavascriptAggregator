@@ -802,6 +802,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		public boolean isFolder() {
 			return false;
 		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.lang.String)
+		 */
+		@Override
+		public IResource resolve(String relative) {
+			throw new UnsupportedOperationException();
+		}
 	}
 
 }

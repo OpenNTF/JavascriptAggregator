@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 
+import org.eclipse.osgi.service.urlconversion.URLConverter;
+
 /**
  * Defines the interface for AMD module resources. Implementations can provide
  * support for resources on the file system, in zip and jar files, or any other
@@ -56,6 +58,15 @@ public interface IResource {
 	 * @return The last-modified date
 	 */
 	public long lastModified();
+	
+	/**
+	 * Returns an IResource for the resource obtained by resolving the URI of
+	 * this resource with the specified relative URI. Use this method instead of
+	 * {@link #getURI()#resolve(String)} to ensure that the cached resource for the
+	 * URI exists in the event that resource URIs are derived from a service
+	 * such as {@link URLConverter#toFileURL(java.net.URL)}.
+	 */
+	public IResource resolve(String relative);
 	
 	/**
 	 * Returns a {@link Reader} object for the resource if the resource is not a

@@ -74,5 +74,10 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 	public boolean isFolder() {
 		return false;
 	}
+
+	@Override
+	public IResource resolve(String relative) {
+		return new StringResource("", uri.resolve(relative));
+	}
 	
 }

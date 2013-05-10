@@ -37,7 +37,7 @@ public class AggregatorProxy implements java.lang.reflect.InvocationHandler {
     public static IAggregator newInstance(IAggregator aggr, ICacheManager cacheMgr) {
 	return (IAggregator)java.lang.reflect.Proxy.newProxyInstance(
 	    aggr.getClass().getClassLoader(),
-	    aggr.getClass().getInterfaces(),
+	    new Class[]{IAggregator.class},
 	    new AggregatorProxy(aggr, cacheMgr));
     }
 

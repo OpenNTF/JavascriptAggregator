@@ -97,12 +97,13 @@ public class JsModuleContentProviderTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
+		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
 		tmpdir = Files.createTempDir();
 		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
 		expect(mockDependencies.getExpandedDependencies((String)anyObject(), (Features)anyObject(), (Set<String>)anyObject(), anyBoolean(), anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
 			public ModuleDeps answer() throws Throwable {
 				String name = (String)getCurrentArguments()[0];
-				ModuleDeps result = TestUtils.testDepMap.get(name);
+				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
 					result = TestUtils.emptyDepMap;
 				}
@@ -205,7 +206,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		System.out.println(compiled);
 		// validate that require list was expanded and has blocks were removed
 		Matcher m = Pattern.compile("require\\(\\[\\\"([^\"]*)\\\",\\\"([^\"]*)\\\",\\\"([^\"]*)\\\"\\]").matcher(compiled);
-		Assert.assertTrue(m.find());
+		Assert.assertTrue(compiled, m.find());
 		Assert.assertEquals(
 				new HashSet<String>(Arrays.asList(new String[]{"p2/a", "p2/b", "p2/c"})),  
 				new HashSet<String>(Arrays.asList(new String[]{m.group(1), m.group(2), m.group(3)})));
