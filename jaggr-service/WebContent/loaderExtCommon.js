@@ -49,8 +49,19 @@ var params = {
 	
 	/**
 	 * Default feature filter allows all features
+	 * 
+	 * @return true if the specified feature should be included
+	 *         in the list of features sent to the aggregator
 	 */
 	featureFilter = function(feature) {return true;},
+	
+	/**
+	 * Default add filter aggregates all modules
+	 * 
+	 * @return true if the the module should be included in the request
+	 *         to the aggregator
+	 */
+	addFilter = function(prefix, name, url) {return true;},
 
 	/**
 	 * Array of functions that process a url, returning the new,
