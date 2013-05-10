@@ -51,6 +51,11 @@ var params = {
 	 * Default feature filter allows all features
 	 */
 	featureFilter = function(feature) {return true;},
+	
+	/**
+	 * Default add filter aggregates all modules
+	 */
+	addFilter = function(prefix, name, url) {return true;},
 
 	/**
 	 * Array of functions that process a url, returning the new,

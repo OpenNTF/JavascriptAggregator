@@ -60,6 +60,7 @@ userConfig.has = userConfig.has || {};
 //ground for anything specified in the config.
 featureFilter = combo.featureFilter || function(name) { return !/^config-/.test(name);};
 
+addFilter = combo.addFilter || addFilter;
 
 // Set this so that the loader won't synchronously call require.callback
 userConfig.has["dojo-built"] = true;
@@ -152,7 +153,7 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 };
 
 combo.add = function (prefix, name, url, config) {
-	if (/^(\/)|([^:\/]+:[\/]{2})/.test(name) || config.cache[name]) {
+	if (/^(\/)|([^:\/]+:[\/]{2})/.test(name) || config.cache[name] || !addFilter(prefix, name, url)) {
 		return false;
 	}
 	if (!depmap[name] && (!prefix || prefix in plugins)) {
