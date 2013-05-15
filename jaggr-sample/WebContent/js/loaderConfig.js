@@ -65,7 +65,8 @@
 		combo: {
 			contextPath: "/test/aggr",
 			expandRequire: true,
-			cacheBust: '${project.version}'
+			// This is a maven variable, replaced at build time (see pom file for filtered resources).
+			cacheBust: '${project.version} 
 		},
 		
 		deps: [
