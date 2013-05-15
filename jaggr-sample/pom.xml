@@ -40,24 +40,9 @@
         <directory>${basedir}</directory>
         <includes>
           <include>plugin.xml</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
-          <include>WebContent/**</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
           <include>notice.txt</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
           <include>embed.txt</include>
+          <include>WebContent/**</include>
         </includes>
       </resource>
       <resource>

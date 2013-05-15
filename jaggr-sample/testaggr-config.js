@@ -45,5 +45,6 @@
 
 	notice: 'embed.txt',
 
-	cacheBust: '${project.version}'
+	cacheBust: '${project.version}' // This is a maven variable, replaced at build time (see pom file for filtered resources).
+		// You have other options for variable replacement in this file such as "scoped-variables" (see wiki for more info)
 }
