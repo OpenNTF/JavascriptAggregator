@@ -62,9 +62,10 @@ public interface IResource {
 	/**
 	 * Returns an IResource for the resource obtained by resolving the URI of
 	 * this resource with the specified relative URI. Use this method instead of
-	 * {@link #getURI()#resolve(String)} to ensure that the cached resource for the
-	 * URI exists in the event that resource URIs are derived from a service
-	 * such as {@link URLConverter#toFileURL(java.net.URL)}.
+	 * calling {@link URI#resolve(String)} on the value returned by
+	 * {@link #getURI()} to ensure that the cached resource for the URI
+	 * exists in the event that resource URIs are derived from a service such as
+	 * {@link URLConverter#toFileURL(java.net.URL)}.
 	 */
 	public IResource resolve(String relative);
 	
