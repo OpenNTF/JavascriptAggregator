@@ -37,7 +37,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
@@ -75,6 +74,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	private boolean processingDeps = false;
 	private boolean validate = false;
 	private String cacheBust = null;
+	private boolean initFailed = false;
 	
 	private IAggregator aggregator = null;
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -296,16 +296,10 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						
 						// Notify listeners that dependencies have been updated
 						ServiceReference[] refs = null;
-						try {
-							refs = bundleContext
-							.getServiceReferences(IDependenciesListener.class.getName(),
-									              "(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
-							);
-						} catch (InvalidSyntaxException e) {
-							if (log.isLoggable(Level.SEVERE)) {
-								log.log(Level.SEVERE, e.getMessage(), e);
-							}
-						}
+						refs = bundleContext
+								.getServiceReferences(IDependenciesListener.class.getName(),
+								              "(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
+						);
 						if (refs != null) {
 							for (ServiceReference ref : refs) {
 								IDependenciesListener listener = 
@@ -323,11 +317,10 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 								}
 							}
 						}
-					} catch (RuntimeException e) {
-						throw e;
-					} catch (Exception e) {
+					} catch (Throwable t) {
+						initFailed = true;
 						if (log.isLoggable(Level.SEVERE)) {
-							log.log(Level.SEVERE, e.getMessage(), e);
+							log.log(Level.SEVERE, t.getMessage(), t);
 						}
 					} finally {
 						rwl.writeLock().unlock();
@@ -387,11 +380,17 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			if (!initialized.await(1, TimeUnit.SECONDS)) {
 				throw new ProcessingDependenciesException();
 			}
+			if (initFailed) {
+				throw new IllegalStateException("Init failed"); //$NON-NLS-1$
+			}
 			if (!rwl.readLock().tryLock(1, TimeUnit.SECONDS)) {
 				throw new ProcessingDependenciesException();
 			}
 		} else {
 			initialized.await();
+			if (initFailed) {
+				throw new IllegalStateException("Init failed"); //$NON-NLS-1$
+			}
 			rwl.readLock().lock();
 		}
 	}
