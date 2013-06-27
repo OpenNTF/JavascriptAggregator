@@ -37,11 +37,7 @@ public interface IConfigModifier {
 	 *            The raw config object from the config JavaScript. See
 	 *            {@link IConfig#getRawConfig()} for a description of this
 	 *            object. Implementors of this method may modify the config
-	 *            object as needed. Objects added to the raw config should be
-	 *            limited to Maps, Lists and Strings, Numbers and Booleans, or
-	 *            JSON proxy objects. All elements must be serializable and
-	 *            cloneable and support element comparison using the the
-	 *            equals() method.
+	 *            object as needed.
 	 */
 	void modifyConfig(IAggregator aggregator, Scriptable rawConfig);
 }

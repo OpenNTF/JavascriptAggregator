@@ -27,6 +27,7 @@ import java.io.Serializable;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.CompletionService;
@@ -292,6 +293,9 @@ public class DepTree implements Serializable {
 			treeBuilderCs.submit(new DepTreeBuilder(aggregator, parserCs, path, root, cachedNode));
 		}
 
+		// List of parser exceptions
+		LinkedList<Exception> parserExceptions = new LinkedList<Exception>();
+		
 		/*
 		 * Pull the completed tree builder tasks from the completion queue until
 		 * all the paths have been processed
@@ -313,12 +317,18 @@ public class DepTree implements Serializable {
 			} catch (Exception e) {
 				if (log.isLoggable(Level.SEVERE))
 					log.log(Level.SEVERE, e.getMessage(), e);
+				parserExceptions.add(e);
 			}
 		}
 
 		// shutdown the thread pools now that we're done with them
 		parserExc.shutdown();
 		treeBuilderExc.shutdown();
+		
+		// If parser exceptions occurred, then rethrow the first one 
+		if (parserExceptions.size() > 0) {
+			throw new RuntimeException(parserExceptions.get(0));
+		}
 
 		// Prune dead nodes (nodes with no children or dependency lists)
 		for (Map.Entry<URI, DepTreeNode> entry : depMap.entrySet()) {
