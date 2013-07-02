@@ -69,35 +69,36 @@ final class DepParser implements Callable<URI> {
 		// Parse the javascript code
 		Compiler compiler = new Compiler();
 		InputStream in = resource.getInputStream();
-		Node node;
+		Node node = null;
 		try {
 			node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
-		} catch (Exception e) {
+		} catch (Throwable e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e);
 			}
-			throw e;
 		} finally {
 			in.close();
 		}
-		// walk the AST for the node looking for define calls
-		// and pull out the required dependency list.
-		ArrayList<String> deps = DepUtils.parseDependencies(node);
-		String[] depArray = (deps == null) ? 
-				new String[0] : deps.toArray(new String[deps.size()]);
-		/*
-		 * Determine if the dependency list has changed.  We keep track of 
-		 * dependency list changes separate from code changes in general
-		 * because a dependency list change necessitates invalidating all
-		 * cached responses for the configs that reference this file, and
-		 * we want to do this only when necessary.
-		 */
-		if (lastModifiedDep ==  -1 || !Arrays.equals(depArray, treeNode.getDepArray())) {
-			lastModifiedDep = lastModified;
+		if (node != null) {
+			// walk the AST for the node looking for define calls
+			// and pull out the required dependency list.
+			ArrayList<String> deps = DepUtils.parseDependencies(node);
+			String[] depArray = (deps == null) ? 
+					new String[0] : deps.toArray(new String[deps.size()]);
+			/*
+			 * Determine if the dependency list has changed.  We keep track of 
+			 * dependency list changes separate from code changes in general
+			 * because a dependency list change necessitates invalidating all
+			 * cached responses for the configs that reference this file, and
+			 * we want to do this only when necessary.
+			 */
+			if (lastModifiedDep ==  -1 || !Arrays.equals(depArray, treeNode.getDepArray())) {
+				lastModifiedDep = lastModified;
+			}
+			// update the dependency info in the node
+			treeNode.setDependencies(depArray, 
+					lastModified, lastModifiedDep);
 		}
-		// update the dependency info in the node
-		treeNode.setDependencies(depArray, 
-				lastModified, lastModifiedDep);
 		return resource.getURI();
 	}
 }
