@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
@@ -36,6 +37,7 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
  * last-modified times are updated as well.
  */
 final class DepParser implements Callable<URI> {
+	static final Logger log = Logger.getLogger(DepParser.class.getName());
 	static {
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
@@ -67,8 +69,17 @@ final class DepParser implements Callable<URI> {
 		// Parse the javascript code
 		Compiler compiler = new Compiler();
 		InputStream in = resource.getInputStream();
-		Node node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
-		in.close();
+		Node node;
+		try {
+			node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e);
+			}
+			throw e;
+		} finally {
+			in.close();
+		}
 		// walk the AST for the node looking for define calls
 		// and pull out the required dependency list.
 		ArrayList<String> deps = DepUtils.parseDependencies(node);
