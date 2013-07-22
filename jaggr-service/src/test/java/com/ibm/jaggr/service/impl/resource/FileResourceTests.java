@@ -31,9 +31,9 @@ public class FileResourceTests {
 	public void testAuthority() throws Exception {
 		FileResource res = new FileResource(new URI("file://server/path/name.ext"));
 		if (File.separatorChar == '\\') {
-			Assert.assertEquals("\\\\server\\path\\name.ext", res.file.getCanonicalPath());
+			Assert.assertEquals("\\\\server\\path\\name.ext", res.file.getAbsolutePath());
 		} else {
-			Assert.assertEquals("//server/path/name.ext", res.file.getCanonicalPath());
+			Assert.assertEquals("//server/path/name.ext", res.file.getAbsolutePath());
 		}
 		Assert.assertEquals("file://server/path/name.ext", res.getURI().toString());
 	}
