@@ -19,7 +19,6 @@
   <parent>
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
-    <version>1.0.1-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   
