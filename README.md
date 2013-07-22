@@ -39,3 +39,5 @@ This project is an OpenNTF project, and is available under the Apache License V2
 ###UPGRADING###
 ####From 1.0.0 to 1.0.1####
 * Resources defined in the server-side amd config file that use a "namedbundleresource" scheme url should leave the authority section of the uri blank and have the bundle name be the first segment in the path. (ex: namedbundleresource:///bundle.name/path/to/file)
+####From 1.0.1 to 1.1####
+* Interface change in IResource (added IResource resolve(String relative);) will affect any third-party resource providers. 
