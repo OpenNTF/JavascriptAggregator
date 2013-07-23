@@ -36,6 +36,13 @@
 
   <build>
   	<resources>
+  	  <resource>
+        <directory>..</directory>
+        <includes>
+          <include>LICENSE</include>
+          <include>NOTICE</include>
+        </includes>
+      </resource>
       <resource>
         <directory>${basedir}</directory>
         <includes>
