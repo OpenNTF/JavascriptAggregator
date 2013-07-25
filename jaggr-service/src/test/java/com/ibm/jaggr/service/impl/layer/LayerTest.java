@@ -436,23 +436,18 @@ public class LayerTest extends EasyMock {
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
+		new File(tmpdir, "p1/a.js").setLastModified(new Date().getTime());
 		Long lastMod = Math.max(new File(tmpdir, "p1/a.js").lastModified(), 
 				                new File(tmpdir, "p1/b.js").lastModified());
-		tmpdir.setLastModified(lastMod);	// need to set this so that it won't 
-		                                    // throw off the time of the layer last-mod
-		                                    // because we pass tmpdir as the configUri
-		                                    // when instantiating the config
 		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
 		long testLastMod = layer.getLastModified(mockRequest);
-		assertTrue("Last modifieds don't match", lastMod == testLastMod);
+		Assert.assertEquals("Last-modifieds don't match", lastMod, testLastMod, 0);
 
-		Thread.sleep(1500L);	// Wait long enough for systems with coarse grain last-mod
-        // times to recognize that the file has changed
-		lastMod = new Date().getTime();
-		new File(tmpdir, "p1/a.js").setLastModified(new Date().getTime());
+		lastMod += 1500;
+		new File(tmpdir, "p1/a.js").setLastModified(lastMod);
 		lastMod = new File(tmpdir, "p1/a.js").lastModified();
 		Assert.assertNotSame("Last modifieds shouldn't match", lastMod,  testLastMod);
 		requestAttributes.clear();
@@ -462,6 +457,16 @@ public class LayerTest extends EasyMock {
 		assertTrue("Last modifieds don't match", lastMod == testLastMod);
 		assertNotNull(requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertTrue(testLastMod == (Long)requestAttributes.get(LayerImpl.LAST_MODIFIED_PROPNAME));
+		
+		// Make sure config last-mod is considered
+		lastMod -= 100000;
+		new File(tmpdir, "p1/a.js").setLastModified(lastMod);
+		new File(tmpdir, "p1/b.js").setLastModified(lastMod);
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		testLastMod = layer.getLastModified(mockRequest);
+		assertEquals("Last modifieds don't match", testLastMod, configRef.get().lastModified());
 	}
 
 
