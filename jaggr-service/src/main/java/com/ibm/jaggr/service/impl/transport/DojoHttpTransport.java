@@ -171,6 +171,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				sb.append("]);"); //$NON-NLS-1$
 				return sb.toString();
 			}
+		default:
 		}
 		return null;
 	}
