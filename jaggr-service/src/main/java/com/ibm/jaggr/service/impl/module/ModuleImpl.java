@@ -634,7 +634,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				uri = module.uri;
 				_cacheKeyGenerators = module._cacheKeyGenerators;
 				_lastModified = module._lastModified;
-				_moduleBuilds = new ConcurrentHashMap<String, CacheEntry>(module._moduleBuilds);
+				_moduleBuilds = (module._moduleBuilds != null) ? 
+						new ConcurrentHashMap<String, CacheEntry>(module._moduleBuilds) : null;
 			}
 	    }
 
