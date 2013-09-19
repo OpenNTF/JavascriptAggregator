@@ -134,9 +134,9 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 		config.trace("loader-inject-combo", [asNames.join(', ')]);
 	}
 	if (maxUrlLength && url.length > maxUrlLength) {
-		var parta = deps.slice(0, deps.length/2),
-		    partb = deps.slice(deps.length/2, deps.length),
-		    map = depmap;
+		var parta = opt_deps.slice(0, opt_deps.length/2),
+		    partb = opt_deps.slice(opt_deps.length/2, opt_deps.length),
+		    map = opt_depmap;
 		deps = [];
 		depmap = {};
 		arguments.callee(load, config, parta, map);
