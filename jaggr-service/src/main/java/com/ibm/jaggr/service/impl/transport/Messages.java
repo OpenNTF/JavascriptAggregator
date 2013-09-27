@@ -16,9 +16,9 @@
 
 package com.ibm.jaggr.service.impl.transport;
 
-import org.eclipse.osgi.util.NLS;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 
-public class Messages extends NLS {
+public class Messages {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.transport.messages"; //$NON-NLS-1$
 	public static String AbstractHttpTransport_0;
 	public static String AbstractHttpTransport_1;
@@ -27,9 +27,10 @@ public class Messages extends NLS {
 	public static String DojoHttpTransport_2;
 	public static String DojoHttpTransport_3;
 	public static String DojoHttpTransport_4;
-	static {
-		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
+	static {	
+		
+		PlatformAggregatorFactory.INSTANCE.getNLSImpl().initializeMessages(BUNDLE_NAME, Messages.class);
+		
 	}
 
 	private Messages() {

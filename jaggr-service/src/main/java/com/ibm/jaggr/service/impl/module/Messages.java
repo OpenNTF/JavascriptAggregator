@@ -16,9 +16,9 @@
 
 package com.ibm.jaggr.service.impl.module;
 
-import org.eclipse.osgi.util.NLS;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 
-public class Messages extends NLS {
+public class Messages {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.module.messages"; //$NON-NLS-1$
 	public static String ModuleImpl_1;
 	public static String ModuleImpl_2;
@@ -26,7 +26,7 @@ public class Messages extends NLS {
 	public static String NotFoundModule_0;
 	static {
 		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
+		PlatformAggregatorFactory.INSTANCE.getNLSImpl().initializeMessages(BUNDLE_NAME, Messages.class);
 	}
 
 	private Messages() {

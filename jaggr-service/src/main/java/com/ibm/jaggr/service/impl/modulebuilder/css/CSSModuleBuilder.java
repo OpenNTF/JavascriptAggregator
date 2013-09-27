@@ -29,6 +29,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -43,8 +44,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.mozilla.javascript.Scriptable;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
@@ -54,6 +53,7 @@ import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.config.IConfigListener;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.CommentStrippingReader;
@@ -201,7 +201,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
 	}
 	
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	//private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<Object> registrations = new LinkedList<Object>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
@@ -651,8 +652,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
-			reg.unregister();
+		for (Object reg : registrations) {
+			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(reg);
 		}
 	}
 
@@ -662,13 +663,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		BundleContext context = aggregator.getBundleContext();
-		Properties props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IConfigListener.class.getName(), this, props));
-		props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
+		
+		Hashtable<String, String> props = new Hashtable<String, String>();
+		//Properties props = new Properties();
+		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		registrations.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, props));
+		//props = new Properties();
+		props = new Hashtable<String, String>();
+		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		registrations.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
 			configLoaded(config, 1);

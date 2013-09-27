@@ -21,6 +21,7 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,10 +37,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IShutdownListener;
 import com.ibm.jaggr.service.ProcessingDependenciesException;
@@ -49,82 +46,72 @@ import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.IDependenciesListener;
 import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.options.IOptionsListener;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
-import com.ibm.jaggr.service.util.ConsoleService;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.SequenceNumberProvider;
 
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
 
-	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
-    
-    private ServiceRegistration configUpdateListener;
-    private ServiceRegistration optionsUpdateListener;
-	private ServiceRegistration shutdownListener;
-	private BundleContext bundleContext;
-	private String servletName;
-	private long depsLastModified = -1;
-	private long initStamp;
+	protected static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
+
+	protected String servletName;
+	protected long depsLastModified = -1;
+	protected long initStamp;
 	private String rawConfig = null;
-    private DepTreeRoot depTree = null;
-	private CountDownLatch initialized;
-	private boolean processingDeps = false;
+    protected DepTreeRoot depTree = null;
+    protected CountDownLatch initialized;
+	protected boolean processingDeps = false;
 	private boolean validate = false;
 	private String cacheBust = null;
-	private boolean initFailed = false;
+	protected boolean initFailed = false;
 	
-	private IAggregator aggregator = null;
-	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+	public IAggregator aggregator = null;
+	
+	private Object configUpdateListener;
+    private Object optionsUpdateListener;
+	private Object shutdownListener;
+	
+	
+	protected ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
+	
 	
 	public DependenciesImpl(IAggregator aggregator, long stamp) {
+		// TODO Auto-generated constructor stub
+		
+		//Properties dict;
+		Hashtable<String, String> dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName());
 		this.aggregator = aggregator;
 		this.initStamp = stamp;
-		Properties dict;
-		bundleContext = aggregator.getBundleContext();
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
+		
+		configUpdateListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
+		optionsUpdateListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
+		shutdownListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
 
-		if (bundleContext != null) {
-			// register shutdown listener
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			shutdownListener = bundleContext.registerService(
-					IShutdownListener.class.getName(), 
-					this, 
-					dict
-			);
-	
-			// register the config change listener service.
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			configUpdateListener = bundleContext.registerService(
-					IConfigListener.class.getName(), 
-					this, 
-					dict
-			);
-			
-			// register the config change listener service.
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			optionsUpdateListener = bundleContext.registerService(
-					IOptionsListener.class.getName(), 
-					this, 
-					dict
-			);
-
-			if (aggregator.getConfig() != null) {
-				configLoaded(aggregator.getConfig(), 1);
-			}
-			
-			if (aggregator.getOptions() != null) {
-				optionsUpdated(aggregator.getOptions(), 1);
-			}
+		if (aggregator.getConfig() != null) {
+			configLoaded(aggregator.getConfig(), 1);
 		}
+		
+		if (aggregator.getOptions() != null) {
+			optionsUpdated(aggregator.getOptions(), 1);
+		}
+		
 	}
-
+	
+	@Override
+	public void shutdown(IAggregator aggregator) {
+		PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(configUpdateListener);
+		PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(optionsUpdateListener);
+		PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(shutdownListener);
+		
+	}
+	
 	protected IAggregator getAggregator() {
 		return aggregator;
 	}
@@ -185,34 +172,31 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 	}
 
-	@Override
-	public void shutdown(IAggregator aggregator) {
-		this.aggregator = null;
-		shutdownListener.unregister();
-		configUpdateListener.unregister();
-		optionsUpdateListener.unregister();
-	}
 	
 	@Override
 	public long getLastModified() {
 		return depsLastModified;
 	}
 	
-	private synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
+	
+	public synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
 		if (aggregator.getConfig() == null || processingDeps) {
 			return;
 		}
 		final ExecutorService executor = Executors.newSingleThreadExecutor();
 		processingDeps = true;
 		final AtomicBoolean processDepsThreadStarted = new AtomicBoolean(false);
-		final ConsoleService cs = new ConsoleService();
+		
+		//TODO Manish : removed, not sure how its getting used
+		//final ConsoleService cs = new ConsoleService();
 		try {
 			executor.execute(new Runnable() {
 				public void run() {
 					rwl.writeLock().lock();
 					processDepsThreadStarted.set(true);
 					// initialize the console service for the worker thread.
-					ConsoleService workerCs = new ConsoleService(cs);
+					//TODO Manish : removed, not sure how its getting used
+					//ConsoleService workerCs = new ConsoleService(cs);
 					try {
 						// Map of path names to URIs for locations to be scanned for js files 
 						final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
@@ -280,30 +264,28 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 								clean, 
 								validate); 
 				
-						DepTreeRoot depTree = new DepTreeRoot(config);
-						deps.mapDependencies(depTree, bundleContext, baseURIs, config);
-						deps.mapDependencies(depTree, bundleContext, packageURIs, config);
-						deps.mapDependencies(depTree, bundleContext, packageOverrideURIs, config);
-						deps.mapDependencies(depTree, bundleContext, pathURIs, config);
-						deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
+						DepTreeRoot depLocalTree = new DepTreeRoot(config);
+						deps.mapDependencies(depLocalTree, null, baseURIs, config);
+						deps.mapDependencies(depLocalTree, null, packageURIs, config);
+						deps.mapDependencies(depLocalTree, null, packageOverrideURIs, config);
+						deps.mapDependencies(depLocalTree, null, pathURIs, config);
+						deps.mapDependencies(depLocalTree, null, pathOverrideURIs, config);
 						/*
 						 * For each module name in the dependency lists, try to resolve the name
 						 * to a reference to another node in the tree
 						 */
-						depTree.resolveDependencyRefs();
-						depsLastModified = depTree.lastModifiedDepTree();
-						DependenciesImpl.this.depTree = depTree;
+						depLocalTree.resolveDependencyRefs();
+						depsLastModified = depLocalTree.lastModifiedDepTree();
+						depTree = depLocalTree; 
 						
 						// Notify listeners that dependencies have been updated
-						ServiceReference[] refs = null;
-						refs = bundleContext
-								.getServiceReferences(IDependenciesListener.class.getName(),
-								              "(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
-						);
+						Object[] refs = null;
+						
+						refs = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")");
+						
 						if (refs != null) {
-							for (ServiceReference ref : refs) {
-								IDependenciesListener listener = 
-									(IDependenciesListener)bundleContext.getService(ref);
+							for (Object ref : refs) {								
+								IDependenciesListener listener = (IDependenciesListener)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getService(ref));
 								if (listener != null) {
 									try {
 										listener.dependenciesLoaded(DependenciesImpl.this, sequence);
@@ -312,7 +294,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 											log.log(Level.SEVERE, e.getMessage(), e);
 										}
 									} finally {
-										bundleContext.ungetService(ref);
+										PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
 									}
 								}
 							}
@@ -327,7 +309,8 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						executor.shutdown();
 						initialized.countDown();
 						processingDeps = false;
-						workerCs.close();
+						//TODO Manish : removed, not sure how its getting used
+						//workerCs.close();
 					}
 				}
 			});
@@ -348,7 +331,6 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			processingDeps = false;
 		}
 	}
-
 
 	@Override
 	public List<String> getDelcaredDependencies(String mid) throws ProcessingDependenciesException {

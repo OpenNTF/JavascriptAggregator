@@ -42,11 +42,10 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
-import org.osgi.framework.BundleContext;
 
+//import com.ibm.jaggr.osgi.service.impl.ConsoleService;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.util.ConsoleService;
 import com.ibm.jaggr.service.util.PathUtil;
 
 /**
@@ -65,7 +64,7 @@ import com.ibm.jaggr.service.util.PathUtil;
 public class DepTree implements Serializable {
 	private static final long serialVersionUID = 5453343490025146049L;
 
-	static final Logger log = Logger.getLogger(DepTree.class.getName());
+	protected static final Logger log = Logger.getLogger(DepTree.class.getName());
 
 	static final String TREEBUILDER_TGNAME = "treeBuilder"; //$NON-NLS-1$
 	static final String JSPARSER_TGNAME = "jsParser"; //$NON-NLS-1$
@@ -204,8 +203,9 @@ public class DepTree implements Serializable {
 				Messages.DepTree_3,
 				new Object[]{aggregator.getName()});
 		
-		ConsoleService cs = new ConsoleService();
-		cs.println(msg);
+		//TODO : Manish removing console service for now
+		//ConsoleService cs = new ConsoleService();
+		//cs.println(msg);
 
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);
@@ -361,7 +361,8 @@ public class DepTree implements Serializable {
 		);
 
 		// Output that we're done.
-		cs.println(msg);
+		// TODO : Manish remove it from now
+		//cs.println(msg);
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);
 		}
@@ -380,7 +381,20 @@ public class DepTree implements Serializable {
 	 * 
 	 * @return The root {@link DepTreeNode} for the new tree
 	 */
-	public DepTreeRoot mapDependencies(DepTreeRoot root, BundleContext context, Map<String, URI> map, IConfig config) {
+	/**
+	 * Returns a new tree with an unnamed {@link DepTreeNode} object at the root
+	 * of the tree. Each of the keys specified in the map are children of the
+	 * returned node and those node's children are the children of the nodes 
+	 * corresponding to the resource URIs specified by the map values.
+	 * The map values must be the same as, or a subset of, the paths that
+	 * were used to create this instance.
+	 * 
+	 * @param map
+	 *            A map of module names to resource URIs
+	 * 
+	 * @return The root {@link DepTreeNode} for the new tree
+	 */
+	public DepTreeRoot mapDependencies(DepTreeRoot root, Object context, Map<String, URI> map, IConfig config) {
 		// For each config path entry...
 		for (Entry<String, URI> configPathEntry : map.entrySet()) {
 			String name = configPathEntry.getKey();
@@ -437,5 +451,5 @@ public class DepTree implements Serializable {
 		}
 
 		return root;
-	}
+	} 
 }

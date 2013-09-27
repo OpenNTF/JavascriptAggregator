@@ -29,7 +29,7 @@ public interface IHttpTransportExtensionPoint {
 	 * The extension point namespace. This value is combined with the extension
 	 * point name to form the extension point id.
 	 */
-	public static final String NAMESPACE = "com.ibm.jaggr.service"; //$NON-NLS-1$
+	public static final String NAMESPACE = "com.ibm.jaggr.osgi"; //$NON-NLS-1$
 
 	/**
 	 * Name extension point id. This is the combination of the extension point

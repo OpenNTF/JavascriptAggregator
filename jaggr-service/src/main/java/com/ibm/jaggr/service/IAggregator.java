@@ -23,8 +23,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.http.HttpServlet;
 
-import org.osgi.framework.BundleContext;
-
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.config.IConfig;
@@ -123,15 +121,6 @@ public interface IAggregator {
 	 * @return the HTTP transport
 	 */
 	public IHttpTransport getTransport();
-
-	/**
-	 * Returns the {@link BundleContext} object for this aggregator. This is the
-	 * context of the bundle who's plugin.xml contains the &lt;servlet&gt; tag
-	 * used to define this instance of the aggregator.
-	 * 
-	 * @return The bundle context of the instantiating bundle.
-	 */
-	public BundleContext getBundleContext();
 
 	/**
 	 * Returns a new {@link IResource} for the specified URI. The aggregator

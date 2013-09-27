@@ -18,8 +18,6 @@ package com.ibm.jaggr.service.impl;
 
 import java.util.Properties;
 
-import org.eclipse.core.runtime.IExtension;
-
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilderExtensionPoint;
@@ -31,12 +29,12 @@ import com.ibm.jaggr.service.transport.IHttpTransportExtensionPoint;
 /**
  * Implementation  for {@link IAggregatorExtension} interface.
  */
-class AggregatorExtension  implements IAggregatorExtension {
-	private String extensionPointId;
-	private String uniqueId;
-	private String contributorId;
-	private Object instance;
-	private Properties attributes;
+public class AggregatorExtension  implements IAggregatorExtension {
+	protected String extensionPointId;
+	protected String uniqueId;
+	protected String contributorId;
+	protected Object instance;
+	protected Properties attributes;
 	
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and
@@ -49,13 +47,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 	 * @param attributes
 	 *            The attributes for this extension
 	 */
-	AggregatorExtension(IExtension extension, Object instance, Properties attributes) {
-		this.extensionPointId = extension.getExtensionPointUniqueIdentifier();
-		this.uniqueId = extension.getUniqueIdentifier();
-		this.contributorId = extension.getContributor().getName();
-		this.instance = instance;
-		this.attributes = attributes;
-		validate();
+	public AggregatorExtension(Object extension, Object instance, Properties attributes) {		
 	}
 	
 	/**
@@ -70,7 +62,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 	 * @param uniqueId
 	 *            the extension unique id
 	 */
-	AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
+	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
 		this.extensionPointId = extensionPointId;
 		this.uniqueId = uniqueId;
 		this.contributorId = null;
@@ -79,7 +71,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 		validate();
 	}
 	
-	private void validate() {
+	protected void validate() {
 		if (IResourceFactoryExtensionPoint.ID.equals(extensionPointId)) {
 			if (!(instance instanceof IResourceFactory)) {
 				throw new IllegalArgumentException(instance.getClass().getName());

@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+   (C) Copyright 2012, IBM Corporation
+
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+<!-- ***************************************************************** -->
+<!-- This ANT script is intended to be run within eclipse.  To run,    -->
+<!-- right-click on this file in Package Explorer and select Run As->  -->
+<!-- Ant Build..., and in the JRE tab select "Run in the same JRE as   -->
+<!-- the workspace", then click on Run.                                -->
+<!-- ***************************************************************** -->
+<project default="javadoc">
+	<target name="javadoc">
+        <javadoc access="public" 
+        	     author="false" 
+        	     classpath="${eclipse.home}/plugins/*;lib/*" 
+        	     destdir="doc" 
+        	     nodeprecated="false" 
+        	     nodeprecatedlist="false" 
+        	     noindex="false" 
+        	     nonavbar="false" 
+        	     notree="false" 
+        	     packagenames="com.ibm.jaggr.service,com.ibm.jaggr.service.cachekeygenerator,com.ibm.jaggr.service.transport,com.ibm.jaggr.service.options,com.ibm.jaggr.service.modulebuilder,com.ibm.jaggr.service,com.ibm.jaggr.service.layer,com.ibm.jaggr.service.executors,com.ibm.jaggr.service.config,com.ibm.jaggr.service.cache,com.ibm.jaggr.service.util,com.ibm.jaggr.service.deps,com.ibm.jaggr.service.module,com.ibm.jaggr.service.resource,com.ibm.jaggr.service.readers" 
+        	     source="1.6" 
+        	     sourcepath="src/main/java/" 
+        	     splitindex="true" 
+        	     use="true" 
+        	     version="true">
+            <link href="http://publib.boulder.ibm.com/infocenter/wasinfo/v8r0/topic/com.ibm.websphere.web2mobile.json.help/javadoc"/>
+        	<link href="http://www-archive.mozilla.org/rhino/apidocs"/>
+            <link href="http://java.sun.com/javase/6/docs/api/"/>
+        </javadoc>
+    </target>
+</project>

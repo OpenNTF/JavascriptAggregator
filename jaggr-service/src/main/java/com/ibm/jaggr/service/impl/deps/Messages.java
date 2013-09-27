@@ -16,9 +16,10 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
-import org.eclipse.osgi.util.NLS;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 
-public class Messages extends NLS {
+
+public class Messages {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.deps.messages"; //$NON-NLS-1$
 	public static String DepTree_0;
 	public static String DepTree_1;
@@ -36,8 +37,8 @@ public class Messages extends NLS {
 	public static String DepTreeNode_3;
 	public static String DepTreeNode_4;
 	static {
-		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
+		
+		PlatformAggregatorFactory.INSTANCE.getNLSImpl().initializeMessages(BUNDLE_NAME, Messages.class);
 	}
 
 	private Messages() {

@@ -71,7 +71,7 @@ public class OverrideFoldersTreeWalker implements Serializable {
 		this.config = config;
 	}
 	
-	void walkTree() {
+	public void walkTree() {
 		Collection<URI> uris = new HashSet<URI>();
 		for (IConfig.Location loc : config.getPaths().values()) {
 			if (loc.getOverride() != null) {

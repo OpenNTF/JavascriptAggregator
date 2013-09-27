@@ -21,8 +21,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 
-import org.eclipse.osgi.service.urlconversion.URLConverter;
-
 /**
  * Defines the interface for AMD module resources. Implementations can provide
  * support for resources on the file system, in zip and jar files, or any other

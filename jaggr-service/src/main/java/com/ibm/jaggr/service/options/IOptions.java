@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-import org.eclipse.core.runtime.Platform;
-
 import com.ibm.jaggr.service.IAggregator;
 
 /**

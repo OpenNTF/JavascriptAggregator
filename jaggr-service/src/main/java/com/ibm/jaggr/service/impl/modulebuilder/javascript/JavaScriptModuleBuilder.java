@@ -33,8 +33,8 @@ import java.util.logging.Logger;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
+/*import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceRegistration;*/
 
 import com.google.common.collect.HashMultimap;
 import com.google.javascript.jscomp.CheckLevel;
@@ -55,6 +55,8 @@ import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.config.IConfigListener;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.options.IOptions;
@@ -90,7 +92,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
 
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<Object> registrations = new LinkedList<Object>();
 	
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
         CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
@@ -111,14 +113,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	
 	@Override
 	public void initialize(IAggregator aggregator,
-			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		BundleContext context = aggregator.getBundleContext();
+			IAggregatorExtension extension, IExtensionRegistrar registrar) {		
 		Properties props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IRequestListener.class.getName(), this, props));
+		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		registrations.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IRequestListener.class.getName(), this, props));
 		props = new Properties();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
 	}
 
 	@Override
@@ -155,8 +156,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
-			reg.unregister();
+		for (Object reg : registrations) {
+			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(reg);			
 		}
 	}
 

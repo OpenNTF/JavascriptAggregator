@@ -27,6 +27,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -45,16 +46,13 @@ import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.wink.json4j.JSONException;
 import org.apache.wink.json4j.JSONObject;
-import org.eclipse.core.runtime.CoreException;
+/*import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.Status;*/
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.service.BadRequestException;
 import com.ibm.jaggr.service.IAggregator;
@@ -62,6 +60,7 @@ import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IShutdownListener;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfigModifier;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.readers.AggregationReader;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
@@ -74,7 +73,7 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * Implements common functionality useful for all Http Transport implementation
  * and defines abstract methods that subclasses need to implement
  */
-public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener {
+public abstract class AbstractHttpTransport implements IHttpTransport, IConfigModifier, IShutdownListener {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 
 	public static final String PATH_ATTRNAME = "path"; //$NON-NLS-1$
@@ -114,8 +113,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     private static Pattern DECODE_JSON = Pattern.compile("([!()|*])"); //$NON-NLS-1$
     private static Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
-    private String resourcePathId;
-    private ServiceRegistration configModifierReg;
+    protected String resourcePathId;
+    private Object configModifierReg;
     private IAggregator aggregator = null;
     private List<String> extensionContributions = new LinkedList<String>();
 
@@ -467,7 +466,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	/* (non-Javadoc)
 	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
 	 */
-	@Override
+	/*@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,
 			Object data) throws CoreException {
 		
@@ -497,7 +496,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 					)
 				);
 		}
-	}
+	}*/
 	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
@@ -515,6 +514,17 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 				config.put("paths", config, context.newObject(config)); //$NON-NLS-1$
 				pathsObj = (Scriptable)config.get(PATHS_PROPNAME, config);
 			}
+			
+			/*System.out.println("pathObj " + pathsObj);
+			
+			if(null == getComboUri()){
+				System.err.println("COMBO URI IS NULL ");
+			}
+			
+			if(null == getResourcePathId()){
+				System.err.println("getResourcePathId IS NULL ");
+			}*/
+			
 			((Scriptable)pathsObj).put(getResourcePathId(), (Scriptable)pathsObj, getComboUri().toString());
 		} finally {
 			Context.exit();
@@ -531,11 +541,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		// register a config listener so that we get notified of changes to 
 		// the server-side AMD config file.
 		String name = aggregator.getName();
-		Properties dict = new Properties();
-		dict.put("name", name); //$NON-NLS-1$
-    	configModifierReg = aggregator.getBundleContext().registerService(
-				IConfigModifier.class.getName(), this, dict
-		);
+		Hashtable<String, String> dict = new Hashtable<String, String>();
+		//Properties dict = new Properties();
+		dict.put("name", name); //$NON-NLS-1$    	
+    	configModifierReg = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigModifier.class.getName(), this, dict);		
 	}
 
 	/* (non-Javadoc)
@@ -545,7 +554,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	public void shutdown(IAggregator aggregator) {
 		// unregister our config modifier
 		if (configModifierReg != null) {
-			configModifierReg.unregister();
+			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(configModifierReg);
 		}
 	}
 
