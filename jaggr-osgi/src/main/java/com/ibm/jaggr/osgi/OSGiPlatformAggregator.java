@@ -21,7 +21,6 @@ import java.util.Dictionary;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.eclipse.osgi.util.NLS;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -30,7 +29,6 @@ import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.osgi.service.util.ConsoleService;
 import com.ibm.jaggr.service.impl.IPlatformAggregator;
-import com.ibm.jaggr.service.impl.Messages;
 
 public class OSGiPlatformAggregator implements IPlatformAggregator {
 	
@@ -122,11 +120,6 @@ public class OSGiPlatformAggregator implements IPlatformAggregator {
 		}else{
 			return false;
 		}
-	}
-	
-	public void initializeMessages(String bundleName, Class messageClass){
-		NLS.initializeMessages(bundleName, messageClass);
-	}
-	
+	}	
 	
 }

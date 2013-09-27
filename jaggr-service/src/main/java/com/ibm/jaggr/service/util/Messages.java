@@ -16,15 +16,12 @@
 
 package com.ibm.jaggr.service.util;
 
-import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
-
 public class Messages {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.util.messages"; //$NON-NLS-1$
 	public static String DependencyList_0;
 	public static String DependencyList_1;
 	static {
-		// initialize resource bundle
-		PlatformAggregatorFactory.INSTANCE.getNLSImpl().initializeMessages(BUNDLE_NAME, Messages.class);
+		NLS.initializeMessages(BUNDLE_NAME, Messages.class);	
 	}
 
 	private Messages() {

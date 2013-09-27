@@ -16,7 +16,7 @@
 
 package com.ibm.jaggr.service.impl.module;
 
-import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.service.util.NLS;
 
 public class Messages {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.module.messages"; //$NON-NLS-1$
@@ -26,7 +26,7 @@ public class Messages {
 	public static String NotFoundModule_0;
 	static {
 		// initialize resource bundle
-		PlatformAggregatorFactory.INSTANCE.getNLSImpl().initializeMessages(BUNDLE_NAME, Messages.class);
+		NLS.initializeMessages(BUNDLE_NAME, Messages.class);	
 	}
 
 	private Messages() {

@@ -56,7 +56,14 @@
         </includes>
       </resource>
       <resource>
-        <directory>${basedir}/src/main/java</directory>
+        <directory>${basedir}/src/main/java</directory>        
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </resource>
+       <resource>
+        <directory>${basedir}/src/test/java</directory>        
         <filtering>false</filtering>
         <includes>
           <include>**/*.properties</include>
@@ -105,7 +112,7 @@
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>            
 			<Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-			<Export-Package>com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
+			<Export-Package>com.ibm.jaggr.service.test,com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
             <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
@@ -168,6 +175,7 @@
             <excludes>
               <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Term.java</exclude>
               <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Formula.java</exclude>
+              <exclude>src/main/java/com/ibm/jaggr/service/util/NLS.java</exclude>
             </excludes>
           </configuration>
         </plugin>

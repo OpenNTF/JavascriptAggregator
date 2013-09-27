@@ -41,6 +41,7 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.impl.Messages;
 import com.ibm.jaggr.osgi.service.util.ConsoleService;
 import com.ibm.jaggr.service.util.Features;
 

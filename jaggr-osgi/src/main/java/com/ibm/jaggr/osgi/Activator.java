@@ -38,7 +38,6 @@ import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.options.IOptions;
 
-
 public class Activator extends AggregatorCommandProvider implements BundleActivator {
 
 	private static final Logger log = Logger.getLogger(Activator.class.getName());
@@ -110,11 +109,9 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 		}
 		
 		OSGiPlatformAggregator osgiPlatformAggregator = new OSGiPlatformAggregator();
-		osgiPlatformAggregator.setBundleContext(context);
-		OSGiNLSImpl osgiNlsImpl = new OSGiNLSImpl();
-		
+		osgiPlatformAggregator.setBundleContext(context);		
 		PlatformAggregatorFactory.INSTANCE.setPlatformAggregator(osgiPlatformAggregator);
-		PlatformAggregatorFactory.INSTANCE.setNLSImpl(osgiNlsImpl);
+		
 	}
 
 	/* (non-Javadoc)

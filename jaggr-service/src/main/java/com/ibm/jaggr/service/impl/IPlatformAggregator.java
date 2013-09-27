@@ -39,8 +39,6 @@ public interface IPlatformAggregator {
 	
 	public void println(String msg);
 	
-	public boolean initiateShutdown();
-	
-	public void initializeMessages(String bundleName, Class messageClass);
+	public boolean initiateShutdown();	
 	
 }

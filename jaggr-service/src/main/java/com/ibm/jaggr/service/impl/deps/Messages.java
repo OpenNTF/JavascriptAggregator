@@ -16,7 +16,7 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
-import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.service.util.NLS;
 
 
 public class Messages {
@@ -38,7 +38,7 @@ public class Messages {
 	public static String DepTreeNode_4;
 	static {
 		
-		PlatformAggregatorFactory.INSTANCE.getNLSImpl().initializeMessages(BUNDLE_NAME, Messages.class);
+		NLS.initializeMessages(BUNDLE_NAME, Messages.class);	
 	}
 
 	private Messages() {

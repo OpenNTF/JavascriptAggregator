@@ -25,7 +25,6 @@ public enum PlatformAggregatorFactory {
 	INSTANCE;
 	
 	private IPlatformAggregator platformAggregator;
-	private INLS NLSImpl;
 	
 	public void setPlatformAggregator(IPlatformAggregator aggregator){
 		this.platformAggregator = aggregator;
@@ -34,14 +33,6 @@ public enum PlatformAggregatorFactory {
 	
 	public IPlatformAggregator getPlatformAggregator(){
 		return platformAggregator;
-	}
-	
-	public INLS getNLSImpl(){
-		return NLSImpl;
-	}
-	
-	public void setNLSImpl(INLS NLS){
-		this.NLSImpl = NLS;
-	}
+	}	
 
 }
