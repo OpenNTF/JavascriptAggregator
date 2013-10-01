@@ -35,8 +35,6 @@ public interface IPlatformAggregator {
 	
 	public Dictionary<String, String> getHeaders();
 	
-	public boolean isOSGi();
-	
 	public void println(String msg);
 	
 	public boolean initiateShutdown();	

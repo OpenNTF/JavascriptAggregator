@@ -716,8 +716,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 
 			// set up bundle manifest headers property
-			if (PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null && PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().isOSGi()) {
-				if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().isOSGi()){
+			if (PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null) {
+				if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders() != null){
 				@SuppressWarnings("unchecked")
 					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders());
 				    Scriptable jsHeaders = cx.newObject(sharedScope);

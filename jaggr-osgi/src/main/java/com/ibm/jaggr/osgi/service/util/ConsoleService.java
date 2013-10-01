@@ -20,8 +20,7 @@ import org.eclipse.osgi.framework.console.CommandInterpreter;
 
 public class ConsoleService {
 
-	private static ThreadLocal<CommandInterpreter> ci_threadLocal = new ThreadLocal<CommandInterpreter>();
-
+	public static ThreadLocal<CommandInterpreter> ci_threadLocal = new ThreadLocal<CommandInterpreter>();	
 	private CommandInterpreter ci = null;
 
 	public ConsoleService() {
@@ -31,6 +30,7 @@ public class ConsoleService {
 	public ConsoleService(CommandInterpreter ci) {
 		this.ci = ci;
 		ci_threadLocal.set(ci);
+		
 	}
 
 	public ConsoleService(ConsoleService other) {

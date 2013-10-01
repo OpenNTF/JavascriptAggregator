@@ -101,12 +101,11 @@ public class PlatformAggregator implements IPlatformAggregator {
 		}
 	}
 	
-	public boolean isOSGi(){
-		return true;
-	}
+	
 	
 	public void println(String msg){
-		new ConsoleService().println(msg);
+		ConsoleService.ci_threadLocal.get().println(msg);
+		//new ConsoleService().println(msg);
 	}
 
 	public boolean initiateShutdown(){
