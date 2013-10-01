@@ -273,29 +273,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			request.setAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME, true);
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
-	 */
-	/*@Override
-	public void setInitializationData(IConfigurationElement config, String propertyName,
-			Object data) throws CoreException {
-		
-		// Save this extension's pluginUniqueId
-		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
-
-		// Initialize the combo uri
-		super.setInitializationData(config, propertyName, data);
-		try {
-			comboUri = new URI(getComboUriStr()); 
-		} catch (URISyntaxException e) {
-			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(), 
-							e.getMessage(), e)
-				);
-		}
-	}
-	*/
+	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
 	 */
@@ -473,9 +451,9 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	
 			// Specify paths entry to map dojo/text to our text plugin proxy
 			if (log.isLoggable(Level.INFO)) {
-/*				log.info(MessageFormat.format(
+				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_3, new Object[]{dojoTextPluginFullPath, textPluginProxyUriStr}
-				));*/
+				));
 			}
 		
 			paths.put(dojoTextPluginFullPath, paths, textPluginProxyUriStr);

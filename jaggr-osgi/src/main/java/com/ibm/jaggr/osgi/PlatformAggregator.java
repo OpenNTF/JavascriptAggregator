@@ -30,10 +30,10 @@ import org.osgi.framework.ServiceRegistration;
 import com.ibm.jaggr.osgi.service.util.ConsoleService;
 import com.ibm.jaggr.service.impl.IPlatformAggregator;
 
-public class OSGiPlatformAggregator implements IPlatformAggregator {
+public class PlatformAggregator implements IPlatformAggregator {
 	
 	private BundleContext bundleContext = null;
-	private static final Logger log = Logger.getLogger(OSGiPlatformAggregator.class.getName());
+	private static final Logger log = Logger.getLogger(PlatformAggregator.class.getName());
 	public static int resolved = Bundle.RESOLVED;
 	public static int active = Bundle.ACTIVE;
 	public static int stopping = Bundle.STOPPING;

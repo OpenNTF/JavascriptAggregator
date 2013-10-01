@@ -81,8 +81,7 @@ import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.executors.IExecutors;
-import com.ibm.jaggr.service.impl.AggregatorExtension;
-import com.ibm.jaggr.service.impl.AggregatorImpl;
+import com.ibm.jaggr.osgi.service.impl.AggregatorExtension;
 import com.ibm.jaggr.service.impl.Messages;
 import com.ibm.jaggr.service.impl.OverrideFoldersTreeWalker;
 import com.ibm.jaggr.service.impl.AggregatorImpl.ExtensionRegistrar;
@@ -120,7 +119,7 @@ import com.ibm.jaggr.service.util.StringUtil;
  * attempts will be made to serialize instances of this class.
  */
 @SuppressWarnings("serial")
-public class OSGiAggregatorImpl extends AggregatorImpl implements IExecutableExtension, BundleListener {
+public class AggregatorImpl extends com.ibm.jaggr.service.impl.AggregatorImpl implements IExecutableExtension, BundleListener {
 
 	/**
 	 * Default value for resourcefactories init-param
@@ -359,7 +358,7 @@ public class OSGiAggregatorImpl extends AggregatorImpl implements IExecutableExt
             	for (String name : member.getAttributeNames()) {
             		props.put(name, member.getAttribute(name));
             	}
-            	registerResourceFactory(new OSGiAggregatorExtension(extension, factory, props), null);
+            	registerResourceFactory(new AggregatorExtension(extension, factory, props), null);
 			}
         }
         
@@ -384,7 +383,7 @@ public class OSGiAggregatorImpl extends AggregatorImpl implements IExecutableExt
             	for (String name : member.getAttributeNames()) {
             		props.put(name, member.getAttribute(name));
             	}
-            	registerModuleBuilder(new OSGiAggregatorExtension(extension, builder, props), null);
+            	registerModuleBuilder(new AggregatorExtension(extension, builder, props), null);
 			}
         }
         
@@ -412,7 +411,7 @@ public class OSGiAggregatorImpl extends AggregatorImpl implements IExecutableExt
     	for (String attrname : member.getAttributeNames()) {
     		props.put(attrname, member.getAttribute(attrname));
     	}
-    	registerHttpTransport(new OSGiAggregatorExtension(extension, transport, props));
+    	registerHttpTransport(new AggregatorExtension(extension, transport, props));
 
     	/*
     	 *  Now call setAggregator on the loaded extensions starting with the

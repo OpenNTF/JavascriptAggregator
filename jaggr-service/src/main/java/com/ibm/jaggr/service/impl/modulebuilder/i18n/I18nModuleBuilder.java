@@ -415,19 +415,5 @@ extends JavaScriptModuleBuilder {
 		public int hashCode() {
 			return getClass().hashCode() * 31 + keyGen.hashCode();
 		}
-	}
-
-	@Override
-	public void initialize(IAggregator aggregator,
-			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void shutdown(IAggregator aggregator) {
-
-			// TODO : Check if we need to have logic for unregistering the listeners
-			// Check OSGIJavaScriptModuleBuilder.java shutdown method
-	}
+	}	
 }

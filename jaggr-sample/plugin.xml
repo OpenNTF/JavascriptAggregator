@@ -17,7 +17,7 @@
 -->
 <plugin>
   <extension point="org.eclipse.equinox.http.registry.servlets">
-    <servlet alias="/test/aggr" class="com.ibm.jaggr.osgi.service.impl.OSGiAggregatorImpl" load-on-startup="true">
+    <servlet alias="/test/aggr" class="com.ibm.jaggr.osgi.service.impl.AggregatorImpl" load-on-startup="true">
       <!-- No scheme on the URI means the resource is located 
            in the same resource bundle as this file -->
       <init-param name="config" value="testaggr-config.js"/>

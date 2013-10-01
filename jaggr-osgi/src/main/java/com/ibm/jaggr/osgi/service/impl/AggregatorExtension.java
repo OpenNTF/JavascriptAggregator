@@ -20,13 +20,7 @@ import java.util.Properties;
 
 import org.eclipse.core.runtime.IExtension;
 
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.impl.AggregatorExtension;
-
-/**
- * Implementation  for {@link IAggregatorExtension} interface.
- */
-public class OSGiAggregatorExtension extends AggregatorExtension {
+public class AggregatorExtension extends com.ibm.jaggr.service.impl.AggregatorExtension {
 	
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and
@@ -39,7 +33,7 @@ public class OSGiAggregatorExtension extends AggregatorExtension {
 	 * @param attributes
 	 *            The attributes for this extension
 	 */
-	public OSGiAggregatorExtension(IExtension extension, Object instance, Properties attributes) {
+	public AggregatorExtension(IExtension extension, Object instance, Properties attributes) {
 		super(extension, instance, attributes);
 		this.extensionPointId = extension.getExtensionPointUniqueIdentifier();
 		this.uniqueId = extension.getUniqueIdentifier();

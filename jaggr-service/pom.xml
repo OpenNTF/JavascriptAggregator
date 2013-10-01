@@ -112,7 +112,7 @@
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>            
 			<Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-			<Export-Package>com.ibm.jaggr.service.test,com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
+			<Export-Package>com.ibm.jaggr.service.sys,com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
             <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>

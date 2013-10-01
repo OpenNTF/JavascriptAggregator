@@ -63,6 +63,6 @@
    		id="dojo.httptransport"
    		point="com.ibm.jaggr.osgi.httptransport">
    		<transport path="combo"
-   		    class="com.ibm.jaggr.osgi.service.impl.transport.OSGiDojoHttpTransport"/>
+   		    class="com.ibm.jaggr.osgi.service.impl.transport.DojoHttpTransport"/>
    </extension>
 </plugin>

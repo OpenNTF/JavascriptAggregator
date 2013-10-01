@@ -27,13 +27,10 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
-
-
-import com.ibm.jaggr.service.impl.transport.DojoHttpTransport;
 import com.ibm.jaggr.service.impl.transport.Messages;
 
 
-public class OSGiDojoHttpTransport extends DojoHttpTransport implements IExecutableExtension{
+public class DojoHttpTransport extends com.ibm.jaggr.service.impl.transport.DojoHttpTransport implements IExecutableExtension{
 	
 	@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,

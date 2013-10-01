@@ -90,9 +90,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
 		
-		configUpdateListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
-		optionsUpdateListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
-		shutdownListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
+		shutdownListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
+		configUpdateListener= PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
+		optionsUpdateListener= PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
 
 		if (aggregator.getConfig() != null) {
 			configLoaded(aggregator.getConfig(), 1);

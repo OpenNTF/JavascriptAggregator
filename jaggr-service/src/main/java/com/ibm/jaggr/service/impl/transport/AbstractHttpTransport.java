@@ -513,17 +513,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				// If not present, add it.
 				config.put("paths", config, context.newObject(config)); //$NON-NLS-1$
 				pathsObj = (Scriptable)config.get(PATHS_PROPNAME, config);
-			}
-			
-			/*System.out.println("pathObj " + pathsObj);
-			
-			if(null == getComboUri()){
-				System.err.println("COMBO URI IS NULL ");
-			}
-			
-			if(null == getResourcePathId()){
-				System.err.println("getResourcePathId IS NULL ");
-			}*/
+			}		
 			
 			((Scriptable)pathsObj).put(getResourcePathId(), (Scriptable)pathsObj, getComboUri().toString());
 		} finally {

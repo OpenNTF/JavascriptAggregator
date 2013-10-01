@@ -33,6 +33,7 @@ import org.osgi.framework.ServiceRegistration;
 import com.ibm.jaggr.osgi.service.impl.AggregatorCommandProvider;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.executors.IExecutors;
+import com.ibm.jaggr.service.impl.Messages;
 import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
@@ -61,31 +62,28 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
     public void start(BundleContext context) throws Exception {
     	super.start(context);
     	
-    	/*// Verify the bundle id.
+    	// Verify the bundle id.
     	if (!context.getBundle().getSymbolicName().equals(BUNDLE_NAME)) {
     		throw new IllegalStateException();
-    	}*/
+    	}
     	serviceRegistrations = new LinkedList<ServiceRegistration>();
     	this.context = context;
     	// See if a command provider is already registered
-		//Properties dict = new Properties();
-		Hashtable<String, String> dict = new Hashtable<String, String>();
+		Properties dict = new Properties();		
     	ServiceReference[] refs = context.getServiceReferences(
     			org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
     			"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
     	if (refs == null || refs.length == 0) {
 	    	// Register the command provider that will handle console commands
-    		dict.put("name", IAggregator.class.getName()); //$NON-NLS-1$
+    		dict.setProperty("name", IAggregator.class.getName()); //$NON-NLS-1$
 			serviceRegistrations.add(
 					context.registerService(
 							org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
 							this, dict));
     	}
     	
-    	//dict = new Properties();
-    	dict = new Hashtable<String, String>();
-		//dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
-    	dict.put("name", BUNDLE_NAME); //$NON-NLS-1$
+    	dict = new Properties();    	
+		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$    	
 		// Create an options object and register the service
     	IOptions options = newOptions();
 		serviceRegistrations.add(
@@ -94,21 +92,19 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 		// Create the executors provider.  The executors provider is created by the 
 		// activator primarily to allow executors to be shared by all of the 
 		// aggregators created by this bundle.
-		//dict = new Properties();
-    	dict = new Hashtable<String, String>();
-		//dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
-    	dict.put("name", BUNDLE_NAME); //$NON-NLS-1$
+		dict = new Properties();
+    	dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$    	
 		executors = newExecutors(options);
 		serviceRegistrations.add(
 				context.registerService(IExecutors.class.getName(), executors, dict));
 
 		if (options.isDevelopmentMode() && log.isLoggable(Level.WARNING)) {
-			log.warning("**PS");
+			log.warning(Messages.Activator_1);
 		} else if (options.isDebugMode() && log.isLoggable(Level.WARNING)) {
-			log.warning("**PS");
+			log.warning(Messages.Activator_2);
 		}
 		
-		OSGiPlatformAggregator osgiPlatformAggregator = new OSGiPlatformAggregator();
+		PlatformAggregator osgiPlatformAggregator = new PlatformAggregator();
 		osgiPlatformAggregator.setBundleContext(context);		
 		PlatformAggregatorFactory.INSTANCE.setPlatformAggregator(osgiPlatformAggregator);
 		
