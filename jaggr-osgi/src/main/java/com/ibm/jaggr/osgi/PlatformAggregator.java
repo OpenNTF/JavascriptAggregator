@@ -104,8 +104,8 @@ public class PlatformAggregator implements IPlatformAggregator {
 	
 	
 	public void println(String msg){
-		ConsoleService.ci_threadLocal.get().println(msg);
-		//new ConsoleService().println(msg);
+		//ConsoleService.ci_threadLocal.get().println(msg);
+		new ConsoleService().println(msg);
 	}
 
 	public boolean initiateShutdown(){
