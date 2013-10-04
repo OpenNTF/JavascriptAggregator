@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.impl.resource;
 
 import java.net.URI;
+import java.util.Properties;
 
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceFactory;
@@ -46,4 +47,13 @@ public class FileResourceFactory implements IResourceFactory {
 	public boolean handles(URI uri) {
 		return "file".equals(uri.getScheme()); //$NON-NLS-1$
 	}
+	
+	@Override
+	public Properties getProperties() {
+		Properties props = new Properties();
+    	props.put("scheme", "file");
+    	props.put("class", "com.ibm.jaggr.service.impl.resource.FileResourceFactory");
+    	return props;
+	}
+	
 }

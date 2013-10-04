@@ -202,7 +202,7 @@ public class AggregatorImpl extends HttpServlet implements IOptionsListener, IAg
 	    						log.log(Level.SEVERE, e.getMessage(), e);
 	    					}
 	    				} finally {
-	    					PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+	    					PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IShutdownListener.class.getName());
 	    				}
 	    			}
 	    		}
@@ -210,10 +210,12 @@ public class AggregatorImpl extends HttpServlet implements IOptionsListener, IAg
 			for (Object registration : registrations) {
 				PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(registration);
 			}
-			for (Object ref : serviceReferences) {
+			
+			//TODO : look into this
+			/*for (Object ref : serviceReferences) {
 				PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
 			}
-			
+			*/
     	}			
 	}
 
@@ -552,7 +554,7 @@ public class AggregatorImpl extends HttpServlet implements IOptionsListener, IAg
 						listener.optionsUpdated(options, sequence);
 					} catch (Throwable ignore) {
 					} finally {
-						PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+						PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IOptionsListener.class.getName());
 					}
 				}
 			}
@@ -679,7 +681,7 @@ public class AggregatorImpl extends HttpServlet implements IOptionsListener, IAg
 					listener.endRequest(req, resp);
 				}
 			} finally {
-				PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+				PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IRequestListener.class.getName());
 			}
 		}
 	}
@@ -707,7 +709,7 @@ public class AggregatorImpl extends HttpServlet implements IOptionsListener, IAg
 						}
 						throw new IOException(t);
 					} finally {
-						PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+						PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IConfigListener.class.getName());
 					}
 				}
 			}

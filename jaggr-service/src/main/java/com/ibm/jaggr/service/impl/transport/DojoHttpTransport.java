@@ -60,10 +60,12 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 	
-	static final String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.service" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
+	protected static String comboUriStr = null;
+	protected static String loaderExtensionPath = null;
+	//protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.service" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
    // static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-    static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
-    static final String loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+    //static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
+    //static final String loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
     static final String[] loaderExtensionResources = {
     	"../loaderExtCommon.js", //$NON-NLS-1$
     	"./_loaderExt.js" //$NON-NLS-1$
@@ -98,6 +100,10 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
      */
     protected String getComboUriStr() {
     	return comboUriStr;
+    }
+    
+    protected static String getTextPluginProxyUriStr(){
+    	return comboUriStr + "/text";
     }
     
     /**
@@ -275,30 +281,6 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
-	 */
-	@Override
-	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {		
-		
-		super.initialize(aggregator, extension, reg);
-
-		// Get first resource factory extension so we can add to beginning of list
-    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
-    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
-    	
-    	// Register the loaderExt resource factory
-    	Properties attributes = new Properties();
-    	attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
-		reg.registerExtension(
-				new LoaderExtensionResourceFactory(), 
-				attributes,
-				IResourceFactoryExtensionPoint.ID,
-				getPluginUniqueId(),
-				first);
-		
-	}
-	
-	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getDynamicLoaderExtensionJavaScript()
 	 */
 	@Override
@@ -452,11 +434,11 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			// Specify paths entry to map dojo/text to our text plugin proxy
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(
-						Messages.DojoHttpTransport_3, new Object[]{dojoTextPluginFullPath, textPluginProxyUriStr}
+						Messages.DojoHttpTransport_3, new Object[]{dojoTextPluginFullPath, getTextPluginProxyUriStr()}
 				));
 			}
 		
-			paths.put(dojoTextPluginFullPath, paths, textPluginProxyUriStr);
+			paths.put(dojoTextPluginFullPath, paths, getTextPluginProxyUriStr());
 			
 			// Specify paths entry to map the dojo text plugin alias name to the original
 			// dojo text plugin
@@ -523,7 +505,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 * {@link AbstractHttpTransport.LoaderExtensionResource} for the dojo http
 	 * transport when the loader extension resource URI is requested
 	 */
-	private class LoaderExtensionResourceFactory implements IResourceFactory {
+	public class LoaderExtensionResourceFactory implements IResourceFactory {
 
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResourceFactory#handles(java.net.URI)
@@ -555,5 +537,20 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			}
 			return new LoaderExtensionResource(new AggregationResource(uri, aggregate));
 		}
+		@Override
+		public Properties getProperties() {
+			return null;
+		}	
+}
+	//TODO: make this class abstract
+	@Override
+	public Properties getProperties() {
+		return null;
+	}
+
+	@Override
+	public void setInitializationData() {
+		// TODO Auto-generated method stub
+		
 	}
 }

@@ -19,6 +19,7 @@ package com.ibm.jaggr.osgi.service.impl.transport;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.Properties;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
@@ -27,7 +28,13 @@ import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
+
+import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.IAggregatorExtension;
+import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.service.impl.transport.Messages;
+import com.ibm.jaggr.service.impl.transport.DojoHttpTransport.LoaderExtensionResourceFactory;
+import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
 
 
 public class DojoHttpTransport extends com.ibm.jaggr.service.impl.transport.DojoHttpTransport implements IExecutableExtension{
@@ -35,6 +42,9 @@ public class DojoHttpTransport extends com.ibm.jaggr.service.impl.transport.Dojo
 	@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,
 			Object data) throws CoreException {
+		
+		comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.service" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
+		loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
 		
 		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
 		
@@ -59,8 +69,7 @@ public class DojoHttpTransport extends com.ibm.jaggr.service.impl.transport.Dojo
 				);
 		}
 		
-		try {
-			System.err.println("OSGiDojoHttpTransport.java : combouri here was "+comboUri);
+		try {			
 			comboUri = new URI(getComboUriStr()); 
 		} catch (URISyntaxException e) {
 			throw new CoreException(
@@ -71,6 +80,24 @@ public class DojoHttpTransport extends com.ibm.jaggr.service.impl.transport.Dojo
 		
 	}
 	
-	
+	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {		
+		
+		super.initialize(aggregator, extension, reg);
+		// Get first resource factory extension so we can add to beginning of list
+    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
+    	
+    	// Register the loaderExt resource factory
+    	Properties attributes = new Properties();    	
+    	attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+    	
+		reg.registerExtension(
+				new LoaderExtensionResourceFactory(), 
+				attributes,
+				IResourceFactoryExtensionPoint.ID,
+				getPluginUniqueId(),
+				first);
+		
+	}	
 
 }

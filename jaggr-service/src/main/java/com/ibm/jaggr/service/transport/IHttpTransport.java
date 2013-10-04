@@ -18,6 +18,7 @@ package com.ibm.jaggr.service.transport;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -383,4 +384,8 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *         transport.
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators();
+	
+	public Properties getProperties();
+	
+	public void setInitializationData();
 }

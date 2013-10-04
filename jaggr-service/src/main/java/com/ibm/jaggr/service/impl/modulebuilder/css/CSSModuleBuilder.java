@@ -724,4 +724,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 		inlinedImageExcludeList = list;
 	}
+	@Override
+	public Properties getProperties() {
+		Properties props = new Properties();
+		props.put("extension", "css");
+		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.css.CSSModuleBuilder");	
+		return props;
+	}
 }

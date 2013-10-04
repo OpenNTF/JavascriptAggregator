@@ -83,6 +83,15 @@ public class OptionsImpl  implements IOptions {
 		}
 	}
 	
+	public OptionsImpl(boolean loadFromPropertiesFile) {		
+		Properties defaultOptions = new Properties(getDefaultOptions());
+		if (loadFromPropertiesFile) {
+			setProps(loadProps(defaultOptions));
+		} else {
+			setProps(defaultOptions);
+		}
+	}
+	
 	@Override
 	public boolean isVerifyDeps() {
 		return Boolean.parseBoolean(getOption(VERIFY_DEPS));
@@ -301,7 +310,7 @@ public class OptionsImpl  implements IOptions {
 								listener.optionsUpdated(this, sequence);
 							} catch (Throwable ignore) {
 							} finally {
-								PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+								PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IOptionsListener.class.getName());
 							}
 						}
 					}

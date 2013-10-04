@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -192,5 +193,11 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	 */
 	protected Bundle getBundle(String bundleName) {
 		return Platform.getBundle(bundleName);
+	}
+	
+	@Override
+	// TODO: to discuss this.
+	public Properties getProperties() {
+		return null;
 	}
 }

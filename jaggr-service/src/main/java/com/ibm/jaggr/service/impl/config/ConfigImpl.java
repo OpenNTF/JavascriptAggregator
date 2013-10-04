@@ -181,6 +181,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			depsIncludeBaseUrl = loadDepsIncludeBaseUrl(rawConfig);
 			coerceUndefinedToFalse = loadCoerceUndefinedToFalse(rawConfig);
 			expires = loadExpires(rawConfig);
+			//TODO : Introduce notice in jaggr-sbt
 			notice = loadNotice(rawConfig);
 			cacheBust = loadCacheBust(rawConfig);
 			textPluginDelegators = loadTextPluginDelegators(rawConfig);
@@ -652,7 +653,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);
 			}
-			configUri = PathUtil.url2uri(configUrl);
+			// TODO: look here
+			//configUri = PathUtil.url2uri(configUrl);
+			configUri = PathUtil.url2uri_singleArg(configUrl);
 		}
 		return configUri;
 	}
@@ -736,14 +739,17 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 			
-			cx.evaluateString(sharedScope, "var config = " +  //$NON-NLS-1$
-				aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
-					@Override
-					public String transform(String name, String value) {
-						// escape forward slashes for javascript literals
-						return value.replace("\\", "\\\\"); //$NON-NLS-1$ //$NON-NLS-2$
-					}
-				}), getConfigUri().toString(), 1, null);
+			String source = aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
+				@Override
+				public String transform(String name, String value) {
+					// escape forward slashes for javascript literals
+					return value.replace("\\", "\\\\"); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			});
+			
+			cx.evaluateString(sharedScope, "var config = " +  source , getConfigUri().toString(), 1, null);
+			
+			
 			config = (Scriptable)sharedScope.get("config", sharedScope); //$NON-NLS-1$
 			if (config == Scriptable.NOT_FOUND) {
 				throw new IllegalStateException("config is not defined."); //$NON-NLS-1$
@@ -1086,7 +1092,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+							PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IConfigModifier.class.getName());
 						}
 					}
 				}

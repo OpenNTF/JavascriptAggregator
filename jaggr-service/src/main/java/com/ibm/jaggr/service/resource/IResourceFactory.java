@@ -71,5 +71,12 @@ public interface IResourceFactory {
 	public IResource newResource(URI uri);
 	
 	public boolean handles(URI uri);
+	
+	/**
+	 * Returns the properties object for the associated ResourceFactory implementation.
+	 * 
+	 *  @return A Properties object for the associated ResourceFactory implementation.
+	 */
+	public Properties getProperties();
 
 }

@@ -381,6 +381,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return keyGens;
 	}
 	
+	@Override
+	public Properties getProperties() {
+		Properties props = new Properties();
+		props.put("extension", "js");
+		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder");		
+		return props;
+	}
 	static final class CacheKeyGenerator implements ICacheKeyGenerator {
 
 		private static final long serialVersionUID = -3344636280865415030L;

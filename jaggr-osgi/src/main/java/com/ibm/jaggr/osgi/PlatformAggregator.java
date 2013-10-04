@@ -73,7 +73,7 @@ public class PlatformAggregator implements IPlatformAggregator {
 		}
 	}
 	
-	public boolean unGetService(Object serviceReference){
+	public boolean unGetService(Object serviceReference, String clazz){
 		if(bundleContext != null){
 			return bundleContext.ungetService((ServiceReference)serviceReference);
 		}else{

@@ -294,7 +294,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 											log.log(Level.SEVERE, e.getMessage(), e);
 										}
 									} finally {
-										PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref);
+										PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IDependenciesListener.class.getName());
 									}
 								}
 							}

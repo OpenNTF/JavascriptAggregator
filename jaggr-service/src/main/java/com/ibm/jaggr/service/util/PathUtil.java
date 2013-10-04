@@ -148,13 +148,17 @@ public class PathUtil {
 	 * @return The URI
 	 * @throws URISyntaxException
 	 */
-	public static URI url2uri(URL url) throws URISyntaxException {
+	public static URI url2uri(URL url) throws URISyntaxException {	
 		return new URI(
 			url.getProtocol(),
 			url.getAuthority(), 
 			url.getPath(), 
 			url.getQuery(), 
 			url.getRef());
+	}
+	
+	public static URI url2uri_singleArg(URL url) throws URISyntaxException {
+		 return new URI(url.toString());		
 	}
 	
 	public static URI stripJsExtension(URI value) throws URISyntaxException {

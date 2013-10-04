@@ -462,41 +462,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			return (stringized != null) ? stringized : super.toString();
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
-	 */
-	/*@Override
-	public void setInitializationData(IConfigurationElement config, String propertyName,
-			Object data) throws CoreException {
-		
-		// Make sure the contributing bundle is started
-		Bundle contributingBundle = Platform.getBundle(config.getNamespaceIdentifier());
-		if (contributingBundle.getState() != Bundle.ACTIVE) {
-			try {
-				contributingBundle.start();
-			} catch (BundleException e) {
-				throw new CoreException(
-						new Status(Status.ERROR, config.getNamespaceIdentifier(), 
-								e.getMessage(), e)
-					);
-			}
-		}
-		
-		// Get the resource (combo) path name from the this extension's 
-		// path attribute
-		resourcePathId = config.getAttribute(PATH_ATTRNAME);
-		if (resourcePathId == null) {
-			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(),
-						MessageFormat.format(
-							Messages.AbstractHttpTransport_1, 
-							new Object[]{config.getDeclaringExtension().getUniqueIdentifier()}
-						)
-					)
-				);
-		}
-	}*/
 	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)

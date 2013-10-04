@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.modulebuilder;
 
 import java.util.List;
+import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -215,4 +216,6 @@ public interface IModuleBuilder {
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator);
 
 	public boolean handles(String mid, IResource resource);
+	
+	public Properties getProperties();
 }

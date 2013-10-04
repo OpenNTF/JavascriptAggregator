@@ -29,7 +29,8 @@ public interface IPlatformAggregator {
 
 	public Object getService(Object serviceReference);
 	
-	public boolean unGetService(Object serviceReference);
+	// TODO: Check if we can optimise this
+	public boolean unGetService(Object serviceReference, String clazz);
 
 	public URL getResource(String resourceName);
 	
