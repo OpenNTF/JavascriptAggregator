@@ -84,6 +84,7 @@ import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.osgi.service.impl.AggregatorExtension;
 import com.ibm.jaggr.service.impl.Messages;
 import com.ibm.jaggr.service.impl.OverrideFoldersTreeWalker;
+import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.impl.AggregatorImpl.ExtensionRegistrar;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
@@ -161,6 +162,7 @@ public class AggregatorImpl extends com.ibm.jaggr.service.impl.AggregatorImpl im
 		}
         try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
+    		((com.ibm.jaggr.osgi.PlatformAggregator)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator())).setBundleContext(bundleContext);
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);

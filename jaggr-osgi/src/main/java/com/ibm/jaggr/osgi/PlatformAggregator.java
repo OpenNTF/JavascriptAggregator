@@ -85,7 +85,7 @@ public class PlatformAggregator implements IPlatformAggregator {
 		bundleContext = bc;
 	}
 	
-	public URL getResource(String resourceName){
+	public URL getResource(String resourceName){		
 		if(bundleContext != null){
 			return bundleContext.getBundle().getResource(resourceName);
 		}else{
