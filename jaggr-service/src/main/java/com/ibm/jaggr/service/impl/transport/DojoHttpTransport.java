@@ -37,12 +37,16 @@ import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
 
 public class DojoHttpTransport extends com.ibm.jaggr.core.service.impl.transport.DojoHttpTransport implements IExecutableExtension{
 	
+	//public static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
+	//protected static String loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+	
 	@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,
 			Object data) throws CoreException {
 		
 		comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-		loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+		loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+		
 		
 		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
 		

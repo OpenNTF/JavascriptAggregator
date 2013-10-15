@@ -60,7 +60,7 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 	
-	protected static String comboUriStr = null;
+	public static String comboUriStr = null;
 	protected static String loaderExtensionPath = null;
 	//protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.service" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
    // static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -71,11 +71,11 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     	"./_loaderExt.js" //$NON-NLS-1$
     };
     static final String dojo = "dojo"; //$NON-NLS-1$
-    static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
-    static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
-    static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
+    public static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
+    public static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
+    public static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
     static final String dojoTextPluginName = "text"; //$NON-NLS-1$
-    static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
+    public static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
     static final URI dojoPluginUri;
     
 
@@ -102,7 +102,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     	return comboUriStr;
     }
     
-    protected static String getTextPluginProxyUriStr(){
+    public static String getTextPluginProxyUriStr(){
     	return comboUriStr + "/text";
     }
     
@@ -138,7 +138,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
      * 
      * @return the client aliases
      */
-    protected List<String[]> getClientConfigAliases() {
+    public List<String[]> getClientConfigAliases() {
     	return clientConfigAliases;
     }
     
