@@ -72,7 +72,7 @@
   				<instructions>
   					<Bundle-Name>jaggr-sample</Bundle-Name>
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
-            <Require-Bundle>org.eclipse.core.runtime,com.ibm.jaggr.osgi,com.ibm.jaggr.sample.dojo</Require-Bundle>
+            <Require-Bundle>org.eclipse.core.runtime,com.ibm.jaggr.service,com.ibm.jaggr.sample.dojo</Require-Bundle>
             <Import-Package>
             	javax.servlet;version="[2,4)",
             	javax.servlet.http;version="[2,4)",
@@ -123,11 +123,6 @@
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-sample-dojo</artifactId>
     	<scope>provided</scope>
-    </dependency>
-    <dependency>
-    	<groupId>com.ibm.jaggr</groupId>
-    	<artifactId>jaggr-osgi</artifactId>
-    	<scope>provided</scope>
-    </dependency>
+    </dependency>    
   </dependencies>
 </project>

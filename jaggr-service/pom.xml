@@ -26,7 +26,7 @@
   <artifactId>jaggr-service</artifactId>
   <packaging>bundle</packaging>
   
-  <name>Jaggr Service</name>
+  <name>Jaggr Service OSGI Impl</name>
   <description>Javascript AMD Aggregator Service</description>
   
   <properties>
@@ -56,14 +56,7 @@
         </includes>
       </resource>
       <resource>
-        <directory>${basedir}/src/main/java</directory>        
-        <filtering>false</filtering>
-        <includes>
-          <include>**/*.properties</include>
-        </includes>
-      </resource>
-       <resource>
-        <directory>${basedir}/src/test/java</directory>        
+        <directory>${basedir}/src/main/java</directory>
         <filtering>false</filtering>
         <includes>
           <include>**/*.properties</include>
@@ -108,13 +101,14 @@
   			<configuration>
   				<manifestLocation>META-INF</manifestLocation>
   				<instructions>
-  					<Bundle-Name>jaggr-service</Bundle-Name>
+  					<Bundle-Name>jaggr-osgi</Bundle-Name>
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
-            <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>            
-			<Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-			<Export-Package>com.ibm.jaggr.service.test,com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
-            <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
-            <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
+            <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
+            <Bundle-Activator>${bundle.namespace}.impl.Activator</Bundle-Activator>
+			      <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
+			      <Export-Package>com.ibm.jaggr.service.impl</Export-Package>
+            <Private-Package>com.ibm.jaggr.osgi.*</Private-Package>
+            <Require-Bundle>org.eclipse.core.runtime,com.ibm.jaggr.core</Require-Bundle>
             <Import-Package>
             	javax.servlet;version="[2,4)",
             	javax.servlet.http;version="[2,4)",
@@ -175,7 +169,6 @@
             <excludes>
               <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Term.java</exclude>
               <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Formula.java</exclude>
-              <exclude>src/main/java/com/ibm/jaggr/service/util/NLS.java</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -234,10 +227,25 @@
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.apache.karaf.shell</groupId>
+      <artifactId>org.apache.karaf.shell.console</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
     	<groupId>javax.servlet</groupId>
     	<artifactId>javax.servlet-api</artifactId>
     	<scope>provided</scope>
     </dependency>
+    <dependency>
+    	<groupId>org.eclipse.core</groupId>
+    	<artifactId>runtime</artifactId>
+    	<scope>provided</scope>
+    </dependency>
+		<dependency>
+			<groupId>org.osgi</groupId>
+			<artifactId>org.osgi</artifactId>
+			<scope>provided</scope>
+		</dependency>
     <dependency>
     	<groupId>junit</groupId>
     	<artifactId>junit</artifactId>
@@ -248,5 +256,10 @@
     	<artifactId>easymock</artifactId>
     	<scope>test</scope>
     </dependency>
+    <dependency>
+    	<groupId>com.ibm.jaggr</groupId>
+    	<artifactId>jaggr-core</artifactId>
+    	<scope>provided</scope>
+    </dependency>    
   </dependencies>
 </project>

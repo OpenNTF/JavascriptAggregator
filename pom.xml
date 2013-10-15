@@ -25,8 +25,8 @@
     <module>jaggr-assembly</module>
     <module>jaggr-sample</module>
     <module>jaggr-sample-dojo</module>
+    <module>jaggr-core</module>
     <module>jaggr-service</module>
-    <module>jaggr-osgi</module>
   </modules>
   
   <name>Javascript AMD Aggregator</name>
@@ -167,7 +167,7 @@
     <dependencies>
       <dependency>
 	      <groupId>com.ibm.jaggr</groupId>
-	      <artifactId>jaggr-service</artifactId>
+	      <artifactId>jaggr-core</artifactId>
 	      <version>1.1.2-SNAPSHOT</version>
 	    </dependency>
       <dependency>
@@ -257,7 +257,7 @@
       </dependency>
 	    <dependency>
 	    	<groupId>com.ibm.jaggr</groupId>
-	    	<artifactId>jaggr-osgi</artifactId>
+	    	<artifactId>jaggr-service</artifactId>
 	    	<version>1.1.2-SNAPSHOT</version>
 	    </dependency>
     </dependencies>
