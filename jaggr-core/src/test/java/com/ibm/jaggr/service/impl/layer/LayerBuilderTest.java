@@ -52,8 +52,8 @@ import com.ibm.jaggr.service.impl.resource.FileResource;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
+import com.ibm.jaggr.service.test.BaseTestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.service.util.CopyUtil;
@@ -130,8 +130,8 @@ public class LayerBuilderTest {
 	public void testBuild() throws Exception {
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
-		IAggregator mockAggregator = TestUtils.createMockAggregator(mockTransport);
-		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		IAggregator mockAggregator = BaseTestUtils.createMockAggregator(mockTransport);
+		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
 		EasyMock.replay(mockRequest);
 		EasyMock.replay(mockAggregator);
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
@@ -494,7 +494,7 @@ public class LayerBuilderTest {
 		EasyMock.expect(mockConfig.getNotice()).andReturn("Hello World").once();
 		EasyMock.replay(mockConfig);
 		configRef.set(mockConfig);
-		mockAggregator = TestUtils.createMockAggregator(configRef,null,null,null,mockTransport);
+		mockAggregator = BaseTestUtils.createMockAggregator(configRef,null,null,null,mockTransport);
 		EasyMock.replay(mockAggregator);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		builder = new LayerBuilder(mockRequest, keyGens, Collections.<String> emptySet());

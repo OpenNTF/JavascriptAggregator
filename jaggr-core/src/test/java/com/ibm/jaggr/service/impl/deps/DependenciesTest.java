@@ -40,12 +40,12 @@ import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils;
 
 public class DependenciesTest extends EasyMock {
 
 	File tmpdir = null;
-	TestUtils.Ref<IConfig> configRef = new TestUtils.Ref<IConfig>(null);
+	BaseTestUtils.Ref<IConfig> configRef = new BaseTestUtils.Ref<IConfig>(null);
 	IAggregator mockAggregator;
 	
 	
@@ -56,21 +56,21 @@ public class DependenciesTest extends EasyMock {
 	@Before 
 	public void setup() throws Exception {
 		tmpdir = Files.createTempDir();
-		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		mockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir);
 		EasyMock.replay(mockAggregator);
 		
 	}
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
-			TestUtils.deleteRecursively(tmpdir);
+			BaseTestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}
 	
 	private TestDependenciesWrapper createDependencies(File tmpdir, boolean clean, boolean validateDeps) throws Exception {
 
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 		String rawConfig = "{paths:{'p1':'p1','p2':'p2','p2/p1':'p2/p1'}}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), rawConfig));
 		return new TestDependenciesWrapper(tmpdir, mockAggregator, clean, validateDeps);

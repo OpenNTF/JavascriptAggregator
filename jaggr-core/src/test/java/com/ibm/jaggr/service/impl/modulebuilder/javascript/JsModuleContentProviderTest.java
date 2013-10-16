@@ -71,8 +71,8 @@ import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
+import com.ibm.jaggr.service.test.BaseTestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.service.util.CopyUtil;
@@ -97,7 +97,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
-		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
+		final Map<String, ModuleDeps> testDepMap = BaseTestUtils.createTestDepMap();
 		tmpdir = Files.createTempDir();
 		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
 		expect(mockDependencies.getExpandedDependencies((String)anyObject(), (Features)anyObject(), (Set<String>)anyObject(), anyBoolean(), anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
@@ -105,13 +105,13 @@ public class JsModuleContentProviderTest extends EasyMock {
 				String name = (String)getCurrentArguments()[0];
 				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
-					result = TestUtils.emptyDepMap;
+					result = BaseTestUtils.emptyDepMap;
 				}
 				return result;
 			}
 		}).anyTimes();
-		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		mockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir);
+		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		replay(mockAggregator);
 		replay(mockRequest);
@@ -122,7 +122,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
-			TestUtils.deleteRecursively(tmpdir);
+			BaseTestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}
@@ -134,7 +134,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testGet() throws Exception {
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 		
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "/p1/p1.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
@@ -270,7 +270,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		assertEquals("[expn:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
 		
 		// Test error handling.  In production mode, a js syntax error should throw an excepton
-		TestUtils.createTestFile(new File(tmpdir, "p1"), "err", TestUtils.err);
+		BaseTestUtils.createTestFile(new File(tmpdir, "p1"), "err", BaseTestUtils.err);
 		p1 = new JsModuleTester("p1/err", new File(tmpdir, "p1/err.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
 		future = p1.getBuild(mockRequest);
@@ -292,7 +292,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 		compiled = writer.toString();
 		System.out.println(compiled);
 		Assert.assertTrue(Pattern.compile("\\sconsole\\.error\\(\\\"Error compiling module:[^\"]*\\\"\\);\\s*\\/\\* Comment \\*\\/").matcher(compiled).find());
-		Assert.assertTrue(compiled.endsWith(TestUtils.err));
+		Assert.assertTrue(compiled.endsWith(BaseTestUtils.err));
 		
 	}
 
@@ -314,7 +314,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testClear() throws Exception {
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
@@ -337,7 +337,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testClearCached() throws Exception {
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
@@ -378,7 +378,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testToString() throws Exception {
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
 		String s = p1.toString();
@@ -409,7 +409,7 @@ public class JsModuleContentProviderTest extends EasyMock {
 	 */
 	@Test
 	public void testGenerateCacheKey() throws IOException {
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);

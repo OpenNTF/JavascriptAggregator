@@ -50,8 +50,8 @@ import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
+import com.ibm.jaggr.service.test.BaseTestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
@@ -65,18 +65,18 @@ public class ModuleImplTest {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 	IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
-	static final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
+	static final Map<String, ModuleDeps> testDepMap = BaseTestUtils.createTestDepMap();
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		if (tmpdir != null) {
-			TestUtils.deleteRecursively(tmpdir);
+			BaseTestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}
@@ -84,8 +84,8 @@ public class ModuleImplTest {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
-		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		mockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir);
+		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
 		EasyMock.expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;
@@ -100,7 +100,7 @@ public class ModuleImplTest {
 				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
 				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
-					result = TestUtils.emptyDepMap;
+					result = BaseTestUtils.emptyDepMap;
 				}
 				// resolve aliases
 				ModuleDeps temp = new ModuleDeps();

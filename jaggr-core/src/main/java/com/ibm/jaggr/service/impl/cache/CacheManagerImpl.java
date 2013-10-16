@@ -30,8 +30,9 @@ import java.io.Reader;
 import java.io.Serializable;
 import java.io.Writer;
 import java.text.MessageFormat;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -40,8 +41,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang.StringUtils;
-/*import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;*/
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IShutdownListener;
@@ -188,9 +187,8 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         	}
         }, 10, 10, TimeUnit.MINUTES);
         
-		Properties dict;		
+		Dictionary<String,String> dict = new Hashtable<String, String>();	
 	        // Register listeners
-		dict = new Properties();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		
 		if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){

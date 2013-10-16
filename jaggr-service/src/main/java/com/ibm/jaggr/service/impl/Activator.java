@@ -17,9 +17,6 @@
 package com.ibm.jaggr.service.impl;
 
 import java.util.Collection;
-import java.util.Dictionary;
-import java.util.HashMap;
-import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.Properties;
 import java.util.logging.Level;
@@ -30,12 +27,9 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.osgi.PlatformAggregator;
-import com.ibm.jaggr.osgi.service.impl.AggregatorCommandProvider;
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.PlatformAggregator;
 import com.ibm.jaggr.service.executors.IExecutors;
-import com.ibm.jaggr.service.impl.Messages;
-import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.options.IOptions;

@@ -46,7 +46,7 @@ import org.junit.Test;
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.Weigher;
 import com.googlecode.concurrentlinkedhashmap.Weighers;
-import com.ibm.jaggr.core.service.impl.transport.AbstractHttpTransport;
+import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.NotFoundException;
@@ -58,8 +58,8 @@ import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestCacheManager;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
+import com.ibm.jaggr.service.test.BaseTestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
@@ -85,13 +85,13 @@ public class LayerCacheTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
-		TestUtils.createTestFiles(tmpdir);
+		BaseTestUtils.createTestFiles(tmpdir);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		if (tmpdir != null) {
-			TestUtils.deleteRecursively(tmpdir);
+			BaseTestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}
@@ -229,7 +229,7 @@ public class LayerCacheTest {
 		
 		Thread.sleep(1500L);  // wait long enough for systems with coarse grain last-mod times
 		                      // to recognize that the file has changed
-		TestUtils.createTestFile(tmpdir, "p1/a.js", TestUtils.a.replace("hello", "Hello"));
+		BaseTestUtils.createTestFile(tmpdir, "p1/a.js", BaseTestUtils.a.replace("hello", "Hello"));
 		requestAttributes.clear();
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/a"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
@@ -284,10 +284,10 @@ public class LayerCacheTest {
 	
 	@SuppressWarnings("unchecked")
 	private void createMockObjects(List<InitParams.InitParam> initParams) throws Exception {
-		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
-		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
+		final Map<String, ModuleDeps> testDepMap = BaseTestUtils.createTestDepMap();
+		IAggregator easyMockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
 		mockAggregator = new Proxy(easyMockAggregator);
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
 		mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 		mockDependencies = EasyMock.createMock(IDependencies.class);
 		EasyMock.expect(easyMockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
@@ -302,7 +302,7 @@ public class LayerCacheTest {
 				String name = (String)EasyMock.getCurrentArguments()[0];
 				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
-					result = TestUtils.emptyDepMap;
+					result = BaseTestUtils.emptyDepMap;
 				}
 				return result;
 			}

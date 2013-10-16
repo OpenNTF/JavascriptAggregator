@@ -54,16 +54,11 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-//import org.osgi.framework.BundleContext;
-//import org.osgi.framework.InvalidSyntaxException;
-//import org.osgi.framework.ServiceReference;
-//import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IShutdownListener;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.config.IConfigModifier;
 import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.options.IOptions;
@@ -733,8 +728,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 			// set up bundle manifest headers property
 			if (PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null) {
-				if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders() != null){
-				@SuppressWarnings("unchecked")
+				if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders() != null){				
 					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders());
 				    Scriptable jsHeaders = cx.newObject(sharedScope);
 					Enumeration<String> keys = headers.keys();

@@ -34,8 +34,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.jaggr.core.service.impl.transport.AbstractHttpTransport;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils;
 import com.ibm.jaggr.service.util.Features;
 
 public class AbstractHttpTransportTest {
@@ -65,7 +64,7 @@ public class AbstractHttpTransportTest {
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		Map<String, String[]> requestParameters = new HashMap<String, String[]>();
 		Cookie[] cookies = new Cookie[1];
-		HttpServletRequest request = TestUtils.createMockRequest(null, requestAttributes, requestParameters, cookies, null);
+		HttpServletRequest request = BaseTestUtils.createMockRequest(null, requestAttributes, requestParameters, cookies, null);
 		EasyMock.replay(request);
 		assertNull(AbstractHttpTransport.getHasConditionsFromRequest(request));
 		

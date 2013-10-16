@@ -52,7 +52,7 @@ import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.StringResource;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
 
@@ -92,13 +92,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		TestUtils.deleteRecursively(testdir);
+		BaseTestUtils.deleteRecursively(testdir);
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		mockAggregator = TestUtils.createMockAggregator();
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		mockAggregator = BaseTestUtils.createMockAggregator();
+		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");

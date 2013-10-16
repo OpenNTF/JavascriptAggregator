@@ -30,7 +30,6 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.ibm.jaggr.service.deps.IDependenciesListener;
 import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.options.IOptionsListener;

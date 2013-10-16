@@ -27,7 +27,7 @@ import org.osgi.framework.BundleContext;
 import com.google.common.io.Files;
 //import com.ibm.jaggr.osgi.service.impl.OSGiAggregatorImpl;
 import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils;
 
 public class AggregatorImplTest {
 
@@ -84,8 +84,8 @@ public class AggregatorImplTest {
 
 			EasyMock.verify(mockContext, mockBundle, mockOptions, aggregator);
 		} finally {
-			TestUtils.deleteRecursively(defaultDir);
-			TestUtils.deleteRecursively(optionsDir);
+			BaseTestUtils.deleteRecursively(defaultDir);
+			BaseTestUtils.deleteRecursively(optionsDir);
 		}
 	}
 

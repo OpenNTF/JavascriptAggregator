@@ -40,7 +40,7 @@ import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
+import com.ibm.jaggr.service.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
 /**
@@ -52,20 +52,20 @@ public class MockAggregatorWrapper implements IAggregator {
 	protected IAggregator mock;
 	
 	public MockAggregatorWrapper() throws Exception {
-		mock = TestUtils.createMockAggregator();
+		mock = BaseTestUtils.createMockAggregator();
 		EasyMock.replay(mock);
 	}
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
-		mock = TestUtils.createMockAggregator(configRef, workingDirectory);
+		mock = BaseTestUtils.createMockAggregator(configRef, workingDirectory);
 		EasyMock.replay(mock);
 	}
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory,
 			List<InitParam> initParams) throws Exception {
-		mock = TestUtils.createMockAggregator(configRef, workingDirectory, initParams);
+		mock = BaseTestUtils.createMockAggregator(configRef, workingDirectory, initParams);
 		EasyMock.replay(mock);
 	}
 	

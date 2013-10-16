@@ -29,24 +29,21 @@ import org.eclipse.core.runtime.IExecutableExtension;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 
-import com.ibm.jaggr.core.service.impl.transport.Messages;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
+import com.ibm.jaggr.service.impl.transport.Messages;
 import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
 
 
-public class DojoHttpTransport extends com.ibm.jaggr.core.service.impl.transport.DojoHttpTransport implements IExecutableExtension{
+public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension{
 	
-	//public static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-	//protected static String loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+	protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
+	protected static String loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$	
+	protected static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
 	
 	@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,
-			Object data) throws CoreException {
-		
-		comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-		loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
-		
+			Object data) throws CoreException {		
 		
 		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
 		
@@ -101,5 +98,19 @@ public class DojoHttpTransport extends com.ibm.jaggr.core.service.impl.transport
 				first);
 		
 	}	
+	
+	protected String getComboUriStr() {
+    	return comboUriStr;
+    }
+	
+	protected String getTextPluginProxyUriStr(){
+	    return textPluginProxyUriStr;
+	 }
+	 
+	 protected String getLoaderExtensionPath() {
+	    return loaderExtensionPath;
+	 }
+	 
+	 
 
 }

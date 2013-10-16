@@ -101,7 +101,7 @@
   			<configuration>
   				<manifestLocation>META-INF</manifestLocation>
   				<instructions>
-  					<Bundle-Name>jaggr-osgi</Bundle-Name>
+  					<Bundle-Name>jaggr-service</Bundle-Name>
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
             <Bundle-Activator>${bundle.namespace}.impl.Activator</Bundle-Activator>

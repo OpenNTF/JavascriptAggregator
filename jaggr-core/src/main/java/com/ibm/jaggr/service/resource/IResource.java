@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
-import java.util.Properties;
 
 /**
  * Defines the interface for AMD module resources. Implementations can provide

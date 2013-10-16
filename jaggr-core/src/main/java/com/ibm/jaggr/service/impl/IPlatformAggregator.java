@@ -21,7 +21,7 @@ import java.util.Dictionary;
 
 public interface IPlatformAggregator {
 	
-	public Object registerService(String clazz, Object service, Dictionary properties);
+	public Object registerService(String clazz, Object service, Dictionary<String, String> properties);
 	
 	public void unRegisterService(Object service);
 	

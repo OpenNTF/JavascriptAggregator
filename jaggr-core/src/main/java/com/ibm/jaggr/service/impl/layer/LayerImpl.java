@@ -706,7 +706,7 @@ public class LayerImpl implements ILayer {
 	    	IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			@SuppressWarnings("unchecked")
 			Collection<String> moduleNames = (Collection<String>)request.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME);
-	        result = new ModuleList();
+			result = new ModuleList();
     		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
     		Set<String> dependentFeatures = new HashSet<String>();
     		if (moduleNames != null) {
@@ -735,6 +735,7 @@ public class LayerImpl implements ILayer {
 	    		ModuleDeps combined = depList.getExpandedDeps();
 	    		combined.putAll(depList.getExplicitDeps());
 	    		for (String name : combined.keySet()) {
+	    			System.out.println("IsserverExpandable " + aggr.getTransport().isServerExpandable(request, name));
 	    			if (aggr.getTransport().isServerExpandable(request, name)) {
 		        		result.add(
 		        				new ModuleList.ModuleListEntry(

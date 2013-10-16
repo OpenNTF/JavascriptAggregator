@@ -44,14 +44,16 @@ import org.osgi.framework.BundleContext;
 
 import com.google.common.io.Files;
 //import com.ibm.jaggr.osgi.service.impl.OSGiAggregatorImpl;
-import com.ibm.jaggr.osgi.PlatformAggregator;
+import com.ibm.jaggr.service.PlatformAggregator;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.service.test.ITestAggregator;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
+import com.ibm.jaggr.service.test.TestUtils;
 //import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.PathUtil;

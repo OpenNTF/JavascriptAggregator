@@ -18,27 +18,15 @@ package com.ibm.jaggr.service.impl;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StringReader;
-import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.FileUtils;
 import org.eclipse.core.runtime.CoreException;
@@ -56,57 +44,25 @@ import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.ServiceTracker;
 
-//import com.ibm.jaggr.osgi.service.impl.config.OSGIConfigImpl;
-
-import com.ibm.jaggr.service.BadRequestException;
-import com.ibm.jaggr.service.DependencyVerificationException;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.IAggregator.SubstitutionTransformer;
-import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
-import com.ibm.jaggr.service.IRequestListener;
-import com.ibm.jaggr.service.IShutdownListener;
 import com.ibm.jaggr.service.IVariableResolver;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.InitParams.InitParam;
 import com.ibm.jaggr.service.NotFoundException;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.config.IConfigListener;
-import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.executors.IExecutors;
-import com.ibm.jaggr.core.service.AggregatorImpl.ExtensionRegistrar;
-import com.ibm.jaggr.osgi.service.impl.AggregatorExtension;
-import com.ibm.jaggr.service.impl.Messages;
-import com.ibm.jaggr.service.impl.OverrideFoldersTreeWalker;
-import com.ibm.jaggr.service.impl.PlatformAggregatorFactory;
-import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
-import com.ibm.jaggr.service.impl.layer.LayerImpl;
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.layer.ILayerCache;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.options.IOptionsListener;
-import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceFactory;
 import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransportExtensionPoint;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.SequenceNumberProvider;
-import com.ibm.jaggr.service.util.StringUtil;
 
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
@@ -119,7 +75,7 @@ import com.ibm.jaggr.service.util.StringUtil;
  * attempts will be made to serialize instances of this class.
  */
 @SuppressWarnings("serial")
-public class AggregatorImpl extends com.ibm.jaggr.core.service.AggregatorImpl implements IExecutableExtension, BundleListener {
+public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutableExtension, BundleListener {
 
 	/**
 	 * Default value for resourcefactories init-param
@@ -161,7 +117,7 @@ public class AggregatorImpl extends com.ibm.jaggr.core.service.AggregatorImpl im
 		}
         try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
-    		((com.ibm.jaggr.osgi.PlatformAggregator)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator())).setBundleContext(bundleContext);
+    		((com.ibm.jaggr.service.PlatformAggregator)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator())).setBundleContext(bundleContext);
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);
@@ -198,7 +154,7 @@ public class AggregatorImpl extends com.ibm.jaggr.core.service.AggregatorImpl im
 							e.getMessage(), e)
 				);
 		}
-        Hashtable dict = new Hashtable<String, String>();
+        Hashtable<String, String> dict = new Hashtable<String, String>();
         //Properties dict = new Properties();			
         dict.put("name", getName()); //$NON-NLS-1$
         registrations.add(getBundleContext().registerService(

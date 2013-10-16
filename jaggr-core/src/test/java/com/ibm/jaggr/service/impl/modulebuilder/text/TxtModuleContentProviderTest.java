@@ -38,7 +38,7 @@ import com.google.common.io.Files;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
 public class TxtModuleContentProviderTest extends EasyMock {
@@ -60,7 +60,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
-			TestUtils.deleteRecursively(tmpdir);
+			BaseTestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}

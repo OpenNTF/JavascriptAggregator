@@ -98,7 +98,7 @@ public class DojoHttpTransportTest {
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text",
 				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
 		Assert.assertNull(modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getOverride());
-		Assert.assertEquals(DojoHttpTransport.getTextPluginProxyUriStr(),
+		Assert.assertEquals(DojoHttpTransport.textPluginProxyUriStr,
 				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(newcomboUri, modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
@@ -173,7 +173,7 @@ public class DojoHttpTransportTest {
 		Assert.assertEquals(newcomboUri, modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text",
 				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
-		Assert.assertEquals(DojoHttpTransport.getTextPluginProxyUriStr(),
+		Assert.assertEquals(DojoHttpTransport.textPluginProxyUriStr,
 				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(2, transport.getClientConfigAliases().size());
 		alias = transport.getClientConfigAliases().get(0);

@@ -42,7 +42,7 @@ import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.BaseTestUtils;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
 
@@ -71,7 +71,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setUp() throws Exception {
-		mockAggregator = TestUtils.createMockAggregator();
+		mockAggregator = BaseTestUtils.createMockAggregator();
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		expect(mockDependencies.getDelcaredDependencies(
 				(String)anyObject())).andAnswer(new IAnswer<List<String>>() {
