@@ -234,7 +234,7 @@ public class ConfigTests {
 		//instantiate the platformAggregator object for this test case to read the headers from the bundleContext
 		PlatformAggregator osgiPlatformAggregator = new PlatformAggregator();	
 		osgiPlatformAggregator.setBundleContext(mockBundleContext);
-		PlatformAggregatorFactory.INSTANCE.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
 		
 		mockOSGiAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";

@@ -494,7 +494,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		Hashtable<String, String> dict = new Hashtable<String, String>();
 		//Properties dict = new Properties();
 		dict.put("name", name); //$NON-NLS-1$    	
-    	configModifierReg = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigModifier.class.getName(), this, dict);		
+    	configModifierReg = PlatformAggregatorFactory.getPlatformAggregator().registerService(IConfigModifier.class.getName(), this, dict);		
 	}
 
 	/* (non-Javadoc)
@@ -504,7 +504,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void shutdown(IAggregator aggregator) {
 		// unregister our config modifier
 		if (configModifierReg != null) {
-			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(configModifierReg);
+			PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(configModifierReg);
 		}
 	}
 

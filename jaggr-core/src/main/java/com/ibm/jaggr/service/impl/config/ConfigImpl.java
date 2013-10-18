@@ -642,9 +642,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		String configName = configNames.iterator().next();
 		configUri = new URI(configName);
-		if (!configUri.isAbsolute() && PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null) {
+		if (!configUri.isAbsolute() && PlatformAggregatorFactory.getPlatformAggregator() != null) {
 			//URL configUrl = getAggregator().getBundleContext().getBundle().getResource(configName);
-			URL configUrl = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getResource(configName);
+			URL configUrl = PlatformAggregatorFactory.getPlatformAggregator().getResource(configName);
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);
 			}
@@ -727,9 +727,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 
 			// set up bundle manifest headers property
-			if (PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null) {
-				if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders() != null){				
-					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getHeaders());
+			if (PlatformAggregatorFactory.getPlatformAggregator() != null) {
+				if(PlatformAggregatorFactory.getPlatformAggregator().getHeaders() != null){				
+					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformAggregatorFactory.getPlatformAggregator().getHeaders());
 				    Scriptable jsHeaders = cx.newObject(sharedScope);
 					Enumeration<String> keys = headers.keys();
 					while (keys.hasMoreElements()) {
@@ -1083,14 +1083,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            are represented as {@code Map<String, Object>}.
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
-		if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){
+		if(PlatformAggregatorFactory.getPlatformAggregator() != null){
 			Object[] refs = null;		
-			refs = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")");//$NON-NLS-1$ //$NON-NLS-2$
+			refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")");//$NON-NLS-1$ //$NON-NLS-2$
 			
 			if (refs != null) {
 				for (Object ref : refs) {
 					IConfigModifier modifier = 
-						(IConfigModifier)PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getService(ref);
+						(IConfigModifier)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
 					if (modifier != null) {
 						try {
 							modifier.modifyConfig(getAggregator(), rawConfig);
@@ -1099,7 +1099,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IConfigModifier.class.getName());
+							PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref, IConfigModifier.class.getName());
 						}
 					}
 				}
@@ -1140,8 +1140,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : serviceRegs) {
-			if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){
-				PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(reg);
+			if(PlatformAggregatorFactory.getPlatformAggregator() != null){
+				PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(reg);
 			}
 		}
 	}
@@ -1149,13 +1149,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {	
 	        // Register listeners
-		if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){
+		if(PlatformAggregatorFactory.getPlatformAggregator() != null){
 			Dictionary dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict));
+			serviceRegs.add(PlatformAggregatorFactory.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict));
 			dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict));	
+			serviceRegs.add(PlatformAggregatorFactory.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict));	
 		}
 	}
 

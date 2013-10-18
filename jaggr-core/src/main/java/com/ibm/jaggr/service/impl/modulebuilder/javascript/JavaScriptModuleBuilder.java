@@ -114,10 +114,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {		
 		Dictionary<String,String> props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IRequestListener.class.getName(), this, props));
+		registrations.add(PlatformAggregatorFactory.getPlatformAggregator().registerService(IRequestListener.class.getName(), this, props));
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(PlatformAggregatorFactory.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
 	}
 
 	@Override
@@ -155,7 +155,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : registrations) {
-			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(reg);			
+			PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(reg);			
 		}
 	}
 

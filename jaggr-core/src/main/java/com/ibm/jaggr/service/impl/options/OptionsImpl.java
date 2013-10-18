@@ -247,7 +247,7 @@ public class OptionsImpl  implements IOptions {
 		    	}
 		    	if (in == null) {
 		    		// Try to load it from the bundle		   			
-		   			URL url = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getResource(getPropsFilename());
+		   			URL url = PlatformAggregatorFactory.getPlatformAggregator().getResource(getPropsFilename());
 		    		if (url != null) { 
 		    			in = url.openStream();
 		    		}
@@ -299,17 +299,17 @@ public class OptionsImpl  implements IOptions {
 		
 		Object[] refs = null;
 		try {
-			if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){
-				refs = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
+			if(PlatformAggregatorFactory.getPlatformAggregator() != null){
+				refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
 				if (refs != null) {
 					for (Object ref : refs) {
-						IOptionsListener listener = (IOptionsListener)PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getService(ref);
+						IOptionsListener listener = (IOptionsListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
 						if (listener != null) {
 							try {
 								listener.optionsUpdated(this, sequence);
 							} catch (Throwable ignore) {
 							} finally {
-								PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IOptionsListener.class.getName());
+								PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref, IOptionsListener.class.getName());
 							}
 						}
 					}

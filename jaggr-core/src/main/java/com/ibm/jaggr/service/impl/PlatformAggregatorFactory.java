@@ -20,18 +20,17 @@ package com.ibm.jaggr.service.impl;
  * Aggregator Factory class would return the underlying Aggregator Implementation class
  */
 
-public enum PlatformAggregatorFactory {
+public class PlatformAggregatorFactory {
 	
-	INSTANCE;
+	private static IPlatformAggregator platformAggregator;
 	
-	private IPlatformAggregator platformAggregator;
+	private PlatformAggregatorFactory(){}
 	
-	public void setPlatformAggregator(IPlatformAggregator aggregator){
-		this.platformAggregator = aggregator;
-	}
+	public static void setPlatformAggregator(IPlatformAggregator aggregator){
+		platformAggregator = aggregator;
+	}	
 	
-	
-	public IPlatformAggregator getPlatformAggregator(){
+	public static IPlatformAggregator getPlatformAggregator(){
 		return platformAggregator;
 	}	
 

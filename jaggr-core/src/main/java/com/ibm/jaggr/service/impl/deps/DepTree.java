@@ -204,8 +204,8 @@ public class DepTree implements Serializable {
 				Messages.DepTree_3,
 				new Object[]{aggregator.getName()});
 		
-		if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){
-			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().println(msg);
+		if(PlatformAggregatorFactory.getPlatformAggregator() != null){
+			PlatformAggregatorFactory.getPlatformAggregator().println(msg);
 		}
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);
@@ -362,8 +362,8 @@ public class DepTree implements Serializable {
 		);
 
 		// Output that we're done.		
-		if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator() != null){
-			PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().println(msg);
+		if(PlatformAggregatorFactory.getPlatformAggregator() != null){
+			PlatformAggregatorFactory.getPlatformAggregator().println(msg);
 		}
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);

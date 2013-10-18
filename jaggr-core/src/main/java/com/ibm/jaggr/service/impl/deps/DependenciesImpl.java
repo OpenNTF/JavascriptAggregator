@@ -89,9 +89,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
 		
-		shutdownListener = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
-		configUpdateListener= PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
-		optionsUpdateListener= PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
+		shutdownListener = PlatformAggregatorFactory.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
+		configUpdateListener= PlatformAggregatorFactory.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
+		optionsUpdateListener= PlatformAggregatorFactory.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
 
 		if (aggregator.getConfig() != null) {
 			configLoaded(aggregator.getConfig(), 1);
@@ -105,9 +105,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(configUpdateListener);
-		PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(optionsUpdateListener);
-		PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unRegisterService(shutdownListener);
+		PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(configUpdateListener);
+		PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(optionsUpdateListener);
+		PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(shutdownListener);
 		
 	}
 	
@@ -280,11 +280,11 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						// Notify listeners that dependencies have been updated
 						Object[] refs = null;
 						
-						refs = PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")");
+						refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")");
 						
 						if (refs != null) {
 							for (Object ref : refs) {								
-								IDependenciesListener listener = (IDependenciesListener)(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().getService(ref));
+								IDependenciesListener listener = (IDependenciesListener)(PlatformAggregatorFactory.getPlatformAggregator().getService(ref));
 								if (listener != null) {
 									try {
 										listener.dependenciesLoaded(DependenciesImpl.this, sequence);
@@ -293,7 +293,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 											log.log(Level.SEVERE, e.getMessage(), e);
 										}
 									} finally {
-										PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().unGetService(ref, IDependenciesListener.class.getName());
+										PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref, IDependenciesListener.class.getName());
 									}
 								}
 							}
