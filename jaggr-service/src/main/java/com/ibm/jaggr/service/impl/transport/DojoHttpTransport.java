@@ -34,13 +34,19 @@ import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.impl.transport.Messages;
 import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
 
-
+/**
+ * This class implements the functions of Dojo HTTP transport for OSGi platform 
+ *
+ */
 public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension{
 	
 	protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
 	protected static String loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$	
 	protected static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
+	 */
 	@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,
 			Object data) throws CoreException {		
@@ -79,6 +85,10 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 		
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
+	 */
+	@Override
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {		
 		
 		super.initialize(aggregator, extension, reg);
@@ -87,7 +97,8 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
     	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
     	
     	// Register the loaderExt resource factory
-    	Properties attributes = new Properties();    	
+    	Properties attributes = new Properties();   
+    	// this scheme is specific to the OSGi platform.
     	attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
     	
 		reg.registerExtension(
@@ -99,18 +110,34 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 		
 	}	
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.AbstractDojoHttpTransport#getComboUriStr()
+	 */
+	@Override
 	protected String getComboUriStr() {
     	return comboUriStr;
     }
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.AbstractDojoHttpTransport#getTextPluginProxyUriStr()
+	 */
+	@Override
 	protected String getTextPluginProxyUriStr(){
 	    return textPluginProxyUriStr;
 	 }
 	 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.AbstractDojoHttpTransport#getLoaderExtensionPath()
+	 */
+	@Override
 	 protected String getLoaderExtensionPath() {
 	    return loaderExtensionPath;
 	 }
-	 
-	 
+
+	// this method is for non-osgi platforms to write logic during initialization. Hence, keeping a blank implementation here.
+	@Override
+	public void setInitializationData() {
+		
+	}
 
 }

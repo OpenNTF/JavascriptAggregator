@@ -82,7 +82,6 @@ final class DepParser implements Callable<URI> {
 		if (node != null) {
 			// walk the AST for the node looking for define calls
 			// and pull out the required dependency list.
-			System.out.println("Node parsed " + node.getQualifiedName() + node.getSourceFileName());
 			ArrayList<String> deps = DepUtils.parseDependencies(node);
 			String[] depArray = (deps == null) ? 
 					new String[0] : deps.toArray(new String[deps.size()]);

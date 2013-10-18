@@ -27,97 +27,161 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
+import com.ibm.jaggr.service.impl.AggregatorImpl;
 import com.ibm.jaggr.service.impl.IPlatformAggregator;
 import com.ibm.jaggr.service.util.ConsoleService;
 
+/**
+ * This class provides the OSGi implementation of the
+ * {@link IPlatformAggregator} interface.
+ */
 public class PlatformAggregator implements IPlatformAggregator {
-	
-	private BundleContext bundleContext = null;
-	private static final Logger log = Logger.getLogger(PlatformAggregator.class.getName());
+
+	private BundleContext bundleContext;
+	private static final Logger log = Logger.getLogger(PlatformAggregator.class
+			.getName());
 	public static int resolved = Bundle.RESOLVED;
 	public static int active = Bundle.ACTIVE;
 	public static int stopping = Bundle.STOPPING;
-	
-	public ServiceRegistration registerService(String clazz, Object service, Dictionary<String, String> properties){
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.BundleContext#registerService(String clazz,
+	 * Object service, Dictionary properties)
+	 */
+	@Override
+	public ServiceRegistration registerService(String clazz, Object service,
+			Dictionary<String, String> properties) {
 		ServiceRegistration serviceRegistration = null;
-		if(bundleContext != null){
-			serviceRegistration = bundleContext.registerService(clazz, service, properties);
+		if (bundleContext != null) {
+			serviceRegistration = bundleContext.registerService(clazz, service,
+					properties);
 		}
-			return serviceRegistration;		
+		return serviceRegistration;
 	}
-	
-	public void unRegisterService(Object service){
-		((ServiceRegistration)service).unregister();		
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.ServiceRegistration#unRegisterService()
+	 */
+	@Override
+	public void unRegisterService(Object service) {
+		((ServiceRegistration) service).unregister();
 	}
-	
-	public ServiceReference[] getServiceReferences(String clazz, String filter){		
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.BundleContext#getServiceReferences(String clazz,
+	 * String filter)
+	 */
+	@Override
+	public ServiceReference[] getServiceReferences(String clazz, String filter) {
 		ServiceReference[] refs = null;
 		try {
-			if(bundleContext != null){
+			if (bundleContext != null) {
 				refs = bundleContext.getServiceReferences(clazz, filter);
 			}
 		} catch (InvalidSyntaxException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
-			}	
+			}
 		}
 		return refs;
-		
+
 	}
 
-	public Object getService(Object serviceReference){
-		if(bundleContext != null){
-			return bundleContext.getService((ServiceReference)serviceReference);
-		}else{
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.BundleContext#getService(ServiceReference
+	 * reference)
+	 */
+	@Override
+	public Object getService(Object serviceReference) {
+		if (bundleContext != null) {
+			return bundleContext
+					.getService((ServiceReference) serviceReference);
+		} else {
 			return null;
 		}
 	}
-	
-	public boolean unGetService(Object serviceReference, String clazz){
-		if(bundleContext != null){
-			return bundleContext.ungetService((ServiceReference)serviceReference);
-		}else{
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.BundleContext#unGetService(ServiceReference
+	 * reference)
+	 */
+	@Override
+	public boolean unGetService(Object serviceReference, String clazz) {
+		if (bundleContext != null) {
+			return bundleContext
+					.ungetService((ServiceReference) serviceReference);
+		} else {
 			return false;
 		}
-	}	
-	
-	public void setBundleContext(BundleContext bc){
+	}
+
+	/**
+	 * This method sets the bundleContext reference that is used by the other
+	 * methods in this class. The method is called by the
+	 * {@link AggregatorImpl#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, String, Object)}
+	 * to set the bundleContext.
+	 * 
+	 * @param bc
+	 */
+	public void setBundleContext(BundleContext bc) {
 		bundleContext = bc;
 	}
-	
-	public URL getResource(String resourceName){		
-		if(bundleContext != null){
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.Bundle#getResource(String name)
+	 */
+	@Override
+	public URL getResource(String resourceName) {
+		if (bundleContext != null) {
 			return bundleContext.getBundle().getResource(resourceName);
-		}else{
+		} else {
 			return null;
 		}
 	}
-	
-	public Dictionary<String, String> getHeaders(){
-		if(bundleContext != null){
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.osgi.framework.Bundle#getHeaders()
+	 */
+	@Override
+	public Dictionary<String, String> getHeaders() {
+		if (bundleContext != null) {
 			return bundleContext.getBundle().getHeaders();
-		}else{
+		} else {
 			return null;
 		}
 	}
-	
-	
-	
-	public void println(String msg){		
+
+	@Override
+	public void println(String msg) {
 		new ConsoleService().println(msg);
 	}
 
-	public boolean initiateShutdown(){
-		if(bundleContext != null){
-			int bundleState = bundleContext.getBundle().getState();		
-			if(bundleState == Bundle.ACTIVE || bundleState == Bundle.STOPPING){
+	@Override
+	public boolean isShuttingdown() {
+		if (bundleContext != null) {
+			int bundleState = bundleContext.getBundle().getState();
+			if (bundleState == Bundle.ACTIVE || bundleState == Bundle.STOPPING) {
 				return true;
-			}else{
+			} else {
 				return false;
 			}
-		}else{
+		} else {
 			return false;
 		}
-	}	
-	
+	}
+
 }

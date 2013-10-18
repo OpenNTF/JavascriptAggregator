@@ -87,9 +87,9 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".ExportModuleNames"; //$NON-NLS-1$
 
 	/**
-	 * Name of the request attribute specifying a {@code Collection;&lt;String&gt;}
-	 * containing set of requested locales.  How the requested locales are determined
-	 * is implementation specific.
+	 * Name of the request attribute specifying a
+	 * {@code Collection;&lt;String&gt;} containing set of requested locales.
+	 * How the requested locales are determined is implementation specific.
 	 */
 	public static final String REQUESTEDLOCALES_REQATTRNAME = IHttpTransport.class
 			.getName() + ".RequestedLocales"; //$NON-NLS-1$
@@ -107,7 +107,7 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 */
 	public static final String HASPLUGINBRANCHING_REQATTRNAME = IHttpTransport.class
 			.getName() + ".HasPluginBranching"; //$NON-NLS-1$
-	
+
 	/**
 	 * Name of the request attribute specifying the Boolean flag indicating if
 	 * the response should be annotated with comments indicating the names of
@@ -126,9 +126,9 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".NoCache"; //$NON-NLS-1$
 
 	/**
-	 * Name of the request attribute specifying a {@code Set<String>} of
-	 * modules ids that, together with their expanded dependencies, will be included
-	 * in the response in addition to the list of modules specified by
+	 * Name of the request attribute specifying a {@code Set<String>} of modules
+	 * ids that, together with their expanded dependencies, will be included in
+	 * the response in addition to the list of modules specified by
 	 * {@link #REQUESTEDMODULES_REQATTRNAME}.
 	 * <p>
 	 * This feature is typically used to load a bootstrap layer of modules using
@@ -150,14 +150,14 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".Required"; //$NON-NLS-1$
 
 	/**
-	 * Specifies that the text module builder should not wrap the text 
-	 * in an AMD define(...) function call, and instead should return
-	 * the text content as an unadorned string.  Some use cases (e.g.
-	 * Dojo's layer builder) require this functionality.
+	 * Specifies that the text module builder should not wrap the text in an AMD
+	 * define(...) function call, and instead should return the text content as
+	 * an unadorned string. Some use cases (e.g. Dojo's layer builder) require
+	 * this functionality.
 	 */
 	public static final String NOTEXTADORN_REQATTRNAME = IHttpTransport.class
 			.getName() + ".NoTextAdorn"; //$NON-NLS-1$
-	
+
 	/**
 	 * Specifies that the module builders may not add module resources that were
 	 * not explicitly requested by the loader to the response. This option may
@@ -176,20 +176,20 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".NoExpandModules"; //$NON-NLS-1$
 	/**
 	 * Name of the request attribute specifying the config var name used to
-	 * configure the loader on the client.  The default value is "require". 
-	 * This parameter may be specified if a different var name is used to 
-	 * configure the loader
+	 * configure the loader on the client. The default value is "require". This
+	 * parameter may be specified if a different var name is used to configure
+	 * the loader
 	 * <p>
-	 * This information is used by the javascript module builder to locate
-	 * the loader config {@code deps} property in order to expand the 
-	 * modules specified by that property to include nested dependencies.
+	 * This information is used by the javascript module builder to locate the
+	 * loader config {@code deps} property in order to expand the modules
+	 * specified by that property to include nested dependencies.
 	 * <p>
-	 * This request attribute is not required to be present if no config var 
+	 * This request attribute is not required to be present if no config var
 	 * name was specified in the request.
 	 */
 	public static final String CONFIGVARNAME_REQATTRNAME = IHttpTransport.class
 			.getName() + ".ConfigVarName"; //$NON-NLS-1$
-	
+
 	/**
 	 * Supported optimization levels. Module builders are not required to
 	 * support all, or any, of these.
@@ -229,12 +229,12 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * <p>
 	 * <code>urlProcessors.push(function(url) {return url+'&foo=bar'});</code>
 	 * <p>
-	 * The mechanism by which the loader extension JavaScript is delivered to 
-	 * the client is outside the scope of this interface.  A typical implementation
-	 * will register an {@link IResourceFactory} which returns an {@link IResource}
-	 * object that will deliver the loader extension JavaScript when the AMD module
-	 * which has been mapped to the resource URI for the loader extension JavaScript
-	 * is requested.  
+	 * The mechanism by which the loader extension JavaScript is delivered to
+	 * the client is outside the scope of this interface. A typical
+	 * implementation will register an {@link IResourceFactory} which returns an
+	 * {@link IResource} object that will deliver the loader extension
+	 * JavaScript when the AMD module which has been mapped to the resource URI
+	 * for the loader extension JavaScript is requested.
 	 * 
 	 * @param contribution
 	 *            The JavaScript being contributed.
@@ -325,8 +325,8 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * @param type
 	 *            The layer contribution type
 	 * @param arg
-	 *            This parameter specifies the module id as a string for the following
-	 *            {@code type} values:
+	 *            This parameter specifies the module id as a string for the
+	 *            following {@code type} values:
 	 *            <ul>
 	 *            <li>{@link LayerContributionType#BEFORE_FIRST_MODULE}</li>
 	 *            <li>{@link LayerContributionType#BEFORE_SUBSEQUENT_MODULE}</li>
@@ -338,15 +338,16 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            </li>
 	 *            <li>{@link LayerContributionType#AFTER_REQUIRED_MODULE}</li>
 	 *            </ul>
-	 *            For the following values of {@code type}, {@code arg} specifies
-	 *            a {@code Set<String>} of required modules specified in the
-	 *            request via the {@link #REQUIRED_REQATTRNAME} request parameter.
+	 *            For the following values of {@code type}, {@code arg}
+	 *            specifies a {@code Set<String>} of required modules specified
+	 *            in the request via the {@link #REQUIRED_REQATTRNAME} request
+	 *            parameter.
 	 *            <ul>
 	 *            <li>{@link LayerContributionType#BEGIN_REQUIRED_MODULES}</li>
 	 *            <li>{@link LayerContributionType#END_REQUIRED_MODULES}</li>
 	 *            </ul>
 	 *            For all other values of {@code type}, {@code mid} is null.
-	 *            
+	 * 
 	 * @return A string value that is to be added to the layer in the location
 	 *         specified by {@code type}.
 	 */
@@ -371,11 +372,10 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *         layer
 	 */
 	public boolean isServerExpandable(HttpServletRequest request, String mid);
-	
-	
+
 	/**
-	 * Returns a cache key generator for the JavaScript contained in the
-	 * loader extension JavaScript and output by 
+	 * Returns a cache key generator for the JavaScript contained in the loader
+	 * extension JavaScript and output by
 	 * {@link #getLayerContribution(HttpServletRequest, LayerContributionType, Object)}
 	 * . If the output JavaScript is invariant with regard to the request for
 	 * the same set of modules, then this function may return null.
@@ -384,8 +384,28 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *         transport.
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators();
-	
+
+	/**
+	 * Returns a properties object for the associated
+	 * <code>IHttpTransport</code> implementation. The object has a key to
+	 * define the loader extension config property, a class key which refers to
+	 * the <code>IHttpTransport</code> implementation class name which
+	 * implements this interface. This is useful for environments which do not
+	 * support eclipse extension point and their schemas and it helps in getting
+	 * the attributes of the extensions.
+	 * 
+	 * @return A Properties object for the associated
+	 *         <code>IHttpTransport</code> implementation.
+	 */
 	public Properties getProperties();
-	
+
+	/**
+	 * This method is called when the implementation of the IHttpTransport is
+	 * initialized. This is useful for non-osgi environments which do not
+	 * support eclipse extension point where there is a
+	 * <code>setInitializationData()</code> callback performed by the OSGi
+	 * framework .
+	 * 
+	 */
 	public void setInitializationData();
 }

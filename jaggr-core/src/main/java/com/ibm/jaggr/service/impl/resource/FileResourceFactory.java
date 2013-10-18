@@ -29,7 +29,7 @@ import com.ibm.jaggr.service.resource.IResourceFactory;
  */
 public class FileResourceFactory implements IResourceFactory {
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.modules.ResourceFactory#create(java.net.URI)
+	 * @see com.ibm.jaggr.service.resource.IResourceFactory#newResource(java.net.URI)
 	 */
 	@Override
 	public IResource newResource(URI uri) {
@@ -47,7 +47,9 @@ public class FileResourceFactory implements IResourceFactory {
 	public boolean handles(URI uri) {
 		return "file".equals(uri.getScheme()); //$NON-NLS-1$
 	}
-	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.resource.IResourceFactory#getProperties
+	 */
 	@Override
 	public Properties getProperties() {
 		Properties props = new Properties();

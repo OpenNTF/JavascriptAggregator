@@ -39,6 +39,11 @@ public class MockDojoHttpTransport extends AbstractDojoHttpTransport {
 		return null;
 	}
 
+	@Override
+	public void setInitializationData() {
+		
+	}
+
 	
 	
 }

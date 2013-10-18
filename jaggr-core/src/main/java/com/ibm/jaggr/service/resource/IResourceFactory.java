@@ -30,12 +30,12 @@ import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
  * <p>
  * Instances of this interface are created by the eclipse extension framework
  * for Aggregator extensions that implement the
- * {@code com.ibm.jaggr.service.resourcefactory} extension point.
- * Aggregator extensions may also register resource factories by calling
+ * {@code com.ibm.jaggr.service.resourcefactory} extension point. Aggregator
+ * extensions may also register resource factories by calling
  * {@link IExtensionRegistrar#registerExtension(Object, Properties, String, String, IAggregatorExtension)}
  * when the extension's
  * {@link IExtensionInitializer#initialize(IAggregator, IAggregatorExtension, IExtensionRegistrar)}
- * method is called (assuming the extension implements the 
+ * method is called (assuming the extension implements the
  * {@link IExtensionInitializer} interface).
  * <p>
  * The extension point defines the {@code scheme} attribute which is used by the
@@ -69,13 +69,20 @@ public interface IResourceFactory {
 	 *         object MUST be serialiable.
 	 */
 	public IResource newResource(URI uri);
-	
+
 	public boolean handles(URI uri);
-	
+
 	/**
-	 * Returns the properties object for the associated ResourceFactory implementation.
+	 * Returns a properties object for the associated IResourceFactory
+	 * implementation. The object has the scheme key to define the URI scheme
+	 * that is handled by the ResourceFactory implementation, a class key which
+	 * refers to the ResourceFactory class name which implements this interface.
+	 * This is useful for environments which do not support eclipse extension
+	 * point and their schemas and it helps in getting the attributes of the
+	 * extensions.
 	 * 
-	 *  @return A Properties object for the associated ResourceFactory implementation.
+	 * @return A Properties object for the associated ResourceFactory
+	 *         implementation.
 	 */
 	public Properties getProperties();
 

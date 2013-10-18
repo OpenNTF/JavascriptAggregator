@@ -95,11 +95,14 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	protected static final String DEFAULT_HTTPTRANSPORT =
 		"com.ibm.jaggr.service.dojo.httptransport"; //$NON-NLS-1$
     
-	protected Bundle bundle = null;
-	protected ServiceTracker optionsServiceTracker = null;
-    protected ServiceTracker executorsServiceTracker = null;
-	protected ServiceTracker variableResolverServiceTracker = null;
+	protected Bundle bundle;
+	protected ServiceTracker optionsServiceTracker;
+    protected ServiceTracker executorsServiceTracker;
+	protected ServiceTracker variableResolverServiceTracker;
 	
+	/* (non-Javadoc)
+	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
+	 */
 	@Override
 	public void setInitializationData(IConfigurationElement configElem, String propertyName,
 			Object data) throws CoreException {
@@ -380,16 +383,25 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
     	callExtensionInitializers(getModuleBuilderExtensions(), reg);
     	reg.open = false;
     }
-	
+	/**
+	 * Returns the BundleContext object associated with this class.
+	 * @return BundleContext
+	 */
 	public BundleContext getBundleContext() {
 		return bundle != null ? bundle.getBundleContext() : null;
 	}
 	
+	/* (non-Javadoc)
+     * @see com.ibm.jaggr.service.IAggregator#getOptions()
+     */
 	 @Override
     public IOptions getOptions() {
     	return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
     }
-	    
+	 
+	 /* (non-Javadoc)
+	     * @see com.ibm.jaggr.service.IAggregator#getExecutors()
+	     */
     @Override
     public IExecutors getExecutors() {
     	return (IExecutors) executorsServiceTracker.getService();
@@ -422,6 +434,9 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		return Activator.BUNDLE_NAME;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String, com.ibm.servlets.amd.aggregator.IAggregator.SubstitutionTransformer)
+	 */
 	@Override
 	public String substituteProps(String str, SubstitutionTransformer transformer) {
 		if (str == null) {
@@ -510,8 +525,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
    		servletDir.mkdirs();
    		if (!servletDir.exists()) {
    			throw new FileNotFoundException(servletDir.getAbsolutePath());
-   		}
-   		System.out.println("Cache Directory " + servletDir);
+   		}   
    		return servletDir;
 	}	
 

@@ -99,7 +99,8 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 			log.warning(Messages.Activator_2);
 		}
 		
-		PlatformAggregator osgiPlatformAggregator = new PlatformAggregator();		
+		// Instantiate the PlatformAggregator implementation and set in the PlatformAggregatorFactory.
+		PlatformAggregator osgiPlatformAggregator = new PlatformAggregator();
 		PlatformAggregatorFactory.INSTANCE.setPlatformAggregator(osgiPlatformAggregator);
 		
 	}

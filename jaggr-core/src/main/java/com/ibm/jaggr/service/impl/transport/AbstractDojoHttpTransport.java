@@ -87,6 +87,12 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
      */
     protected abstract String getComboUriStr();
     
+    /**
+     * Property accessor for the TextPluginProxyUriStr property
+     * 
+     * @return the TextPluginProxy URI string value
+     */
+    
     protected abstract String getTextPluginProxyUriStr();
     /**
      * Property accessor for the plugin unique id for this extension
@@ -522,15 +528,17 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			return null;
 		}	
 }
-	//TODO: make this class abstract
+	
 	@Override
 	public Properties getProperties() {
-		return null;
+		Properties props = new Properties();
+		props.put("path", "combo");
+		props.put("class",
+				"com.ibm.jaggr.sbt.service.impl.transport.DojoHttpTransport");
+		return props;
 	}
-
+	
+	
 	@Override
-	public void setInitializationData() {
-		// TODO Auto-generated method stub
-		
-	}
+	public abstract void setInitializationData(); 
 }

@@ -734,8 +734,7 @@ public class LayerImpl implements ILayer {
 	    		result.setDependenentFeatures(dependentFeatures);
 	    		ModuleDeps combined = depList.getExpandedDeps();
 	    		combined.putAll(depList.getExplicitDeps());
-	    		for (String name : combined.keySet()) {
-	    			System.out.println("IsserverExpandable " + aggr.getTransport().isServerExpandable(request, name));
+	    		for (String name : combined.keySet()) {	    			
 	    			if (aggr.getTransport().isServerExpandable(request, name)) {
 		        		result.add(
 		        				new ModuleList.ModuleListEntry(

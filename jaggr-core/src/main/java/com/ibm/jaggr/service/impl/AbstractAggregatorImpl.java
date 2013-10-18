@@ -156,7 +156,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
     	// Make sure the bundle context is valid
     	//int state = bundle != null ? bundle.getState() : Bundle.RESOLVED;
     	//if (state == Bundle.ACTIVE || state == Bundle.STOPPING) {
-    	if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().initiateShutdown()){
+    	if(PlatformAggregatorFactory.INSTANCE.getPlatformAggregator().isShuttingdown()){
     		//BundleContext bundleContext = getBundleContext();
 			//bundle = null;	// make sure we don't shutdown more than once
     		
@@ -884,12 +884,21 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 	}
 
+	/* (non-Javadoc)
+     * @see com.ibm.jaggr.service.IAggregator#getOptions()
+     */
 	@Override
 	public abstract IOptions getOptions();
 
+	/* (non-Javadoc)
+     * @see com.ibm.jaggr.service.IAggregator#getExecutors()
+     */
 	@Override
 	public abstract IExecutors getExecutors();
 
+	/* (non-Javadoc)
+	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String, com.ibm.servlets.amd.aggregator.IAggregator.SubstitutionTransformer)
+	 */
 	@Override
 	public abstract String substituteProps(String str, SubstitutionTransformer transformer);
 }

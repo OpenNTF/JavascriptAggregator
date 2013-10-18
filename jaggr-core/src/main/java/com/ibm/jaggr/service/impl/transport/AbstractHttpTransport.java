@@ -129,6 +129,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 		
+		
 		// Get module list from request
 		request.setAttribute(REQUESTEDMODULES_REQATTRNAME, getModuleListFromRequest(request));
 		
