@@ -16,42 +16,49 @@
 
 package com.ibm.jaggr.service.util;
 
-import org.eclipse.osgi.framework.console.CommandInterpreter;
 
 public class ConsoleService {
 
-	private static ThreadLocal<CommandInterpreter> ci_threadLocal = new ThreadLocal<CommandInterpreter>();
+	private static ThreadLocal<ConsoleWriter> console_threadLocal = new ThreadLocal<ConsoleWriter>();
 
-	private CommandInterpreter ci = null;
+	private ConsoleWriter console;
 
 	public ConsoleService() {
-		ci = ci_threadLocal.get();
+		console = console_threadLocal.get();
 	}
 	
-	public ConsoleService(CommandInterpreter ci) {
-		this.ci = ci;
-		ci_threadLocal.set(ci);
+	public ConsoleService(ConsoleWriter console) {
+		this.console = console;
+		console_threadLocal.set(console);
 	}
-
+	
 	public ConsoleService(ConsoleService other) {
-		this.ci = other.ci;
-		ci_threadLocal.set(other.ci);
+		this.console = other.console;
+		console_threadLocal.set(other.console);
 	}
 	
 	public void println(String msg) {
-		if (ci != null) {
-			ci.println(msg);
+		if (console != null) {
+			console.println(msg);
 		}
 	}
 
 	public void print(String msg) {
-		if (ci != null) {
-			ci.print(msg);
+		if (console != null) {
+			console.print(msg);
 		}
 	}
 	
 	public void close() {
-		ci = null;
-		ci_threadLocal.set(null);
+		console = null;
+		console_threadLocal.set(null);
+	}
+	
+	static public interface ConsoleWriter {
+		
+		public void println(String msg);
+		
+		public void print(String msg);
+		
 	}
 }

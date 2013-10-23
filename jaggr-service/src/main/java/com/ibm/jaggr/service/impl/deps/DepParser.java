@@ -74,7 +74,7 @@ final class DepParser implements Callable<URI> {
 			node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
 		} catch (Throwable e) {
 			if (log.isLoggable(Level.WARNING)) {
-				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e);
+				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		} finally {
 			in.close();

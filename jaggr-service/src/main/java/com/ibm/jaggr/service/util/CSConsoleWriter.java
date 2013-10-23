@@ -13,17 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ibm.jaggr.service.util;
 
-package com.ibm.jaggr.service.console.commands;
+import org.apache.felix.service.command.CommandSession;
 
-import org.apache.felix.gogo.commands.Command;
+import com.ibm.jaggr.service.util.ConsoleService.ConsoleWriter;
 
-import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
+public class CSConsoleWriter implements ConsoleWriter {
 
-@Command(scope = "aggregator", name = "list", description="lists registered aggregation servlets")
-public class ListShellCommand extends AbstractOsgiCommandSupport {
-	@Override
-	protected void exec(AggregatorCommandProvider provider) throws Exception {
-		provider.doListCmd(new CommandInterpreterWrapper());
+	private final CommandSession cs;
+	
+	public CSConsoleWriter(CommandSession cs) {
+		this.cs = cs;
 	}
+	
+	@Override
+	public void println(String msg) {
+		cs.getConsole().println(msg);
+	}
+
+	@Override
+	public void print(String msg) {
+		cs.getConsole().print(msg);
+	}
+
 }

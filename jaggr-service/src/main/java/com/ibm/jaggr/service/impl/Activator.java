@@ -22,6 +22,10 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import org.apache.felix.service.command.CommandProcessor;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Plugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
@@ -34,7 +38,7 @@ import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.options.IOptions;
 
 
-public class Activator extends AggregatorCommandProvider implements BundleActivator {
+public class Activator extends Plugin implements BundleActivator {
 
 	private static final Logger log = Logger.getLogger(Activator.class.getName());
 
@@ -54,40 +58,55 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 	 * @see org.eclipse.core.runtime.Plugin#start(org.osgi.framework.BundleContext)
 	 */
 	@Override
-    public void start(BundleContext context) throws Exception {
-    	super.start(context);
-    	
-    	// Verify the bundle id.
-    	if (!context.getBundle().getSymbolicName().equals(BUNDLE_NAME)) {
-    		throw new IllegalStateException();
-    	}
-    	serviceRegistrations = new LinkedList<ServiceRegistration>();
-    	this.context = context;
-    	// See if a command provider is already registered
+	public void start(BundleContext context) throws Exception {
+		super.start(context);
+		
+		// Verify the bundle id.
+		if (!context.getBundle().getSymbolicName().equals(BUNDLE_NAME)) {
+			throw new IllegalStateException();
+		}
+		serviceRegistrations = new LinkedList<ServiceRegistration>();
+		this.context = context;
 		Properties dict = new Properties();
-    	ServiceReference[] refs = context.getServiceReferences(
-    			org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
-    			"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-    	if (refs == null || refs.length == 0) {
-	    	// Register the command provider that will handle console commands
-    		dict.setProperty("name", IAggregator.class.getName()); //$NON-NLS-1$
-			serviceRegistrations.add(
-					context.registerService(
-							org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
-							this, dict));
-    	}
-    	
-    	dict = new Properties();
 		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
 		// Create an options object and register the service
-    	IOptions options = newOptions();
+		IOptions options = newOptions();
 		serviceRegistrations.add(
 				context.registerService(IOptions.class.getName(), options, dict));
 		
+		// If felix gogo is available, then register the gogo command provider
+		Bundle gogo = Platform.getBundle("org.apache.felix.gogo.command"); //$NON-NLS-1$
+		if (gogo != null) {
+			// See if a command provider is already registered
+			ServiceReference[] refs = context.getServiceReferences(
+					AggregatorCommandProviderGogo.class.getName(),
+					"(" + CommandProcessor.COMMAND_SCOPE + "=aggregator)"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (refs == null || refs.length == 0) {
+				dict = new Properties();
+				dict.put(CommandProcessor.COMMAND_SCOPE, "aggregator"); //$NON-NLS-1$
+				dict.put(CommandProcessor.COMMAND_FUNCTION, AggregatorCommandProvider.COMMANDS);
+				serviceRegistrations.add(
+					context.registerService(AggregatorCommandProviderGogo.class.getName(), new AggregatorCommandProviderGogo(context), dict));
+			}
+		} else {
+			// See if a command provider is already registered
+			ServiceReference[] refs = context.getServiceReferences(
+					org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
+					"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (refs == null || refs.length == 0) {
+				// Register the command provider that will handle console commands
+				dict = new Properties();
+				dict.setProperty("name", IAggregator.class.getName()); //$NON-NLS-1$
+				serviceRegistrations.add(
+						context.registerService(
+								org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
+								new AggregatorCommandProvider(context), dict));
+			}
+		}
 		// Create the executors provider.  The executors provider is created by the 
 		// activator primarily to allow executors to be shared by all of the 
 		// aggregators created by this bundle.
-    	dict = new Properties();
+		dict = new Properties();
 		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
 		executors = newExecutors(options);
 		serviceRegistrations.add(
@@ -104,21 +123,20 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 	 * @see org.eclipse.core.runtime.Plugin#stop(org.osgi.framework.BundleContext)
 	 */
 	@Override
-    public void stop(BundleContext arg0) throws Exception {
-    	for (ServiceRegistration reg : serviceRegistrations) {
-    		reg.unregister();
-    	}
-    	if (executors != null) {
-    		executors.shutdown();
-    	}
-    	this.executors = null;
-    	this.context = null;
-    }
-    
+	public void stop(BundleContext arg0) throws Exception {
+		for (ServiceRegistration reg : serviceRegistrations) {
+			reg.unregister();
+		}
+		if (executors != null) {
+			executors.shutdown();
+		}
+		this.executors = null;
+		this.context = null;
+	}
+	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.impl.CommandProvider#getBundleContext()
 	 */
-	@Override
 	protected BundleContext getBundleContext() {
 		return context;
 	}
