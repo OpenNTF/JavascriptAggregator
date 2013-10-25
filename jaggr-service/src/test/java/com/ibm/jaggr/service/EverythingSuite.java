@@ -45,7 +45,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.text.TxtModuleContentProviderTes
 import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
 import com.ibm.jaggr.service.impl.resource.FileResourceTests;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
-//import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
+import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 import org.eclipse.osgi.util.NLS;
 
 @RunWith(Suite.class)
@@ -70,7 +70,7 @@ import org.eclipse.osgi.util.NLS;
 	TxtModuleContentProviderTest.class,
 	RequireExpansionCompilerPassTest.class,
 	AbstractHttpTransportTest.class,
-	//DojoHttpTransportTest.class,
+	DojoHttpTransportTest.class,
 	AggregatorImplTest.class,
 	BundleResourceFactoryTests.class,
 	FileResourceTests.class

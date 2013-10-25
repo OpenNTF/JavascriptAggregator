@@ -46,9 +46,7 @@
       <resource>
         <directory>${basedir}</directory>
         <includes>
-          <include>WebContent/**</include>
-          <include>schema/**</include>
-          <include>OSGI-INF/**</include>
+          <include>WebContent/**</include>          
           <include>plugin.xml</include>
           <include>javadoc.xml</include>
           <include>logging-readme.txt</include>

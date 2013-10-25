@@ -22,15 +22,15 @@ package com.ibm.jaggr.service.impl;
 
 public class PlatformAggregatorFactory {
 	
-	private static IPlatformAggregator platformAggregator;
+	private static IPlatformServices platformAggregator;
 	
 	private PlatformAggregatorFactory(){}
 	
-	public static void setPlatformAggregator(IPlatformAggregator aggregator){
+	public static void setPlatformAggregator(IPlatformServices aggregator){
 		platformAggregator = aggregator;
 	}	
 	
-	public static IPlatformAggregator getPlatformAggregator(){
+	public static IPlatformServices getPlatformAggregator(){
 		return platformAggregator;
 	}	
 

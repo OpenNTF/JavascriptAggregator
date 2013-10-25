@@ -28,7 +28,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.PlatformAggregator;
+import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
@@ -100,7 +100,7 @@ public class Activator extends AggregatorCommandProvider implements BundleActiva
 		}
 		
 		// Instantiate the PlatformAggregator implementation and set in the PlatformAggregatorFactory.
-		PlatformAggregator osgiPlatformAggregator = new PlatformAggregator();
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();
 		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
 		
 	}

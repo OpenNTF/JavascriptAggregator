@@ -44,7 +44,7 @@ import org.osgi.framework.BundleContext;
 
 import com.google.common.io.Files;
 //import com.ibm.jaggr.osgi.service.impl.OSGiAggregatorImpl;
-import com.ibm.jaggr.service.PlatformAggregator;
+import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.config.IConfig;
@@ -232,7 +232,7 @@ public class ConfigTests {
 		EasyMock.replay(mockOSGiAggregator);
 		
 		//instantiate the platformAggregator object for this test case to read the headers from the bundleContext
-		PlatformAggregator osgiPlatformAggregator = new PlatformAggregator();	
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
 		osgiPlatformAggregator.setBundleContext(mockBundleContext);
 		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
 		

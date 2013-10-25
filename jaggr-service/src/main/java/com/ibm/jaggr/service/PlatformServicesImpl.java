@@ -28,17 +28,17 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.service.impl.AggregatorImpl;
-import com.ibm.jaggr.service.impl.IPlatformAggregator;
+import com.ibm.jaggr.service.impl.IPlatformServices;
 import com.ibm.jaggr.service.util.ConsoleService;
 
 /**
  * This class provides the OSGi implementation of the
- * {@link IPlatformAggregator} interface.
+ * {@link IPlatformServices} interface.
  */
-public class PlatformAggregator implements IPlatformAggregator {
+public class PlatformServicesImpl implements IPlatformServices {
 
 	private BundleContext bundleContext;
-	private static final Logger log = Logger.getLogger(PlatformAggregator.class
+	private static final Logger log = Logger.getLogger(PlatformServicesImpl.class
 			.getName());
 	public static int resolved = Bundle.RESOLVED;
 	public static int active = Bundle.ACTIVE;

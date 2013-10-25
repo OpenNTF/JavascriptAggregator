@@ -120,7 +120,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
         try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
-    		((com.ibm.jaggr.service.PlatformAggregator)(PlatformAggregatorFactory.getPlatformAggregator())).setBundleContext(bundleContext);
+    		((com.ibm.jaggr.service.PlatformServicesImpl)(PlatformAggregatorFactory.getPlatformAggregator())).setBundleContext(bundleContext);
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);

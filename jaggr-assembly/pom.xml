@@ -60,6 +60,10 @@
     </dependency>
     <dependency>
       <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-service</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
       <artifactId>jaggr-sample</artifactId>
     </dependency>
     <dependency>

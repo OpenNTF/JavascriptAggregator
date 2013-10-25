@@ -29,7 +29,7 @@ import java.util.Dictionary;
  * {@code jaggr-service} bundle.
  * 
  */
-public interface IPlatformAggregator {
+public interface IPlatformServices {
 	/**
 	 * Registers the specified service object with the specified properties
 	 * under the specified class name with the platform.
