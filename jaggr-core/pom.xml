@@ -24,15 +24,10 @@
   </parent>
   
   <artifactId>jaggr-core</artifactId>
-  <packaging>bundle</packaging>
+  <packaging>jar</packaging>
   
   <name>Jaggr Service</name>
-  <description>Javascript AMD Aggregator Service</description>
-  
-  <properties>
-    <bundle.symbolicName>com.ibm.jaggr.core</bundle.symbolicName>
-    <bundle.namespace>com.ibm.jaggr.core</bundle.namespace>
-  </properties>
+  <description>Javascript AMD Aggregator Service</description> 
 
   <build>
   	<resources>
@@ -46,8 +41,7 @@
       <resource>
         <directory>${basedir}</directory>
         <includes>
-          <include>WebContent/**</include>          
-          <include>plugin.xml</include>
+          <include>WebContent/**</include>
           <include>javadoc.xml</include>
           <include>logging-readme.txt</include>
           <include>aggregator.properties</include>
@@ -67,97 +61,15 @@
           <include>**/*.properties</include>
         </includes>
       </resource>
-    </resources>
-    <pluginManagement>
-   	  <plugins>
-		    <plugin>
-		      <groupId>org.eclipse.m2e</groupId>
-		      <artifactId>lifecycle-mapping</artifactId>
-		      <version>1.0.0</version>
-		      <configuration>
-		        <lifecycleMappingMetadata>
-		          <pluginExecutions>
-		            <pluginExecution>
-		              <pluginExecutionFilter>
-		                <groupId>org.apache.maven.plugins</groupId>
-	                    <artifactId>maven-dependency-plugin</artifactId>
-	                    <versionRange>[1.0.0,)</versionRange>
-	                    <goals>
-	                        <goal>copy-dependencies</goal>
-	                    </goals>
-		              </pluginExecutionFilter>
-		              <action>
-		                <execute>
-		                  <runOnIncremental>false</runOnIncremental>
-		                </execute>
-		              </action>
-		            </pluginExecution>
-		          </pluginExecutions>
-		        </lifecycleMappingMetadata>
-		      </configuration>
-		    </plugin>
-		  </plugins>
-    </pluginManagement>
-  	<plugins>
+    </resources>   
+  	<plugins>  		
   		<plugin>
-  			<groupId>org.apache.felix</groupId>
-  			<artifactId>maven-bundle-plugin</artifactId>
-  			<extensions>true</extensions>
-  			<configuration>
-  				<manifestLocation>META-INF</manifestLocation>
-  				<instructions>
-  					<Bundle-Name>jaggr-core</Bundle-Name>
-            <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
-            <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>            
-			<Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-			<Export-Package>com.ibm.jaggr.service.test,com.ibm.jaggr.core.service, com.ibm.jaggr.core.service.impl.*,com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
-            <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
-            <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
-            <Import-Package>
-            	javax.servlet;version="[2,4)",
-            	javax.servlet.http;version="[2,4)",
-            	org.apache.felix.service.command;resolution:=optional,
-              org.apache.felix.gogo.commands;resolution:=optional,
-              org.apache.karaf.shell.console;resolution:=optional,
-              org.osgi.service.blueprint;resolution:=optional,
-            	!*
-            </Import-Package>
-            <!-- embed dependencies -->
-            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,commons-codec,js</Embed-Dependency>
-            <Embed-Directory>lib</Embed-Directory>
-            <Embed-StripGroup>true</Embed-StripGroup>
-				  </instructions>
-  			</configuration>
-  		</plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-dependency-plugin</artifactId>
-  			<executions>
-	          <execution>
-	            <id>copy-dependencies</id>
-	            <phase>package</phase>
-	            <goals>
-	              <goal>copy-dependencies</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-  		</plugin>
-   		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-dependency-plugin</artifactId>
-  			<executions>
-	          <execution>
-	            <id>copy-dependencies</id>
-	            <phase>package</phase>
-	            <goals>
-	              <goal>copy-dependencies</goal>
-	            </goals>
-	            <configuration>
-	              <outputDirectory>lib</outputDirectory>
-	            </configuration>
-	          </execution>
-	        </executions>
-  		</plugin>
+	        <groupId>org.apache.maven.plugins</groupId>
+	        <artifactId>maven-jar-plugin</artifactId>
+	        <version>2.2</version>
+	        <configuration>	          
+	        </configuration>
+     	</plugin>  		
   		<plugin>
   			<groupId>org.apache.maven.plugins</groupId>
   			<artifactId>maven-compiler-plugin</artifactId>

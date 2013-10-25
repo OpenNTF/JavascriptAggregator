@@ -590,9 +590,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @return The layer for the request
 	 * @throws Exception
 	 */
-	protected ILayer getLayer(HttpServletRequest request) throws Exception {
-
-        // Try non-blocking get() request first
+	protected ILayer getLayer(HttpServletRequest request) throws Exception {       
         return getCacheManager().getCache().getLayers().getLayer(request);
     }
 	
@@ -605,12 +603,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	}
 
 	protected final Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}"); //$NON-NLS-1$
-	/* (non-Javadoc)
-	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String, com.ibm.servlets.amd.aggregator.IAggregator.SubstitutionTransformer)
-	 */
 	
-	
-
 	/**
 	 * Loads the {@code IConfig} for this aggregator
 	 * 
