@@ -28,7 +28,6 @@
   <packaging>pom</packaging>
   
   <modules>
-    <module>jaggr-assembly</module>
     <module>jaggr-sample</module>
     <module>jaggr-sample-dojo</module>
     <module>jaggr-service</module>
@@ -91,6 +90,9 @@
           <value>true</value>
         </property>
       </activation>
+      <modules><!-- Don't build this unless we are releasing. -->
+        <module>jaggr-assembly</module>
+      </modules>
       <build>
         <plugins>
           <plugin>
