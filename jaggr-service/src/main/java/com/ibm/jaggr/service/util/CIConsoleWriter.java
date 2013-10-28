@@ -13,17 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ibm.jaggr.service.util;
 
-package com.ibm.jaggr.service.console.commands;
+import org.eclipse.osgi.framework.console.CommandInterpreter;
 
-import org.apache.felix.gogo.commands.Command;
+import com.ibm.jaggr.service.util.ConsoleService.ConsoleWriter;
 
-import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
+public class CIConsoleWriter implements ConsoleWriter {
 
-@Command(scope = "aggregator", name = "help", description="shows aggregator help")
-public class HelpShellCommand extends AbstractOsgiCommandSupport {
-	@Override
-	protected void exec(AggregatorCommandProvider provider) throws Exception {
-		System.out.println(provider.getHelp().replaceAll("\taggregator ", "\taggregator:")); //$NON-NLS-1$ //$NON-NLS-2$
+	private final CommandInterpreter ci;
+
+	public CIConsoleWriter(CommandInterpreter ci) {
+		this.ci = ci;
 	}
+	
+	@Override
+	public void println(String msg) {
+		ci.println(msg);
+	}
+
+	@Override
+	public void print(String msg) {
+		ci.print(msg);
+	}
+	
 }
