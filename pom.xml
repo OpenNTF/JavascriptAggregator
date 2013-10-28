@@ -195,6 +195,7 @@
             <exclude>.settings/*.prefs</exclude>
             <exclude>doc/**</exclude>
             <exclude>bin/**</exclude>
+            <exclude>jaggr-assembly/**</exclude>
           </excludes>
         </configuration>
         <executions>
