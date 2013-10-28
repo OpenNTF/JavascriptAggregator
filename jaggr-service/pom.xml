@@ -125,23 +125,11 @@
 				  </instructions>
   			</configuration>
   		</plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-dependency-plugin</artifactId>
-  			<executions>
-	          <execution>
-	            <id>copy-dependencies</id>
-	            <phase>package</phase>
-	            <goals>
-	              <goal>copy-dependencies</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-  		</plugin>
    		<plugin>
   			<groupId>org.apache.maven.plugins</groupId>
   			<artifactId>maven-dependency-plugin</artifactId>
   			<executions>
+  			    <!-- This is so that eclipse will be able to resolve the bundle. -->
 	          <execution>
 	            <id>copy-dependencies</id>
 	            <phase>package</phase>
