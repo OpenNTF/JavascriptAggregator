@@ -232,7 +232,7 @@ public class DependencyList {
 					sb2 = new StringBuffer();
 				}
 				int idx = (name != null) ? name.indexOf("!") : -1; //$NON-NLS-1$
-				String resolved = config.resolve(name, features, dependentFeatures, sb2);
+				String resolved = config.resolve(name, features, dependentFeatures, sb2, true);
 				String pluginName = idx > 0 ? name.substring(0, idx) : null;
 				if (resolved != null && !resolved.equals(name)) {
 					explicitDeps.add(name, new ModuleDepInfo(null, null, sb1 != null ? sb1.toString() : null));
@@ -242,7 +242,7 @@ public class DependencyList {
 					explicitDeps.add(name, new ModuleDepInfo(null, null, sb1 != null ? sb1.append(sb2).toString() : null));
 				}
 				if (pluginName != null) {
-					String resolvedPluginName = config.resolve(pluginName, features, dependentFeatures, null);
+					String resolvedPluginName = config.resolve(pluginName, features, dependentFeatures, null, true);
 					expandedDeps.add(resolvedPluginName, new ModuleDepInfo(null, null, includeDetails ? Messages.DependencyList_1 : null));
 					expandedDeps.addAll(
 							deps.getExpandedDependencies(resolvedPluginName, features, dependentFeatures, includeDetails, performHasBranching));
@@ -268,7 +268,7 @@ public class DependencyList {
 						
 						String pluginName2 = name.substring(0, idx);
 						if (!pluginName2.equals(pluginName)) {
-							String resolvedPluginName2 = config.resolve(pluginName2, features, dependentFeatures, null);
+							String resolvedPluginName2 = config.resolve(pluginName2, features, dependentFeatures, null, true);
 							expandedDeps.add(resolvedPluginName2, new ModuleDepInfo(null, null, includeDetails ? Messages.DependencyList_1 : null));
 							expandedDeps.addAll(
 									deps.getExpandedDependencies(resolvedPluginName2, features, dependentFeatures, includeDetails, performHasBranching));

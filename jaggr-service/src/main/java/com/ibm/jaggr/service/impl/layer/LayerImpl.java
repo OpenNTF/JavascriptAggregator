@@ -712,7 +712,10 @@ public class LayerImpl implements ILayer {
     		if (moduleNames != null) {
 		        for (String name : moduleNames) {
 		        	if (name != null) {
-		        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null);
+		        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null,
+		        				false);	// Don't resolve aliases when locating modules requested by the loader
+		        		                //  because the loader should have already done alias resolution and 
+		        		                //  we can't rename a requested module. 
 		        		result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
 		        	}
 		        }
