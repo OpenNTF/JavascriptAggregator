@@ -2,7 +2,7 @@ pub   4096R/81AF44A2 2013-10-28
       Key fingerprint = FBDD DC0A 968D 52E0 672B  24FD 2533 ED2B 81AF 44A2
 uid                  Dan Dumont (CODE SIGNING KEY) <ddumont@apache.org>
 sig 3        81AF44A2 2013-10-28  Dan Dumont (CODE SIGNING KEY) <ddumont@apache.org>
-sig          680DB18A 2013-10-28  [User ID not found]
+sig          680DB18A 2013-10-28  Ryan Jason Baxter (CODE SIGNING KEY) <rbaxter85@apache.org>
 sub   4096R/A07AB0E8 2013-10-28
 sig          81AF44A2 2013-10-28  Dan Dumont (CODE SIGNING KEY) <ddumont@apache.org>
 
