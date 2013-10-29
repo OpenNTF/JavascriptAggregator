@@ -512,4 +512,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			return getClass().hashCode() * 31 + featureKeyGen.hashCode();
 		}
 	}
+	@Override
+	public void setInitializationData() {	
+		
+	}
 }	

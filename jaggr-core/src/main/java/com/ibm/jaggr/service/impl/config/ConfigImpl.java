@@ -647,10 +647,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			URL configUrl = PlatformAggregatorFactory.getPlatformAggregator().getResource(configName);
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);
-			}
-			// TODO: look here
-			//configUri = PathUtil.url2uri(configUrl);
+			}			
 			configUri = PathUtil.url2uri_singleArg(configUrl);
+			
 		}
 		return configUri;
 	}
@@ -1099,7 +1098,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref, IConfigModifier.class.getName());
+							PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
 						}
 					}
 				}

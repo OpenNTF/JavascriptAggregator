@@ -57,5 +57,10 @@ public class FileResourceFactory implements IResourceFactory {
     	props.put("class", "com.ibm.jaggr.service.impl.resource.FileResourceFactory");
     	return props;
 	}
+
+	@Override
+	public void setInitializationData() {		
+		
+	}
 	
 }

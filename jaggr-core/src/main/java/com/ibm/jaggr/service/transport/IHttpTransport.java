@@ -23,6 +23,7 @@ import java.util.Properties;
 import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IExtensionInitializer;
+import com.ibm.jaggr.service.IPlatformExtensionServices;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.module.IModule;
@@ -39,7 +40,7 @@ import com.ibm.jaggr.service.resource.IResourceFactory;
  * This interface also provides the AMD loader extension JavaScript used to
  * format and send the requests to the aggregator.
  */
-public interface IHttpTransport extends IExtensionInitializer {
+public interface IHttpTransport extends IExtensionInitializer, IPlatformExtensionServices {
 
 	/**
 	 * Name of the request attribute specifying the ordered
@@ -383,29 +384,5 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * @return The cache key generator for the JavaScript output by this
 	 *         transport.
 	 */
-	public List<ICacheKeyGenerator> getCacheKeyGenerators();
-
-	/**
-	 * Returns a properties object for the associated
-	 * <code>IHttpTransport</code> implementation. The object has a key to
-	 * define the loader extension config property, a class key which refers to
-	 * the <code>IHttpTransport</code> implementation class name which
-	 * implements this interface. This is useful for environments which do not
-	 * support eclipse extension point and their schemas and it helps in getting
-	 * the attributes of the extensions.
-	 * 
-	 * @return A Properties object for the associated
-	 *         <code>IHttpTransport</code> implementation.
-	 */
-	public Properties getProperties();
-
-	/**
-	 * This method is called when the implementation of the IHttpTransport is
-	 * initialized. This is useful for non-osgi environments which do not
-	 * support eclipse extension point where there is a
-	 * <code>setInitializationData()</code> callback performed by the OSGi
-	 * framework .
-	 * 
-	 */
-	public void setInitializationData();
+	public List<ICacheKeyGenerator> getCacheKeyGenerators();	
 }

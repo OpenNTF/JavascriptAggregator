@@ -23,6 +23,7 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
+import com.ibm.jaggr.service.IPlatformExtensionServices;
 
 /**
  * This interface is implemented by resource factories which create instances of
@@ -44,7 +45,7 @@ import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
  * {@link IAggregator#newResource(URI)} for a description of how the aggregator
  * selects an {@code IResourceFactory} for a URI.
  */
-public interface IResourceFactory {
+public interface IResourceFactory extends IPlatformExtensionServices{
 
 	/**
 	 * Creates a {@link IResource} object for the specified URI. This method
@@ -72,18 +73,5 @@ public interface IResourceFactory {
 
 	public boolean handles(URI uri);
 
-	/**
-	 * Returns a properties object for the associated IResourceFactory
-	 * implementation. The object has the scheme key to define the URI scheme
-	 * that is handled by the ResourceFactory implementation, a class key which
-	 * refers to the ResourceFactory class name which implements this interface.
-	 * This is useful for environments which do not support eclipse extension
-	 * point and their schemas and it helps in getting the attributes of the
-	 * extensions.
-	 * 
-	 * @return A Properties object for the associated ResourceFactory
-	 *         implementation.
-	 */
-	public Properties getProperties();
 
 }

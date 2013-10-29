@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
+import com.ibm.jaggr.service.IPlatformExtensionServices;
 import com.ibm.jaggr.service.IRequestListener;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.resource.IResource;
@@ -82,7 +83,7 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * may set properties in the ConcurrentMap which may be retrieved from the
  * request attribute named {@link IAggregator#CONCURRENTMAP_REQATTRNAME}.
  */
-public interface IModuleBuilder {
+public interface IModuleBuilder extends IPlatformExtensionServices{
 
 	/**
 	 * Returns a {@link ModuleBuild} object containing the processed (built)
@@ -214,19 +215,5 @@ public interface IModuleBuilder {
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator);
 
 	public boolean handles(String mid, IResource resource);
-
-	/**
-	 * Returns a properties object for the associated
-	 * <code>IModuleBuilder</code> implementation. The object has the extension
-	 * key to define the file extension that is handled by the
-	 * <code>IModuleBuilder</code> implementation, a class key which refers to
-	 * the <code>IModuleBuilder</code> implementation class name which
-	 * implements this interface. This is useful for environments which do not
-	 * support eclipse extension point and their schemas and it helps in getting
-	 * the attributes of the extensions.
-	 * 
-	 * @return A Properties object for the associated
-	 *         <code>IModuleBuilder</code> implementation.
-	 */
-	public Properties getProperties();
+	
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl;
+package com.ibm.jaggr.service;
 
 import java.net.URL;
 import java.util.Dictionary;
@@ -48,7 +48,7 @@ public interface IPlatformServices {
 	 * @param service
 	 *            A pointer to the service registration
 	 */
-	public void unRegisterService(Object service);
+	public void unRegisterService(Object serviceRegistration);
 
 	/**
 	 * Returns an array of service registration pointers for the services that
@@ -73,11 +73,10 @@ public interface IPlatformServices {
 	 * Releases the service object from the service registration.
 	 * 
 	 * @param serviceReference
-	 * @param clazz
 	 * @return true if the operation was successful else false
 	 */
 	// TODO: Check if we can optimise this
-	public boolean unGetService(Object serviceReference, String clazz);
+	public boolean unGetService(Object serviceReference);
 
 	/**
 	 * A method to access a resource within an application

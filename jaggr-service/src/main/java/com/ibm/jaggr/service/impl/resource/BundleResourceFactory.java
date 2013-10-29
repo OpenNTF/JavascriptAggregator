@@ -200,4 +200,9 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	public Properties getProperties() {
 		return null;
 	}
+
+	@Override
+	public void setInitializationData() {		
+		
+	}
 }

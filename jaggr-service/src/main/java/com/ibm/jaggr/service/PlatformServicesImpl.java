@@ -28,7 +28,6 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.service.impl.AggregatorImpl;
-import com.ibm.jaggr.service.impl.IPlatformServices;
 import com.ibm.jaggr.service.util.ConsoleService;
 
 /**
@@ -67,8 +66,8 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * @see org.osgi.framework.ServiceRegistration#unRegisterService()
 	 */
 	@Override
-	public void unRegisterService(Object service) {
-		((ServiceRegistration) service).unregister();
+	public void unRegisterService(Object serviceRegistration) {
+		((ServiceRegistration) serviceRegistration).unregister();
 	}
 
 	/*
@@ -116,7 +115,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * reference)
 	 */
 	@Override
-	public boolean unGetService(Object serviceReference, String clazz) {
+	public boolean unGetService(Object serviceReference) {
 		if (bundleContext != null) {
 			return bundleContext
 					.ungetService((ServiceReference) serviceReference);

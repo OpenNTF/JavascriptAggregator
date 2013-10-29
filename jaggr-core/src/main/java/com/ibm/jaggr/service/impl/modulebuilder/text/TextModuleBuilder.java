@@ -109,4 +109,9 @@ public class TextModuleBuilder implements IModuleBuilder {
 		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder");
 		return props;
 	}
+
+	@Override
+	public void setInitializationData() {		
+		
+	}
 }

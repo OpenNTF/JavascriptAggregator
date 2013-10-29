@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.service.impl;
 
+import com.ibm.jaggr.service.IPlatformServices;
+
 /*
  * Aggregator Factory class would return the underlying Aggregator Implementation class
  */

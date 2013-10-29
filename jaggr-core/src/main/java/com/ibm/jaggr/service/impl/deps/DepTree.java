@@ -266,7 +266,6 @@ public class DepTree implements Serializable {
 			 * add it to the new map.
 			 */
 			DepTreeNode root = new DepTreeNode(PathUtil.getModuleName(path));
-			System.out.println("DepTreeNode " + PathUtil.getModuleName(path));
 			DepTreeNode cachedNode = null;
 			if (cached != null) {
 				cachedNode = cached.depMap.get(path);

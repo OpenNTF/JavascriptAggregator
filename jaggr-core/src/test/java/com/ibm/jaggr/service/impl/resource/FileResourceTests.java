@@ -38,6 +38,11 @@ public class FileResourceTests {
 		Assert.assertEquals("file://server/path/name.ext", res.getURI().toString());
 	}
 	
+	@Test
+	public void testUrlsToUri() throws Exception{
+		
+	}
+	
 	@Test 
 	public void testResolve() throws Exception {
 		URI bundleUri = new URI("bundleresource://25.5/path/name.ext");

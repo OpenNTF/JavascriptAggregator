@@ -43,8 +43,7 @@ public class DepUtils {
 	 */
 	static public Collection<URI> removeRedundantPaths(Collection<URI> uris) {
 		List<URI> result = new ArrayList<URI>();
-		for (URI uri : uris) {
-			System.out.println("Paths for dependencies " + uri.toString());
+		for (URI uri : uris) {			
 			String path = uri.getPath();
 			if (!path.endsWith("/")) {  //$NON-NLS-1$
 				path += "/"; //$NON-NLS-1$

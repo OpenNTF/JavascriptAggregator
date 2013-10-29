@@ -526,6 +526,11 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		@Override
 		public Properties getProperties() {
 			return null;
+		}
+
+		@Override
+		public void setInitializationData() {			
+			
 		}	
 }
 	
