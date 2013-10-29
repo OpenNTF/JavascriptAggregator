@@ -35,7 +35,7 @@
   
   <name>Javascript AMD Aggregator</name>
   <description>A Javascript Aggregation Service for Asynchronous Module Definition(AMD) modules.</description>
-  <url>http://openntf.github.io/JavascriptAggregator</url>
+  <url>https://github.com/OpenNTF/JavascriptAggregator</url>
   <inceptionYear>2011</inceptionYear>
   <scm>
     <connection>scm:git:git@github.com:OpenNTF/JavascriptAggregator.git</connection>

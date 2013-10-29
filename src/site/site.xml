@@ -40,10 +40,6 @@
   <version position="bottom"/>
   
   <body>
-    <menu name="Developer Resources">
-      <item name="Project Wiki" href="https://github.com/OpenNTF/JavascriptAggregator/wiki" />
-      <item name="JavaDoc" href="jaggr-service/apidocs/index.html" />
-    </menu>
     <menu name="Maven Resources">
       <item name="Publishing the Site" href="committers/publish-site.html" />
     </menu>
