@@ -240,6 +240,7 @@
         <configuration>
           <mavenExecutorId>forked-path</mavenExecutorId>
           <releaseProfiles>release</releaseProfiles>
+          <goals>deploy</goals>
         </configuration>
       </plugin>
       <plugin>
