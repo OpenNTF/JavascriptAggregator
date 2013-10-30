@@ -29,29 +29,34 @@
   <name>Jaggr Assembly</name>
   <description>Assembly binary for posting to OpenNTF.org</description>
   
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <configuration>
-           <finalName>${project.groupId}-${project.version}</finalName>
-           <appendAssemblyId>false</appendAssemblyId>
-           <descriptors>
-            <descriptor>src/main/assembly/openntf.xml</descriptor>
-          </descriptors>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+               <finalName>${project.groupId}-${project.version}</finalName>
+               <appendAssemblyId>false</appendAssemblyId>
+               <descriptors>
+                <descriptor>src/main/assembly/openntf.xml</descriptor>
+              </descriptors>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
   
   <dependencies>
     <dependency>
