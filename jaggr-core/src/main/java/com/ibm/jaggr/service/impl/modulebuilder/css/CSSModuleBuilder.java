@@ -32,7 +32,6 @@ import java.util.Collections;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -724,11 +723,5 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 		inlinedImageExcludeList = list;
 	}
-	@Override
-	public Properties getProperties() {
-		Properties props = new Properties();
-		props.put("extension", "css");
-		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.css.CSSModuleBuilder");	
-		return props;
-	}
+	
 }

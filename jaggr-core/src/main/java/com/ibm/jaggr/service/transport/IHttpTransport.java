@@ -40,7 +40,7 @@ import com.ibm.jaggr.service.resource.IResourceFactory;
  * This interface also provides the AMD loader extension JavaScript used to
  * format and send the requests to the aggregator.
  */
-public interface IHttpTransport extends IExtensionInitializer, IPlatformExtensionServices {
+public interface IHttpTransport extends IExtensionInitializer {
 
 	/**
 	 * Name of the request attribute specifying the ordered

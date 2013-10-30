@@ -193,16 +193,5 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	 */
 	protected Bundle getBundle(String bundleName) {
 		return Platform.getBundle(bundleName);
-	}
-	
-	@Override
-	// TODO: to discuss this.
-	public Properties getProperties() {
-		return null;
-	}
-
-	@Override
-	public void setInitializationData() {		
-		
-	}
+	}	
 }

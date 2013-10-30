@@ -45,7 +45,7 @@ import com.ibm.jaggr.service.IPlatformExtensionServices;
  * {@link IAggregator#newResource(URI)} for a description of how the aggregator
  * selects an {@code IResourceFactory} for a URI.
  */
-public interface IResourceFactory extends IPlatformExtensionServices{
+public interface IResourceFactory {
 
 	/**
 	 * Creates a {@link IResource} object for the specified URI. This method

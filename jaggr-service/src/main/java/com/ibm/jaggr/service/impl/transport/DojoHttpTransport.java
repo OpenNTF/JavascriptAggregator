@@ -134,10 +134,4 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 	    return loaderExtensionPath;
 	 }
 
-	// this method is for non-osgi platforms to write logic during initialization. Hence, keeping a blank implementation here.
-	@Override
-	public void setInitializationData() {
-		
-	}
-
 }

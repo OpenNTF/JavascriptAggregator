@@ -23,7 +23,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -522,28 +521,6 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 				aggregate.add(getAggregator().newResource(uri.resolve(res)));
 			}
 			return new LoaderExtensionResource(new AggregationResource(uri, aggregate));
-		}
-		@Override
-		public Properties getProperties() {
-			return null;
-		}
-
-		@Override
-		public void setInitializationData() {			
-			
-		}	
-}
-	
-	@Override
-	public Properties getProperties() {
-		Properties props = new Properties();
-		props.put("path", "combo");
-		props.put("class",
-				"com.ibm.jaggr.sbt.service.impl.transport.DojoHttpTransport");
-		return props;
-	}
-	
-	
-	@Override
-	public abstract void setInitializationData(); 
+		}			
+	}	
 }

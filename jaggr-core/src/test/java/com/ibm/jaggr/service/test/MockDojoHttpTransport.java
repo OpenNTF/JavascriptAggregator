@@ -37,10 +37,5 @@ public class MockDojoHttpTransport extends AbstractDojoHttpTransport {
 	@Override
 	protected String getLoaderExtensionPath() {
 		return null;
-	}
-
-	@Override
-	public void setInitializationData() {		
-		
-	}	
+	}		
 }

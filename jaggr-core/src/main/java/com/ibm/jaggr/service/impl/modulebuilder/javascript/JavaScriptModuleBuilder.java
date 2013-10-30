@@ -27,7 +27,6 @@ import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -379,13 +378,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return keyGens;
 	}
 	
-	@Override
-	public Properties getProperties() {
-		Properties props = new Properties();
-		props.put("extension", "js");
-		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder");		
-		return props;
-	}
 	static final class CacheKeyGenerator implements ICacheKeyGenerator {
 
 		private static final long serialVersionUID = -3344636280865415030L;
@@ -512,8 +504,5 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			return getClass().hashCode() * 31 + featureKeyGen.hashCode();
 		}
 	}
-	@Override
-	public void setInitializationData() {	
-		
-	}
+	
 }	

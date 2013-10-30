@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.PriorityQueue;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
@@ -416,11 +415,5 @@ extends JavaScriptModuleBuilder {
 			return getClass().hashCode() * 31 + keyGen.hashCode();
 		}
 	}	
-	@Override
-	public Properties getProperties() {
-		Properties props = new Properties();
-		props.put("extension", "js");
-		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.i18n.I18nModuleBuilder");	
-		return props;
-	}
+	
 }

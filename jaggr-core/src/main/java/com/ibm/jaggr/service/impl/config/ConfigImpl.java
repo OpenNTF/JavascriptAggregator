@@ -642,8 +642,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		String configName = configNames.iterator().next();
 		configUri = new URI(configName);
-		if (!configUri.isAbsolute() && PlatformAggregatorFactory.getPlatformAggregator() != null) {
-			//URL configUrl = getAggregator().getBundleContext().getBundle().getResource(configName);
+		if (!configUri.isAbsolute() && PlatformAggregatorFactory.getPlatformAggregator() != null) {			
 			URL configUrl = PlatformAggregatorFactory.getPlatformAggregator().getResource(configName);
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);

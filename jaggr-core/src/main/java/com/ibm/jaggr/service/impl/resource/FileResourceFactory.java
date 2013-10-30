@@ -46,21 +46,5 @@ public class FileResourceFactory implements IResourceFactory {
 	@Override
 	public boolean handles(URI uri) {
 		return "file".equals(uri.getScheme()); //$NON-NLS-1$
-	}
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResourceFactory#getProperties
-	 */
-	@Override
-	public Properties getProperties() {
-		Properties props = new Properties();
-    	props.put("scheme", "file");
-    	props.put("class", "com.ibm.jaggr.service.impl.resource.FileResourceFactory");
-    	return props;
-	}
-
-	@Override
-	public void setInitializationData() {		
-		
-	}
-	
+	}	
 }

@@ -22,7 +22,6 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -102,16 +101,4 @@ public class TextModuleBuilder implements IModuleBuilder {
 		return true;
 	}
 	
-	@Override
-	public Properties getProperties() {
-		Properties props = new Properties();
-		props.put("extension", "*");
-		props.put("class", "com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder");
-		return props;
-	}
-
-	@Override
-	public void setInitializationData() {		
-		
-	}
 }

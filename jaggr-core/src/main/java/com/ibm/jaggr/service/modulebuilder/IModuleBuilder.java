@@ -83,7 +83,7 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * may set properties in the ConcurrentMap which may be retrieved from the
  * request attribute named {@link IAggregator#CONCURRENTMAP_REQATTRNAME}.
  */
-public interface IModuleBuilder extends IPlatformExtensionServices{
+public interface IModuleBuilder {
 
 	/**
 	 * Returns a {@link ModuleBuild} object containing the processed (built)
