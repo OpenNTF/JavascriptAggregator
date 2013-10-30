@@ -60,6 +60,16 @@
     </dependency>
     <dependency>
       <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-service</artifactId>
+      <classifier>javadoc</classifier>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-service</artifactId>
+      <classifier>sources</classifier>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
       <artifactId>jaggr-sample</artifactId>
     </dependency>
     <dependency>
