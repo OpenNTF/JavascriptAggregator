@@ -18,12 +18,10 @@ package com.ibm.jaggr.service.transport;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.IPlatformExtensionServices;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.module.IModule;

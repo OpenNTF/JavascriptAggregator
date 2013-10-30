@@ -17,14 +17,12 @@
 package com.ibm.jaggr.service.modulebuilder;
 
 import java.util.List;
-import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
-import com.ibm.jaggr.service.IPlatformExtensionServices;
 import com.ibm.jaggr.service.IRequestListener;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.resource.IResource;

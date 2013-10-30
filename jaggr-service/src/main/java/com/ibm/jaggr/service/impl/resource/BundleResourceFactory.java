@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -37,8 +36,6 @@ import org.osgi.framework.ServiceReference;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.impl.resource.NotFoundResource;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceFactory;
 import com.ibm.jaggr.service.util.PathUtil;

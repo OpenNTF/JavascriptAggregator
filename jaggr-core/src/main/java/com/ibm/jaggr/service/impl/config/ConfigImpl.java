@@ -1097,7 +1097,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
+							PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 						}
 					}
 				}

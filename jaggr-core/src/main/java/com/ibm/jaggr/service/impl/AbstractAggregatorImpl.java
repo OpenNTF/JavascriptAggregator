@@ -174,7 +174,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	    						log.log(Level.SEVERE, e.getMessage(), e);
 	    					}
 	    				} finally {
-	    					PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
+	    					PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 	    				}
 	    			}
 	    		}
@@ -526,7 +526,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						listener.optionsUpdated(options, sequence);
 					} catch (Throwable ignore) {
 					} finally {
-						PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
+						PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 					}
 				}
 			}
@@ -646,7 +646,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 					listener.endRequest(req, resp);
 				}
 			} finally {
-				PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
+				PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 			}
 		}
 	}
@@ -674,7 +674,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						}
 						throw new IOException(t);
 					} finally {
-						PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
+						PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 					}
 				}
 			}

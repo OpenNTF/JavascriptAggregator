@@ -16,39 +16,30 @@
 
 package com.ibm.jaggr.service;
 
-import java.net.URL;
-import java.util.Dictionary;
 import java.util.Properties;
 
 /**
- * Interface for all platform dependent functionalities used by the aggregator.
- * The functionalities have been collated in this interface. This interface has
- * been implemented by platform dependent implementations. For example, there is
- * a OSGi specific implementation which provides the OSGi way for implementing
- * these functionalities. The implementations are kept in the platform specific
- * bundles. For OSGi, the implementation of this interface is location in
- * {@code jaggr-service} bundle.
- * 
+ * Interface to support eclipse extension point implementation for non-osgi
+ * environment. This interface has been implemented by classes providing
+ * implementation to extension points.
  */
 public interface IPlatformExtensionServices {
 	/**
-	 * Returns a properties object for the associated
-	 * <code>IHttpTransport</code> implementation. The object has a key to
-	 * define the loader extension config property, a class key which refers to
-	 * the <code>IHttpTransport</code> implementation class name which
-	 * implements this interface. This is useful for environments which do not
-	 * support eclipse extension point and their schemas and it helps in getting
-	 * the attributes of the extensions.
+	 * Returns a properties object for the associated extension implementation.
+	 * The properties file replaces any schema definitions for extension point
+	 * implementations. This is useful for environments which do not support
+	 * eclipse extension point and their schemas and it helps in getting the
+	 * attributes of the extensions.
 	 * 
-	 * @return A Properties object for the associated
-	 *         <code>IHttpTransport</code> implementation.
+	 * @return A Properties object for the associated extension point
+	 *         implementation.
 	 */
 	public Properties getProperties();
 
 	/**
-	 * This method is called when the implementation of the IHttpTransport is
-	 * initialized. This is useful for non-osgi environments which do not
-	 * support eclipse extension point where there is a
+	 * This method is called during the initialization of eclipse extension
+	 * point. This is useful for non-osgi environments which do not support
+	 * eclipse extension point and this method replaces the 
 	 * <code>setInitializationData()</code> callback performed by the OSGi
 	 * framework .
 	 * 

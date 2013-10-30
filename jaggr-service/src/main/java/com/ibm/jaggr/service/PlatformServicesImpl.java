@@ -115,7 +115,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * reference)
 	 */
 	@Override
-	public boolean unGetService(Object serviceReference) {
+	public boolean ungetService(Object serviceReference) {
 		if (bundleContext != null) {
 			return bundleContext
 					.ungetService((ServiceReference) serviceReference);

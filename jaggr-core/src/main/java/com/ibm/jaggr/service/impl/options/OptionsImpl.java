@@ -309,7 +309,7 @@ public class OptionsImpl  implements IOptions {
 								listener.optionsUpdated(this, sequence);
 							} catch (Throwable ignore) {
 							} finally {
-								PlatformAggregatorFactory.getPlatformAggregator().unGetService(ref);
+								PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 							}
 						}
 					}

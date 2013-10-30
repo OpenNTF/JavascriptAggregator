@@ -35,9 +35,12 @@ public interface IPlatformServices {
 	 * under the specified class name with the platform.
 	 * 
 	 * @param clazz
+	 *            The class name under which the service is registered
 	 * @param service
+	 *            The service object
 	 * @param properties
-	 * @return A pointer to the service registration
+	 *            The properties for this service.
+	 * @return service registration object
 	 */
 	public Object registerService(String clazz, Object service,
 			Dictionary<String, String> properties);
@@ -45,38 +48,42 @@ public interface IPlatformServices {
 	/**
 	 * Removes the service registration from the platform.
 	 * 
-	 * @param service
-	 *            A pointer to the service registration
+	 * @param serviceRegistration
+	 *            Service registration object
 	 */
 	public void unRegisterService(Object serviceRegistration);
 
 	/**
-	 * Returns an array of service registration pointers for the services that
-	 * were registered under the specified class and filter.
+	 * Returns an array of service references for the services that were
+	 * registered under the specified class and filter.
 	 * 
 	 * @param clazz
+	 *            The class name under which the service is registered
 	 * @param filter
-	 * @return A array of pointers to service registrations
+	 *            The specified filter expression is used to select the
+	 *            registered services whose service properties contain keys and
+	 *            values which satisfy the filter expression
+	 * @return A array of objects of service references
 	 */
 	public Object[] getServiceReferences(String clazz, String filter);
 
 	/**
-	 * Returns the service implementation corresponding to the service
-	 * registration pointer.
+	 * Returns the service object corresponding to the service
+	 * registration.
 	 * 
-	 * @param serviceReference
-	 * @return Object implementing the service.
+	 * @param serviceReference Service reference for the desired service object
+	 * @return service object
 	 */
 	public Object getService(Object serviceReference);
 
 	/**
-	 * Releases the service object from the service registration.
+	 * Removes the service reference from the platform
 	 * 
-	 * @param serviceReference
+	 * @param serviceReference Service reference object
 	 * @return true if the operation was successful else false
 	 */
-	// TODO: Check if we can optimise this
-	public boolean unGetService(Object serviceReference);
+	
+	public boolean ungetService(Object serviceReference);
 
 	/**
 	 * A method to access a resource within an application

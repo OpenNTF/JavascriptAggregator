@@ -23,7 +23,6 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
-import com.ibm.jaggr.service.IPlatformExtensionServices;
 
 /**
  * This interface is implemented by resource factories which create instances of
