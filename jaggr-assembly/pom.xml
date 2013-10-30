@@ -55,31 +55,30 @@
           </plugin>
         </plugins>
       </build>
+      <dependencies>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-service</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-service</artifactId>
+          <classifier>javadoc</classifier>
+        </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-service</artifactId>
+          <classifier>sources</classifier>
+        </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-sample</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-sample-dojo</artifactId>
+        </dependency>
+      </dependencies>
     </profile>
   </profiles>
-  
-  <dependencies>
-    <dependency>
-      <groupId>com.ibm.jaggr</groupId>
-      <artifactId>jaggr-service</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.jaggr</groupId>
-      <artifactId>jaggr-service</artifactId>
-      <classifier>javadoc</classifier>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.jaggr</groupId>
-      <artifactId>jaggr-service</artifactId>
-      <classifier>sources</classifier>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.jaggr</groupId>
-      <artifactId>jaggr-sample</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.ibm.jaggr</groupId>
-      <artifactId>jaggr-sample-dojo</artifactId>
-    </dependency>
-  </dependencies>
 </project>
