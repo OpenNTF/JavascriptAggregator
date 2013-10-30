@@ -28,6 +28,7 @@
   <packaging>pom</packaging>
   
   <modules>
+    <module>jaggr-assembly</module>
     <module>jaggr-sample</module>
     <module>jaggr-sample-dojo</module>
     <module>jaggr-service</module>
@@ -90,9 +91,6 @@
   <profiles>
     <profile>
       <id>release</id>
-      <modules><!-- Don't build this unless we are releasing. -->
-        <module>jaggr-assembly</module>
-      </modules>
       <build>
         <plugins>
           <plugin>
