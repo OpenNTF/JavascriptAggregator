@@ -155,6 +155,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * 
 	 * @see org.osgi.framework.Bundle#getHeaders()
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public Dictionary<String, String> getHeaders() {
 		if (bundleContext != null) {

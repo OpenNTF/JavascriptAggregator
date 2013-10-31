@@ -17,13 +17,20 @@
 package com.ibm.jaggr.service.impl;
 
 import java.util.Properties;
-
 import org.eclipse.core.runtime.IExtension;
 
 import com.ibm.jaggr.service.impl.BaseAggregatorExtension;
 
+/**
+ * This class extends {@code BaseAggregatorExtension} defined in
+ * {@code jaggr-core} plugin. This class provides an additional constructor to
+ * initialize objects of {@code IAggregatorExtension} interface which use
+ * {@code IExtension} interface. Since {@code IExtension} is an interface for
+ * OSGi environment, this class is present in {@code jaggr-service} plugin.
+ * 
+ */
 public class AggregatorExtension extends BaseAggregatorExtension {
-	
+
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and
 	 * an {@link IExtension}
@@ -35,7 +42,8 @@ public class AggregatorExtension extends BaseAggregatorExtension {
 	 * @param attributes
 	 *            The attributes for this extension
 	 */
-	public AggregatorExtension(IExtension extension, Object instance, Properties attributes) {
+	public AggregatorExtension(IExtension extension, Object instance,
+			Properties attributes) {
 		super(extension, instance, attributes);
 		this.extensionPointId = extension.getExtensionPointUniqueIdentifier();
 		this.uniqueId = extension.getUniqueIdentifier();
@@ -44,5 +52,5 @@ public class AggregatorExtension extends BaseAggregatorExtension {
 		this.attributes = attributes;
 		validate();
 	}
-	
+
 }

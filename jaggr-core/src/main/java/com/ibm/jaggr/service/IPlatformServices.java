@@ -19,6 +19,8 @@ package com.ibm.jaggr.service;
 import java.net.URL;
 import java.util.Dictionary;
 
+import javax.imageio.spi.ServiceRegistry;
+
 /**
  * Interface for all platform dependent functionalities used by the aggregator.
  * The functionalities have been collated in this interface. This interface has
@@ -40,7 +42,10 @@ public interface IPlatformServices {
 	 *            The service object
 	 * @param properties
 	 *            The properties for this service.
-	 * @return service registration object
+	 * @return service registration object. For OSGi implementation, this object
+	 *         refers to implementation of {@code org.osgi.framework.ServiceRegistration}
+	 *         interface.
+	 * 
 	 */
 	public Object registerService(String clazz, Object service,
 			Dictionary<String, String> properties);
@@ -49,7 +54,9 @@ public interface IPlatformServices {
 	 * Removes the service registration from the platform.
 	 * 
 	 * @param serviceRegistration
-	 *            Service registration object
+	 *            Service registration object. For OSGi implementation, this
+	 *            object refers to implementation of
+	 *            {@code org.osgi.framework.ServiceRegistration} interface.
 	 */
 	public void unRegisterService(Object serviceRegistration);
 
@@ -63,15 +70,19 @@ public interface IPlatformServices {
 	 *            The specified filter expression is used to select the
 	 *            registered services whose service properties contain keys and
 	 *            values which satisfy the filter expression
-	 * @return A array of objects of service references
+	 * @return A array of objects of service references. For OSGi
+	 *         implementation, this object refers to implementation of
+	 *         {@code org.osgi.framework.ServiceReference} interface.
 	 */
 	public Object[] getServiceReferences(String clazz, String filter);
 
 	/**
-	 * Returns the service object corresponding to the service
-	 * registration.
+	 * Returns the service object corresponding to the service registration.
 	 * 
-	 * @param serviceReference Service reference for the desired service object
+	 * @param serviceReference
+	 *            Service reference object for the desired service object. For
+	 *            OSGi implementation, this object refers to implementation of
+	 *            {@code org.osgi.framework.ServiceReference} interface.
 	 * @return service object
 	 */
 	public Object getService(Object serviceReference);
@@ -79,10 +90,13 @@ public interface IPlatformServices {
 	/**
 	 * Removes the service reference from the platform
 	 * 
-	 * @param serviceReference Service reference object
+	 * @param serviceReference
+	 *            Service reference object. For OSGi implementation, this object
+	 *            refers to implementation of {@code org.osgi.framework.ServiceReference}
+	 *            interface.
 	 * @return true if the operation was successful else false
 	 */
-	
+
 	public boolean ungetService(Object serviceReference);
 
 	/**

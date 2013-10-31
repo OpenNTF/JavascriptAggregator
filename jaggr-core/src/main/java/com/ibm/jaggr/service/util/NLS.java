@@ -47,7 +47,12 @@ import java.util.*;
  * </p>
  * 
  * @since 3.1
+ * 
+ * This file has been modified to remove the dependence of these classes - org.eclipse.osgi.framework.debug.Debug, 
+ * org.eclipse.osgi.framework.internal.core.FrameworkProperties, org.eclipse.osgi.framework.log.FrameworkLog and 
+ * org.eclipse.osgi.framework.log.FrameworkLogEntry
  */
+@SuppressWarnings(value = { "all" })
 public abstract class NLS {
 
 	private static final Object[] EMPTY_ARGS = new Object[0];
