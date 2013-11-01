@@ -194,15 +194,15 @@ public class CSSModuleBuilderTest extends EasyMock {
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 		
-		css = "/* importing file */\n\r@import \"././imported.css\"";
+		css = "/* importing file */\n\r@import url(\"././imported.css\")";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 		
-		css = "/* importing file */\n\r@import \"foo/../imported.css\"";
+		css = "/* importing file */\n\r@import url('foo/../imported.css')";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 	
-		css = "/* importing file */\n\r@import \"./foo/bar/.././../imported.css\"";
+		css = "/* importing file */\n\r@import url( \"./foo/bar/.././../imported.css\" )";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 		
@@ -332,7 +332,23 @@ public class CSSModuleBuilderTest extends EasyMock {
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 		
+		// Test with quotes and spaces in URL parameter
+		css = ".foo {background-image:url('images/testImage.png')}";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
+			
+		css = ".foo {background-image:url(\"images/testImage.png\")}";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
+		
+		css = ".foo {background-image:url( 'images/testImage.png' )}";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
+    
+		
 		// Set the size threshold just below the image size and make sure the image isn't inlined
+		css = ".foo {background-image:url(images/testImage.png)}";
+		output = buildCss(new StringResource(css, resuri));
 		size--;
 		configScript.put(CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM, configScript, Long.toString(size));
 		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), configScript);
