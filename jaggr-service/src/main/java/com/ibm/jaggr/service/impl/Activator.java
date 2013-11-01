@@ -75,8 +75,8 @@ public class Activator extends Plugin implements BundleActivator {
 				context.registerService(IOptions.class.getName(), options, dict));
 		
 		// If felix gogo is available, then register the gogo command provider
-		Bundle gogo = Platform.getBundle("org.apache.felix.gogo.command"); //$NON-NLS-1$
-		if (gogo != null) {
+		ServiceReference CommandProcessorSR = context.getServiceReference(CommandProcessor.class.getName());
+		if (CommandProcessorSR != null) {
 			// See if a command provider is already registered
 			ServiceReference[] refs = context.getServiceReferences(
 					AggregatorCommandProviderGogo.class.getName(),
