@@ -194,15 +194,15 @@ public class CSSModuleBuilderTest extends EasyMock {
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 		
-		css = "/* importing file */\n\r@import \"././imported.css\"";
+		css = "/* importing file */\n\r@import url(\"././imported.css\")";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 		
-		css = "/* importing file */\n\r@import \"foo/../imported.css\"";
+		css = "/* importing file */\n\r@import url('foo/../imported.css')";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 	
-		css = "/* importing file */\n\r@import \"./foo/bar/.././../imported.css\"";
+		css = "/* importing file */\n\r@import url( \"./foo/bar/.././../imported.css\" )";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 		

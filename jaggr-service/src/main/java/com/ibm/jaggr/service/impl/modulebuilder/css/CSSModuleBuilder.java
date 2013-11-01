@@ -721,6 +721,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		inlinedImageExcludeList = list;
 	}
 	
+	/**
+	 * Removes single or double quotes from a quoted string. The entire string
+	 * is expected to be quoted, with possible leading or trailing whitespace.
+	 * If the string is not quoted, then it is returned unmodified.
+	 * 
+	 * @param in
+	 *            The possibly quoted string
+	 * @return The string with quotes removed
+	 */
 	public String dequote(String in) {
 		String result = in.trim();
 		if (result.charAt(0) == '"' && result.charAt(result.length()-1) == '"') {
