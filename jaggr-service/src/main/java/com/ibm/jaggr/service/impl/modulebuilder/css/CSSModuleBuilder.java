@@ -252,7 +252,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private static final Pattern endsPattern = Pattern.compile("^\\s|\\s$"); //$NON-NLS-1$
 	private static final Pattern closeBracePattern = Pattern.compile("[;\\s]+\\}"); //$NON-NLS-1$
 	private static final Pattern delimitersPattern = Pattern.compile("(\\s?[;:,{]\\s?)"); //$NON-NLS-1$
-	private static final Pattern quotedStringTrimPattern = Pattern.compile("^[\\s\\\"']|[\\s\\\"']$"); //$NON-NLS-1$
 	private static final Pattern forwardSlashPattern = Pattern.compile("\\\\"); //$NON-NLS-1$
 
 	private static final String QUOTED_STRING_MARKER = "__qUoTeDsTrInG"; //$NON-NLS-1$
@@ -380,7 +379,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 			// remove quotes.
-			importNameMatch = quotedStringTrimPattern.matcher(importNameMatch).replaceAll(""); //$NON-NLS-1$
+			importNameMatch = dequote(importNameMatch);
 			importNameMatch = forwardSlashPattern.matcher(importNameMatch).replaceAll("/"); //$NON-NLS-1$
 			
 			// if name is not relative, then bail
@@ -503,7 +502,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			String urlMatch = m.group(1);
 
 			// remove quotes.
-			urlMatch = quotedStringPattern.matcher(urlMatch).replaceAll(""); //$NON-NLS-1$
+			urlMatch = dequote(urlMatch);
 			urlMatch = forwardSlashPattern.matcher(urlMatch).replaceAll("/"); //$NON-NLS-1$
 
 			// Don't do anything with non-relative URLs
@@ -720,5 +719,16 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 		}
 		inlinedImageExcludeList = list;
+	}
+	
+	public String dequote(String in) {
+		String result = in.trim();
+		if (result.charAt(0) == '"' && result.charAt(result.length()-1) == '"') {
+			return result.substring(1, result.length()-1);
+		} 
+		if (result.charAt(0) == '\'' && result.charAt(result.length()-1) == '\'') {
+			return result.substring(1, result.length()-1);
+		}
+		return result;
 	}
 }
