@@ -22,9 +22,7 @@
   <dependencySets>
     <dependencySet>
       <includes>
-        <include>com.ibm.jaggr:jaggr-sample</include>
-        <include>com.ibm.jaggr:jaggr-sample-dojo</include>
-        <include>com.ibm.jaggr:jaggr-service</include>
+        <include>com.ibm.jaggr:*:*:*</include>
       </includes>
     </dependencySet>
   </dependencySets>

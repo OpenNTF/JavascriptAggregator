@@ -20,7 +20,7 @@
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>1.1.2-SNAPSHOT</version>
+    <version>1.1.6-SNAPSHOT</version>
   </parent>
   
   <artifactId>jaggr-service</artifactId>
@@ -35,8 +35,8 @@
   </properties>
 
   <build>
-  	<resources>
-  	  <resource>
+    <resources>
+      <resource>
         <directory>..</directory>
         <includes>
           <include>LICENSE</include>
@@ -64,104 +64,92 @@
       </resource>
     </resources>
     <pluginManagement>
-   	  <plugins>
-		    <plugin>
-		      <groupId>org.eclipse.m2e</groupId>
-		      <artifactId>lifecycle-mapping</artifactId>
-		      <version>1.0.0</version>
-		      <configuration>
-		        <lifecycleMappingMetadata>
-		          <pluginExecutions>
-		            <pluginExecution>
-		              <pluginExecutionFilter>
-		                <groupId>org.apache.maven.plugins</groupId>
-	                    <artifactId>maven-dependency-plugin</artifactId>
-	                    <versionRange>[1.0.0,)</versionRange>
-	                    <goals>
-	                        <goal>copy-dependencies</goal>
-	                    </goals>
-		              </pluginExecutionFilter>
-		              <action>
-		                <execute>
-		                  <runOnIncremental>false</runOnIncremental>
-		                </execute>
-		              </action>
-		            </pluginExecution>
-		          </pluginExecutions>
-		        </lifecycleMappingMetadata>
-		      </configuration>
-		    </plugin>
-		  </plugins>
+       <plugins>
+        <plugin>
+          <groupId>org.eclipse.m2e</groupId>
+          <artifactId>lifecycle-mapping</artifactId>
+          <version>1.0.0</version>
+          <configuration>
+            <lifecycleMappingMetadata>
+              <pluginExecutions>
+                <pluginExecution>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <versionRange>[1.0.0,)</versionRange>
+                    <goals>
+                      <goal>copy-dependencies</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action>
+                    <execute>
+                      <runOnIncremental>false</runOnIncremental>
+                    </execute>
+                  </action>
+                </pluginExecution>
+              </pluginExecutions>
+            </lifecycleMappingMetadata>
+          </configuration>
+        </plugin>
+      </plugins>
     </pluginManagement>
-  	<plugins>
-  		<plugin>
-  			<groupId>org.apache.felix</groupId>
-  			<artifactId>maven-bundle-plugin</artifactId>
-  			<extensions>true</extensions>
-  			<configuration>
-  				<manifestLocation>META-INF</manifestLocation>
-  				<instructions>
-  					<Bundle-Name>jaggr</Bundle-Name>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <manifestLocation>META-INF</manifestLocation>
+          <instructions>
+            <Bundle-Name>jaggr</Bundle-Name>
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
             <Bundle-Activator>${bundle.namespace}.impl.Activator</Bundle-Activator>
-			      <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-			      <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
+            <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
+            <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
             <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
-            	javax.servlet;version="[2,4)",
-            	javax.servlet.http;version="[2,4)",
-            	org.apache.felix.service.command;resolution:=optional,
+              javax.servlet;version="[2,4)",
+              javax.servlet.http;version="[2,4)",
+              org.apache.felix.service.command;resolution:=optional,
               org.apache.felix.gogo.commands;resolution:=optional,
               org.apache.karaf.shell.console;resolution:=optional,
               org.osgi.service.blueprint;resolution:=optional,
-            	!*
+              !*
             </Import-Package>
             <!-- embed dependencies -->
             <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,commons-codec,js</Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
-				  </instructions>
-  			</configuration>
-  		</plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-dependency-plugin</artifactId>
-  			<executions>
-	          <execution>
-	            <id>copy-dependencies</id>
-	            <phase>package</phase>
-	            <goals>
-	              <goal>copy-dependencies</goal>
-	            </goals>
-	          </execution>
-	        </executions>
-  		</plugin>
-   		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-dependency-plugin</artifactId>
-  			<executions>
-	          <execution>
-	            <id>copy-dependencies</id>
-	            <phase>package</phase>
-	            <goals>
-	              <goal>copy-dependencies</goal>
-	            </goals>
-	            <configuration>
-	              <outputDirectory>lib</outputDirectory>
-	            </configuration>
-	          </execution>
-	        </executions>
-  		</plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-compiler-plugin</artifactId>
-  			<configuration>
-		       <source>1.6</source>
-		       <target>1.6</target>
-		   </configuration>
-  		</plugin>
+          </instructions>
+        </configuration>
+      </plugin>
+       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <!-- This is so that eclipse will be able to resolve the bundle. -->
+          <execution>
+            <id>copy-dependencies</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>lib</outputDirectory>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+       </configuration>
+      </plugin>
         <plugin>
           <groupId>org.apache.rat</groupId>
           <artifactId>apache-rat-plugin</artifactId>
@@ -172,55 +160,55 @@
             </excludes>
           </configuration>
         </plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-surefire-plugin</artifactId>
-  		</plugin>
-  		<plugin>
-  		  <groupId>org.apache.maven.plugins</groupId>
-	      <artifactId>maven-clean-plugin</artifactId>
-	      <configuration>
-	        <filesets>
-	          <fileset>
-	            <directory>.</directory>
-	            <includes>
-	              <include>lib/**</include>
-	            </includes>
-	            <followSymlinks>false</followSymlinks>
-	          </fileset>
-	        </filesets>
-	      </configuration>
-	    </plugin>
-  	</plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <configuration>
+          <filesets>
+            <fileset>
+              <directory>.</directory>
+              <includes>
+                <include>lib/**</include>
+              </includes>
+              <followSymlinks>false</followSymlinks>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
   <dependencies>
     <dependency>
-    	<groupId>org.apache.wink</groupId>
-    	<artifactId>wink-json4j</artifactId>
+      <groupId>org.apache.wink</groupId>
+      <artifactId>wink-json4j</artifactId>
     </dependency>
     <dependency>
-    	<groupId>commons-io</groupId>
-    	<artifactId>commons-io</artifactId>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
-    	<groupId>commons-lang</groupId>
-    	<artifactId>commons-lang</artifactId>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
     </dependency>
     <dependency>
-    	<groupId>commons-codec</groupId>
-    	<artifactId>commons-codec</artifactId>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
-    	<groupId>com.google.javascript</groupId>
-    	<artifactId>closure-compiler</artifactId>
+      <groupId>com.google.javascript</groupId>
+      <artifactId>closure-compiler</artifactId>
     </dependency>
     <dependency>
-    	<groupId>rhino</groupId>
-    	<artifactId>js</artifactId>
+      <groupId>rhino</groupId>
+      <artifactId>js</artifactId>
     </dependency>
     <dependency>
-    	<groupId>com.google.guava</groupId>
-    	<artifactId>guava</artifactId>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
     </dependency>
     <dependency>
       <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
@@ -232,29 +220,29 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>javax.servlet</groupId>
-    	<artifactId>javax.servlet-api</artifactId>
-    	<scope>provided</scope>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.core</groupId>
-    	<artifactId>runtime</artifactId>
-    	<scope>provided</scope>
-    </dependency>
-		<dependency>
-			<groupId>org.osgi</groupId>
-			<artifactId>org.osgi</artifactId>
-			<scope>provided</scope>
-		</dependency>
-    <dependency>
-    	<groupId>junit</groupId>
-    	<artifactId>junit</artifactId>
-    	<scope>test</scope>
+      <groupId>org.eclipse.core</groupId>
+      <artifactId>runtime</artifactId>
+      <scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>org.easymock</groupId>
-    	<artifactId>easymock</artifactId>
-    	<scope>test</scope>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <scope>test</scope>
     </dependency>
   </dependencies>
 </project>
