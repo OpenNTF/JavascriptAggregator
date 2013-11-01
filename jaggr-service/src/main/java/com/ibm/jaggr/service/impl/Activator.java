@@ -23,9 +23,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.felix.service.command.CommandProcessor;
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Plugin;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
