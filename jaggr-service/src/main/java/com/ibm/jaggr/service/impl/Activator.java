@@ -22,10 +22,10 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.apache.felix.service.command.CommandProcessor;
 import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
@@ -72,34 +72,9 @@ public class Activator extends Plugin implements BundleActivator {
 		serviceRegistrations.add(
 				context.registerService(IOptions.class.getName(), options, dict));
 		
-		// If felix gogo is available, then register the gogo command provider
-		ServiceReference CommandProcessorSR = context.getServiceReference(CommandProcessor.class.getName());
-		if (CommandProcessorSR != null) {
-			// See if a command provider is already registered
-			ServiceReference[] refs = context.getServiceReferences(
-					AggregatorCommandProviderGogo.class.getName(),
-					"(" + CommandProcessor.COMMAND_SCOPE + "=aggregator)"); //$NON-NLS-1$ //$NON-NLS-2$
-			if (refs == null || refs.length == 0) {
-				dict = new Properties();
-				dict.put(CommandProcessor.COMMAND_SCOPE, "aggregator"); //$NON-NLS-1$
-				dict.put(CommandProcessor.COMMAND_FUNCTION, AggregatorCommandProvider.COMMANDS);
-				serviceRegistrations.add(
-					context.registerService(AggregatorCommandProviderGogo.class.getName(), new AggregatorCommandProviderGogo(context), dict));
-			}
-		} else {
-			// See if a command provider is already registered
-			ServiceReference[] refs = context.getServiceReferences(
-					org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
-					"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-			if (refs == null || refs.length == 0) {
-				// Register the command provider that will handle console commands
-				dict = new Properties();
-				dict.setProperty("name", IAggregator.class.getName()); //$NON-NLS-1$
-				serviceRegistrations.add(
-						context.registerService(
-								org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
-								new AggregatorCommandProvider(context), dict));
-			}
+		ServiceRegistration commandProviderReg = registerCommandProvider();
+		if (commandProviderReg != null) {
+			serviceRegistrations.add(commandProviderReg);
 		}
 		// Create the executors provider.  The executors provider is created by the 
 		// activator primarily to allow executors to be shared by all of the 
@@ -145,5 +120,44 @@ public class Activator extends Plugin implements BundleActivator {
 	
 	protected IExecutors newExecutors(IOptions options) {
 		return new ExecutorsImpl(options);
+	}
+	
+	protected ServiceRegistration registerCommandProvider() throws InvalidSyntaxException {
+		ServiceRegistration result = null;
+		Properties dict = new Properties();
+		// If CommandProcessor service is available, then register the felix command processor
+		// Note: must avoid references to felix classes in this module
+		ServiceReference commandProcessorSR = 
+		    context.getServiceReference("org.apache.felix.service.command.CommandProcessor"); //$NON-NLS-1$
+		if (commandProcessorSR != null) {
+			// See if a command provider is already registered
+			ServiceReference[] refs = context.getServiceReferences(
+					AggregatorCommandProviderGogo.class.getName(),
+					"(osgi.command.scope=aggregator)"); //$NON-NLS-1$
+			if (refs == null || refs.length == 0) {
+				dict = new Properties();
+				dict.put("osgi.command.scope", "aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
+				dict.put("osgi.command.function", AggregatorCommandProvider.COMMANDS); //$NON-NLS-1$
+				result = context.registerService(
+				    AggregatorCommandProviderGogo.class.getName(), 
+				    new AggregatorCommandProviderGogo(context), 
+				    dict);
+			}
+		} else {
+			// See if a command provider is already registered
+			ServiceReference[] refs = context.getServiceReferences(
+					org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
+					"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (refs == null || refs.length == 0) {
+				// Register the command provider that will handle console commands
+				dict = new Properties();
+				dict.setProperty("name", IAggregator.class.getName()); //$NON-NLS-1$
+				result = 
+						context.registerService(
+								org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
+								new AggregatorCommandProvider(context), dict);
+			}
+		}
+		return result;
 	}
 }
