@@ -113,6 +113,9 @@
               javax.servlet;version="[2,4)",
               javax.servlet.http;version="[2,4)",
               org.apache.felix.service.command;resolution:=optional,
+              org.apache.felix.gogo.commands;resolution:=optional,
+              org.apache.karaf.shell.console;resolution:=optional,
+              org.osgi.service.blueprint;resolution:=optional,
               !*
             </Import-Package>
             <!-- embed dependencies -->
