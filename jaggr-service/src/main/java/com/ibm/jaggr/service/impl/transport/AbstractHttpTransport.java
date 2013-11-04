@@ -26,13 +26,12 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Dictionary;
 import java.util.HashSet;
-import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -116,7 +115,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     private static Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
     private String resourcePathId;
-    private ServiceRegistration<?> configModifierReg;
+    private ServiceRegistration configModifierReg;
     private IAggregator aggregator = null;
     private List<String> extensionContributions = new LinkedList<String>();
 
@@ -532,7 +531,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		// register a config listener so that we get notified of changes to 
 		// the server-side AMD config file.
 		String name = aggregator.getName();
-		Dictionary<String, String> dict = new Hashtable<String, String>();
+		Properties dict = new Properties();
 		dict.put("name", name); //$NON-NLS-1$
     	configModifierReg = aggregator.getBundleContext().registerService(
 				IConfigModifier.class.getName(), this, dict

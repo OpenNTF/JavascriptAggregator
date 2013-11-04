@@ -29,8 +29,6 @@ import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -150,8 +148,8 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     private Bundle bundle = null;
     private String name = null;
     private IDependencies deps = null;
-    private List<ServiceRegistration<?>> registrations = new LinkedList<ServiceRegistration<?>>();
-    private List<ServiceReference<?>> serviceReferences = Collections.synchronizedList(new LinkedList<ServiceReference<?>>());
+    private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+    private List<ServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<ServiceReference>());
     private InitParams initParams = null;
     private IOptions localOptions = null;
     
@@ -207,7 +205,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     	if (state == Bundle.ACTIVE || state == Bundle.STOPPING) {
     		BundleContext bundleContext = getBundleContext();
 			bundle = null;	// make sure we don't shutdown more than once
-        	ServiceReference<?>[] refs = null;
+        	ServiceReference[] refs = null;
 			try {
 				refs = bundleContext.getServiceReferences(
 	    				IShutdownListener.class.getName(),
@@ -218,7 +216,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				}
 			}
 	    	if (refs != null) {
-	    		for (ServiceReference<?> ref : refs) {
+	    		for (ServiceReference ref : refs) {
 	    			IShutdownListener listener = (IShutdownListener)bundleContext.getService(ref);
 	    			if (listener != null) {
 	    				try {
@@ -233,10 +231,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	    			}
 	    		}
 	    	}
-			for (ServiceRegistration<?> registration : registrations) {
+			for (ServiceRegistration registration : registrations) {
 				registration.unregister();
 			}
-			for (ServiceReference<?> ref : serviceReferences) {
+			for (ServiceReference ref : serviceReferences) {
 				bundleContext.ungetService(ref);
 			}
 			bundleContext.removeBundleListener(this);
@@ -522,7 +520,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				);
 		}
 
-        Dictionary<String, String> dict = new Hashtable<String, String>();			
+        Properties dict = new Properties();			
         dict.put("name", getName()); //$NON-NLS-1$
         registrations.add(getBundleContext().registerService(
         		IAggregator.class.getName(), this, dict));
@@ -659,13 +657,13 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public void optionsUpdated(IOptions options, long sequence) {
 		// Options have been updated.  Notify any listeners that registered using this
 		// aggregator instance's name.
-		ServiceReference<?>[] refs = null;
+		ServiceReference[] refs = null;
 		try {
 			refs = getBundleContext()
 					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		
 			if (refs != null) {
-				for (ServiceReference<?> ref : refs) {
+				for (ServiceReference ref : refs) {
 					IOptionsListener listener = (IOptionsListener)getBundleContext().getService(ref);
 					if (listener != null) {
 						try {
@@ -783,9 +781,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	    		propValue = System.getProperty(propName);
 	    	}
 	    	if (propValue == null && variableResolverServiceTracker != null) {
-	    		ServiceReference<?>[] refs = variableResolverServiceTracker.getServiceReferences();
+	    		ServiceReference[] refs = variableResolverServiceTracker.getServiceReferences();
 	    		if (refs != null) {
-		    		for (ServiceReference<?> sr : refs) {
+		    		for (ServiceReference sr : refs) {
 		    			IVariableResolver resolver = (IVariableResolver)getBundleContext().getService(sr);
 		    			try {
 			    			propValue = resolver.resolve(propName);
@@ -847,7 +845,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 */
 	protected void notifyRequestListeners(RequestNotifierAction action, HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		// notify any listeners that the config has been updated
-		ServiceReference<?>[] refs = null;
+		ServiceReference[] refs = null;
 		try {
 			refs = getBundleContext()
 					.getServiceReferences(IRequestListener.class.getName(),
@@ -856,7 +854,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		} catch (InvalidSyntaxException e) {
 			throw new IOException(e);
 		}
-		for (ServiceReference<?> ref : refs) {
+		for (ServiceReference ref : refs) {
 			IRequestListener listener = (IRequestListener)getBundleContext().getService(ref);
 			try {
 				if (action == RequestNotifierAction.start) {
@@ -877,7 +875,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 * @throws IOException
 	 */
 	protected void notifyConfigListeners(long seq) throws IOException {
-		ServiceReference<?>[] refs;
+		ServiceReference[] refs;
 		try {
 			// notify any listeners that the config has been updated
 			refs = getBundleContext()
@@ -888,7 +886,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			throw new IOException(e);
 		}
 		if (refs != null) {
-			for (ServiceReference<?> ref : refs) {
+			for (ServiceReference ref : refs) {
 				IConfigListener listener = 
 					(IConfigListener)getBundleContext().getService(ref);
 				if (listener != null) {
@@ -1024,7 +1022,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
    				}
    			}
    		}
-        Dictionary<String, String> dict = new Hashtable<String, String>();
+        Properties dict = new Properties();
         dict.put("name", registrationName); //$NON-NLS-1$
         registrations.add(getBundleContext().registerService(
         		IOptionsListener.class.getName(), this, dict));

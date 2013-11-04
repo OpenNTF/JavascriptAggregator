@@ -21,12 +21,11 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Dictionary;
-import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -62,9 +61,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
     
-    private ServiceRegistration<?> configUpdateListener;
-    private ServiceRegistration<?> optionsUpdateListener;
-	private ServiceRegistration<?> shutdownListener;
+    private ServiceRegistration configUpdateListener;
+    private ServiceRegistration optionsUpdateListener;
+	private ServiceRegistration shutdownListener;
 	private BundleContext bundleContext;
 	private String servletName;
 	private long depsLastModified = -1;
@@ -83,14 +82,14 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	public DependenciesImpl(IAggregator aggregator, long stamp) {
 		this.aggregator = aggregator;
 		this.initStamp = stamp;
-		Dictionary<String, String> dict;
+		Properties dict;
 		bundleContext = aggregator.getBundleContext();
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
 
 		if (bundleContext != null) {
 			// register shutdown listener
-			dict = new Hashtable<String, String>();
+			dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			shutdownListener = bundleContext.registerService(
 					IShutdownListener.class.getName(), 
@@ -99,7 +98,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			);
 	
 			// register the config change listener service.
-			dict = new Hashtable<String, String>();
+			dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			configUpdateListener = bundleContext.registerService(
 					IConfigListener.class.getName(), 
@@ -108,7 +107,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			);
 			
 			// register the config change listener service.
-			dict = new Hashtable<String, String>();
+			dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			optionsUpdateListener = bundleContext.registerService(
 					IOptionsListener.class.getName(), 
@@ -296,13 +295,13 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						DependenciesImpl.this.depTree = depTree;
 						
 						// Notify listeners that dependencies have been updated
-						ServiceReference<?>[] refs = null;
+						ServiceReference[] refs = null;
 						refs = bundleContext
 								.getServiceReferences(IDependenciesListener.class.getName(),
 								              "(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
 						);
 						if (refs != null) {
-							for (ServiceReference<?> ref : refs) {
+							for (ServiceReference ref : refs) {
 								IDependenciesListener listener = 
 									(IDependenciesListener)bundleContext.getService(ref);
 								if (listener != null) {

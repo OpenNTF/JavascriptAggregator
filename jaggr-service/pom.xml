@@ -212,8 +212,8 @@
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.apache.felix</groupId>
-      <artifactId>org.apache.felix.gogo.command</artifactId>
+      <groupId>org.apache.karaf.shell</groupId>
+      <artifactId>org.apache.karaf.shell.console</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -222,13 +222,13 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi.core</artifactId>
+      <groupId>org.eclipse.core</groupId>
+      <artifactId>runtime</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.core</groupId>
-      <artifactId>runtime</artifactId>
+      <groupId>org.osgi</groupId>
+      <artifactId>org.osgi</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

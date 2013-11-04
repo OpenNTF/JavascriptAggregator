@@ -127,8 +127,7 @@ public class BundleResourceFactoryTests {
 		URL fileUrl = new URL("file:///temp/path/name.ext");
 		URL bundleUrl = new URL(null, "bundleresource://25-5/path/name.ext", new DummyStreamHandler());
 		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
-		@SuppressWarnings("unchecked")
-		ServiceReference<URLConverter> mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
+		ServiceReference mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
 		URLConverter mockUrlConverter = EasyMock.createMock(URLConverter.class);
 		
 		/*
