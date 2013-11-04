@@ -44,7 +44,7 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	static final Logger log = Logger.getLogger(BundleResourceFactory.class.getName());
 	
 	private BundleContext context;
-	private ServiceReference urlConverterSR;
+	private ServiceReference<?> urlConverterSR;
 
 	public BundleResourceFactory() {
 	}
@@ -116,7 +116,7 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	/*
 	 * Package-private initializer for unit testing
 	 */
-	void setInitializationData(BundleContext context, ServiceReference urlConverterSR) {
+	void setInitializationData(BundleContext context, ServiceReference<URLConverter> urlConverterSR) {
 		if (this.context != null || this.urlConverterSR != null) {
 			throw new IllegalStateException();
 		}

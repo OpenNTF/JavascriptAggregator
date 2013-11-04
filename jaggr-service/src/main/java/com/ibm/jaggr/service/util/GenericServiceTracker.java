@@ -29,7 +29,7 @@ public class GenericServiceTracker<T> extends ServiceTracker {
 		super(arg0, arg1, arg2);
 	}
 
-	public GenericServiceTracker(BundleContext arg0, ServiceReference arg1,
+	public GenericServiceTracker(BundleContext arg0, ServiceReference<T> arg1,
 			ServiceTrackerCustomizer arg2) {
 		super(arg0, arg1, arg2);
 	}
@@ -47,7 +47,7 @@ public class GenericServiceTracker<T> extends ServiceTracker {
 
 	@SuppressWarnings("unchecked")
 	@Override
-	public T getService(ServiceReference arg0) {
+	public T getService(@SuppressWarnings("rawtypes") ServiceReference arg0) {
 		return (T)super.getService(arg0);
 	}
 

@@ -22,10 +22,11 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -90,7 +91,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
 
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<ServiceRegistration<?>> registrations = new LinkedList<ServiceRegistration<?>>();
 	
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
         CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
@@ -113,12 +114,12 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		BundleContext context = aggregator.getBundleContext();
-		Properties props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IRequestListener.class.getName(), this, props));
-		props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
+		Dictionary<String, String> dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		registrations.add(context.registerService(IRequestListener.class.getName(), this, dict));
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		registrations.add(context.registerService(IShutdownListener.class.getName(), this, dict));
 	}
 
 	@Override
@@ -155,7 +156,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
+		for (ServiceRegistration<?> reg : registrations) {
 			reg.unregister();
 		}
 	}

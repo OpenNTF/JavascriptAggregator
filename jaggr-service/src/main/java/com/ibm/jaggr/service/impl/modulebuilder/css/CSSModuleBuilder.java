@@ -29,9 +29,10 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -201,7 +202,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
 	}
 	
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<ServiceRegistration<?>> registrations = new LinkedList<ServiceRegistration<?>>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
@@ -650,7 +651,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
+		for (ServiceRegistration<?> reg : registrations) {
 			reg.unregister();
 		}
 	}
@@ -662,12 +663,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		BundleContext context = aggregator.getBundleContext();
-		Properties props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IConfigListener.class.getName(), this, props));
-		props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
+		Dictionary<String, String> dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		registrations.add(context.registerService(IConfigListener.class.getName(), this, dict));
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		registrations.add(context.registerService(IShutdownListener.class.getName(), this, dict));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
 			configLoaded(config, 1);

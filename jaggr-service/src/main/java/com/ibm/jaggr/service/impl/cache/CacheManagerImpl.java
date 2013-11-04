@@ -30,8 +30,9 @@ import java.io.Reader;
 import java.io.Serializable;
 import java.io.Writer;
 import java.text.MessageFormat;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -78,13 +79,13 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     
     private IAggregator _aggregator;
     
-    private ServiceRegistration _shutdownListener = null;
+    private ServiceRegistration<?> _shutdownListener = null;
     
-    private ServiceRegistration _configUpdateListener = null;
+    private ServiceRegistration<?> _configUpdateListener = null;
     
-    private ServiceRegistration _depsUpdateListener = null;
+    private ServiceRegistration<?> _depsUpdateListener = null;
     
-    private ServiceRegistration _optionsUpdateListener = null;
+    private ServiceRegistration<?> _optionsUpdateListener = null;
     
     private long updateSequenceNumber = 0;
     
@@ -188,11 +189,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         	}
         }, 10, 10, TimeUnit.MINUTES);
         
-		Properties dict;
+		Dictionary<String, String> dict;
 		BundleContext bundleContext = aggregator.getBundleContext();
 		if (bundleContext != null) {
 	        // Register listeners
-			dict = new Properties();
+			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_shutdownListener = bundleContext.registerService(
 					IShutdownListener.class.getName(), 
@@ -200,7 +201,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 					dict
 			);
 	
-			dict = new Properties();
+			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_configUpdateListener = bundleContext.registerService(
 					IConfigListener.class.getName(), 
@@ -208,7 +209,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 					dict
 			);
 			
-			dict = new Properties();
+			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_depsUpdateListener = bundleContext.registerService(
 					IDependenciesListener.class.getName(), 
@@ -216,7 +217,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 					dict
 			);
 			
-			dict = new Properties();
+			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_optionsUpdateListener = bundleContext.registerService(
 					IOptionsListener.class.getName(), 
