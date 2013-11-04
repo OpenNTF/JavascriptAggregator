@@ -109,11 +109,11 @@
     	<artifactId>runtime</artifactId>
     	<scope>provided</scope>
     </dependency>
-		<dependency>
-			<groupId>org.osgi</groupId>
-			<artifactId>org.osgi</artifactId>
-			<scope>provided</scope>
-		</dependency>
+	<dependency>
+		<groupId>org.osgi</groupId>
+		<artifactId>org.osgi.core</artifactId>
+		<scope>provided</scope>
+	</dependency>
     <dependency>
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-service</artifactId>

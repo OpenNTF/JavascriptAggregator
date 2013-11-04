@@ -295,13 +295,13 @@ public class OptionsImpl  implements IOptions {
 		if (bundleContext == null) {
 			return;
 		}
-		ServiceReference[] refs = null;
+		ServiceReference<?>[] refs = null;
 		try {
 			refs = bundleContext
 					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + registrationName + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		
 			if (refs != null) {
-				for (ServiceReference ref : refs) {
+				for (ServiceReference<?> ref : refs) {
 					IOptionsListener listener = (IOptionsListener)bundleContext.getService(ref);
 					if (listener != null) {
 						try {

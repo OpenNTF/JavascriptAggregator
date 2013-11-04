@@ -98,7 +98,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
 	
-	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
+	protected List<ServiceRegistration<?>> serviceRegs = new LinkedList<ServiceRegistration<?>>();
 	
 	private static class ConfigContextFactory extends ContextFactory {
 		@Override
@@ -716,7 +716,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 			// set up bundle manifest headers property
 			if (aggregator.getBundleContext() != null) {
-				@SuppressWarnings("unchecked")
 				Dictionary<String, String> headers = (Dictionary<String, String>)aggregator.getBundleContext().getBundle().getHeaders();
 			    Scriptable jsHeaders = cx.newObject(sharedScope);
 				Enumeration<String> keys = headers.keys();
@@ -1067,7 +1066,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            are represented as {@code Map<String, Object>}.
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
-		ServiceReference[] refs = null;
+		ServiceReference<?>[] refs = null;
 		BundleContext bundleContext = getAggregator().getBundleContext();
 		if (bundleContext == null) return;
 		try {
@@ -1081,7 +1080,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 		}
 		if (refs != null) {
-			for (ServiceReference ref : refs) {
+			for (ServiceReference<?> ref : refs) {
 				IConfigModifier modifier = 
 					(IConfigModifier)bundleContext.getService(ref);
 				if (modifier != null) {
@@ -1131,7 +1130,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : serviceRegs) {
+		for (ServiceRegistration<?> reg : serviceRegs) {
 			reg.unregister();
 		}
 	}
