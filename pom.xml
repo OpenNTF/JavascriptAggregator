@@ -357,9 +357,9 @@
         <version>r09</version>
       </dependency>
       <dependency>
-        <groupId>org.apache.karaf.shell</groupId>
-        <artifactId>org.apache.karaf.shell.console</artifactId>
-        <version>2.2.9</version>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>org.apache.felix.gogo.command</artifactId>
+        <version>0.10.0</version>
       </dependency>
       <dependency>
         <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
