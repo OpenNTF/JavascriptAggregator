@@ -16,9 +16,15 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+  
   <groupId>com.ibm.jaggr</groupId>
   <artifactId>jaggr</artifactId>
-  <version>1.1.2-SNAPSHOT</version>
+  <version>1.1.6-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <modules>
@@ -34,14 +40,23 @@
   <url>https://github.com/OpenNTF/JavascriptAggregator</url>
   <inceptionYear>2011</inceptionYear>
   <scm>
-  	<developerConnection>scm:git:https://github.com/OpenNTF/JavascriptAggregator.git</developerConnection>
-  	<url>https://github.com/OpenNTF/JavascriptAggregator</url>
+    <connection>scm:git:git@github.com:OpenNTF/JavascriptAggregator.git</connection>
+    <developerConnection>scm:git:git@github.com:OpenNTF/JavascriptAggregator.git</developerConnection>
+    <url>https://github.com/OpenNTF/JavascriptAggregator.git</url>
     <tag>HEAD</tag>
   </scm>
   <organization>
   	<name>IBM</name>
   	<url>http://www.ibm.com</url>
   </organization>
+  <licenses>
+    <license>
+      <name>The Apache Software License, Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+      <distribution>repo</distribution>
+      <comments>A business-friendly OSS license</comments>
+    </license>
+  </licenses>
   
   <developers>
     <developer>
@@ -57,14 +72,41 @@
   </developers>
   
   <issueManagement>
-  	<system>github</system>
-  	<url>https://github.com/OpenNTF/JavascriptAggregator</url>
+    <system>GitHub Issues</system>
+    <url>https://github.com/OpenNTF/JavascriptAggregator/issues</url>
   </issueManagement>
   
+  <distributionManagement>
+    <site>
+      <id>github</id>
+      <name>maven-reports at github</name>
+      <url>http://openntf.github.io/JavascriptAggregator</url>
+    </site>
+  </distributionManagement>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals><goal>sign</goal></goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
   <build>
   	<defaultGoal>install</defaultGoal>
   	<pluginManagement>
@@ -124,6 +166,35 @@
 	        <artifactId>maven-assembly-plugin</artifactId>
 	        <version>2.4</version>
         </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-gpg-plugin</artifactId>
+          <version>1.4</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-site-plugin</artifactId>
+          <version>3.3</version>
+          <configuration>
+            <dependencies>
+              <dependency>
+                <groupId>org.apache.maven.doxia</groupId>
+                <artifactId>doxia-module-markdown</artifactId>
+                <version>1.4</version>
+              </dependency>
+            </dependencies>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-project-info-reports-plugin</artifactId>
+          <version>2.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-scm-publish-plugin</artifactId>
+          <version>1.0-beta-2</version>
+        </plugin>
 		  </plugins>  	  
   	</pluginManagement>
   	
@@ -142,6 +213,7 @@
             <exclude>.settings/*.prefs</exclude>
             <exclude>doc/**</exclude>
             <exclude>bin/**</exclude>
+            <exclude>jaggr-assembly/**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -160,25 +232,80 @@
           <encoding>UTF-8</encoding>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <configuration>
+          <mavenExecutorId>forked-path</mavenExecutorId>
+          <releaseProfiles>release</releaseProfiles>
+          <goals>deploy</goals>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-scm-publish-plugin</artifactId>
+        <inherited>true</inherited>
+        <configuration>
+          <pubScmUrl>${project.scm.developerConnection}</pubScmUrl>
+          <scmBranch>gh-pages</scmBranch>
+        </configuration>
+      </plugin>
   	</plugins>
   </build>
+  
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+        <version>2.2</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>index</report>
+              <report>project-team</report>
+              <report>license</report>
+              <report>dependencies</report>
+              <report>dependency-convergence</report>
+              <report>plugin-management</report>
+              <report>issue-tracking</report>
+              <report>scm</report>
+              <report>summary</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-javadoc-plugin</artifactId>
+        <version>2.9</version>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>javadoc</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
+    </plugins>
+  </reporting>
   
   <dependencyManagement>
     <dependencies>
       <dependency>
 	      <groupId>com.ibm.jaggr</groupId>
 	      <artifactId>jaggr-core</artifactId>
-	      <version>1.1.2-SNAPSHOT</version>
+        <version>1.1.6-SNAPSHOT</version>
 	    </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-sample</artifactId>
-        <version>1.1.2-SNAPSHOT</version>
+        <version>1.1.6-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-sample-dojo</artifactId>
-        <version>1.1.2-SNAPSHOT</version>
+        <version>1.1.6-SNAPSHOT</version>
       </dependency>
       <dependency>
 	      <groupId>org.apache.wink</groupId>
@@ -258,8 +385,14 @@
 	    <dependency>
 	    	<groupId>com.ibm.jaggr</groupId>
 	    	<artifactId>jaggr-service</artifactId>
-	    	<version>1.1.2-SNAPSHOT</version>
+	    	<version>1.1.6-SNAPSHOT</version>
 	    </dependency>
+	    <dependency>
+        <groupId>com.ibm.jaggr</groupId>
+        <artifactId>jaggr-service</artifactId>
+        <classifier>javadoc</classifier>
+        <version>1.1.6-SNAPSHOT</version>
+      </dependency>
     </dependencies>
   </dependencyManagement>
 </project>
