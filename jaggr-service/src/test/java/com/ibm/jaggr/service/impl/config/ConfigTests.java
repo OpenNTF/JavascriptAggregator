@@ -245,6 +245,7 @@ public class ConfigTests {
 				return logger;
 			}
 		};		
+		System.out.println(cfg.toString());
 		List<String> logged = logger.getLogged();
 		Assert.assertEquals(cfg.getCacheBust(), "foobar");
 		Assert.assertEquals("log: bar", logged.get(0));
@@ -822,43 +823,44 @@ public class ConfigTests {
 		Set<String> dependentFeatures = new HashSet<String>();
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		Assert.assertEquals("foo", cfg.resolve("foo", features, dependentFeatures, null));
-		Assert.assertEquals("has!xxx?foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals("foo", cfg.resolve("foo", features, dependentFeatures, null, false));
+		Assert.assertEquals("has!xxx?foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, false));
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
 		features.put("xxx", true);
-		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, false));
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
 		features.put("", false);
-		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, false));
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
 		
 		features = new Features();
 		dependentFeatures = new HashSet<String>();
 		config = "{aliases:[['foo', 'bar']]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		Assert.assertEquals("bar", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals("foo", cfg.resolve("foo", features, dependentFeatures, null, false));
+		Assert.assertEquals("bar", cfg.resolve("foo", features, dependentFeatures, null, true));
 		Assert.assertEquals(0, dependentFeatures.size());
-		Assert.assertEquals("has!xxx?bar:foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null));
+		Assert.assertEquals("has!xxx?bar:foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null, true));
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("xxx", dependentFeatures.iterator().next());
 		features.put("xxx", true);
-		Assert.assertEquals("bar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null));
+		Assert.assertEquals("bar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null, true));
 		Assert.assertEquals(1, dependentFeatures.size());
 		features.put("xxx", false);
-		Assert.assertEquals("foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null));
+		Assert.assertEquals("foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null, false));
 		
 		dependentFeatures.clear();
 		config = "{aliases:[['foo', 'has!bar?aaa:bbb']], packages:[{name:'aaa', location:'aaaloc'}, {name:'bbb', location:'bbbloc', main:'mainloc'}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		Assert.assertEquals("has!bar?aaa:bbb", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals("has!bar?aaa:bbb", cfg.resolve("foo", features, dependentFeatures, null, true));
 		features.put("bar", true);
-		Assert.assertEquals("aaa/main", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals("aaa/main", cfg.resolve("foo", features, dependentFeatures, null, true));
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("bar", dependentFeatures.iterator().next());
 		features.put("bar", false);
-		Assert.assertEquals("mainloc", cfg.resolve("foo", features, dependentFeatures, null));
+		Assert.assertEquals("mainloc", cfg.resolve("foo", features, dependentFeatures, null, true));
 		features.put("xxx", true);
-		Assert.assertEquals("mainloc", cfg.resolve("has!xxx?foo", features, dependentFeatures, null));
+		Assert.assertEquals("mainloc", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, true));
 		
 	}
 	

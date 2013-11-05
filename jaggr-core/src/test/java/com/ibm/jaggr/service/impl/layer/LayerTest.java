@@ -146,7 +146,7 @@ public class LayerTest extends EasyMock {
 				IConfig config = mockAggregator.getConfig();
 				for (Map.Entry<String, ModuleDepInfo> entry : result.entrySet()) {
 					String depName = entry.getKey();
-					String resolved = config.resolve(depName, features, dependentFeatures, null);
+					String resolved = config.resolve(depName, features, dependentFeatures, null, true);
 					temp.add(resolved != null ? resolved : depName, entry.getValue());
 				}
 				return temp;

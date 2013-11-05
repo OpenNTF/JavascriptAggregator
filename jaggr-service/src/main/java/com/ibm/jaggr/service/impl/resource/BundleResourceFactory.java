@@ -156,7 +156,7 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 			ret = authority;
 		} else {
 			String path = uri.getPath();
-			if (path.startsWith("/"))
+			if (path.startsWith("/")) //$NON-NLS-1$
 				path = path.substring(1);
 			ret = path.substring(0, path.indexOf('/'));
 		}
@@ -175,7 +175,7 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 	 */
 	public String getNBRPath(String bundle, URI uri) {
 		String path = uri.getPath();
-		return path.startsWith("/" + bundle) ? path.substring(bundle.length() + 1) : path;
+		return path.startsWith("/" + bundle) ? path.substring(bundle.length() + 1) : path; //$NON-NLS-1$
 	}
 	
 	/*

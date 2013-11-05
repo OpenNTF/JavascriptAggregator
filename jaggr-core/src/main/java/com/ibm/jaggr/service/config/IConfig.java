@@ -375,7 +375,8 @@ public interface IConfig {
 	 * order.
 	 * <ul>
 	 * <li>
-	 * Call any alias resolvers to resolve module name aliases</li>
+	 * If <code>resolveAliases</code> is true, then call any alias resolvers to 
+	 * resolve module name aliases</li>
 	 * <li>
 	 * If the module id specifies a has plugin and the has feature(s) are
 	 * contained in the feature set provided in the request, then evaluate the
@@ -398,13 +399,14 @@ public interface IConfig {
 	 *            about the module name resolution. For example, the resolver may
 	 *            indicate that alias resolution was not performed due to a
 	 *            missing required feature.
-	 * 
+	 * @param resolveAliases
+	 *            If true, then module name aliases will be resolved
 	 * @return The resolved module id.  If the module id is unchanged, then
 	 *         {@code name} should be returned.
 	 * 
 	 */
 	public String resolve(String name, Features features,
-			Set<String> dependentFeatures, StringBuffer sb);
+			Set<String> dependentFeatures, StringBuffer sb, boolean resolveAliases);
 
 	/**
 	 * Interface for a config alias. Aliases are resolved by the aggreagtor when

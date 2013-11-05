@@ -428,35 +428,37 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			String mid, 
 			Features features, 
 			Set<String> dependentFeatures,
-			StringBuffer sb) {
+			StringBuffer sb,
+			boolean resolveAliases) {
 		
 		// Resolve has plugin first
 		mid = resolveHasPlugin(mid, features, dependentFeatures, sb);
 		
-		String aliased = null;
-		try {
-			aliased = resolveAliases(mid, features, dependentFeatures, sb);
-		} catch (Exception e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
+		if (resolveAliases) {
+			String aliased = null;
+			try {
+				aliased = resolveAliases(mid, features, dependentFeatures, sb);
+			} catch (Exception e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
+			if (!mid.equals(aliased)) {
+				if (sb != null) {
+					sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
+							Messages.ConfigImpl_6,
+							new Object[]{mid}
+					));
+				}
+				// If alias resolution introduced a has plugin, then try to resolve it
+				int idx = mid.indexOf("!"); //$NON-NLS-1$
+				if (idx == -1 || !HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
+					mid = resolveHasPlugin(aliased, features, dependentFeatures, sb);
+				} else {
+					mid = aliased;
+				}
 			}
 		}
-		if (!mid.equals(aliased)) {
-			if (sb != null) {
-				sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
-						Messages.ConfigImpl_6,
-						new Object[]{mid}
-				));
-			}
-			// If alias resolution introduced a has plugin, then try to resolve it
-			int idx = mid.indexOf("!"); //$NON-NLS-1$
-			if (idx == -1 || !HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
-				mid = resolveHasPlugin(aliased, features, dependentFeatures, sb);
-			} else {
-				mid = aliased;
-			}
-		}
-
 		// check for package name and replace with the package's main module id
 		IPackage pkg = packages.get(mid);
 		if (pkg != null) {

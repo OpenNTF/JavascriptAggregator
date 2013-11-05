@@ -125,7 +125,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			DepTreeNode node;
 			getReadLock();
 			try {
-				modulePath = aggregator.getConfig().resolve(modulePath, features, dependentFeatures, null);
+				modulePath = aggregator.getConfig().resolve(modulePath, features, dependentFeatures, null, true);
 				node = depTree.getDescendent(modulePath);
 				if (node != null) {
 					result = node.getExpandedDependencies(features, dependentFeatures, includeDetails, performHasBranching);

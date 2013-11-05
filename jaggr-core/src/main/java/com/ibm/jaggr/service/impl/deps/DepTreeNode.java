@@ -643,7 +643,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 				String depName = dependencies[i];
 				DepTreeNode node = depRefs.get(i).get();
 
-				String resolved = getConfig().resolve(depName, features, dependentFeatures, comment);
+				String resolved = getConfig().resolve(depName, features, dependentFeatures, comment, true);
 				if (resolved != depName) {
 					depName = resolved;
 					node = getRoot().getDescendent(depName);
@@ -664,7 +664,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 							idx > 0 && 
 							hasPattern.matcher(depName.substring(0, idx)).find()) {
 						// Handle has plugin
-						String pluginName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment);
+						String pluginName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment, true);
 						HasNode hasNode = new HasNode(depName.substring(idx+1));
 						ModuleDeps deps = hasNode.evaluateAll(
 								pluginName, 
@@ -704,7 +704,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 				// dependencies
 				int idx = depName.indexOf("!"); //$NON-NLS-1$
 				if (idx != -1 && idx > 0 && !hasPattern.matcher(depName.substring(0, idx)).find()) {
-					depName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment);
+					depName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment, true);
 					if (!result.containsDep(depName, term)) {
 						// We need to check for containment here in order to avoid 
 						// infinite recursion resulting from circular dependencies.

@@ -77,7 +77,7 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 
 	@Override
 	public IResource resolve(String relative) {
-		return new StringResource("", uri.resolve(relative));
+		return new StringResource("", uri.resolve(relative)); //$NON-NLS-1$
 	}
 	
 }

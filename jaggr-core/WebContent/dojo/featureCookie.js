@@ -49,11 +49,26 @@ function(has, lang, md5, cookie) {
 				haslist = hasArg.substring(4);
 				ret = "hashash=" + md5(haslist, 1);
 			}
-			cookie('has', haslist, {
+			var domain = window.location.hostname,
+			    numDots = domain.split(".").length-1;
+			if (numDots === 1) {
+				// Need at least 2 dots in the cookie domain for most browsers.
+				// If there's only one, then we can add a leading dot to satisfy
+				// this requirement.
+				domain = '.' + domain;
+			} else if (numDots === 0) {
+				// If we have no dots (e.g. domain == 'localhost') then don't set
+				// the domain property in the cookie.
+				domain = null;
+			}
+			var args = {
 				expire: haslist ? 1 : -1,
-				domain: window.location.hostname,
 				path: contextPath
-			});
+			};
+			if (domain) {
+				args.domain = domain;
+			}
+			cookie('has', haslist, args);
 			return ret;
 		}
 	};
