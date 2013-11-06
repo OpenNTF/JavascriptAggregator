@@ -160,10 +160,5 @@
     	<artifactId>runtime</artifactId>
     	<scope>provided</scope>
     </dependency>
-    <dependency>
-    	<groupId>org.eclipse</groupId>
-    	<artifactId>osgi</artifactId>
-    	<scope>provided</scope>
-    </dependency>
   </dependencies>
 </project>
