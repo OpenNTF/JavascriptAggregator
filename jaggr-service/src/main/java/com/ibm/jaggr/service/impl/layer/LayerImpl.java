@@ -55,6 +55,7 @@ import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.service.config.IConfig.IPackage;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.layer.ILayer;
@@ -724,6 +725,14 @@ public class LayerImpl implements ILayer {
 			@SuppressWarnings("unchecked")
 			Set<String> required = (Set<String>)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
 			if (required != null) {
+			
+				// resolve required module names
+        Set<String> temp = new HashSet<String>();
+        for (String name : required) {
+          temp.add(aggr.getConfig().resolve(name, features, dependentFeatures, null, true));
+        }
+        required = temp;
+        
 				// If there's a required module, then add it and its dependencies
 				// to the module list.  
 	    		IDependencies deps = aggr.getDependencies();

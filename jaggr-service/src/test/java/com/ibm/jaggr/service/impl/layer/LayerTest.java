@@ -164,7 +164,7 @@ public class LayerTest extends EasyMock {
 		replay(mockResponse);
 		replay(mockDependencies);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		String configJson = "{paths:{p1:'p1',p2:'p2'}}";
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 /*
  	    Enable this code to display FINEST level logging for these tests in the
@@ -429,6 +429,21 @@ public class LayerTest extends EasyMock {
 				.append("\\\"p1/a\\\":function\\(\\)\\{.*?\\},")
 				.append("\\\"p1/noexist\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
 				.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);").toString());
+		assertTrue(p.matcher(result).find());
+
+		// Ensure that package name in require list get's translated to package main module
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestAttributes.put(IHttpTransport.REQUIRED_REQATTRNAME, new HashSet<String>(Arrays.asList(new String[]{"foo"})));
+		in = layer.getInputStream(mockRequest, mockResponse);
+		writer = new StringWriter();
+		CopyUtil.copy(in, writer);
+		result = writer.toString();
+		System.out.println(result);
+		p = Pattern.compile(new StringBuffer()
+				.append("require\\(\\{cache:\\{")
+				.append("\\\"foo/main\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
+				.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"foo/main\\\"\\]\\);").toString());
 		assertTrue(p.matcher(result).find());
 	}
 
