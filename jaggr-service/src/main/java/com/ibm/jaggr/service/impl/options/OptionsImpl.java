@@ -16,6 +16,16 @@
 
 package com.ibm.jaggr.service.impl.options;
 
+import com.google.common.collect.ImmutableMap;
+
+import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.service.options.IOptionsListener;
+import com.ibm.jaggr.service.util.SequenceNumberProvider;
+
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileWriter;
@@ -30,52 +40,41 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.options.IOptionsListener;
-import com.ibm.jaggr.service.util.SequenceNumberProvider;
-
 public class OptionsImpl  implements IOptions {
 	private static final Logger log = Logger.getLogger(OptionsImpl.class.getName());
 
-	private static final Map<String, String> defaults;
-	
-	static {
-		Map<String, String> map = new HashMap<String, String>();
-		map.put(DEVELOPMENT_MODE,	Boolean.FALSE.toString());
-		map.put(DISABLE_HASFILTERING,	Boolean.FALSE.toString());
-		map.put(DISABLE_REQUIRELISTEXPANSION,	Boolean.FALSE.toString());
-		map.put(DISABLE_HASPLUGINBRANCHING, Boolean.FALSE.toString());
-		map.put(VERIFY_DEPS,		Boolean.TRUE.toString());
-		map.put(DELETE_DELAY, 		Integer.toString(DEFAULT_DELETE_DELAY));
-		defaults = Collections.unmodifiableMap(map);
-	};
-		
+	private static final Map<String, String> defaults = ImmutableMap.<String, String>builder()
+		.put(DEVELOPMENT_MODE, Boolean.FALSE.toString())
+		.put(DISABLE_HASFILTERING, Boolean.FALSE.toString())
+		.put(DISABLE_REQUIRELISTEXPANSION,	Boolean.FALSE.toString())
+		.put(DISABLE_HASPLUGINBRANCHING, Boolean.FALSE.toString())
+		.put(VERIFY_DEPS, Boolean.TRUE.toString())
+		.put(DELETE_DELAY, Integer.toString(DEFAULT_DELETE_DELAY))
+		.put(DISABLE_GZIPCOMPRESSION, Boolean.FALSE.toString())
+	.build();
+
 	/**
 	 * The properties object.  We use {@link Properties} for the main
 	 * store because of its load feature and its support for default values.
 	 */
 	private Properties props;
-	
+
 	/**
 	 * An un-modifiable map that is used to shadow the properties object and is
 	 * the value that is returned to callers of {@link #getOptionsMap()}
 	 */
 	private Map<String, String> shadowMap;
-	
+
 	private BundleContext bundleContext = null;
-	
+
 	private String registrationName = null;
-	
+
 	private boolean updating = false;
-	
+
 	public OptionsImpl(BundleContext bundleContext, String registrationName) {
 		this(bundleContext, registrationName, true);
 	}
-	
+
 	public OptionsImpl(BundleContext bundleContext, String registrationName, boolean loadFromPropertiesFile) {
 		this.bundleContext = bundleContext;
 		this.registrationName = registrationName;
@@ -86,7 +85,7 @@ public class OptionsImpl  implements IOptions {
 			setProps(defaultOptions);
 		}
 	}
-	
+
 	@Override
 	public boolean isVerifyDeps() {
 		return Boolean.parseBoolean(getOption(VERIFY_DEPS));
@@ -101,7 +100,7 @@ public class OptionsImpl  implements IOptions {
 	public boolean isDevelopmentMode() {
 		return Boolean.parseBoolean(getOption(DEVELOPMENT_MODE));
 	}
-	
+
 	@Override
 	public boolean isDebugMode() {
 		return Boolean.parseBoolean(getOption(DEBUG_MODE));
@@ -111,17 +110,22 @@ public class OptionsImpl  implements IOptions {
 	public boolean isDisableHasFiltering() {
 		return Boolean.parseBoolean(getOption(DISABLE_HASFILTERING));
 	}
-	
+
 	@Override
 	public boolean isDisableHasPluginBranching() {
 		return Boolean.parseBoolean(getOption(DISABLE_HASPLUGINBRANCHING));
 	}
-	
+
+	@Override
+	public boolean isDisableGzipCompression() {
+		return Boolean.parseBoolean(getOption(DISABLE_GZIPCOMPRESSION));
+	}
+
 	@Override
 	public String getCacheBust() {
 		return getOption(CACHEBUST);
 	}
-	
+
 	@Override
 	public String getCacheDirectory() {
 		return getOption(CACHE_DIRECTORY);
@@ -146,14 +150,14 @@ public class OptionsImpl  implements IOptions {
 	public void setOption(String name, boolean value) throws IOException {
 		setOption(name, Boolean.toString(value));
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.options.IOptions#setOption(java.lang.String, java.lang.String)
 	 */
-	@Override 
+	@Override
 	public synchronized void setOption(String name, String value) throws IOException {
 		if (isUpdating()) {
-			// This will happen if setOption is called from within an options 
+			// This will happen if setOption is called from within an options
 			// update listener.
 			throw new ConcurrentModificationException();
 		}
@@ -177,7 +181,7 @@ public class OptionsImpl  implements IOptions {
 			setUpdating(false);
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.options.IOptions#getOption(java.lang.String)
 	 */
@@ -185,7 +189,7 @@ public class OptionsImpl  implements IOptions {
 	public String getOption(String name) {
 		return getOptionsMap().get(name);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.options.IOptions#getOptions()
 	 */
@@ -193,25 +197,25 @@ public class OptionsImpl  implements IOptions {
 	public Map<String, String> getOptionsMap() {
 		return shadowMap;
 	}
-	
+
 	@Override
 	public String getName() {
 		return registrationName;
 	}
-	
+
 	/**
 	 * Returns the filename of the properties file that the options
 	 * are loaded from/saved to.
-	 * 
+	 *
 	 * @return The Options properties file name
 	 */
 	public String getPropsFilename() {
 		return propsFilename;
 	}
-	
+
 	/**
 	 * Returns a {@code File} object to the properties file.
-	 * 
+	 *
 	 * @return The properties file.
 	 */
 	public File getPropsFile() {
@@ -222,16 +226,16 @@ public class OptionsImpl  implements IOptions {
 
 	/**
 	 * Loads the Options properties from the aggregator properties file
-	 * into the specified properties object.  If the properties file 
+	 * into the specified properties object.  If the properties file
 	 * does not exist, then try to load from the bundle.
-	 * 
+	 *
 	 * @param props
 	 *            The properties object to load. May be initialized with default
 	 *            values.
 	 * @return The properties file specified by {@code props}.
 	 */
 	protected Properties loadProps(Properties props) {
-		
+
     	// try to load the properties file first from the user's home directory
     	File file = getPropsFile();
     	if (file != null) {
@@ -244,7 +248,7 @@ public class OptionsImpl  implements IOptions {
 		    	if (in == null && bundleContext != null) {
 		    		// Try to load it from the bundle
 		   			URL url = bundleContext.getBundle().getResource(getPropsFilename());
-		    		if (url != null) { 
+		    		if (url != null) {
 		    			in = url.openStream();
 		    		}
 		    	}
@@ -264,11 +268,11 @@ public class OptionsImpl  implements IOptions {
     	}
     	return props;
 	}
-	
+
 	/**
 	 * Saves the specified Options properties to the properties file for the
 	 * aggregator.
-	 * 
+	 *
 	 * @param props
 	 *            The properties to save
 	 * @throws IOException
@@ -285,10 +289,10 @@ public class OptionsImpl  implements IOptions {
 			}
 		}
 	}
-	
+
 	/**
 	 * Notify options change listeners that Options have been updated
-	 * 
+	 *
 	 * @param sequence The change sequence number.
 	 */
 	protected void updateNotify(long sequence) {
@@ -299,7 +303,7 @@ public class OptionsImpl  implements IOptions {
 		try {
 			refs = bundleContext
 					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + registrationName + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-		
+
 			if (refs != null) {
 				for (ServiceReference ref : refs) {
 					IOptionsListener listener = (IOptionsListener)bundleContext.getService(ref);
@@ -319,10 +323,10 @@ public class OptionsImpl  implements IOptions {
 			}
 		}
 	}
-	
+
 	/**
 	 * Returns the default options for this the aggregator service.
-	 * 
+	 *
 	 * @return The default options.
 	 */
 	protected Properties getDefaultOptions() {
@@ -334,35 +338,35 @@ public class OptionsImpl  implements IOptions {
 	/**
 	 * Returns true if properties are being updated, including calling
 	 * of options update listeners resulting from an update.
-	 * 
+	 *
 	 * @return The update flag
 	 */
 	protected boolean isUpdating() {
 		return updating;
 	}
-	
+
 	/**
 	 * Sets the update flag.
-	 * 
+	 *
 	 * @param updating The new value of the update flag.
 	 */
 	protected void setUpdating(boolean updating) {
 		this.updating = updating;
 	}
-	
+
 	/**
 	 * Returns the properties object for the current options.
-	 * 
+	 *
 	 * @return The properties object
 	 */
 	protected Properties getProps() {
 		return props;
 	}
-	
+
 	/**
 	 * Sets the properties object for the current options and updates
 	 * the shadow map that is returned to callers of {@link #getOptionsMap()}.
-	 * 
+	 *
 	 * @param props The new properties.
 	 */
 	protected void setProps(Properties props) {
