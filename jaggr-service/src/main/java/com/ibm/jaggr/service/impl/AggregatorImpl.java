@@ -108,7 +108,7 @@ import com.ibm.jaggr.service.util.StringUtil;
 
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
- * 
+ *
  * Note that despite the fact that HttpServlet (which this class extends)
  * implements Serializable, attempts to serialize instances of this class will
  * fail due to the fact that not all instance data is serializable. The
@@ -122,9 +122,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	/**
 	 * Default value for resourcefactories init-param
 	 */
-	protected static final String DEFAULT_RESOURCEFACTORIES = 
+	protected static final String DEFAULT_RESOURCEFACTORIES =
 		"com.ibm.jaggr.service.default.resourcefactories"; //$NON-NLS-1$
-	
+
 	/**
 	 * Default value for modulebuilders init-param
 	 */
@@ -136,9 +136,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 */
 	protected static final String DEFAULT_HTTPTRANSPORT =
 		"com.ibm.jaggr.service.dojo.httptransport"; //$NON-NLS-1$
-	
+
 	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
-	
+
 	private File workdir = null;
     private ICacheManager cacheMgr = null;
     private IConfig config = null;
@@ -152,11 +152,11 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     private List<ServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<ServiceReference>());
     private InitParams initParams = null;
     private IOptions localOptions = null;
-    
+
     private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
     private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
     private IAggregatorExtension httpTransportExtension = null;
-    
+
     enum RequestNotifierAction {
     	start,
     	end
@@ -168,9 +168,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     @Override
     public void init(ServletConfig servletConfig) throws ServletException {
         super.init(servletConfig);
-        
+
         final ServletContext context = servletConfig.getServletContext();
-        
+
        	// Set servlet context attributes for access though the request
         context.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, this);
     }
@@ -191,8 +191,8 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		deps = null;
     	super.destroy();
     }
-    
-    
+
+
     /**
      * Called when the aggregator is shutting down.  Note that there is inconsistency
      * among servlet bridge implementations over when {@link HttpServlet#destroy()}
@@ -241,7 +241,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			optionsServiceTracker.close();
 			executorsServiceTracker.close();
 			variableResolverServiceTracker.close();
-    	}			
+    	}
 	}
 
     /* (non-Javadoc)
@@ -255,7 +255,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     	req.setAttribute(AGGREGATOR_REQATTRNAME, this);
     	ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
     	req.setAttribute(CONCURRENTMAP_REQATTRNAME, concurrentMap);
-    	
+
         try {
 	        // Validate config last-modified if development mode is enabled
 	        if (getOptions().isDevelopmentMode()) {
@@ -268,10 +268,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 					if (reloadConfig()) {
 						// If the config has been modified, then dependencies will be revalidated
 						// asynchronously.  Rather than forcing the current request to wait, return
-						// a response that will display an alert informing the user of what is 
+						// a response that will display an alert informing the user of what is
 						// happening and asking them to reload the page.
-		            	String content = "alert('" +  //$NON-NLS-1$ 
-		            			StringUtil.escapeForJavaScript(Messages.ConfigModified) + 
+		            	String content = "alert('" +  //$NON-NLS-1$
+		            			StringUtil.escapeForJavaScript(Messages.ConfigModified) +
 		            			"');"; //$NON-NLS-1$
 		            	resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
 						CopyUtil.copy(new StringReader(content), resp.getOutputStream());
@@ -279,10 +279,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 					}
 				}
 	        }
-        	
+
        		getTransport().decorateRequest(req);
        		notifyRequestListeners(RequestNotifierAction.start, req, resp);
-       		
+
             ILayer layer = getLayer(req);
             long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
             long lastModified = (Math.max(getCacheManager().getCache().getCreated(), layer.getLastModified(req)) / 1000) * 1000;
@@ -304,14 +304,14 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
                     resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
                     int expires = getConfig().getExpires();
                     if (expires > 0) {
-                        resp.addHeader("Cache-Control", "max-age=" + expires); //$NON-NLS-1$ //$NON-NLS-2$
+                        resp.addHeader("Cache-Control", "public, max-age=" + expires); //$NON-NLS-1$ //$NON-NLS-2$
                     }
     	        }
             	CopyUtil.copy(in, resp.getOutputStream());
             }
        		notifyRequestListeners(RequestNotifierAction.end, req, resp);
         } catch (DependencyVerificationException e) {
-        	// clear the cache now even though it will be cleared when validateDeps has 
+        	// clear the cache now even though it will be cleared when validateDeps has
         	// finished (asynchronously) so that any new requests will be forced to wait
         	// until dependencies have been validated.
         	getCacheManager().clearCache();
@@ -321,9 +321,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
         	if (getOptions().isDevelopmentMode()) {
         		String msg = StringUtil.escapeForJavaScript(
     				MessageFormat.format(
-	        			Messages.DepVerificationFailed, 
+	        			Messages.DepVerificationFailed,
 	        			new Object[]{
-	        				e.getMessage(), 
+	        				e.getMessage(),
 	        				AggregatorCommandProvider.EYECATCHER + " " + //$NON-NLS-1$
 	        					AggregatorCommandProvider.CMD_VALIDATEDEPS + " " + //$NON-NLS-1$
 	        					getName() + " " + //$NON-NLS-1$
@@ -377,7 +377,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public boolean reloadConfig() throws IOException {
 		return loadConfig(SequenceNumberProvider.incrementAndGetSequenceNumber());
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getDependencies()
 	 */
@@ -393,7 +393,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     public String getName() {
     	return name;
     }
-    
+
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.IAggregator#getOptions()
      */
@@ -401,7 +401,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     public IOptions getOptions() {
     	return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
     }
-    
+
     @Override
     public IExecutors getExecutors() {
     	return (IExecutors) executorsServiceTracker.getService();
@@ -414,7 +414,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     public IConfig getConfig() {
     	return config;
     }
-    
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getCacheManager()
 	 */
@@ -446,7 +446,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public File getWorkingDirectory() {
 		return workdir;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#asServlet()
 	 */
@@ -454,7 +454,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public HttpServlet asServlet() {
 		return this;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getTransport()
 	 */
@@ -469,14 +469,14 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	@Override
 	public void setInitializationData(IConfigurationElement configElem, String propertyName,
 			Object data) throws CoreException {
-		
+
 		Bundle contributingBundle = Platform.getBundle(configElem.getNamespaceIdentifier());
 		if (contributingBundle.getState() != Bundle.ACTIVE) {
 			try {
 				contributingBundle.start();
 			} catch (BundleException e) {
 				throw new CoreException(
-						new Status(Status.ERROR, configElem.getNamespaceIdentifier(), 
+						new Status(Status.ERROR, configElem.getNamespaceIdentifier(),
 								e.getMessage(), e)
 					);
 			}
@@ -492,16 +492,16 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
        		workdir = initWorkingDirectory( // this must be after initOptions
        				Platform.getStateLocation(getBundleContext().getBundle()).toFile(),
        				configElem
-       		);	
+       		);
         	initExtensions(configElem);
-        	
+
         	// create the config.  Keep it local so it won't be seen by deps and cacheMgr
         	// until after we check for customization last-mods.  Then we'll set the config
         	// in the instance data and call the config listeners.
 	        IConfig config = newConfig();
-	        
+
 	        // Check last-modified times of resources in the overrides folders.  These resources
-	        // are considered to be dynamic in a production environment and we want to 
+	        // are considered to be dynamic in a production environment and we want to
 	        // detect new/changed resources in these folders on startup so that we can clear
 	        // caches, etc.
 	        OverrideFoldersTreeWalker walker = new OverrideFoldersTreeWalker(this, config);
@@ -511,23 +511,23 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	        this.config = config;
 			// Notify listeners
 			notifyConfigListeners(1);
-			
+
 			bundleContext.addBundleListener(this);
         } catch (Exception e) {
 			throw new CoreException(
-					new Status(Status.ERROR, configElem.getNamespaceIdentifier(), 
+					new Status(Status.ERROR, configElem.getNamespaceIdentifier(),
 							e.getMessage(), e)
 				);
 		}
 
-        Properties dict = new Properties();			
+        Properties dict = new Properties();
         dict.put("name", getName()); //$NON-NLS-1$
         registrations.add(getBundleContext().registerService(
         		IAggregator.class.getName(), this, dict));
-        
-        
+
+
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResourceProvider#getResource(java.net.URI)
 	 */
@@ -535,7 +535,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public IResource newResource(URI uri) {
 		IResourceFactory factory = null;
 		String scheme = uri.getScheme();
-		
+
 		for (IAggregatorExtension extension : getResourceFactoryExtensions()) {
 			if (scheme.equals(extension.getAttribute(IResourceFactoryExtensionPoint.SCHEME_ATTRIBUTE))) {
 				IResourceFactory test = (IResourceFactory)extension.getInstance();
@@ -567,9 +567,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		if (ext.contains("/")) { //$NON-NLS-1$
 			ext = ""; //$NON-NLS-1$
 		}
-		
+
 		for (IAggregatorExtension extension : getModuleBuilderExtensions()) {
-			String extAttrib = extension.getAttribute(IModuleBuilderExtensionPoint.EXTENSION_ATTRIBUTE); 
+			String extAttrib = extension.getAttribute(IModuleBuilderExtensionPoint.EXTENSION_ATTRIBUTE);
 			if (ext.equals(extAttrib) || "*".equals(extAttrib)) { //$NON-NLS-1$
 				IModuleBuilder test = (IModuleBuilder)extension.getInstance();
 				if (test.handles(mid, res)) {
@@ -584,7 +584,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			);
 		}
 		return builder;
-    	
+
 	}
 
 	/* (non-Javadoc)
@@ -594,7 +594,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public Iterable<IAggregatorExtension> getResourceFactoryExtensions() {
 		return Collections.unmodifiableList(resourceFactoryExtensions);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getModuleBuilderExtensions()
 	 */
@@ -602,7 +602,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public Iterable<IAggregatorExtension> getModuleBuilderExtensions() {
 		return Collections.unmodifiableList(moduleBuilderExtensions);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getHttpTransportExtension()
 	 */
@@ -610,7 +610,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	public IAggregatorExtension getHttpTransportExtension() {
 		return httpTransportExtension;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleFactory#newModule(java.lang.String, java.net.URI)
 	 */
@@ -646,10 +646,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	}
 
 	/**
-	 * Options update listener forwarder.  This listener is registered under the option's 
+	 * Options update listener forwarder.  This listener is registered under the option's
 	 * name (the name of the servlet's bundle), and forwards listener events to listeners
 	 * that are registered under the aggregator name.
-	 * 
+	 *
 	 * @param options The options object
 	 * @param sequence The event sequence number
 	 */
@@ -661,7 +661,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		try {
 			refs = getBundleContext()
 					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-		
+
 			if (refs != null) {
 				for (ServiceReference ref : refs) {
 					IOptionsListener listener = (IOptionsListener)getBundleContext().getService(ref);
@@ -680,32 +680,32 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-		
+
 	}
 	/**
 	 * Returns the name for the bundle containing the servlet code.  This is used
 	 * to look up services like IOptions and IExecutors that are registered by the
 	 * bundle activator.
-	 * 
+	 *
 	 * @return The servlet bundle name.
 	 */
 	protected String getServletBundleName() {
 		return Activator.BUNDLE_NAME;
 	}
-	
+
 	/**
      * Sets response status and headers for an error response based on the
-     * information in the specified exception.  If development mode is 
+     * information in the specified exception.  If development mode is
      * enabled, then returns a 200 status with a console.error() message
      * specifying the exception message
-     * 
+     *
      * @param resp The response object
      * @param t The exception object
      * @param status The response status
      */
     protected void exceptionResponse(HttpServletRequest req, HttpServletResponse resp, Throwable t, int status) {
     	resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-    	Level logLevel = (t instanceof BadRequestException || t instanceof NotFoundException) 
+    	Level logLevel = (t instanceof BadRequestException || t instanceof NotFoundException)
     						? Level.WARNING : Level.SEVERE;
     	if (log.isLoggable(logLevel)) {
     		String queryArgs = req.getQueryString();
@@ -739,10 +739,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
         	resp.setStatus(status);
     	}
     }
-    
+
 	/**
 	 * Returns the {@code Layer} object for the specified request.
-	 * 
+	 *
 	 * @param request The request object
 	 * @return The layer for the request
 	 * @throws Exception
@@ -752,7 +752,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
         // Try non-blocking get() request first
         return getCacheManager().getCache().getLayers().getLayer(request);
     }
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String)
 	 */
@@ -801,7 +801,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	    			propValue = transformer.transform(propName, propValue);
 	    		}
 	    		matcher.appendReplacement(
-	    				buf, 
+	    				buf,
 	    				propValue
 	    					.replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
 	    					.replace("$", "\\$")  //$NON-NLS-1$ //$NON-NLS-2$
@@ -813,11 +813,11 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	    matcher.appendTail(buf);
 	    return buf.toString();
 	}
-	
+
 
 	/**
 	 * Loads the {@code IConfig} for this aggregator
-	 * 
+	 *
 	 * @param seq The config change sequence number
 	 * @return True if the new config is changed from the old config
 	 * @throws IOException
@@ -834,10 +834,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		notifyConfigListeners(seq);
 		return modified;
 	}
-	
+
 	/**
 	 * Calls the registered request notifier listeners.
-	 * 
+	 *
 	 * @param action The request action (start or end)
 	 * @param req The request object.
 	 * @param resp The response object.
@@ -870,7 +870,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 
 	/**
 	 * Call the registered config change listeners
-	 * 
+	 *
 	 * @param seq The change listener sequence number
 	 * @throws IOException
 	 */
@@ -887,7 +887,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		}
 		if (refs != null) {
 			for (ServiceReference ref : refs) {
-				IConfigListener listener = 
+				IConfigListener listener =
 					(IConfigListener)getBundleContext().getService(ref);
 				if (listener != null) {
 					try {
@@ -908,7 +908,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	/**
 	 * Adds the specified resource factory extension to the list of registered
 	 * resource factory extensions.
-	 * 
+	 *
 	 * @param loadedExt
 	 *            The extension to add
 	 * @param before
@@ -937,11 +937,11 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			}
 		}
 	}
-	
+
 	/**
 	 * Adds the specified module builder extension to the list of registered
 	 * module builder extensions.
-	 * 
+	 *
 	 * @param loadedExt
 	 *            The extension to add
 	 * @param before
@@ -970,11 +970,11 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			}
 		}
 	}
-	
+
 	/**
-	 * Registers the specified http transport extension as the 
+	 * Registers the specified http transport extension as the
 	 * http transport for this aggregator.
-	 * 
+	 *
 	 * @param loadedExt The extension to register
 	 */
 	protected void registerHttpTransport(IAggregatorExtension loadedExt) {
@@ -984,13 +984,13 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		httpTransportExtension = loadedExt;
 	}
 
-	
+
 	/**
-	 * For each extension specified, call the extension's 
+	 * For each extension specified, call the extension's
 	 * {@link IExtensionInitializer#initialize} method.  Note that this
-	 * can cause additional extensions to be registered though the 
+	 * can cause additional extensions to be registered though the
 	 * {@link ExtensionRegistrar}.
-	 * 
+	 *
 	 * @param extensions The list of extensions to initialize
 	 * @param reg The extension registrar.
 	 */
@@ -1002,10 +1002,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			}
     	}
 	}
-	
+
 	protected void initOptions(InitParams initParams) throws InvalidSyntaxException {
    		optionsServiceTracker = getOptionsServiceTracker(getBundleContext());
-   		String registrationName = getServletBundleName(); 
+   		String registrationName = getServletBundleName();
    		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
    		if (values != null && values.size() > 0) {
    			String value = values.get(0);
@@ -1028,12 +1028,12 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
         		IOptionsListener.class.getName(), this, dict));
 
 	}
-	
+
 	/**
 	 * Loads and initializes the resource factory, module builder and
-	 * http transport extensions specified in the configuration 
+	 * http transport extensions specified in the configuration
 	 * element for this aggregator
-	 * 
+	 *
 	 * @param configElem The configuration element
 	 * @throws CoreException
 	 * @throws NotFoundException
@@ -1064,7 +1064,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
             	registerResourceFactory(new AggregatorExtension(extension, factory, props), null);
 			}
         }
-        
+
         /*
          *  Init the module builder extensions
          */
@@ -1089,7 +1089,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
             	registerModuleBuilder(new AggregatorExtension(extension, builder, props), null);
 			}
         }
-        
+
         /*
          * Init the http transport extension
          */
@@ -1126,7 +1126,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     	callExtensionInitializers(getModuleBuilderExtensions(), reg);
     	reg.open = false;
     }
-    
+
 	// Instances of this class are NOT serializable
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		throw new NotSerializableException();
@@ -1136,15 +1136,15 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
 		throw new NotSerializableException();
 	}
-	
+
 	/**
-	 * Returns the working directory for this aggregator. 
+	 * Returns the working directory for this aggregator.
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
-	 * override this method to initialize the aggregator using a different 
+	 * override this method to initialize the aggregator using a different
 	 * working directory.  Use the public {@link #getWorkingDirectory()} method
 	 * to get the working directory from an initialized aggregator.
-	 * 
+	 *
 	 * @param configElem
 	 *            The configuration element. Not used by this class but provided
 	 *            for use by subclasses.
@@ -1179,15 +1179,15 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
    		}
    		return servletDir;
 	}
-	
+
 	/**
 	 * Returns the name for this aggregator
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
-	 * override this method to initialize the aggregator using a different 
+	 * override this method to initialize the aggregator using a different
 	 * name.  Use the public {@link AggregatorImpl#getName()} method
 	 * to get the name of an initialized aggregator.
-	 *  
+	 *
 	 * @param configElem
 	 *            The configuration element.
 	 * @return The aggregator name
@@ -1195,21 +1195,21 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	protected String getAggregatorName(IConfigurationElement configElem) {
     	// trim leading and trailing '/'
 		String alias = configElem.getAttribute("alias"); //$NON-NLS-1$
-        while (alias.charAt(0) == '/') 
+        while (alias.charAt(0) == '/')
         	alias = alias.substring(1);
-        while (alias.charAt(alias.length()-1) == '/') 
+        while (alias.charAt(alias.length()-1) == '/')
         	alias = alias.substring(0, alias.length()-1);
         return alias;
 	}
-	
+
 	/**
 	 * Returns the init params for this aggregator
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
-	 * override this method to initialize the aggregator using different 
+	 * override this method to initialize the aggregator using different
 	 * init params.  Use the public {@link AggregatorImpl#getInitParams()} method
 	 * to get the init params for an initialized aggregator.
-	 * 
+	 *
 	 * @param configElem
 	 *            The configuration element.
 	 * @return The init params
@@ -1229,14 +1229,14 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 * Returns an opened ServiceTracker for the Aggregator options.  Aggregator options
 	 * are created by the bundle activator and are shared by all Aggregator instances
 	 * created from the same bundle.
-	 * 
+	 *
 	 * @param bundleContext The contributing bundle context
 	 * @return The opened service tracker
 	 * @throws InvalidSyntaxException
 	 */
 	protected ServiceTracker getOptionsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
    		ServiceTracker tracker = new ServiceTracker(
-   				bundleContext, 
+   				bundleContext,
    				bundleContext.createFilter(
    						"(&(" + Constants.OBJECTCLASS + "=" + IOptions.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
    						")(name=" + getServletBundleName() + "))"), //$NON-NLS-1$ //$NON-NLS-2$
@@ -1244,12 +1244,12 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
    		tracker.open();
 		return tracker;
 	}
-	
+
 	/**
 	 * Returns an opened ServiceTracker for the Aggregator exectors provider.
 	 * The executors provider is are created by the bundle activator and is
 	 * shared by all Aggregator instances created from the same bundle.
-	 * 
+	 *
 	 * @param bundleContext
 	 *            The contributing bundle context
 	 * @return The opened service tracker
@@ -1257,7 +1257,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 */
 	protected ServiceTracker getExecutorsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
    		ServiceTracker tracker = new ServiceTracker(
-   				bundleContext, 
+   				bundleContext,
    				bundleContext.createFilter(
    						"(&(" + Constants.OBJECTCLASS + "=" + IExecutors.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
    						")(name=" + getServletBundleName() + "))"), //$NON-NLS-1$ //$NON-NLS-2$
@@ -1272,10 +1272,10 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		return tracker;
 	}
 
-	
+
 	/**
 	 * Instantiates a new dependencies object
-	 * 
+	 *
 	 * @return The new dependencies
 	 */
 	protected IDependencies newDependencies(long stamp) {
@@ -1284,7 +1284,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 
 	/**
 	 * Instantiates a new config object
-	 * 
+	 *
 	 * @return The new config
 	 * @throws IOException
 	 */
@@ -1294,7 +1294,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 
 	/**
 	 * Instantiates a new cache manager
-	 * 
+	 *
 	 * @return The new cache manager
 	 */
 	protected ICacheManager newCacheManager(long stamp) throws IOException {
@@ -1306,15 +1306,15 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 */
 	protected class ExtensionRegistrar implements IExtensionRegistrar {
 		private boolean open = true;
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar#registerExtension(java.lang.Object, java.util.Properties, java.lang.String, java.lang.String)
 		 */
 		@Override
 		public void registerExtension(
-				Object impl, 
-				Properties attributes, 
-				String extensionPointId, 
+				Object impl,
+				Properties attributes,
+				String extensionPointId,
 				String uniqueId,
 				IAggregatorExtension before) {
 			if (!open) {
@@ -1323,8 +1323,8 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			IAggregatorExtension extension;
 			if (impl instanceof IResourceFactory) {
 				extension = new AggregatorExtension(
-						impl, 
-						new Properties(attributes), 
+						impl,
+						new Properties(attributes),
 						extensionPointId,
 						uniqueId
 				);
@@ -1334,13 +1334,13 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				);
 			} else if (impl instanceof IModuleBuilder) {
 				extension = new AggregatorExtension(
-						impl, 
-						attributes, 
+						impl,
+						attributes,
 						extensionPointId,
 						uniqueId
 				);
 				registerModuleBuilder(
-						extension, 
+						extension,
 						before
 				);
 			} else {
