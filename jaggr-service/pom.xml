@@ -63,6 +63,11 @@
         </includes>
       </resource>
     </resources>
+    <testResources>
+      <testResource>
+        <directory>src/test/javascript</directory>
+      </testResource>
+    </testResources>
     <pluginManagement>
        <plugins>
         <plugin>
@@ -154,6 +159,7 @@
             <excludes>
               <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Term.java</exclude>
               <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Formula.java</exclude>
+              <exclude>src/test/resources/specRunner.htmltemplate</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -174,6 +180,32 @@
               <followSymlinks>false</followSymlinks>
             </fileset>
           </filesets>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>com.github.searls</groupId>
+        <artifactId>jasmine-maven-plugin</artifactId>
+        <extensions>true</extensions>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <browserVersion>FIREFOX_17</browserVersion>
+          <sourceExcludes>
+            <exclude>**/*.js</exclude>
+          </sourceExcludes>
+          <jsSrcDir>${basedir}/WebContent</jsSrcDir>
+          <jsTestSrcDir>${basedir}/src/test/javascript</jsTestSrcDir>
+          <preloadSources>
+            <source>/WebContent/loaderExtCommon.js</source>
+          </preloadSources>
+          <customRunnerTemplate>${basedir}/src/test/resources/specRunner.htmltemplate</customRunnerTemplate>
+          <timeout>30</timeout>
+          <keepServerAlive>true</keepServerAlive>
         </configuration>
       </plugin>
     </plugins>
