@@ -55,7 +55,6 @@ import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.service.config.IConfig.IPackage;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.layer.ILayer;

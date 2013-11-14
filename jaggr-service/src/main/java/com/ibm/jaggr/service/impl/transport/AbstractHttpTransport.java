@@ -111,7 +111,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
     private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
     
-    private static Pattern DECODE_JSON = Pattern.compile("([!()|*])"); //$NON-NLS-1$
+    private static Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
     private static Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
     private String resourcePathId;
@@ -275,26 +275,53 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
         return decoded;
     }
     
-    /**
-     * Unfolds a folded module name list into a String array of unfolded names
-     * <p>
-     * The returned list must be sorted the same way it was requested
-     * ordering modules in the same way as in the companion js extension to amd loader
-     * order provided in the folded module leaf
-     * 
-     * @param modules The folded module name list
-     * @param count The count of modules in the list
-     * @return The unfolded module name list
-     */
-    protected String[] unfoldModules(JSONObject modules, int count) throws IOException, JSONException {
-        String[] ret = new String[count];
-        Iterator<?> it = modules.keys();
-        while (it.hasNext()) {
-            String key = (String)it.next();
-            unfoldModulesHelper(modules.get(key), key, ret);
-        }
-        return ret;
-    }
+	/**
+	 * Regular expression for a non-path property (i.e. auxiliary information or processing
+	 * instruction) of a folded path json object.
+	 */
+	static public Pattern NON_PATH_PROP_PATTERN = Pattern.compile("^/[^/]+/$");
+	
+	/**
+	 * Name of folded path json property used to identify the names of loader
+	 * plugin prefixes and their ordinals used in the folded path.  This must
+	 * match the value of pluginPrefixesPropName in loaderExtCommon.js.  The
+	 * slashes (/) ensure that the name won't collide with a real path name.
+	 */
+	static public String PLUGIN_PREFIXES_PROP_NAME = "/pre/";
+	
+	/**
+	 * Unfolds a folded module name list into a String array of unfolded names
+	 * <p>
+	 * The returned list must be sorted the same way it was requested ordering
+	 * modules in the same way as in the companion js extension to amd loader
+	 * order provided in the folded module leaf
+	 * 
+	 * @param modules
+	 *            The folded module name list
+	 * @param count
+	 *            The count of modules in the list
+	 * @return The unfolded module name list
+	 */
+	protected String[] unfoldModules(JSONObject modules, int count) throws IOException, JSONException {
+		String[] ret = new String[count];
+		Iterator<?> it = modules.keys();
+		String[] prefixes = null;
+		if (modules.containsKey(PLUGIN_PREFIXES_PROP_NAME)) {
+			@SuppressWarnings("unchecked")
+			Map<String, String> oPrefixes = (Map<String, String>) modules.get(PLUGIN_PREFIXES_PROP_NAME);
+			prefixes = new String[oPrefixes.size()];
+			for (String key : oPrefixes.keySet()) {
+				prefixes[Integer.parseInt(oPrefixes.get(key))] = key;
+			}
+		}
+		while (it.hasNext()) {
+			String key = (String) it.next();
+			if (!NON_PATH_PROP_PATTERN.matcher(key).find()) {
+				unfoldModulesHelper(modules.get(key), key, prefixes, ret);
+			}
+		}
+		return ret;
+	}
     
     /**
      * Helper routine to unfold folded module names 
@@ -303,20 +330,24 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
      * @param path
      * @param modules
      */
-    protected void unfoldModulesHelper(Object obj, String path, String[] modules) throws IOException, JSONException {
+    protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, String[] modules) throws IOException, JSONException {
         if (obj instanceof JSONObject) {
             JSONObject jsonobj = (JSONObject)obj;
             Iterator<?> it = jsonobj.keySet().iterator();
             while (it.hasNext()) {
                 String key = (String)it.next();
                 String newpath = path + "/" + key;  //$NON-NLS-1$
-                unfoldModulesHelper(jsonobj.get(key), newpath, modules);
+                unfoldModulesHelper(jsonobj.get(key), newpath, aPrefixes, modules);
             }
         }
         else if (obj instanceof String){
             String[] values = ((String)obj).split("-"); //$NON-NLS-1$
             try {
-                modules[Integer.parseInt(values[0])] = values.length > 1 ? (values[1] + "!" + path) : path; //$NON-NLS-1$
+                modules[Integer.parseInt(values[0])] = values.length > 1 ? 
+                	((aPrefixes != null ? 
+                			aPrefixes[Integer.parseInt(values[1])] : values[1]) 
+                		+ "!" + path) :
+                	path; //$NON-NLS-1$
             } catch (Exception e) {
             	if (log.isLoggable(Level.SEVERE))
             		log.log(Level.SEVERE, e.getMessage(), e);

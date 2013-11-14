@@ -71,6 +71,14 @@ var params = {
 	 * URL.
 	 */
 	urlProcessors = [],
+	
+	/**
+	 * Name of folded path json property used to identify the names of loader
+	 * plugin prefixes and their ordinals used in the folded path.  This must
+	 * match the value of AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME.  The
+	 * slashes (/) ensure that the name won't collide with a real path name.
+	 */
+	pluginPrefixesPropName = "/pre/",
 
 	/**
 	 * Folds the list of module names provided in asNames into a compacted
@@ -82,7 +90,9 @@ var params = {
 	 */
 	foldModuleNames = function(asNames, opt_depmap) {
 		// Fold modules paths into an object to reduce duplication
-		var oFolded = {};
+		var oFolded = {},
+		    oPrefixes = {},
+		    iPrefixes = 0;
 		for (var i = 0, name; !!(name = asNames[i]); i++) {
 			// This list of invalid chars should be the same as the list used
 			// on the server in PathUtil.invalidChars.
@@ -97,7 +107,13 @@ var params = {
 			for (var j = 0; j < len; j++) {
 				var segment = segments[j];
 				if (j == len - 1) {
-					oChild[segment] = dep.prefix ? [i, dep.prefix] : i;
+					if (dep.prefix) {
+						var idx = oPrefixes[dep.prefix];
+						if (!idx && idx !== 0) {
+							oPrefixes[dep.prefix] = iPrefixes++;
+						}
+					}
+					oChild[segment] = dep.prefix ? [i, oPrefixes[dep.prefix]] : i;
 					// Fix up asNames name.  We use this later to tell the loader we've loaded resource.
 					// It's expecting the name to be what it was when it came in.  ex: combo/text!foo/bar.txt not foo/bar.txt
 					if (dep.prefix) {
@@ -113,6 +129,9 @@ var params = {
 					}
 				}
 			}
+		}
+		if (iPrefixes) {
+			oFolded[pluginPrefixesPropName] = oPrefixes;
 		}
 		return oFolded;
 	},
