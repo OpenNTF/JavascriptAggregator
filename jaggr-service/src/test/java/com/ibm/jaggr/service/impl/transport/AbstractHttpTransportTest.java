@@ -18,22 +18,25 @@ package com.ibm.jaggr.service.impl.transport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import java.net.URI;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.Assert;
-
+import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.util.Features;
 
@@ -96,5 +99,46 @@ public class AbstractHttpTransportTest {
 		cookies[0] = new Cookie("foo", "bar");
 		features = AbstractHttpTransport.getFeaturesFromRequest(request);
 		assertEquals(0, features.featureNames().size());
+	}
+	
+	@Test
+	public void testUnfoldModules() throws Exception {
+		AbstractHttpTransport transport = new AbstractHttpTransport() {
+			@Override protected URI getComboUri() { return null; }
+			@Override public String getLayerContribution(HttpServletRequest request, LayerContributionType type, Object arg) { return null; }
+			@Override public boolean isServerExpandable(HttpServletRequest request, String mid) { return false; }
+			@Override public List<ICacheKeyGenerator> getCacheKeyGenerators() { return null; }
+		};
+		// basic folded paths  with no plugin prefixes
+		JSONObject obj = new JSONObject("{foo:{bar:'0', baz:{xxx:'2', yyy:'1'}}, dir:'3'}");
+		String[] paths = transport.unfoldModules(obj, 4);
+		Assert.assertArrayEquals(new String[] {"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir" }, paths);
+		
+		// folded paths with plugin prefixes
+		obj = new JSONObject("{'"+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"':{'combo/text':'0', abc:'1'},foo:{bar:'0', baz:{xxx.txt:'1-0', yyy.txt:'2-1'}}}");
+		paths = transport.unfoldModules(obj, 3);
+		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
+		
+		// make sure legacy format for specifying plugin prefixes works
+		obj = new JSONObject("{foo:{bar:'0', baz:{xxx.txt:'1-combo/text', yyy.txt:'2-abc'}}}");
+		paths = transport.unfoldModules(obj, 3);
+		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);	
+	}
+	
+	@Test
+	public void decodeMopdules() throws Exception {
+		AbstractHttpTransport transport = new AbstractHttpTransport() {
+			@Override protected URI getComboUri() { return null; }
+			@Override public String getLayerContribution(HttpServletRequest request, LayerContributionType type, Object arg) { return null; }
+			@Override public boolean isServerExpandable(HttpServletRequest request, String mid) { return false; }
+			@Override public List<ICacheKeyGenerator> getCacheKeyGenerators() { return null; }
+		};
+		
+		JSONObject decoded = transport.decodeModules("(foo!(bar!0*baz!(<|xxx>!2*yyy!1))*dir!3)");
+		Assert.assertEquals(new JSONObject("{foo:{bar:'0',baz:{'(!xxx)':'2',yyy:'1'}},dir:'3'}"), decoded);
+	
+		decoded = transport.decodeModules("("+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"!(combo/text!0*abc!1)*foo!(bar!0*baz!(xxx.txt!1-0*yyy.txt!2-1)))");
+		Assert.assertEquals(new JSONObject("{'"+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"':{'combo/text':'0', abc:'1'},foo:{bar:'0', baz:{xxx.txt:'1-0', yyy.txt:'2-1'}}}"), decoded);
+	
 	}
 }
