@@ -26,7 +26,6 @@ import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -120,7 +119,16 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	
 		try { 
 			configUri = loadConfigUri();
-			URLConnection connection = configUri.toURL().openConnection();
+			// Try to convert to an IResource in case the URI specifies
+			//  an IResource supported scheme like 'namedbundleresource'.
+			URI uri;
+			try {
+				uri = aggregator.newResource(configUri).getURI();
+			} catch (UnsupportedOperationException e) {
+				// Not fatal.  Just use the configUri as is
+				uri = configUri;
+			}
+			URLConnection connection = uri.toURL().openConnection();
 			lastModified = connection.getLastModified();
 
 			rawConfig = loadConfig(connection.getInputStream());
@@ -647,11 +655,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		String configName = configNames.iterator().next();
 		configUri = new URI(configName);
 		if (!configUri.isAbsolute()) {
-			URL configUrl = getAggregator().getBundleContext().getBundle().getResource(configName);
-			if (configUrl == null) {
+			configUri = new URI("namedbundleresource://" +  //$NON-NLS-1$
+					getAggregator().getBundleContext().getBundle().getSymbolicName()  +
+					(configName.startsWith("/") ? "" : "/") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ 
+					configName);
+			if (!getAggregator().newResource(configUri).exists()) {
 				throw new FileNotFoundException(configName);
 			}
-			configUri = PathUtil.url2uri(configUrl);
 		}
 		return configUri;
 	}

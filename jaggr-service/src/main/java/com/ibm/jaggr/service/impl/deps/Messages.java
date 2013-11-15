@@ -30,6 +30,7 @@ public class Messages extends NLS {
 	public static String DepTree_7;
 	public static String DepTree_8;
 	public static String DepTree_9;
+	public static String DepTree_10;
 	public static String DepTreeNode_0;
 	public static String DepTreeNode_1;
 	public static String DepTreeNode_2;
