@@ -279,7 +279,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * Regular expression for a non-path property (i.e. auxiliary information or processing
 	 * instruction) of a folded path json object.
 	 */
-	static public Pattern NON_PATH_PROP_PATTERN = Pattern.compile("^/[^/]+/$");
+	static public Pattern NON_PATH_PROP_PATTERN = Pattern.compile("^/[^/]+/$"); //$NON-NLS-1$
 	
 	/**
 	 * Name of folded path json property used to identify the names of loader
@@ -287,7 +287,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * match the value of pluginPrefixesPropName in loaderExtCommon.js.  The
 	 * slashes (/) ensure that the name won't collide with a real path name.
 	 */
-	static public String PLUGIN_PREFIXES_PROP_NAME = "/pre/";
+	static public String PLUGIN_PREFIXES_PROP_NAME = "/pre/"; //$NON-NLS-1$
 	
 	/**
 	 * Unfolds a folded module name list into a String array of unfolded names
@@ -346,8 +346,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
                 modules[Integer.parseInt(values[0])] = values.length > 1 ? 
                 	((aPrefixes != null ? 
                 			aPrefixes[Integer.parseInt(values[1])] : values[1]) 
-                		+ "!" + path) :
-                	path; //$NON-NLS-1$
+                		+ "!" + path) : //$NON-NLS-1$
+                	path;
             } catch (Exception e) {
             	if (log.isLoggable(Level.SEVERE))
             		log.log(Level.SEVERE, e.getMessage(), e);
