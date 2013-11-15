@@ -181,6 +181,16 @@ public class TestUtils {
 		}
 	}
 
+	private static IResource mockAggregatorNewResource(URI uri, File workDir) throws Throwable {
+		String scheme = uri.getScheme();
+		if ("file".equals(scheme)) {
+			return new FileResource(uri);
+		} else if ("namedbundleresource".equals(scheme)) {
+			return new FileResource(new File(workDir, uri.getPath()).toURI());
+		}
+		throw new UnsupportedOperationException();
+	}
+
 	public static IAggregator createMockAggregator() throws Exception {
 		return createMockAggregator(null, null, null, null, null);
 	}
@@ -229,6 +239,7 @@ public class TestUtils {
 				null, 
 				new SynchronousScheduledExecutor(), 
 				new SynchronousScheduledExecutor()));
+		final File workdir = workingDirectory;
 		
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test").anyTimes();
@@ -243,7 +254,7 @@ public class TestUtils {
 			// ConfigImpl constructor calls IAggregator.newResource()
 			EasyMock.expect(mockAggregator.newResource((URI)EasyMock.anyObject())).andAnswer(new IAnswer<IResource>() {
 				public IResource answer() throws Throwable {
-					return new FileResource((URI)EasyMock.getCurrentArguments()[0]);
+					return mockAggregatorNewResource((URI)EasyMock.getCurrentArguments()[0], workdir);
 				}
 			}).anyTimes();
 		}
@@ -294,7 +305,7 @@ public class TestUtils {
 		}).anyTimes();
 		EasyMock.expect(mockAggregator.newResource((URI)EasyMock.anyObject())).andAnswer(new IAnswer<IResource>() {
 			public IResource answer() throws Throwable {
-				return new FileResource((URI)EasyMock.getCurrentArguments()[0]);
+				return mockAggregatorNewResource((URI)EasyMock.getCurrentArguments()[0], workdir);
 			}
 		}).anyTimes();
 		EasyMock.expect(mockAggregator.getModuleBuilder((String)EasyMock.anyObject(), (IResource)EasyMock.anyObject())).andAnswer(new IAnswer<IModuleBuilder>() {

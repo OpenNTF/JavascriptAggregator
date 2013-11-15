@@ -273,27 +273,43 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						paths.addAll(packageOverrideURIs.values());
 						paths.addAll(pathOverrideURIs.values());
 						
-						DepTree deps = new DepTree(
-								paths,
-								getAggregator(),
-								initStamp,
-								clean, 
-								validate); 
-				
-						DepTreeRoot depTree = new DepTreeRoot(config);
-						deps.mapDependencies(depTree, bundleContext, baseURIs, config);
-						deps.mapDependencies(depTree, bundleContext, packageURIs, config);
-						deps.mapDependencies(depTree, bundleContext, packageOverrideURIs, config);
-						deps.mapDependencies(depTree, bundleContext, pathURIs, config);
-						deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
-						/*
-						 * For each module name in the dependency lists, try to resolve the name
-						 * to a reference to another node in the tree
-						 */
-						depTree.resolveDependencyRefs();
-						depsLastModified = depTree.lastModifiedDepTree();
-						DependenciesImpl.this.depTree = depTree;
+						boolean cleanCache = clean;
+						while (true) {
+							DepTree deps = null;
+							try {
+								deps = new DepTree(
+										paths,
+										getAggregator(),
+										initStamp,
+										cleanCache, 
+										validate); 
 						
+								DepTreeRoot depTree = new DepTreeRoot(config);
+								deps.mapDependencies(depTree, bundleContext, baseURIs, config);
+								deps.mapDependencies(depTree, bundleContext, packageURIs, config);
+								deps.mapDependencies(depTree, bundleContext, packageOverrideURIs, config);
+								deps.mapDependencies(depTree, bundleContext, pathURIs, config);
+								deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
+								/*
+								 * For each module name in the dependency lists, try to resolve the name
+								 * to a reference to another node in the tree
+								 */
+								depTree.resolveDependencyRefs();
+								depsLastModified = depTree.lastModifiedDepTree();
+								DependenciesImpl.this.depTree = depTree;
+							} catch (Exception e) {
+								if (!cleanCache && (deps == null || deps.isFromCache())) {
+									if (log.isLoggable(Level.WARNING)) {
+										log.log(Level.WARNING, e.getMessage(), e);
+										log.warning(Messages.DepTree_10);
+									}
+									cleanCache = true;
+									continue;
+								}
+								throw e;	// rethrow the exception
+							}
+							break;
+						}						
 						// Notify listeners that dependencies have been updated
 						ServiceReference[] refs = null;
 						refs = bundleContext

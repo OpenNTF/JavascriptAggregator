@@ -90,6 +90,8 @@ public class DepTree implements Serializable {
 	protected long stamp;
 	
 	protected String cacheBust;
+	
+	protected boolean fromCache = false;
 
 	private static final String DEPCACHE_DIRNAME = "deps"; //$NON-NLS-1$
 
@@ -192,6 +194,7 @@ public class DepTree implements Serializable {
 				rawConfig.equals(cached.rawConfig) &&
 				!validateDeps && !clean) {
 			depMap = cached.depMap;
+			fromCache = true;
 			return;
 		}
 
@@ -368,6 +371,13 @@ public class DepTree implements Serializable {
 	}
 	
 	/**
+	 * @return true if the dependencies were loaded from cache
+	 */
+	public boolean isFromCache() {
+		return fromCache;
+	}
+	
+	/**
 	 * Returns a new tree with an unnamed {@link DepTreeNode} object at the root
 	 * of the tree. Each of the keys specified in the map are children of the
 	 * returned node and those node's children are the children of the nodes 
@@ -433,6 +443,8 @@ public class DepTree implements Serializable {
 					e.printStackTrace();
 				}
 				target.overlay(temp);
+			} else {
+				throw new IllegalStateException("Missing required resource: " + filePath);
 			}
 		}
 

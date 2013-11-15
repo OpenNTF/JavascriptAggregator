@@ -757,6 +757,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 		// Call the default implementation to de-serialize our object
 		in.defaultReadObject();
 
+		parent = new WeakReference<DepTreeNode>(null);
+
 		// restore parent reference on all children
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
