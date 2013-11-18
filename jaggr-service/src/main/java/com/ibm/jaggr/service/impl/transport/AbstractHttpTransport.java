@@ -371,7 +371,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			if (log.isLoggable(Level.FINEST))
 				log.finest("Adding has parameters from request: " + has); //$NON-NLS-1$
 
-  			for (String s : has.split(";")) { //$NON-NLS-1$
+  			for (String s : has.split("[;|]")) { //$NON-NLS-1$
   				boolean value = true;
   				if (s.startsWith("!")) { //$NON-NLS-1$
   					s = s.substring(1);
