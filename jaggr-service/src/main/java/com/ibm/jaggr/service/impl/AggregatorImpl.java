@@ -262,7 +262,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				long lastModified = -1;
 				URI configUri = getConfig().getConfigUri();
 				if (configUri != null) {
-					lastModified = configUri.toURL().openConnection().getLastModified();
+					lastModified = newResource(configUri).getURI().toURL().openConnection().getLastModified();
 				}
 				if (lastModified > getConfig().lastModified()) {
 					if (reloadConfig()) {
