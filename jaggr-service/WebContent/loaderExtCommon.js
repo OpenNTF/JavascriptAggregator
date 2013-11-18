@@ -206,7 +206,7 @@ var params = {
 		}
 		hasArr.sort();  // All has args must be represented in the same order for every request.
 		
-		return (hasArr.length ? ('has='+hasArr.join(";")): "");
+		return (hasArr.length ? ('has='+hasArr.join("|")): "");
 	};
 
 

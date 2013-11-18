@@ -41,11 +41,11 @@ function(has, lang, md5, cookie) {
 					return hasArg;
 				}
 			}
-			// hasArg is expected to begin with 'has=' followed by the semi-colon
+			// hasArg is expected to begin with 'has=' followed by the '|'
 			// delimited list of features
 			var haslist = null;		// clears the cookie if null
 			var ret = hasArg;
-			if (hasArg.indexOf("has=") === 0 && hasArg.indexOf(";") != -1) {
+			if (hasArg.indexOf("has=") === 0 && hasArg.indexOf("|") != -1) {
 				haslist = hasArg.substring(4);
 				ret = "hashash=" + md5(haslist, 1);
 			}
