@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.mozilla.javascript.Scriptable;
 
+import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.resource.IResource;
@@ -311,6 +312,10 @@ public interface IConfig {
 
 	/**
 	 * Returns the URI for the config JavaScript file from which this config was read.
+	 * Note that the returned URI may specify an aggregator specific scheme such as 
+	 * namedbundleresource, so you should first use {@link IAggregator#newResource(URI)}
+	 * to convert the URI into an {@link IResource} and then use {@link IResource#getURI()}
+	 * to obtain a platform URI that you can use to open the file, etc.
 	 * 
 	 * @return The config JavaScript URI
 	 */
