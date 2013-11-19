@@ -262,7 +262,14 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				long lastModified = -1;
 				URI configUri = getConfig().getConfigUri();
 				if (configUri != null) {
-					lastModified = newResource(configUri).getURI().toURL().openConnection().getLastModified();
+					try {
+						// try to get platform URI from IResource in case uri specifies 
+						// aggregator specific scheme like namedbundleresource
+						configUri = newResource(configUri).getURI();
+					} catch (UnsupportedOperationException e) {
+						// Not fatal.  Just use uri as specified.
+					}
+					lastModified = configUri.toURL().openConnection().getLastModified();
 				}
 				if (lastModified > getConfig().lastModified()) {
 					if (reloadConfig()) {
