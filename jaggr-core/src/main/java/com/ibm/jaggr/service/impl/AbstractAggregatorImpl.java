@@ -60,7 +60,6 @@ import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.service.impl.layer.LayerImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.layer.ILayer;
@@ -799,9 +798,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * 
 	 * @return The new dependencies
 	 */
-	protected IDependencies newDependencies(long stamp) {
-		return new DependenciesImpl(this, stamp);
-	}
+	protected abstract IDependencies newDependencies(long stamp);
 
 	/**
 	 * Instantiates a new config object

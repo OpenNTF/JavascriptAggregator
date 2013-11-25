@@ -649,7 +649,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			if (configUrl == null) {
 				throw new FileNotFoundException(configName);
 			}			
-			configUri = PathUtil.urlToString2uri(configUrl);
+			configUri = PathUtil.url2uri(configUrl);
 			
 		}
 		return configUri;

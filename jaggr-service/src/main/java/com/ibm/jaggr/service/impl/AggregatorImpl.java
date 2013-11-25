@@ -46,6 +46,7 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
+import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IVariableResolver;
@@ -53,6 +54,7 @@ import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.InitParams.InitParam;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
@@ -528,6 +530,11 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
    		}   
    		return servletDir;
 	}	
+	
+	@Override
+	protected IDependencies newDependencies(long stamp) {
+		return new DependenciesImpl(this, stamp);
+	}
 
 }
 

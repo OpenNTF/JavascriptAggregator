@@ -157,19 +157,6 @@ public class PathUtil {
 			url.getRef());
 	}
 	
-	/**
-	 * Convenience method to convert a URL to a URI for URLs which use jar
-	 * protocol. The method {@link PathUtil#url2uri(URL)} throws
-	 * NullPointerException in such cases.
-	 * 
-	 * @param url
-	 *            The input URL
-	 * @return The URI
-	 * @throws URISyntaxException
-	 */
-	public static URI urlToString2uri(URL url) throws URISyntaxException {
-		 return new URI(url.toString());		
-	}
 	
 	public static URI stripJsExtension(URI value) throws URISyntaxException {
 		if (value == null) {
