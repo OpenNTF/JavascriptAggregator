@@ -142,7 +142,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n:null:provisional"));
 		keyGens = null;
 		ModuleBuild build = buildIt();
-		output = build.getBuildOutput();
+		output = build.getBuildOutput().toString();
 		
 		Assert.assertTrue(builder.handles("nls/strings", new FileResource(new File(nls, "strings.js").toURI())));
 		Assert.assertEquals(0, build.getBefore().size());
@@ -165,7 +165,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n{en}"));
 		build = buildIt();
-		output = build.getBuildOutput();
+		output = build.getBuildOutput().toString();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
 		Assert.assertEquals(1, build.getBefore().size());
@@ -180,7 +180,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		System.out.println(s);
 		Assert.assertFalse(s.contains("i18n"));
 		build = buildIt();
-		output = build.getBuildOutput();
+		output = build.getBuildOutput().toString();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
 		Assert.assertEquals(0, build.getBefore().size());
@@ -191,7 +191,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		eb.mkdir();
 		CopyUtil.copy("define({locale_label:'eb'});", new FileWriter(new File(eb, "strings.js")));
 		build = buildIt();
-		output = build.getBuildOutput();
+		output = build.getBuildOutput().toString();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
 		Assert.assertEquals(0, build.getBefore().size());
@@ -201,7 +201,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		keyGens = null;
 		build = buildIt();
-		output = build.getBuildOutput();
+		output = build.getBuildOutput().toString();
 		s = KeyGenUtil.toString(keyGens);
 		System.out.println(s);
 		Assert.assertTrue(s.contains("i18n:null"));
@@ -220,7 +220,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		File file = new File(eb, "strings.js");
 		CopyUtil.copy("define({locale_label:'eb'});", new FileWriter(file));
 		build = buildIt();
-		output = build.getBuildOutput();
+		output = build.getBuildOutput().toString();
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
 		Assert.assertEquals(1, build.getBefore().size());

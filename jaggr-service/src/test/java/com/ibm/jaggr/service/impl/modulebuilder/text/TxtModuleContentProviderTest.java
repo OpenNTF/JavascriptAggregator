@@ -96,7 +96,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		String code = builder.build(
 				"test.txt", 
 				new FileResource(test.toURI()), 
-				mockRequest, null).getBuildOutput();
+				mockRequest, null).getBuildOutput().toString();
 		System.out.println(code);
 		assertEquals("define('\\'This is a test\\'. \\'\\'  Test\\'s\\'');", code);
 	}

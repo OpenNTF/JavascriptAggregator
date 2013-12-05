@@ -16,9 +16,6 @@
 
 package com.ibm.jaggr.service.deps;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -29,16 +26,21 @@ import com.ibm.jaggr.service.util.BooleanTerm;
 
 /**
  * This class extends LinkedHashMap to provide additional methods for 
- * managing a map of module names to ModuleDepInfo objects 
+ * managing a map of module names to ModuleDepInfo objects.
+ * 
+ * This class is not thread safe, so external provisions for thread
+ * safety need to be made if instances of this class are to be shared
+ * by multiple threads.
  */
-@SuppressWarnings("serial")
 public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	
+	private static final long serialVersionUID = -8057569894102155520L;
+
 	public ModuleDeps() {
 	}
 	
 	public ModuleDeps(ModuleDeps other) {
-		super(other);
+		addAll(other);
 	}
 	
 	/**
@@ -52,13 +54,16 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	 * @return true if the map was modified
 	 */
 	public boolean add(String key, ModuleDepInfo info) {
+		if (info == null) {
+			throw new NullPointerException();
+		}
 		boolean modified = false;
 		ModuleDepInfo existing = get(key);
-		if (existing != info) {
+		if (!containsKey(key) || existing != info) {
 			if (existing != null) {
 				modified = existing.add(info);
 			} else {
-				put(key, info);
+				super.put(key, info);
 				modified = true;
 			}
 		}
@@ -209,9 +214,15 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		return this;
 	}
 	
-	// Instances of this class are NOT serializable
-	private void writeObject(ObjectOutputStream out) throws IOException {
-		throw new NotSerializableException();
+	@Override
+	public ModuleDepInfo put(String key, ModuleDepInfo value) {
+		throw new UnsupportedOperationException();
 	}
-	
+
+	@Override
+	public void putAll(Map<? extends String, ? extends ModuleDepInfo> map) {
+		throw new UnsupportedOperationException();
+	}
+
+
 }

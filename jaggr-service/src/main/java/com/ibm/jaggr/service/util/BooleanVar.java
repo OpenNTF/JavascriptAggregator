@@ -16,11 +16,15 @@
 
 package com.ibm.jaggr.service.util;
 
+import java.io.Serializable;
+
 /**
  *	Represents the state of a boolean variable.  Instances of this
  *	object are immutable.
  */
-public class BooleanVar implements Comparable<BooleanVar> {
+public class BooleanVar implements Comparable<BooleanVar>, Serializable {
+	private static final long serialVersionUID = 6578878301251930259L;
+
 	public final String name;
 	public final boolean state;
 	

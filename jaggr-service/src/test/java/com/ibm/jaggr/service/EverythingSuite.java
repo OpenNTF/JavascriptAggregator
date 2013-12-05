@@ -22,6 +22,7 @@ import org.junit.runners.Suite;
 import com.ibm.jaggr.service.deps.ModuleDepInfoTest;
 import com.ibm.jaggr.service.deps.ModuleDepsTest;
 import com.ibm.jaggr.service.impl.AggregatorImplTest;
+import com.ibm.jaggr.service.impl.cache.CacheManagerImplTest;
 import com.ibm.jaggr.service.impl.config.ConfigTests;
 import com.ibm.jaggr.service.impl.deps.BooleanFormulaTest;
 import com.ibm.jaggr.service.impl.deps.DepTreeNodeTests;
@@ -36,7 +37,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.css.CSSModuleBuilderTest;
 import com.ibm.jaggr.service.impl.modulebuilder.i18n.I18nModuleBuilderTest;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.ExportModuleNameCompilerPassTest;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.HasFilteringCompilerPassTest;
-import com.ibm.jaggr.service.impl.modulebuilder.javascript.JsModuleContentProviderTest;
+import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilderTest;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.RequireExpansionCompilerPassTest;
 import com.ibm.jaggr.service.impl.modulebuilder.text.TxtModuleContentProviderTest;
 import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
@@ -62,13 +63,14 @@ import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 	I18nModuleBuilderTest.class,
 	ExportModuleNameCompilerPassTest.class,
 	HasFilteringCompilerPassTest.class,
-	JsModuleContentProviderTest.class,
+	JavaScriptModuleBuilderTest.class,
 	TxtModuleContentProviderTest.class,
 	RequireExpansionCompilerPassTest.class,
 	AbstractHttpTransportTest.class,
 	DojoHttpTransportTest.class,
 	AggregatorImplTest.class,
 	BundleResourceFactoryTests.class,
-	FileResourceTests.class
+	FileResourceTests.class,
+	CacheManagerImplTest.class
 })
 public class EverythingSuite { }

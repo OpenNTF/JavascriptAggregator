@@ -444,7 +444,7 @@ public class DepTree implements Serializable {
 				}
 				target.overlay(temp);
 			} else {
-				throw new IllegalStateException("Missing required resource: " + filePath);
+				throw new IllegalStateException("Missing required resource: " + filePath); //$NON-NLS-1$
 			}
 		}
 

@@ -209,6 +209,7 @@ public class ModuleImplTest {
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
+		System.out.println(compiled);
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
 
 		features.put("bar", true);

@@ -393,6 +393,39 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		});
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.cache.ICacheManager#externalizeObjectAsync(java.lang.String, java.lang.Object, com.ibm.jaggr.service.cache.ICacheManager.CreateCompletionCallback)
+	 */
+	@Override
+	public void externalizeCacheObjectAsync(final String fileNamePrefix, final Object object,
+			final CreateCompletionCallback callback) {
+		_aggregator.getExecutors().getFileCreateExecutor().submit(new Runnable() {
+			File file = null;
+			public void run() {
+				try {
+		            file = File.createTempFile(fileNamePrefix, ".cache", _directory); //$NON-NLS-1$
+					ObjectOutputStream os;
+					os = new ObjectOutputStream(new FileOutputStream(file));
+					try { 
+						os.writeObject(object);
+					} finally {
+						try { os.close(); } catch (Exception ignore) {}
+					}
+	                if (callback != null) {
+	                	callback.completed(file.getName(), null);
+	                }
+				} catch (IOException e) {
+					if (log.isLoggable(Level.WARNING))
+						log.log(Level.WARNING, MessageFormat.format(
+								Messages.CacheManagerImpl_4, new Object[]{file.getPath()}), e);
+					if (callback != null) {
+						callback.completed(file != null ? file.getName() : null, e);
+					}
+				}
+			}
+		});
+	}
+	
 	@Override
 	public void createNamedCacheFileAsync(final String filename, final InputStream is,
 			final CreateCompletionCallback callback) {

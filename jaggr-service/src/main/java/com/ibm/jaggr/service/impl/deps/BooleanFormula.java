@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
@@ -41,8 +42,10 @@ import com.ibm.jaggr.service.util.BooleanVar;
  * The group of terms that are or'ed together are the formula encapsulated
  * by this object.
  */
-public class BooleanFormula implements Set<BooleanTerm> {
+public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	
+	private static final long serialVersionUID = 1202056345279875004L;
+
 	/**
 	 * A Set of {@link BooleanTerm} objects. A BooleanTerm is a set of variable
 	 * state objects that are logically and'ed together, while instances of this

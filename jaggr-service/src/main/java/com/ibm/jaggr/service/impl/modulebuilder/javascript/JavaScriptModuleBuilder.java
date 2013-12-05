@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
@@ -49,12 +49,15 @@ import com.google.javascript.jscomp.Result;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.IRequestListener;
 import com.ibm.jaggr.service.IShutdownListener;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.layer.ILayer;
+import com.ibm.jaggr.service.layer.ILayerListener;
+import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.options.IOptions;
@@ -70,17 +73,23 @@ import com.ibm.jaggr.service.util.StringUtil;
  * This class minifies a javacript module.  The modules is assumed to use the AMD
  * loader format.  Modules are minified sing the Google Closure compiler,
  * and module builds differ according to the requested compilation level and has-filtering
- * conditions.  The requested compilation level and has-filtering conditions are 
+ * condiftions.  The requested compilation level and has-filtering conditions are 
  * specified as attributes in the http request when calling {@link #build}.
  *
  */
-public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, IRequestListener, IShutdownListener {
+public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, ILayerListener, IShutdownListener {
 	private static final Logger log = Logger.getLogger(JavaScriptModuleBuilder.class.getName());
 	
 	private static final List<JSSourceFile> externs = Collections.emptyList();
-	
-	private static final String EXPANDEDCONFIGDEPS_THREADSAFEREQATTRNAME = JavaScriptModuleBuilder.class.getName() + ".expandedConfigDeps"; //$NON-NLS-1$
-	
+
+	/**
+	 * Name of the request attribute containing the expanded dependencies for
+	 * the layer.  This is the list of module dependencies for all of the modules
+	 * in the layer, plus the expanded dependencies for those modules.  The value
+	 * is of type {@link ModuleDeps}.
+	 */
+	static final String EXPANDED_DEPENDENCIES = ILayer.class.getName() + ".layerdeps"; //$NON-NLS-1$
+
 	private static final ICacheKeyGenerator exportNamesCacheKeyGenerator = 
 		new ExportNamesCacheKeyGenerator();
 
@@ -115,44 +124,86 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		BundleContext context = aggregator.getBundleContext();
 		Properties props = new Properties();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IRequestListener.class.getName(), this, props));
+		registrations.add(context.registerService(ILayerListener.class.getName(), this, props));
 		props = new Properties();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
 		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
 	}
 
 	@Override
-	public void startRequest(HttpServletRequest request, HttpServletResponse response) { 
-		// Check to see if optimization is disabled for this request and if so,
-		// then disable module name exporting since we can't export names of 
-		// javascript modules without the compiler.
-		CompilationLevel level = getCompilationLevel(request);
-		if (level  == null) {
-			// optimization is disabled, so disable exporting of module name
-			request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
-		} else if (RequestUtil.isExplodeRequires(request)) {
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-			if (features == null) {
-				features = Features.emptyFeatures;
+	public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
+		String result = null;
+		if (type == EventType.BEGIN_LAYER) {
+			// Check to see if optimization is disabled for this request and if so,
+			// then disable module name exporting since we can't export names of 
+			// javascript modules without the compiler.
+			CompilationLevel level = getCompilationLevel(request);
+			if (level  == null) {
+				// optimization is disabled, so disable exporting of module name
+				request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
 			}
-			DependencyList expandedConfigDeps = 
-				new DependencyList(
-						aggr.getConfig().getDeps(), 
-						aggr.getConfig(), 
-						aggr.getDependencies(), 
-						features, 
-						RequestUtil.isRequireExpLogging(request), 
-						RequestUtil.isPerformHasBranching(request));
-			expandedConfigDeps.setLabel("require.deps"); //$NON-NLS-1$
-			request.setAttribute(EXPANDEDCONFIGDEPS_THREADSAFEREQATTRNAME, expandedConfigDeps);
+			
+			// If we're doing require list expansion, then set the EXPANDED_DEPENDENCIES attribute
+			// with the set of expanded dependencies for the layer.  This will be used by the 
+			// build renderer to filter layer dependencies from the require list expansion.
+			if (RequestUtil.isExplodeRequires(request)) {
+				boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
+				List<String> moduleIds = new ArrayList<String>(modules.size());
+				for (IModule module : modules) {
+					moduleIds.add(module.getModuleId());
+				}
+				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+	    		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
+	    		DependencyList configDepList = new DependencyList(
+	    				aggr.getConfig().getDeps(),
+	    				aggr.getConfig(),
+	    				aggr.getDependencies(),
+	    				features,
+	    				isReqExpLogging, false);
+	    				
+	    		DependencyList layerDepList = new DependencyList(
+	    				moduleIds,
+	    				aggr.getConfig(),
+	    				aggr.getDependencies(),
+	    				features,
+	    				isReqExpLogging, false);
+	    		
+	    		ModuleDeps configDeps = new ModuleDeps();
+	    		ModuleDeps layerDeps = new ModuleDeps();
+	    		try {
+	    			configDeps.addAll(configDepList.getExplicitDeps());
+	    			configDeps.addAll(configDepList.getExpandedDeps());
+		    		layerDeps.addAll(layerDepList.getExplicitDeps());
+		    		layerDeps.addAll(layerDepList.getExpandedDeps());
+					dependentFeatures.addAll(configDepList.getDependentFeatures());
+					dependentFeatures.addAll(layerDepList.getDependentFeatures());
+	    		} catch (IOException e) {
+	    			throw new RuntimeException(e.getMessage(), e);
+	    		}
+				
+				if (isReqExpLogging) {
+					StringBuffer sb = new StringBuffer();
+					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_2 + "\", \"color:blue\");") //$NON-NLS-1$ //$NON-NLS-2$
+					  .append("console.log(\"%c"); //$NON-NLS-1$
+					for (Map.Entry<String, String> entry : configDeps.getModuleIdsWithComments().entrySet()) {
+						sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					}
+					sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
+					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_3 + "\", \"color:blue\");") //$NON-NLS-1$ //$NON-NLS-2$
+					  .append("console.log(\"%c"); //$NON-NLS-1$
+					for (Map.Entry<String, String> entry : layerDeps.getModuleIdsWithComments().entrySet()) {
+						sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					}
+					sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
+					result = sb.toString();
+				}
+				layerDeps.addAll(configDeps);
+				request.setAttribute(EXPANDED_DEPENDENCIES, layerDeps);
+			}
 		}
+		return result;
 	}
 	
-	@Override
-	public void endRequest(HttpServletRequest request, HttpServletResponse response) {
-	}
-
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (ServiceRegistration reg : registrations) {
@@ -233,21 +284,19 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 
 		boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
+		List<ModuleDeps> expandedDepsList = null; 
 		if (RequestUtil.isExplodeRequires(request) && level != null) {
-			DependencyList expandedConfigDeps = (DependencyList)request.getAttribute(EXPANDEDCONFIGDEPS_THREADSAFEREQATTRNAME);
+			expandedDepsList = new ArrayList<ModuleDeps>();
 			/*
 			 * Register the RequireExpansionCompilerPass if we're exploding 
 			 * require lists to include nested dependencies
 			 */
-			if (expandedConfigDeps != null) {
-				discoveredHasConditionals.addAll(expandedConfigDeps.getDependentFeatures());
-			}
 			RequireExpansionCompilerPass recp = 
 				new RequireExpansionCompilerPass(
 						aggr, 
 						features,
 						discoveredHasConditionals,
-						expandedConfigDeps,
+						expandedDepsList,
 						(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
 						isReqExpLogging,
 						RequestUtil.isPerformHasBranching(request));
@@ -335,11 +384,12 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 		}
 		return new ModuleBuild(
-				output,
+				expandedDepsList == null || expandedDepsList.size() == 0 ? 
+						output : new JavaScriptBuildRenderer(output, expandedDepsList, isReqExpLogging),
 				createNewKeyGen ? 
 						getCacheKeyGenerators(discoveredHasConditionals) : 
 						keyGens,
-				isReqExpLogging);
+				false);
 	}		
 	
 	/**

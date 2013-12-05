@@ -17,14 +17,15 @@
 package com.ibm.jaggr.service.modulebuilder;
 
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IExtensionInitializer;
 import com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar;
-import com.ibm.jaggr.service.IRequestListener;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
@@ -122,11 +123,13 @@ public interface IModuleBuilder {
 	 * <p>
 	 * If, for some reason, a module builder is unable to provide named modules
 	 * for a request, then the module builder should register a
-	 * {@link IRequestListener} service with the OSGi service registry,
+	 * {@link ILayerListener} service with the OSGi service registry,
 	 * specifying the name of the aggregator as the {@code name} property of the
 	 * service, and then set the value of the
 	 * {@link IHttpTransport#EXPORTMODULENAMES_REQATTRNAME} request attribute to
-	 * false in the {@link IRequestListener#startRequest} method.
+	 * false in the 
+	 * {@link ILayerListener#layerBeginEndNotifier(ILayerListener.EventType, HttpServletRequest, List, Set)} 
+	 * method.
 	 * <p>
 	 * This method may choose to return a build containing multiple named
 	 * modules if the request attribute specified by

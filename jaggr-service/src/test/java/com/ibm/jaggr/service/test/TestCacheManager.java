@@ -19,9 +19,12 @@ package com.ibm.jaggr.service.test;
 import java.io.IOException;
 
 import com.ibm.jaggr.service.IAggregator;
+import com.ibm.jaggr.service.cache.ICache;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 
 public class TestCacheManager extends CacheManagerImpl {
+	
+	private ICache cache = null;
 
 	public TestCacheManager(IAggregator aggregator, long stamp) throws IOException {
 		super(aggregator, stamp);
@@ -30,5 +33,14 @@ public class TestCacheManager extends CacheManagerImpl {
 	@Override
 	public void serializeCache() {
 		super.serializeCache();
+	}
+	
+	public void setCache(ICache cache) {
+		this.cache = cache;
+	}
+	
+	@Override 
+	public ICache getCache() {
+		return cache == null ? super.getCache() : cache;
 	}
 }

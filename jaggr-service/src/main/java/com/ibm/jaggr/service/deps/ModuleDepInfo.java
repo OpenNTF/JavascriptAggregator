@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.service.deps;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -34,8 +35,10 @@ import com.ibm.jaggr.service.util.BooleanVar;
  * has! plugin conditionals used in has! plugin branching during require list
  * expansion and optional trace comments.
  */
-public class ModuleDepInfo {
+public class ModuleDepInfo implements Serializable {
 	
+	private static final long serialVersionUID = 8798463630504113388L;
+
 	/**
 	 * Boolean formula representing the has! plugin expressions used to refer to
 	 * the module associated with this object.  If null, then the module is 
@@ -59,6 +62,10 @@ public class ModuleDepInfo {
 	 * combining instances of this class using {@link #add(ModuleDepInfo)}
 	 */
 	private boolean isPluginNameDeclared = false;
+	
+	public ModuleDepInfo() {
+		this(null, null, null);
+	}
 	
 	/**
 	 * @param pluginName

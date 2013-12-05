@@ -119,6 +119,9 @@ public class DependencyList {
 	 * @param includeDetails
 	 *            Flag indicating if diagnostic details should be included with
 	 *            the expanded dependencies
+	 * @param performHasBranching
+	 *            Flag indicating if has branching should be performed during
+	 *            require list expansion
 	 */
 	@SuppressWarnings("unchecked")
 	public DependencyList(Iterable<String> names, IConfig config, IDependencies deps, Features features, boolean includeDetails, boolean performHasBranching) {

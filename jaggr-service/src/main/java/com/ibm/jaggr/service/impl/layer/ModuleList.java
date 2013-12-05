@@ -16,12 +16,18 @@
 
 package com.ibm.jaggr.service.impl.layer;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Set;
 
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 
+// This class is not thread safe.  It is assumed that it does not
+// need to be.  If that assumption changes, then the implementation 
+// will need to be reworked.
 class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -5874021341817546757L;
 	
@@ -39,12 +45,14 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 			return module;
 		}
 	}
-	private Set<String> dependentFeatures;
-	private Set<String> requiredModules;
+	private Set<String> dependentFeatures = null;
+	private Set<String> requiredModules = null;
 	
 	ModuleList() {
-		dependentFeatures = null;
-		requiredModules = null;
+	}
+	
+	ModuleList(List<ModuleListEntry> other) {
+		super(other);
 	}
 	
 	void setDependenentFeatures(Set<String> dependentFeatures) {
@@ -56,10 +64,24 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	}
 	
 	Set<String> getRequiredModules() {
+		if (requiredModules == null) {
+			requiredModules = new HashSet<String>();
+		}
 		return requiredModules;
 	}
 	
 	Set<String> getDependentFeatures() {
+		if (dependentFeatures == null) {
+			dependentFeatures = new HashSet<String>();
+		}
 		return dependentFeatures;
+	}
+	
+	List<IModule> getModules() {
+		List<IModule> result = new ArrayList<IModule>(size());
+		for (ModuleListEntry entry : this) {
+			result.add(entry.getModule());
+		}
+		return result;
 	}
 }

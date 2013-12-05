@@ -16,9 +16,6 @@
 
 package com.ibm.jaggr.service.util;
 
-import java.io.IOException;
-import java.io.NotSerializableException;
-import java.io.ObjectOutputStream;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
@@ -28,9 +25,10 @@ import java.util.TreeSet;
  * A collection of BooleanVar objects which are logically anded together.
  * Implements an unmodifiable set of BooleanVar objects. 
  */
-@SuppressWarnings("serial")
 public class BooleanTerm extends TreeSet<BooleanVar> {
 	
+	private static final long serialVersionUID = -2969569532410527153L;
+
 	public static BooleanTerm emptyTerm = new BooleanTerm(Collections.<BooleanVar> emptySet());
 
 	private boolean initialized = false;	// true except when the object is being constructed
@@ -145,10 +143,5 @@ public class BooleanTerm extends TreeSet<BooleanVar> {
 	@Override
 	public boolean retainAll(Collection<?> collection) {
 		throw new UnsupportedOperationException();
-	}
-	
-	// Instances of this class are NOT serializable
-	private void writeObject(ObjectOutputStream out) throws IOException {
-		throw new NotSerializableException();
 	}
 }
