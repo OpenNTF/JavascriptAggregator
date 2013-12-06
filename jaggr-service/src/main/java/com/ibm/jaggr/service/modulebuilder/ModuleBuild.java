@@ -34,7 +34,7 @@ import com.ibm.jaggr.service.resource.IResource;
  * {@link IModuleBuilder#build(String, IResource, HttpServletRequest, List)}.
  */
 public final class ModuleBuild {
-	private String buildOutput;
+	private Object buildOutput;
 	private List<IModule> before;
 	private List<IModule> after;
 	private List<ICacheKeyGenerator> keyGenerators;
@@ -47,7 +47,7 @@ public final class ModuleBuild {
 	 * @param buildOutput
 	 *            The built output for the module
 	 */
-	public ModuleBuild(String buildOutput) {
+	public ModuleBuild(Object buildOutput) {
 		this(buildOutput, null, false);
 	}
 
@@ -66,7 +66,7 @@ public final class ModuleBuild {
 	 * @param error
 	 *            True if an error occurred while generating the build
 	 */
-	public ModuleBuild(String buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
+	public ModuleBuild(Object buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
 		this.buildOutput = buildOutput;
 		this.keyGenerators = keyGens;
 		this.before = this.after = null;
@@ -82,7 +82,7 @@ public final class ModuleBuild {
 	 * 
 	 * @return the build outupt
 	 */
-	public String getBuildOutput() {
+	public Object getBuildOutput() {
 		return buildOutput;
 	}
 

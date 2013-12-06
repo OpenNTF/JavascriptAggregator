@@ -19,9 +19,12 @@ package com.ibm.jaggr.service;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 
 /**
+ * @deprecated as of 1.1.7, replaced by {@link ILayerListener}
+ * 
  * Listener interface for HTTP request processing.  The start method
  * is called for all registered listeners by the aggregator
  * at the start of request processing.
@@ -29,6 +32,7 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
  * Listeners are registered as an OSGi service using the name of 
  * the aggregator as the name attribute of the listener object.
  */
+@Deprecated
 public interface IRequestListener {
 	/**
 	 * Called by the aggregator at the start of request processing.

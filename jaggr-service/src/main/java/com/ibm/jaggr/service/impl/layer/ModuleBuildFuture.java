@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import com.ibm.jaggr.service.layer.ILayer;
+import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.resource.IResource;
 
 /**
  * This class encapsulates a {@link Future} for a {@link ModuleBuildReader},
@@ -36,12 +36,10 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 	
 	private final Future<ModuleBuildReader> future;
 	private final ModuleSpecifier moduleSpecifier;
-	private final IResource resource;
-	private final String mid;
+	private final IModule module;
 
-	public ModuleBuildFuture(String mid, IResource resource, Future<ModuleBuildReader> future, ModuleSpecifier moduleSpecifier) {
-		this.mid = mid;
-		this.resource = resource;
+	public ModuleBuildFuture(IModule module, Future<ModuleBuildReader> future, ModuleSpecifier moduleSpecifier) {
+		this.module = module;
 		this.future = future;
 		this.moduleSpecifier = moduleSpecifier;
 	}
@@ -77,11 +75,7 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 		return moduleSpecifier;
 	}
 	
-	public String getModuleId() {
-		return mid;
-	}
-
-	public IResource getResource() {
-		return resource;
+	public IModule getModule() {
+		return module;
 	}
 }

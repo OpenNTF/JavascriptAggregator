@@ -35,6 +35,7 @@ import java.io.Serializable;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -59,6 +60,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.easymock.PowerMock;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
@@ -66,9 +71,12 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
+import com.ibm.jaggr.service.layer.ILayerListener.EventType;
+import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.test.TestUtils;
@@ -76,10 +84,14 @@ import com.ibm.jaggr.service.test.TestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.service.util.CopyUtil;
+import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.RequestUtil;
+import com.ibm.jaggr.service.util.TypeUtil;
 
-public class JsModuleContentProviderTest extends EasyMock {
+@RunWith(PowerMockRunner.class)
+@PrepareForTest( JavaScriptModuleBuilder.class )
+public class JavaScriptModuleBuilderTest extends EasyMock {
 	
 	File tmpdir = null;
 	IAggregator mockAggregator;
@@ -483,6 +495,199 @@ public class JsModuleContentProviderTest extends EasyMock {
 		assertFalse(RequestUtil.isExplodeRequires(mockRequest));
 	}
 	
+	@Test
+	public void testLayerBeginEndNotifier_disableExportModuleNames() throws Exception {
+		List<IModule> modules = new ArrayList<IModule>();
+		Set<String> dependentFeatures = new HashSet<String>();
+		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
+		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
+		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
+		
+		// Test that EXPORTMODULENAMES is disabled when compliler optimiation is turned off
+		mockRequest.setAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.NONE);
+		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
+		
+		// First, try with debug mode disabled (has no effect)
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
+		
+		// Now, enable development mode.  Should cause export names to be disabled
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
+		
+		// Should also work with debug mode
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, false);
+		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, true);
+		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
+
+		// whitespace optimization should not disable module name exporting
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		mockRequest.setAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.WHITESPACE);
+		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
+	}
+	
+	@Test
+	public void testLayerBeginEndNotifier_exportModuleNames() throws Exception {
+		List<IModule> modules = new ArrayList<IModule>();
+		Set<String> dependentFeatures = new HashSet<String>();
+		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
+		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
+		
+		Features features = new Features();
+		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
+		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
+
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{deps:['cfgfoo']}"));
+		final DependencyList mockConfigDeps = createMock(DependencyList.class);
+		final DependencyList mockLayerDeps = createMock(DependencyList.class);
+		
+		ModuleDeps configExplicitDeps = new ModuleDeps();
+		ModuleDeps configExpandedDeps = new ModuleDeps();
+		configExplicitDeps.add("cfgfoo", new ModuleDepInfo());
+		configExpandedDeps.add("cfgfoodep", new ModuleDepInfo());
+		
+		expect(mockConfigDeps.getExplicitDeps()).andReturn(configExplicitDeps).anyTimes();
+		expect(mockConfigDeps.getExpandedDeps()).andReturn(configExpandedDeps).anyTimes();
+		expect(mockConfigDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature1"}))).anyTimes();
+
+		ModuleDeps layerExplicitDeps = new ModuleDeps();
+		ModuleDeps layerExpandedDeps = new ModuleDeps();
+		layerExplicitDeps.add("foo", new ModuleDepInfo());
+		layerExplicitDeps.add("bar", new ModuleDepInfo());
+		layerExpandedDeps.add("foodep", new ModuleDepInfo());
+		layerExpandedDeps.add("bardep", new ModuleDepInfo());
+		expect(mockLayerDeps.getExplicitDeps()).andReturn(layerExplicitDeps).anyTimes();
+		expect(mockLayerDeps.getExpandedDeps()).andReturn(layerExpandedDeps).anyTimes();
+		expect(mockLayerDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature2"}))).anyTimes();
+		
+		ModuleDeps expectedDeps = new ModuleDeps();
+		expectedDeps.addAll(configExplicitDeps);
+		expectedDeps.addAll(configExpandedDeps);
+		expectedDeps.addAll(layerExplicitDeps);
+		expectedDeps.addAll(layerExpandedDeps);
+
+		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IConfig.class), isA(IDependencies.class), eq(features), eq(false), eq(false))
+		                .andAnswer(new IAnswer<DependencyList>() {
+							@Override public DependencyList answer() throws Throwable {
+								@SuppressWarnings("unchecked")
+								List<String> modules = (List<String>)getCurrentArguments()[0];
+								if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
+									return mockConfigDeps;
+								} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
+									return mockLayerDeps;
+								}
+								Assert.fail("Unexpected argument");
+								return null;
+							}
+		                }).anyTimes();
+		PowerMock.replay(mockConfigDeps, mockLayerDeps, DependencyList.class);
+
+		modules = Arrays.asList(new IModule[]{
+				new ModuleImpl("foo", new URI("file://foo.js")),
+				new ModuleImpl("bar", new URI("file://bar.js"))
+		});
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		ModuleDeps resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
+	}
+	
+	private static final String loggingOutput = "console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
+	@Test
+	public void testLayerBeginEndNotifier_exportModuleNamesWithDetails() throws Exception {
+		List<IModule> modules = new ArrayList<IModule>();
+		Set<String> dependentFeatures = new HashSet<String>();
+		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
+		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
+		
+		Features features = new Features();
+		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
+		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
+		mockRequest.setAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME, true);
+
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{deps:['cfgfoo']}"));
+		final DependencyList mockConfigDeps = createMock(DependencyList.class);
+		final DependencyList mockLayerDeps = createMock(DependencyList.class);
+		
+		ModuleDeps configExplicitDeps = new ModuleDeps();
+		ModuleDeps configExpandedDeps = new ModuleDeps();
+		configExplicitDeps.add("cfgfoo", new ModuleDepInfo(null, null, "cfgfoo detail"));
+		configExpandedDeps.add("cfgfoodep", new ModuleDepInfo(null, null, "cfgfoodep detail"));
+		
+		expect(mockConfigDeps.getExplicitDeps()).andReturn(configExplicitDeps).anyTimes();
+		expect(mockConfigDeps.getExpandedDeps()).andReturn(configExpandedDeps).anyTimes();
+		expect(mockConfigDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature1"}))).anyTimes();
+
+		ModuleDeps layerExplicitDeps = new ModuleDeps();
+		ModuleDeps layerExpandedDeps = new ModuleDeps();
+		layerExplicitDeps.add("foo", new ModuleDepInfo(null, null, "foo detail"));
+		layerExplicitDeps.add("bar", new ModuleDepInfo(null, null, "bar detail"));
+		layerExpandedDeps.add("foodep", new ModuleDepInfo(null, null, "foodep detail"));
+		layerExpandedDeps.add("bardep", new ModuleDepInfo(null, null, "bardep detail"));
+		expect(mockLayerDeps.getExplicitDeps()).andReturn(layerExplicitDeps).anyTimes();
+		expect(mockLayerDeps.getExpandedDeps()).andReturn(layerExpandedDeps).anyTimes();
+		expect(mockLayerDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature2"}))).anyTimes();
+		
+		ModuleDeps expectedDeps = new ModuleDeps();
+		expectedDeps.addAll(configExplicitDeps);
+		expectedDeps.addAll(configExpandedDeps);
+		expectedDeps.addAll(layerExplicitDeps);
+		expectedDeps.addAll(layerExpandedDeps);
+
+		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IConfig.class), isA(IDependencies.class), eq(features), anyBoolean(), eq(false))
+		                .andAnswer(new IAnswer<DependencyList>() {
+							@Override public DependencyList answer() throws Throwable {
+								@SuppressWarnings("unchecked")
+								List<String> modules = (List<String>)getCurrentArguments()[0];
+								if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
+									return mockConfigDeps;
+								} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
+									return mockLayerDeps;
+								}
+								Assert.fail("Unexpected argument");
+								return null;
+							}
+		                }).anyTimes();
+		PowerMock.replay(mockConfigDeps, mockLayerDeps, DependencyList.class);
+
+		modules = Arrays.asList(new IModule[]{
+				new ModuleImpl("foo", new URI("file://foo.js")),
+				new ModuleImpl("bar", new URI("file://bar.js"))
+		});
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);	// no output if debug mode is not enabled
+		ModuleDeps resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
+
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		mockRequest.removeAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		dependentFeatures.clear();
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		System.out.println(result);
+		Assert.assertEquals(loggingOutput, result);		// This is pretty brittle
+		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
+	
+	}
 	/**
 	 * Tester class that extends JavaScriptModuleBuilder to expose protected methods for testing
 	 */

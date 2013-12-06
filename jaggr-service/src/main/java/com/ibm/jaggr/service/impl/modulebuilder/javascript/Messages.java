@@ -22,6 +22,8 @@ public class Messages extends NLS {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.modulebuilder.javascript.messages"; //$NON-NLS-1$
 	public static String JavaScriptModuleBuilder_0;
 	public static String JavaScriptModuleBuilder_1;
+	public static String JavaScriptModuleBuilder_2;
+	public static String JavaScriptModuleBuilder_3;
 	public static String RequireExpansionCompilerPass_0;
 	public static String RequireExpansionCompilerPass_1;
 	public static String RequireExpansionCompilerPass_10;

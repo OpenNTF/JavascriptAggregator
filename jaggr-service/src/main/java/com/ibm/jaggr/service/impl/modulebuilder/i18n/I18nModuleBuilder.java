@@ -139,6 +139,11 @@ extends JavaScriptModuleBuilder {
 		return result;
 	}
 
+	@Override
+	public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
+		return null;
+	}
+	
 	private void processLocale(IResource resource, List<IModule> result,
 			Matcher m, Collection<String> availableLocales, Set<String> added,
 			IAggregator aggr, String bundleName, String locale)

@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.impl.module;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -26,6 +27,7 @@ import java.io.ObjectStreamException;
 import java.io.Reader;
 import java.io.Serializable;
 import java.io.StringReader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Arrays;
@@ -60,6 +62,7 @@ import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
+import com.ibm.jaggr.service.modulebuilder.IModuleBuildRenderer;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.service.options.IOptions;
@@ -67,6 +70,7 @@ import com.ibm.jaggr.service.readers.ErrorModuleReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
+import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.StringUtil;
 import com.ibm.jaggr.service.util.TypeUtil;
 
@@ -282,7 +286,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		if (!ignoreCached) {
 			existingEntry = moduleBuilds.get(key);
 			if (existingEntry != null
-				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir())) != null) {
+				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
 				if (isLogLevelFiner) {
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
@@ -304,7 +308,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		if (!ignoreCached) {
 			existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
 			if (existingEntry != null
-				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir())) != null) {
+				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
 				if (isLogLevelFiner) {
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
@@ -351,7 +355,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						// sync object.
 						if (!ignoreCached
 								&& (reader = cacheEntry.tryGetReader(mgr
-										.getCacheDir())) != null) {
+										.getCacheDir(), request)) != null) {
 							if (isLogLevelFiner) {
 								log.finer("returning built module with cache key: " //$NON-NLS-1$
 										+ key);
@@ -371,7 +375,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						if (build.isError()) {
 							// Don't cache error results
 							return new ModuleBuildReader(new StringReader(build
-									.getBuildOutput()), null, true);
+									.getBuildOutput().toString()), null, true);
 						}
 						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
 						
@@ -453,7 +457,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					}
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(
-						cacheEntry.getReader(mgr.getCacheDir()),
+						cacheEntry.getReader(mgr.getCacheDir(), request),
 						newCacheKeyGenerators, false); 
 				processExtraModules(mbr, request, cacheEntry);
 				// return a build reader object
@@ -482,8 +486,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			for (IModule module : cacheEntry.getBefore()) {
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(
-						module.getModuleId(), 
-						module.getResource(aggr),
+						module, 
 						future,
 						ModuleSpecifier.BUILD_ADDED);
 				reader.addBefore(mbf);
@@ -491,8 +494,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			for (IModule module : cacheEntry.getAfter()) {
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(
-						module.getModuleId(), 
-						module.getResource(aggr),
+						module, 
 						future,
 						ModuleSpecifier.BUILD_ADDED);
 				reader.addAfter(mbf);
@@ -674,8 +676,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	static final private class CacheEntry implements Cloneable, Serializable {
 		private static final long serialVersionUID = -8079746606394403358L;
 
-		private volatile transient String content = null;
+		private volatile transient Object content = null;
 		private volatile String filename = null;
+		private volatile boolean isString = false;
 		private volatile List<IModule> beforeModules = Collections.emptyList();
 		private volatile List<IModule> afterModules = Collections.emptyList();
 
@@ -690,7 +693,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 * @return A ModuleReader for the build output
 		 * @throws FileNotFoundException
 		 */
-		public Reader getReader(File cacheDir) throws FileNotFoundException {
+		public Reader getReader(File cacheDir, HttpServletRequest request) throws IOException {
 			Reader reader = null;
 			// Make local copies of volatile instance variables so that we can
 			// check
@@ -699,12 +702,41 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			// the value of this.content before this.filepath because
 			// this.filepath is
 			// set before this.content is cleared in persist().
-			String content = this.content;
+			Object content = this.content;
 			String filename = this.filename;
-			if (content != null) {
-				reader = new StringReader(content);
-			} else if (filename != null) {
-				reader = new FileReader(new File(cacheDir, filename));
+			if (isString) {
+				if (content == null) {
+					if (filename == null) {
+						throw new IllegalStateException();
+					}
+					// Read the file and return a StringReader instead of just
+					// returning a reader to the file so that we can take advantage of
+					// parallel processing to read the files on the module builder threads.  
+					Reader fileReader = new FileReader(new File(cacheDir, filename));
+					StringWriter writer = new StringWriter();
+					CopyUtil.copy(fileReader, writer);
+					content = writer.toString();
+				}
+				return new StringReader((String)content);
+			} else {
+				if (content == null) {
+					if (filename == null) {
+						throw new IllegalStateException();
+					}
+					ObjectInputStream is = new ObjectInputStream(
+							new FileInputStream(new File(cacheDir, filename)));
+					try {
+						content = is.readObject();
+					} catch (ClassNotFoundException e) {
+						throw new IOException(e.getMessage(), e);
+					} finally {
+						try { is.close(); } catch (Exception ignore) {}
+					}
+				}
+				reader = new StringReader(
+						(content instanceof IModuleBuildRenderer) ? 
+								((IModuleBuildRenderer)content).renderBuild(request) :
+								content.toString());
 			}
 			return reader;
 		}
@@ -717,10 +749,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 * @param after
 		 *            The list of after modules for this module build
 		 */
-		public void setData(String content, List<IModule> before, List<IModule> after) {
+		public void setData(Object content, List<IModule> before, List<IModule> after) {
 			this.beforeModules = before;
 			this.afterModules = after;
 			this.content = content;
+			this.isString = content instanceof String;
 		}
 
 		/**
@@ -749,12 +782,12 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 * @return A ModuleReader for the output, or null if no output is
 		 *         available
 		 */
-		Reader tryGetReader(File cacheDir) {
+		Reader tryGetReader(File cacheDir, HttpServletRequest request) {
 			Reader reader = null;
 			if (content != null || filename != null) {
 				try {
-					reader = getReader(cacheDir);
-				} catch (FileNotFoundException e) {
+					reader = getReader(cacheDir, request);
+				} catch (IOException e) {
 					// If we get a FileNotFoundException, continue on and
 					// replace the cached entry
 					if (log.isLoggable(Level.INFO))
@@ -788,25 +821,46 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		public void persist(final ICacheManager mgr, final ModuleImpl module) {
 			String mid = new ModuleIdentifier(module.getModuleId()).getModuleName();
 			int idx = mid.lastIndexOf("/"); //$NON-NLS-1$
-			String name = (idx != -1) ? mid.substring(idx + 1) : mid;
-			mgr.createCacheFileAsync("_" + name + ".", //$NON-NLS-1$ //$NON-NLS-2$
-					new StringReader(content),
-					new ICacheManager.CreateCompletionCallback() {
-						@Override
-						public void completed(String fname, Exception e) {
-							if (e == null) {
-								// Must set filename before clearing content
-								// since we don't synchronize.
-								filename = fname;
-								// Free up the memory for the content now that
-								// we've written out to disk
-								// TODO: Determine a size threshold where we may
-								// want to keep the contents
-								// of small files in memory to reduce disk i/o.
-								content = null;
+			String name = "_" + ((idx != -1) ? mid.substring(idx + 1) : mid) + "."; //$NON-NLS-1$ //$NON-NLS-2$
+			if (isString) {
+				mgr.createCacheFileAsync(name, 
+						new StringReader(content.toString()),
+						new ICacheManager.CreateCompletionCallback() {
+							@Override
+							public void completed(String fname, Exception e) {
+								if (e == null) {
+									// Must set filename before clearing content
+									// since we don't synchronize.
+									filename = fname;
+									// Free up the memory for the content now that
+									// we've written out to disk
+									// TODO: Determine a size threshold where we may
+									// want to keep the contents
+									// of small files in memory to reduce disk i/o.
+									content = null;
+								}
 							}
-						}
-					});
+						});
+			} else {
+				mgr.externalizeCacheObjectAsync(name, 
+						content,
+						new ICacheManager.CreateCompletionCallback() {
+							@Override
+							public void completed(String fname, Exception e) {
+								if (e == null) {
+									// Must set filename before clearing content
+									// since we don't synchronize.
+									filename = fname;
+									// Free up the memory for the content now that
+									// we've written out to disk
+									// TODO: Determine a size threshold where we may
+									// want to keep the contents
+									// of small files in memory to reduce disk i/o.
+									content = null;
+								}
+							}
+						});
+			}
 		}
 
 		/**

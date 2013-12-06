@@ -179,7 +179,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	public synchronized void optionsUpdated(IOptions options, long sequence) {
 		String previousCacheBust = cacheBust;
 		cacheBust = options.getCacheBust();
-		if (sequence > 1 && !cacheBust.equals(previousCacheBust) && rawConfig != null) {
+		if (sequence > 1 && cacheBust != null && !cacheBust.equals(previousCacheBust) && rawConfig != null) {
 			// Cache bust property has been updated subsequent to server startup
 			processDeps(false, false, sequence);
 		}

@@ -114,6 +114,18 @@ public interface ICacheManager {
 	public void createCacheFileAsync(String fileNamePrefix, Reader content, CreateCompletionCallback callback);
 
 	/**
+	 * Utility method to externalize an object on an asynchronous thread.
+	 * 
+	 * @param filename
+	 *            The prefix to use for the generated file name
+	 * @param object
+	 *            The object to externalize
+	 * @param callback
+	 *            The completion callback
+	 */
+	public void externalizeCacheObjectAsync(String filename, Object object, CreateCompletionCallback callback);
+	
+	/**
 	 * Utility method to asynchronously delete cache files after a delay 
 	 * period specified by {@link IOptions#getDeleteDelay()}.  The idea is
 	 * to delay deleting the cache file long enough so that any threads 

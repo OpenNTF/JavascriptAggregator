@@ -20,7 +20,6 @@ package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -66,10 +65,12 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	private Set<String> dependentFeatures;
 
 	/**
-	 * Application dependencies specified in the config.  These will be excluded
-	 * from expanded require lists.
+	 * The list of {@link ModuleDeps} which specify the expanded dependencies.
+	 * There is one entry in the list for each require call in the module.  
+	 * The position in the list corresponds to index value specified in the
+	 * place holder element in the require list.
 	 */
-	private DependencyList configDeps;
+	private List<ModuleDeps> expandedDepsList;
 	
 	/**
 	 * Output for browser console
@@ -107,7 +108,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			IAggregator aggregator,
 			Features features,
 			Set<String> dependentFeatures,
-			DependencyList configDeps,
+			List<ModuleDeps> expandedDepsList,
 			String configVarName,
 			boolean logDebug,
 			boolean performHasBranching) {
@@ -115,7 +116,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		this.aggregator = aggregator;
 		this.hasFeatures = features;
 		this.dependentFeatures = dependentFeatures;
-		this.configDeps = configDeps;
+		this.expandedDepsList = expandedDepsList;
 		this.configVarName = configVarName;
 		this.consoleDebugOutput = logDebug ? new LinkedList<List<String>>() : null;
 		this.logDebug = logDebug;
@@ -131,10 +132,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 */
 	@Override
 	public void process(Node externs, Node root) {
+		this.expandedDepsList.clear();
 		List<DependencyList> enclosingDependencies = new LinkedList<DependencyList>();
-		if (configDeps != null) {
-			enclosingDependencies.add(configDeps);
-		}
 		try {
 			processChildren(root, enclosingDependencies);
 		} catch (ProcessingDependenciesException e) {
@@ -456,26 +455,24 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		 */
 		expandedDeps.subtractAll(filter);
 		expandedDeps.simplify();
-		Collection<String> depsToAdd = expandedDeps.getModuleIds();
-		if (logDebug) {
-			msg = new LinkedList<String>();
-			msg.add("%c" + Messages.RequireExpansionCompilerPass_11); //$NON-NLS-1$
-			msg.add("color:blue"); //$NON-NLS-1$
-			consoleDebugOutput.add(msg);
-			StringBuffer sb = new StringBuffer("\t"); //$NON-NLS-1$
-			i = 0;
-			for (String dep : depsToAdd) {
-				sb.append(i++ > 0 ? ", " : "").append(dep); //$NON-NLS-1$ //$NON-NLS-2$
+		
+		expandedDepsList.add(expandedDeps);
+		if (expandedDeps.getModuleIds().size() > 0) {
+			int listIndex = expandedDepsList.size()-1;
+			if (logDebug) {
+				msg = new LinkedList<String>();
+				msg.add("%c" + Messages.RequireExpansionCompilerPass_11); //$NON-NLS-1$
+				msg.add("color:blue"); //$NON-NLS-1$
+				consoleDebugOutput.add(msg);
+				StringBuffer sb = new StringBuffer("\t"); //$NON-NLS-1$
+				sb.append(String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_LOG_PLACEHOLDER_FMT, listIndex));
+				sb.append("\r\n\r\n\r\n"); //$NON-NLS-1$
+				msg = new LinkedList<String>();
+				msg.add("%c" + sb.toString()); //$NON-NLS-1$
+				msg.add("font-size:x-small"); //$NON-NLS-1$
+				consoleDebugOutput.add(msg);
 			}
-			sb.append("\r\n\r\n\r\n"); //$NON-NLS-1$
-			msg = new LinkedList<String>();
-			msg.add("%c" + sb.toString()); //$NON-NLS-1$
-			msg.add("font-size:x-small"); //$NON-NLS-1$
-			consoleDebugOutput.add(msg);
-		}
-		for (String dep : depsToAdd) {
-			// Add this dependency to the require list
-			array.addChildrenToBack(Node.newString(dep));
+			array.addChildrenToBack(Node.newString(String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, listIndex)));
 		}
 		// Add the expanded dependencies we found in this require call
 		// to the set of enclosing dependencies for all the child node

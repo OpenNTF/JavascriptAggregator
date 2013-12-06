@@ -57,6 +57,11 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.ServiceReference;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
@@ -66,9 +71,11 @@ import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.service.impl.AggregatorLayerListener;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
+import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.options.IOptions;
@@ -78,6 +85,8 @@ import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(LayerImpl.class)
 public class LayerTest extends EasyMock {
 
 	static int id = 0;
@@ -90,6 +99,7 @@ public class LayerTest extends EasyMock {
 	};
 
 	IAggregator mockAggregator;
+	BundleContext mockBundleContext;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	Map<String, String[]> requestParameters = new HashMap<String, String[]>();
@@ -122,11 +132,19 @@ public class LayerTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
+		mockBundleContext = null;
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, requestHeaders);
 		expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;
+			}
+		}).anyTimes();
+		
+		expect(mockAggregator.getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
+			@Override
+			public BundleContext answer() throws Throwable {
+				return mockBundleContext;
 			}
 		}).anyTimes();
 		
@@ -159,13 +177,11 @@ public class LayerTest extends EasyMock {
 		map.put("p1", p1Path);
 		map.put("p2", p2Path);
 
-		replay(mockAggregator);
-		replay(mockRequest);
-		replay(mockResponse);
-		replay(mockDependencies);
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+
 /*
  	    Enable this code to display FINEST level logging for these tests in the
  	    Eclipse console.
@@ -210,7 +226,19 @@ public class LayerTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetInputStream() throws Exception {
-
+		
+		final AggregatorLayerListener layerListener = new AggregatorLayerListener(mockAggregator);
+		mockBundleContext = createNiceMock(BundleContext.class);
+		ServiceReference mockServiceReference = createMock(ServiceReference.class);
+		final ServiceReference[] serviceReferences = new ServiceReference[]{mockServiceReference};
+		expect(mockBundleContext.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<ServiceReference[]>() {
+			@Override public ServiceReference[] answer() throws Throwable {
+				return serviceReferences;
+			}
+		}).anyTimes();
+		expect(mockBundleContext.getService(mockServiceReference)).andReturn(layerListener).anyTimes();
+		replay(mockBundleContext, mockServiceReference);
+		
 		// Request a single module
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
@@ -296,9 +324,9 @@ public class LayerTest extends EasyMock {
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
-		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
-		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
-		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
+		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
+		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
+		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
 		totalSize += result.length();
 		assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
@@ -339,9 +367,9 @@ public class LayerTest extends EasyMock {
 		assertEquals("remove", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
 		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
-		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
-		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
-		assertTrue(result.contains(String.format(LayerBuilder.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
+		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
+		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
+		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
 		URI uri = new File(tmpdir, "p1/a.js").toURI();
 		NotFoundModule nfm = new NotFoundModule("p1/a.js", uri);
 		Reader rdr = nfm.getBuild(mockRequest).get();
@@ -424,9 +452,9 @@ public class LayerTest extends EasyMock {
 		System.out.println(result);
 		Pattern p = Pattern.compile(new StringBuffer()
 				.append("require\\(\\{cache:\\{")
+				.append("\\\"p1/a\\\":function\\(\\)\\{.*?\\},")
 				.append("\\\"p1/b\\\":function\\(\\)\\{.*?\\},")
 				.append("\\\"p1/c\\\":function\\(\\)\\{.*?\\},")
-				.append("\\\"p1/a\\\":function\\(\\)\\{.*?\\},")
 				.append("\\\"p1/noexist\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
 				.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);").toString());
 		assertTrue(p.matcher(result).find());
@@ -738,7 +766,7 @@ public class LayerTest extends EasyMock {
 		assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
 		assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
 	}
-
+	
 	@SuppressWarnings("serial")
 	class TestLayerImpl extends LayerImpl { 
 		TestLayerImpl(String layerKey) {

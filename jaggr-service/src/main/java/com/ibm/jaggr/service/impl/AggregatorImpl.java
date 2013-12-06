@@ -91,6 +91,7 @@ import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
+import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
@@ -116,7 +117,7 @@ import com.ibm.jaggr.service.util.StringUtil;
  * Framework, and the framework itself does not support serialization, then no
  * attempts will be made to serialize instances of this class.
  */
-@SuppressWarnings("serial")
+@SuppressWarnings({ "serial", "deprecation" })
 public class AggregatorImpl extends HttpServlet implements IExecutableExtension, IOptionsListener, BundleListener, IAggregator {
 
 	/**
@@ -532,7 +533,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
         registrations.add(getBundleContext().registerService(
         		IAggregator.class.getName(), this, dict));
 
-
+        registerLayerListener();
 	}
 
 	/* (non-Javadoc)
@@ -689,6 +690,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		}
 
 	}
+	
 	/**
 	 * Returns the name for the bundle containing the servlet code.  This is used
 	 * to look up services like IOptions and IExecutors that are registered by the
@@ -861,16 +863,18 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		} catch (InvalidSyntaxException e) {
 			throw new IOException(e);
 		}
-		for (ServiceReference ref : refs) {
-			IRequestListener listener = (IRequestListener)getBundleContext().getService(ref);
-			try {
-				if (action == RequestNotifierAction.start) {
-					listener.startRequest(req, resp);
-				} else {
-					listener.endRequest(req, resp);
+		if (refs != null) {
+			for (ServiceReference ref : refs) {
+				IRequestListener listener = (IRequestListener)getBundleContext().getService(ref);
+				try {
+					if (action == RequestNotifierAction.start) {
+						listener.startRequest(req, resp);
+					} else {
+						listener.endRequest(req, resp);
+					}
+				} finally {
+					getBundleContext().ungetService(ref);
 				}
-			} finally {
-				getBundleContext().ungetService(ref);
 			}
 		}
 	}
@@ -1357,6 +1361,16 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				((IExtensionInitializer)impl).initialize(AggregatorImpl.this, extension, this);
 			}
 		}
+	}
+	
+	/**
+	 * Registers the layer listener
+	 */
+	protected void registerLayerListener() {
+        Properties dict = new Properties();
+        dict.put("name", getName()); //$NON-NLS-1$
+        registrations.add(getBundleContext().registerService(
+        		ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
 	}
 }
 

@@ -60,7 +60,6 @@ import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.options.IOptions;
@@ -144,7 +143,7 @@ public class LayerImpl implements ILayer {
 	
 	/**
 	 * @param cacheKey The folded module list as specified in the request
-	 * @param evictionMap Fixed size map of all layer builds, used to evict stale entries
+	 * @param id unique identifier
 	 */
 	public LayerImpl(String cacheKey, int id) {
 		_cacheKey = cacheKey;
@@ -277,7 +276,6 @@ public class LayerImpl implements ILayer {
 			
 	        // List of Future<IModule.ModuleReader> objects that will be used to read the module
 	        // data from
-	        List<ModuleBuildFuture> futures = null;
 	        List<ICacheKeyGenerator> moduleKeyGens = null;
 	
 	        // Synchronize on the LayerBuild object for the build.  This will prevent multiple
@@ -356,14 +354,14 @@ public class LayerImpl implements ILayer {
 		        } else {
 			        moduleKeyGens = new LinkedList<ICacheKeyGenerator>();
 
-					futures = collectFutures(request);
+			        ModuleList moduleList = getModules(request);
 					
 			        // Create a BuildListReader from the list of Futures.  This reader will obtain a 
 			        // ModuleReader from each of the Futures in the list and read data from each one in
 			        // succession until all the data has been read, blocking on each Future until the 
 			        // reader becomes available.
-					LayerBuilder layerBuilder = new LayerBuilder(request, moduleKeyGens, getModules(request).getRequiredModules());
-					in = layerBuilder.build(futures);
+					LayerBuilder layerBuilder = new LayerBuilder(request, moduleKeyGens, moduleList);
+					in = layerBuilder.build();
 					
 			        if (isGzip) {
 			        	if (cacheInfoReport != null) {
@@ -394,7 +392,7 @@ public class LayerImpl implements ILayer {
 	        	if (key != null) {
 	        		_layerBuilds.remove(key, entry);
 	        	}
-	        } else if (futures != null) {
+	        } else if (in != null) {
 	        	if (!ignoreCached) {	
 	        		// See if we need to create or update the cache key generators
 			        Map<String, ICacheKeyGenerator> newKeyGens = new HashMap<String, ICacheKeyGenerator>();
@@ -494,44 +492,6 @@ public class LayerImpl implements ILayer {
 		}
 	}
 
-	/**
-	 * Dispatch the modules specified in the request to the module builders and
-	 * collect the build futures returned by the builders into the returned
-	 * list.
-	 * 
-	 * @param request
-	 *            The request object
-	 * @return The list of {@link ModuleBuildFuture} objects.
-	 * @throws IOException
-	 */
-	protected List<ModuleBuildFuture> collectFutures(HttpServletRequest request)
-			throws IOException {
-
-		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		ModuleList moduleList = getModules(request);
-		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>(); 
-		
-        IModuleCache moduleCache = aggr.getCacheManager().getCache().getModules();
-        Map<String, String> moduleCacheInfo = null;
-        if (request.getAttribute(LAYERCACHEINFO_PROPNAME) != null) {
-        	moduleCacheInfo = new HashMap<String, String>();
-        	request.setAttribute(IModuleCache.MODULECACHEINFO_PROPNAME, moduleCacheInfo);
-        }
-
-		// For each source file, add a Future<IModule.ModuleReader> to the list 
-		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
-			IModule module = moduleListEntry.getModule();
-			Future<ModuleBuildReader> future = moduleCache.getBuild(request, module);
-			IResource resource = module.getResource(aggr);
-			futures.add(new ModuleBuildFuture(
-					moduleListEntry.getModule().getModuleId(),
-					resource,
-					future, 
-					moduleListEntry.getSource()
-			));
-		}
-		return futures;
-	}
 
 	/**
 	 * Adds the cache key generators specified in {@code gens} to the map of
@@ -696,7 +656,6 @@ public class LayerImpl implements ILayer {
      * Unfolds a folded module list and returns a list of Source objects
      * 
      * @param request The request
-     * @param modules The folded module list
      * @return A list of Source objects
      * @throws IOException
      */
@@ -726,11 +685,11 @@ public class LayerImpl implements ILayer {
 			if (required != null) {
 			
 				// resolve required module names
-        Set<String> temp = new HashSet<String>();
-        for (String name : required) {
-          temp.add(aggr.getConfig().resolve(name, features, dependentFeatures, null, true));
-        }
-        required = temp;
+				Set<String> temp = new HashSet<String>();
+				for (String name : required) {
+				  temp.add(aggr.getConfig().resolve(name, features, dependentFeatures, null, true));
+				}
+				required = temp;
         
 				// If there's a required module, then add it and its dependencies
 				// to the module list.  
@@ -742,9 +701,8 @@ public class LayerImpl implements ILayer {
 	    				features,
 	    				false, false);
 				result.setRequiredModules(required);
-	    		result.setDependenentFeatures(dependentFeatures);
-	    		ModuleDeps combined = depList.getExpandedDeps();
-	    		combined.putAll(depList.getExplicitDeps());
+	    		ModuleDeps combined = depList.getExplicitDeps();
+	    		combined.addAll(depList.getExpandedDeps());
 	    		for (String name : combined.keySet()) {
 	    			if (aggr.getTransport().isServerExpandable(request, name)) {
 		        		result.add(
@@ -759,6 +717,7 @@ public class LayerImpl implements ILayer {
 			if (result.isEmpty()) {
 				throw new BadRequestException();
 			}
+    		result.setDependenentFeatures(dependentFeatures);
 	        request.setAttribute(MODULE_FILES_PROPNAME, result);
     	}
         return result;
