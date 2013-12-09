@@ -29,11 +29,14 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.executors.IExecutors;
-import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
-import com.ibm.jaggr.service.impl.options.OptionsImpl;
-import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.Messages;
+import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
+import com.ibm.jaggr.core.impl.options.OptionsImpl;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.service.PlatformServicesImpl;
 
 
 public class Activator extends Plugin implements BundleActivator {
@@ -90,6 +93,9 @@ public class Activator extends Plugin implements BundleActivator {
 		} else if (options.isDebugMode() && log.isLoggable(Level.WARNING)) {
 			log.warning(Messages.Activator_2);
 		}
+		// Instantiate the PlatformAggregator implementation and set in the PlatformAggregatorFactory.
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();
+		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
 	}
 
 	/* (non-Javadoc)
@@ -108,14 +114,14 @@ public class Activator extends Plugin implements BundleActivator {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.impl.CommandProvider#getBundleContext()
+	 * @see com.ibm.jaggr.core.impl.CommandProvider#getBundleContext()
 	 */
 	protected BundleContext getBundleContext() {
 		return context;
 	}
 	
 	protected IOptions newOptions() {
-		return new OptionsImpl(getBundleContext(), Activator.BUNDLE_NAME);
+		return new OptionsImpl(Activator.BUNDLE_NAME);
 	}
 	
 	protected IExecutors newExecutors(IOptions options) {

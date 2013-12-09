@@ -122,7 +122,7 @@
      id=&quot;default.httptransport&quot;
      point=&quot;com.ibm.jaggr.service.httptransport&quot;&gt;
      &lt;transport name=&quot;default&quot;
-         class=&quot;com.ibm.jaggr.service.impl.transport.HttpTransportImpl&quot;/&gt;
+         class=&quot;com.ibm.jaggr.core.impl.transport.HttpTransportImpl&quot;/&gt;
    &lt;/extension&gt;
 &lt;/pre&gt;
 &lt;p&gt;

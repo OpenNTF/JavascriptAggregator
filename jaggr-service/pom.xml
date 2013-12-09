@@ -109,11 +109,11 @@
             <Bundle-Name>jaggr</Bundle-Name>
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
-            <Bundle-Activator>${bundle.namespace}.impl.Activator</Bundle-Activator>
+            <Bundle-Activator>${bundle.symbolicName}.impl.Activator</Bundle-Activator>
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
             <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
             <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
-            <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
+            <Require-Bundle>org.eclipse.core.runtime, com.ibm.jaggr.core</Require-Bundle>
             <Import-Package>
               javax.servlet;version="[2,4)",
               javax.servlet.http;version="[2,4)",
@@ -211,6 +211,11 @@
     </plugins>
   </build>
   <dependencies>
+  <dependency>
+    	<groupId>com.ibm.jaggr</groupId>
+    	<artifactId>jaggr-core</artifactId>
+    	<scope>provided</scope>
+    </dependency>
     <dependency>
       <groupId>org.apache.wink</groupId>
       <artifactId>wink-json4j</artifactId>

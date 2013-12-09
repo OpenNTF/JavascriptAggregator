@@ -35,14 +35,15 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.Messages;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.StringBufferWriter;
 import com.ibm.jaggr.service.util.CIConsoleWriter;
 import com.ibm.jaggr.service.util.ConsoleService;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.StringBufferWriter;
 
 public class AggregatorCommandProvider implements
 		org.eclipse.osgi.framework.console.CommandProvider {
@@ -67,7 +68,7 @@ public class AggregatorCommandProvider implements
 	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
 	
-	static final String[] COMMANDS = new String[] {
+	public static final String[] COMMANDS = new String[] {
 	  CMD_HELP,
 	  CMD_LIST,
 	  CMD_RELOADCONFIG,

@@ -62,6 +62,10 @@
         </dependency>
         <dependency>
           <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-core</artifactId>
+        </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
           <artifactId>jaggr-service</artifactId>
           <classifier>javadoc</classifier>
         </dependency>

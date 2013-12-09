@@ -34,7 +34,7 @@
    		id="default.resourcefactories" 
    		point="com.ibm.jaggr.service.resourcefactory">
    		<factory scheme="file"
-   			class="com.ibm.jaggr.service.impl.resource.FileResourceFactory"/>
+   			class="com.ibm.jaggr.core.impl.resource.FileResourceFactory"/>
    		<factory scheme="bundleentry" 
    			class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
    		<factory scheme="bundleresource"
@@ -47,13 +47,13 @@
    		id="default.modulebuilders" 
    		point="com.ibm.jaggr.service.modulebuilder">
    		<builder extension="js" 
-   			class="com.ibm.jaggr.service.impl.modulebuilder.i18n.I18nModuleBuilder"/>
+   			class="com.ibm.jaggr.core.impl.modulebuilder.i18n.I18nModuleBuilder"/>
    		<builder extension="js" 
-   			class="com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder"/>
+   			class="com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder"/>
    		<builder extension="css"
-   			class="com.ibm.jaggr.service.impl.modulebuilder.css.CSSModuleBuilder"/>
+   			class="com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder"/>
    		<builder extension="*"
-   			class="com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder"/>
+   			class="com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder"/>
    </extension>
    
    <extension
