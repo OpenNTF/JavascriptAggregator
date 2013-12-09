@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.modulebuilder.IModuleBuildRenderer;
 
-class JavaScriptBuildRenderer implements Serializable, IModuleBuildRenderer {
+public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRenderer {
 	
 	/**
 	 * Format string for the place holder module name used to stand in for the
@@ -100,7 +100,7 @@ class JavaScriptBuildRenderer implements Serializable, IModuleBuildRenderer {
 	}
 	
 	
-	public String renderBuild(HttpServletRequest request) {
+	public String renderBuild(HttpServletRequest request, Set<String> dependentFeatures) {
 		ModuleDeps enclosingDeps = (ModuleDeps)request.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		if (expandedDeps == null || expandedDeps.size() == 0) {
 			return contentFragments.get(0);

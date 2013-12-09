@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -50,7 +51,7 @@ public class JavaScriptBuildRendererTest {
 		// validate the rendered output
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		EasyMock.replay(mockRequest);
-		String result = compiled.renderBuild(mockRequest);
+		String result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
 		Assert.assertEquals("define([],function() {require(\"foo\",\"foodep1\",\"foodep2\");require(\"bar\",\"bardep\")});", result);
 		
@@ -58,7 +59,7 @@ public class JavaScriptBuildRendererTest {
 		enclosingDeps.add("foodep2", new ModuleDepInfo());
 		enclosingDeps.add("bardep", new ModuleDepInfo());
 		mockRequest.setAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES, enclosingDeps);
-		result = compiled.renderBuild(mockRequest);
+		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
 		Assert.assertEquals("define([],function() {require(\"foo\",\"foodep1\");require(\"bar\")});", result);
 	}
@@ -82,7 +83,7 @@ public class JavaScriptBuildRendererTest {
 		// validate the rendered output
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		EasyMock.replay(mockRequest);
-		String result = compiled.renderBuild(mockRequest);
+		String result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
 		Assert.assertEquals(
 				"define([],function() {require(\"foo\",\"foodep1\",\"foodep2\");require(\"bar\",\"bardep\")});console.log(\"deps1=foodep1, foodep2\");console.log(\"deps2=bardep\");",
@@ -92,7 +93,7 @@ public class JavaScriptBuildRendererTest {
 		enclosingDeps.add("foodep2", new ModuleDepInfo());
 		enclosingDeps.add("bardep", new ModuleDepInfo());
 		mockRequest.setAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES, enclosingDeps);
-		result = compiled.renderBuild(mockRequest);
+		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		Assert.assertEquals(
 				"define([],function() {require(\"foo\",\"foodep1\");require(\"bar\")});console.log(\"deps1=foodep1\");console.log(\"deps2=\");", 
 				result);

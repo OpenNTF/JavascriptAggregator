@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
@@ -63,7 +64,6 @@ import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.ModuleIdentifier;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.BuildListReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
@@ -81,10 +81,13 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class LayerImpl implements ILayer {
 	private static final long serialVersionUID = 2491460740123061848L;
 	static final Logger log = Logger.getLogger(LayerImpl.class.getName());
-    public static final String LAST_MODIFIED_PROPNAME = LayerImpl.class.getName() + ".LAST_MODIFIED_FILES"; //$NON-NLS-1$
-    public static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
-    public static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
-    public static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
+	
+    static final String LAST_MODIFIED_PROPNAME = LayerImpl.class.getName() + ".LAST_MODIFIED_FILES"; //$NON-NLS-1$
+    static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
+    
+    // The following request attributes are used by unit tests
+    static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
+    static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
     
     protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
@@ -272,7 +275,7 @@ public class LayerImpl implements ILayer {
 			// putIfAbsent() succeeded and the new entry was added to the cache
 			entry = (existingEntry != null) ? existingEntry : newEntry;
 			
-			BuildListReader in = null;
+			LayerBuilder layerBuilder = null;
 			
 	        // List of Future<IModule.ModuleReader> objects that will be used to read the module
 	        // data from
@@ -355,13 +358,17 @@ public class LayerImpl implements ILayer {
 			        moduleKeyGens = new LinkedList<ICacheKeyGenerator>();
 
 			        ModuleList moduleList = getModules(request);
+			        
+			        // Remove the module list from the request to safe-guard it now that we don't
+			        // need it there anymore
+			        request.removeAttribute(MODULE_FILES_PROPNAME);
 					
 			        // Create a BuildListReader from the list of Futures.  This reader will obtain a 
 			        // ModuleReader from each of the Futures in the list and read data from each one in
 			        // succession until all the data has been read, blocking on each Future until the 
 			        // reader becomes available.
-					LayerBuilder layerBuilder = new LayerBuilder(request, moduleKeyGens, moduleList);
-					in = layerBuilder.build();
+					layerBuilder = new LayerBuilder(request, moduleKeyGens, moduleList);
+					String layer = layerBuilder.build();
 					
 			        if (isGzip) {
 			        	if (cacheInfoReport != null) {
@@ -372,19 +379,20 @@ public class LayerImpl implements ILayer {
 				        Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
 			
 				        // Copy the data from the input stream to the output, compressing as we go.
-				        CopyUtil.copy(in, writer);
+				        CopyUtil.copy(new StringReader(layer), writer);
+			            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
+			            entry.setBytes(bos.toByteArray());
 			        } else {
-			        	CopyUtil.copy(in, bos);
+			        	entry.setBytes(layer.getBytes());
 			        }
-		            // Set the buildReader to the LayerBuild and release the lock by exiting the sync block
-		            entry.setBytes(bos.toByteArray());
+			        
 		            // entry will be persisted below after we determine if cache key 
 		            // generator needs to be updated
 		        }
 	        }
 	        
 	    	// if any of the readers included an error response, then don't cache the layer.
-	        if (in != null && in.hasErrors()) {
+	        if (layerBuilder != null && layerBuilder.hasErrors()) {
 	        	request.setAttribute(NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 	        	if (cacheInfoReport != null) {
 	        		cacheInfoReport.add(key == null ? "error_noaction" : "error_remove"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -392,7 +400,7 @@ public class LayerImpl implements ILayer {
 	        	if (key != null) {
 	        		_layerBuilds.remove(key, entry);
 	        	}
-	        } else if (in != null) {
+	        } else if (layerBuilder != null) {
 	        	if (!ignoreCached) {	
 	        		// See if we need to create or update the cache key generators
 			        Map<String, ICacheKeyGenerator> newKeyGens = new HashMap<String, ICacheKeyGenerator>();

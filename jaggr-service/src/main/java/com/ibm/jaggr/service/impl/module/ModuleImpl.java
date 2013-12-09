@@ -34,8 +34,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -733,10 +735,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						try { is.close(); } catch (Exception ignore) {}
 					}
 				}
-				reader = new StringReader(
-						(content instanceof IModuleBuildRenderer) ? 
-								((IModuleBuildRenderer)content).renderBuild(request) :
-								content.toString());
+				if (content instanceof IModuleBuildRenderer) {
+					reader = new BuildRendererReader((IModuleBuildRenderer)content, request);
+				} else {
+					reader = new StringReader(content.toString());
+				}
 			}
 			return reader;
 		}
@@ -873,6 +876,44 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		public void delete(ICacheManager mgr) {
 			if (filename != null) {
 				mgr.deleteFileDelayed(filename);
+			}
+		}
+	}
+	
+	/*
+	 * Implementation of a reader for build content that implements
+	 * IModuleBuildRenderer.  Used to delay rendering until the 
+	 * build output is read by the layer builder.
+	 */
+	static final private class BuildRendererReader extends Reader {
+		
+		private final IModuleBuildRenderer build;
+		private final HttpServletRequest request;
+		private Reader reader;
+
+		public BuildRendererReader(IModuleBuildRenderer build, HttpServletRequest request) {
+			this.build = build;
+			this.request = request;
+		}
+		
+		@Override
+		public int read(char[] cbuf, int off, int len) throws IOException {
+			if (reader == null) {
+				Set<String> dependentFeatures = new HashSet<String>();
+				reader = new StringReader(build.renderBuild(request, dependentFeatures));
+				if (dependentFeatures.size() > 0) {
+					@SuppressWarnings("unchecked")
+					Set<String> layerDependentFeatures = (Set<String>)request.getAttribute(ILayer.DEPENDENT_FEATURES);
+					layerDependentFeatures.addAll(dependentFeatures);
+				}
+			}
+			return reader.read(cbuf, off, len);
+		}
+
+		@Override
+		public void close() throws IOException {
+			if (reader != null) {
+				reader.close();
 			}
 		}
 	}

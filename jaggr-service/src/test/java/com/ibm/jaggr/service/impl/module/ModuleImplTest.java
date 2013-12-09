@@ -24,6 +24,7 @@ import java.io.StringWriter;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -41,6 +42,10 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.easymock.PowerMock;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
 import com.ibm.jaggr.service.IAggregator;
@@ -50,12 +55,17 @@ import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
+import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
+import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(JavaScriptModuleBuilder.class)
 public class ModuleImplTest {
 	
 	static File tmpdir = null;
@@ -228,5 +238,43 @@ public class ModuleImplTest {
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testBuildRendererDependentFeatures() throws Exception {
+		
+		PowerMock.expectNew(JavaScriptBuildRenderer.class, EasyMock.isA(String.class), EasyMock.isA(List.class), EasyMock.eq(false)).andAnswer(new IAnswer<JavaScriptBuildRenderer>() {
+			@SuppressWarnings("serial")
+			@Override
+			public JavaScriptBuildRenderer answer() throws Throwable {
+				String content = (String)EasyMock.getCurrentArguments()[0];
+				List<ModuleDeps> depList = (List<ModuleDeps>)EasyMock.getCurrentArguments()[1];
+				Boolean isLogging = (Boolean)EasyMock.getCurrentArguments()[2];
+				return new JavaScriptBuildRenderer(content, depList, isLogging) {
+					@Override
+					public String renderBuild(HttpServletRequest request, Set<String> dependentFeatures) {
+						dependentFeatures.add("feature1");
+						return super.renderBuild(request, dependentFeatures);
+					}
+				};
+			}
+			
+		}).anyTimes();
+		PowerMock.replay(JavaScriptBuildRenderer.class);
+		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}"));
+		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, new Features());
+		requestAttributes.put(ILayer.DEPENDENT_FEATURES, new HashSet<String>());
+		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
+		Reader reader  = module.getBuild(mockRequest).get();
+		System.out.println(module.toString());
+		StringWriter writer = new StringWriter();
+		// make sure dependent features from build renderer aren't added until reader is actually read
+		Assert.assertEquals(0, ((Set<String>)mockRequest.getAttribute(ILayer.DEPENDENT_FEATURES)).size());
+		CopyUtil.copy(reader, writer);
+		// dependent features from build renderer should now be in request
+		Assert.assertEquals((Set<String>)new HashSet<String>(Arrays.asList(new String[]{"feature1"})), (Set<String>)mockRequest.getAttribute(ILayer.DEPENDENT_FEATURES));
+		
 	}
 }
