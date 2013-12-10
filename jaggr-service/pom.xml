@@ -111,7 +111,7 @@
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
             <Bundle-Activator>${bundle.symbolicName}.impl.Activator</Bundle-Activator>
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-            <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
+            <Export-Package>com.ibm.jaggr.service.impl,com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
             <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
             <Require-Bundle>org.eclipse.core.runtime, com.ibm.jaggr.core</Require-Bundle>
             <Import-Package>
@@ -182,7 +182,7 @@
           </filesets>
         </configuration>
       </plugin>
-      <plugin>
+    <!--   <plugin>
         <groupId>com.github.searls</groupId>
         <artifactId>jasmine-maven-plugin</artifactId>
         <extensions>true</extensions>
@@ -207,7 +207,7 @@
           <timeout>30</timeout>
           <keepServerAlive>true</keepServerAlive>
         </configuration>
-      </plugin>
+      </plugin> -->
     </plugins>
   </build>
   <dependencies>

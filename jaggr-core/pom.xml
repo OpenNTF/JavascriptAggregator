@@ -115,7 +115,9 @@
               org.apache.felix.service.command;resolution:=optional,
               !*
             </Import-Package>
-           
+           <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,commons-codec,js</Embed-Dependency>
+            <Embed-Directory>lib</Embed-Directory>
+            <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
         </configuration>
       </plugin>
@@ -151,6 +153,7 @@
             <excludes>
               <exclude>src/main/java/com/ibm/jaggr/core/impl/deps/Term.java</exclude>
               <exclude>src/main/java/com/ibm/jaggr/core/impl/deps/Formula.java</exclude>
+              <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
             </excludes>
           </configuration>
         </plugin>
