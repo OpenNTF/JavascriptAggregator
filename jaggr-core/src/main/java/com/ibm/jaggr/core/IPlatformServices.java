@@ -16,10 +16,10 @@
 
 package com.ibm.jaggr.core;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Dictionary;
-
-import javax.imageio.spi.ServiceRegistry;
 
 /**
  * Interface for all platform dependent functionalities used by the aggregator.
@@ -126,8 +126,17 @@ public interface IPlatformServices {
 	/**
 	 * This method returns true when the platform is shutting down.
 	 * 
-	 * @return
+	 * @return boolean 
 	 */
 	public boolean isShuttingdown();
+	
+	/**
+	 * This method returns the URL pointing to server side aggregator config file. The file name is mentioned as a servlet 
+	 * parameter of the aggregator servlet as defined in the consuming application of the aggregator.
+	 * 
+	 * @param configName Name of the server side aggregator config file
+	 * @return URI object pointing to server side aggregator config file.
+	 */
+	public URI getConfigURL(String configName) throws URISyntaxException;
 
 }

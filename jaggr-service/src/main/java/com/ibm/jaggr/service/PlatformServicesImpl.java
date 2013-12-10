@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.service;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Dictionary;
 import java.util.logging.Level;
@@ -183,6 +185,16 @@ public class PlatformServicesImpl implements IPlatformServices {
 		} else {
 			return false;
 		}
+	}
+
+	@Override
+	public URI getConfigURL(String configName) throws URISyntaxException {
+		URI uri = null;
+		uri = new URI("namedbundleresource://" +  //$NON-NLS-1$
+					bundleContext.getBundle().getSymbolicName()  +
+					(configName.startsWith("/") ? "" : "/") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ 
+					configName);		
+		return uri;
 	}
 
 }
