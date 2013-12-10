@@ -39,14 +39,11 @@ import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
  */
-public abstract class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
+public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
 	
 	protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
 	protected static String loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$	
-	protected static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
-   
-    
-	
+	protected static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$	
 
 	/* (non-Javadoc)
 	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)

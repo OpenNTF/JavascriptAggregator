@@ -638,17 +638,18 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// notify any listeners that the config has been updated
 		Object[] refs = null;			
 		refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")");
-		
-		for (Object ref : refs) {
-			IRequestListener listener = (IRequestListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
-			try {
-				if (action == RequestNotifierAction.start) {
-					listener.startRequest(req, resp);
-				} else {
-					listener.endRequest(req, resp);
+		if (refs != null) {
+			for (Object ref : refs) {
+				IRequestListener listener = (IRequestListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+				try {
+					if (action == RequestNotifierAction.start) {
+						listener.startRequest(req, resp);
+					} else {
+						listener.endRequest(req, resp);
+					}
+				} finally {
+					PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 				}
-			} finally {
-				PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 			}
 		}
 	}
