@@ -8,7 +8,6 @@
  * Contributors:
  *     IBM - Initial API and implementation
  *******************************************************************************/
-
 package com.ibm.jaggr.core.util;
 
 import java.io.IOException;
@@ -47,17 +46,15 @@ import java.util.*;
  * </p>
  * 
  * @since 3.1
- * 
- * This file has been modified to remove the dependence of these classes - org.eclipse.osgi.framework.debug.Debug, 
- * org.eclipse.osgi.framework.internal.core.FrameworkProperties, org.eclipse.osgi.framework.log.FrameworkLog and 
- * org.eclipse.osgi.framework.log.FrameworkLogEntry
  */
-@SuppressWarnings(value = { "all" })
+@SuppressWarnings({ "all" })
 public abstract class NLS {
 
 	private static final Object[] EMPTY_ARGS = new Object[0];
 	private static final String EXTENSION = ".properties"; //$NON-NLS-1$
-	private static String[] nlSuffixes;	
+	private static String[] nlSuffixes;
+	private static final String PROP_WARNINGS = "osgi.nls.warnings"; //$NON-NLS-1$
+	private static final String IGNORE = "ignore"; //$NON-NLS-1$
 	//private static final boolean ignoreWarnings = IGNORE.equals(FrameworkProperties.getProperty(PROP_WARNINGS));
 
 	/*
@@ -270,8 +267,7 @@ public abstract class NLS {
 				// log it and continue. This means that the field will (most likely) be un-initialized and
 				// will fail later in the code and if so then we will see both the NPE and this error.
 				String value = "NLS missing message: " + field.getName() + " in: " + bundleName; //$NON-NLS-1$ //$NON-NLS-2$
-				/*if (Debug.DEBUG_MESSAGE_BUNDLES)
-					System.out.println(value);*/
+				
 				log(SEVERITY_WARNING, value, null);
 				if (!isAccessible)
 					field.setAccessible(true);
@@ -322,9 +318,8 @@ public abstract class NLS {
 			}
 		}
 		computeMissingMessages(bundleName, clazz, fields, fieldArray, isAccessible);
-		/*if (Debug.DEBUG_MESSAGE_BUNDLES)
-			System.out.println("Time to load message bundle: " + bundleName + " was " + (System.currentTimeMillis() - start) + "ms."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-	*/}
+		
+	}
 
 	/*
 	 * The method adds a log entry based on the error message and exception. 
@@ -339,13 +334,9 @@ public abstract class NLS {
 	 * @param e - exception to log
 	 */
 	static void log(int severity, String message, Exception e) {
-		//if (severity == SEVERITY_WARNING && ignoreWarnings)
 		if (severity == SEVERITY_WARNING)
 			return; // ignoring warnings; bug 292980
-		/*if (frameworkLog != null) {
-			frameworkLog.log(new FrameworkLogEntry("org.eclipse.osgi", severity, 1, message, 0, e, null)); //$NON-NLS-1$
-			return;
-		}*/
+		
 		String statusMsg;
 		switch (severity) {
 			case SEVERITY_ERROR :
@@ -396,8 +387,7 @@ public abstract class NLS {
 				return null;
 			if (fieldObject == null) {
 				final String msg = "NLS unused message: " + key + " in: " + bundleName;//$NON-NLS-1$ //$NON-NLS-2$
-				/*if (Debug.DEBUG_MESSAGE_BUNDLES)
-					System.out.println(msg);*/
+				
 				log(SEVERITY_WARNING, msg, null);
 				return null;
 			}
