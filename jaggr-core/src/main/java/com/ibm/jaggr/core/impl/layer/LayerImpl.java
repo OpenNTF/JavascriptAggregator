@@ -800,7 +800,7 @@ public class LayerImpl implements ILayer {
 	 * 
 	 * @return The current layer build map.
 	 */
-	Map<String, CacheEntry> getLayerBuildMap() {
+	public Map<String, CacheEntry> getLayerBuildMap() {
 		return _layerBuilds.getMap();
 	}
 	

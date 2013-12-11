@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.core.impl.layer;
+package com.ibm.jaggr.service.impl.layer;
 
 import java.io.File;
 import java.io.FileReader;
@@ -56,13 +56,18 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.layer.CacheEntry;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
+import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.service.PlatformServicesImpl;
 
 public class LayerCacheTest {
 	
@@ -108,6 +113,10 @@ public class LayerCacheTest {
 		Assert.assertEquals(1, layerCache.size());
 		
 		Assert.assertEquals(0,  layerCache.getLayerBuildMap().size());
+		
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
+		//osgiPlatformAggregator.setBundleContext(mockBundleContext);
+		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
 		
 		boolean exceptionThrown = false;
 		try {

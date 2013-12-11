@@ -75,7 +75,7 @@ import com.ibm.jaggr.core.util.TypeUtil;
 public class LayerCacheImpl implements ILayerCache, Serializable {
 	private static final long serialVersionUID = -3231549218609175774L;
 
-	static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
+	public static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
 	
 	private ConcurrentMap<String, LayerImpl> layerMap;
 	
@@ -230,15 +230,15 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		return layerBuildMap;
 	}
 	
-	Collection<String> getLayerBuildKeys() {
+	public Collection<String> getLayerBuildKeys() {
 		return layerBuildMap.ascendingKeySet();
 	}
 	
-	int getNumEvictions() {
+	public int getNumEvictions() {
 		return numEvictions.get();
 	}
 	
-	int getMaxCapacity() {
+	public int getMaxCapacity() {
 		return maxCapacity;
 	}
 	
