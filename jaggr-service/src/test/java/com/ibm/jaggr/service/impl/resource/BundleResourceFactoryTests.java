@@ -37,6 +37,8 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
+import com.ibm.jaggr.core.impl.resource.FileResource;
+import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 public class BundleResourceFactoryTests {
 
 	static private Map<String, Bundle> bundleNameMap = new HashMap<String, Bundle>();

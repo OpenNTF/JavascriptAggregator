@@ -84,7 +84,7 @@ public class LayerBuilder {
 	 * @param keyGens
 	 *            The list of cache key generators for the response
 	 */
-	LayerBuilder(HttpServletRequest request, List<ICacheKeyGenerator> keyGens,
+	public LayerBuilder(HttpServletRequest request, List<ICacheKeyGenerator> keyGens,
 			ModuleList moduleList) {
 		this.request = request;
 		this.keyGens = keyGens;
@@ -102,7 +102,7 @@ public class LayerBuilder {
 	 * @return The response reader
 	 * @throws IOException
 	 */
-	BuildListReader build() throws IOException {
+	public BuildListReader build() throws IOException {
 		
         Map<String, String> moduleCacheInfo = null;
         if (request.getAttribute(LayerImpl.LAYERCACHEINFO_PROPNAME) != null) {
@@ -282,7 +282,7 @@ public class LayerBuilder {
 	 * @return The list of {@link ModuleBuildFuture} objects.
 	 * @throws IOException
 	 */
-	protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+	public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 			throws IOException {
 
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
@@ -310,7 +310,7 @@ public class LayerBuilder {
 	 * @param req The request object.
 	 * @throws IOException
 	 */
-	protected String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {		
+	public String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {		
 		StringBuffer sb = new StringBuffer();
 		// notify any listeners that the config has been updated
 		

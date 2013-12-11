@@ -226,7 +226,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		return layerMap.size();
 	}
 	
-	Map<String, CacheEntry> getLayerBuildMap() {
+	public Map<String, CacheEntry> getLayerBuildMap() {
 		return layerBuildMap;
 	}
 	

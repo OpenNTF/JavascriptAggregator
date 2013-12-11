@@ -43,20 +43,25 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.InitParams;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.test.MockAggregatorWrapper;
+import com.ibm.jaggr.core.test.MockAggregatorWrapper;
+import com.ibm.jaggr.service.PlatformServicesImpl;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.service.test.ITestAggregator;
 import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.PathUtil;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.PathUtil;
 
 public class ConfigTests {
 	
 	File tmpFile = null;
 	URI tmpDir = null;
 	IAggregator mockAggregator;
+	ITestAggregator mockOSGiAggregator;
 
 	@Before 
 	public void setup() throws Exception {
@@ -215,17 +220,23 @@ public class ConfigTests {
 			}
 		}).anyTimes();
 		EasyMock.replay(mockBundleContext);
-		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
-		EasyMock.expect(mockAggregator.getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
+		mockOSGiAggregator = TestUtils.createMockAggregator(null, null, initParams);
+		EasyMock.expect((mockOSGiAggregator).getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
 			public BundleContext answer() throws Throwable {
 				return mockBundleContext;
 			}
 		}).anyTimes();
-		EasyMock.replay(mockAggregator);
-		mockAggregator.getOptions().setOption("foo", "bar");
+		EasyMock.replay(mockOSGiAggregator);
+		
+		//instantiate the platformAggregator object for this test case to read the headers from the bundleContext
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
+		osgiPlatformAggregator.setBundleContext(mockBundleContext);
+		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		
+		mockOSGiAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
 		final TestConsoleLogger logger = new TestConsoleLogger();
-		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config) {
+		ConfigImpl cfg = new ConfigImpl(mockOSGiAggregator, tmpDir, config) {
 			@Override
 			protected ConfigImpl.Console newConsole() {
 				return logger;
@@ -754,14 +765,14 @@ public class ConfigTests {
 		
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, "config.js"));
-		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
+		mockOSGiAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
 		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
 		Bundle mockBundle = EasyMock.createMock(Bundle.class);
-		EasyMock.expect(mockAggregator.getBundleContext()).andReturn(mockContext);
+		EasyMock.expect(mockOSGiAggregator.getBundleContext()).andReturn(mockContext);
 		EasyMock.expect(mockContext.getBundle()).andReturn(mockBundle);
 		EasyMock.expect(mockBundle.getSymbolicName()).andReturn("org.mock.name");
-		EasyMock.replay(mockAggregator, mockContext, mockBundle);
-		ConfigImpl cfg = new ConfigImpl(mockAggregator);
+		EasyMock.replay(mockOSGiAggregator, mockContext, mockBundle);
+		ConfigImpl cfg = new ConfigImpl(mockOSGiAggregator);
 		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());
 	}
 

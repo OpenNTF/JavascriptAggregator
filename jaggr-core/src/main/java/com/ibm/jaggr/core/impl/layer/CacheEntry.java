@@ -41,7 +41,7 @@ import com.ibm.jaggr.core.cache.ICacheManager;
  * careful about the order in which variables are assigned and read.  See comments in the 
  * various methods for details.
  */
-class CacheEntry implements Serializable {
+public class CacheEntry implements Serializable {
 	private static final long serialVersionUID = -2129350665073838766L;
 
 	private transient volatile byte[] bytes = null;

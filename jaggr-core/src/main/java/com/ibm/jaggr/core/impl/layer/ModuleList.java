@@ -28,30 +28,30 @@ import com.ibm.jaggr.core.module.ModuleSpecifier;
 // This class is not thread safe.  It is assumed that it does not
 // need to be.  If that assumption changes, then the implementation 
 // will need to be reworked.
-class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
+public class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -5874021341817546757L;
 	
-	static class ModuleListEntry {
+	public static class ModuleListEntry {
 		final IModule module;
 		final ModuleSpecifier source;
-		ModuleListEntry(IModule module, ModuleSpecifier source) {
+		public ModuleListEntry(IModule module, ModuleSpecifier source) {
 			this.module = module;
 			this.source = source;
 		}
-		ModuleSpecifier getSource() {
+		public ModuleSpecifier getSource() {
 			return source;
 		}
-		IModule getModule() {
+		public IModule getModule() {
 			return module;
 		}
 	}
 	private Set<String> dependentFeatures = null;
 	private Set<String> requiredModules = null;
 	
-	ModuleList() {
+	public ModuleList() {
 	}
 	
-	ModuleList(List<ModuleListEntry> other) {
+	public ModuleList(List<ModuleListEntry> other) {
 		super(other);
 	}
 	
@@ -59,7 +59,7 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		this.dependentFeatures = dependentFeatures;
 	}
 	
-	void setRequiredModules(Set<String> requiredModules) {
+	public void setRequiredModules(Set<String> requiredModules) {
 		this.requiredModules = requiredModules;
 	}
 	
@@ -70,14 +70,14 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		return requiredModules;
 	}
 	
-	Set<String> getDependentFeatures() {
+	public Set<String> getDependentFeatures() {
 		if (dependentFeatures == null) {
 			dependentFeatures = new HashSet<String>();
 		}
 		return dependentFeatures;
 	}
 	
-	List<IModule> getModules() {
+	public List<IModule> getModules() {
 		List<IModule> result = new ArrayList<IModule>(size());
 		for (ModuleListEntry entry : this) {
 			result.add(entry.getModule());

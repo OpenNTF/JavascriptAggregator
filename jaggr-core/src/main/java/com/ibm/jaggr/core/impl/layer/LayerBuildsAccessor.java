@@ -40,7 +40,7 @@ import com.ibm.jaggr.core.cache.ICacheManager;
  * owning layer so that entries belonging to the layer can be retrieved (see
  * {@link LayerBuildsAccessor#entrySet()}).
  */
-class LayerBuildsAccessor {
+public class LayerBuildsAccessor {
 
 	/**
 	 * 
@@ -62,7 +62,7 @@ class LayerBuildsAccessor {
 	private final String keyPrefixUpperBound;
 	private final WeakReference<LayerCacheImpl> layerCacheRef;
 	
-	LayerBuildsAccessor(
+	public LayerBuildsAccessor(
 			int layerId, 
 			ConcurrentMap<String, CacheEntry> map, 
 			ICacheManager cacheMgr, 

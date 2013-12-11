@@ -31,7 +31,7 @@
         	     noindex="false" 
         	     nonavbar="false" 
         	     notree="false" 
-        	     packagenames="com.ibm.jaggr.service,com.ibm.jaggr.service.cachekeygenerator,com.ibm.jaggr.service.transport,com.ibm.jaggr.service.options,com.ibm.jaggr.service.modulebuilder,com.ibm.jaggr.service,com.ibm.jaggr.service.layer,com.ibm.jaggr.service.executors,com.ibm.jaggr.service.config,com.ibm.jaggr.service.cache,com.ibm.jaggr.service.util,com.ibm.jaggr.service.deps,com.ibm.jaggr.service.module,com.ibm.jaggr.service.resource,com.ibm.jaggr.service.readers" 
+        	     packagenames="com.ibm.jaggr.service,com.ibm.jaggr.service.cachekeygenerator,com.ibm.jaggr.service.transport,com.ibm.jaggr.service.options,com.ibm.jaggr.service.modulebuilder,com.ibm.jaggr.service,com.ibm.jaggr.service.layer,com.ibm.jaggr.service.executors,com.ibm.jaggr.service.config,com.ibm.jaggr.service.cache,com.ibm.jaggr.service.util,com.ibm.jaggr.core.deps,com.ibm.jaggr.service.module,com.ibm.jaggr.service.resource,com.ibm.jaggr.service.readers" 
         	     source="1.6" 
         	     sourcepath="src/main/java/" 
         	     splitindex="true" 

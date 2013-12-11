@@ -291,14 +291,14 @@ public class FileResource implements IResource {
 	/*
 	 * Package private accessor for unit testing
 	 */
-	URI getRefUri() {
+	public URI getRefUri() {
 		return ref;
 	}
 	
 	/*
 	 * Package private accessor for unit testing
 	 */
-	IResourceFactory getFactory() {
+	public IResourceFactory getFactory() {
 		return factory;
 	}
 }

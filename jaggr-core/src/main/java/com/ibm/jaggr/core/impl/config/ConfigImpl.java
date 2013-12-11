@@ -566,7 +566,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * 
 	 * @see IAliasResolver
 	 */
-	protected String resolveAliases(
+	public String resolveAliases(
 			String name, 
 			Features features, 
 			Set<String> dependentFeatures,

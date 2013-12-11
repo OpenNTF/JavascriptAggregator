@@ -108,7 +108,7 @@ public class LayerImpl implements ILayer {
     	
     public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):"); //$NON-NLS-1$
     
-    static int LAYERBUILD_REMOVE_DELAY_SECONDS = 10;
+    public static int LAYERBUILD_REMOVE_DELAY_SECONDS = 10;
     
     /**
      * Map of cache dependency objects for module classes included in this layer.
@@ -158,7 +158,7 @@ public class LayerImpl implements ILayer {
 		return _cacheKey;
 	}
 	
-	int getId() {
+	public int getId() {
 		return _id;
 	}
 	/**
@@ -606,7 +606,7 @@ public class LayerImpl implements ILayer {
 		return clone;
 	}
 	
-	void setLayerBuildsAccessor(LayerBuildsAccessor layerBuilds) {
+	public void setLayerBuildsAccessor(LayerBuildsAccessor layerBuilds) {
 		if (_layerBuilds != null) {
 			throw new IllegalStateException();
 		}
@@ -791,7 +791,7 @@ public class LayerImpl implements ILayer {
      *  
      * @return The cacheKeyGenerators for this layer
      */
-    Map<String, ICacheKeyGenerator> getCacheKeyGenerators() {
+    public Map<String, ICacheKeyGenerator> getCacheKeyGenerators() {
     	return _cacheKeyGenerators;
     }
     
