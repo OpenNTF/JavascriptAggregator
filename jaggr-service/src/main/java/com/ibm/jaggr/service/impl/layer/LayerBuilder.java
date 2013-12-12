@@ -17,8 +17,7 @@
 package com.ibm.jaggr.service.impl.layer;
 
 import java.io.IOException;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -38,16 +37,17 @@ import org.osgi.framework.ServiceReference;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.layer.ILayerListener.EventType;
 import com.ibm.jaggr.service.module.IModule;
 import com.ibm.jaggr.service.module.IModuleCache;
 import com.ibm.jaggr.service.module.ModuleSpecifier;
 import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.BuildListReader;
 import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType;
+import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
@@ -62,6 +62,7 @@ public class LayerBuilder {
 	final ModuleList moduleList;
 	final IHttpTransport transport;
 	final List<IModule> layerListenerModuleList;
+	boolean hasErrors = false;
 
 	/**
 	 * Count of modules for the current contribution type (modules or required
@@ -101,53 +102,74 @@ public class LayerBuilder {
 	 * Aggregates the readers associated with {@code futures} together with
 	 * contributions from the transport into the response.
 	 * 
-	 * @return The response reader
+	 * @return The built layer
 	 * @throws IOException
 	 */
-	BuildListReader build() throws IOException {
+	String build() throws IOException {
 		
+		StringBuffer sb = new StringBuffer();
         Map<String, String> moduleCacheInfo = null;
         if (request.getAttribute(LayerImpl.LAYERCACHEINFO_PROPNAME) != null) {
         	moduleCacheInfo = new HashMap<String, String>();
         	request.setAttribute(IModuleCache.MODULECACHEINFO_PROPNAME, moduleCacheInfo);
         }
+        Set<String> dependentFeatures = new HashSet<String>();
+        request.setAttribute(ILayer.DEPENDENT_FEATURES, dependentFeatures);
 
-        List<ModuleBuildReader> readerList = new LinkedList<ModuleBuildReader>();
-		
         String prologue = notifyLayerListeners(EventType.BEGIN_LAYER, request, null);
 		if (prologue != null) {
-			readerList.add(new ModuleBuildReader(prologue));
+			sb.append(prologue);
 		}
         
 		List<ModuleBuildFuture> futures = collectFutures(moduleList, request);
 
-		addTransportContribution(request, transport, readerList, LayerContributionType.BEGIN_RESPONSE, null);
+		addTransportContribution(request, transport, sb, LayerContributionType.BEGIN_RESPONSE, null);
 
-		// For each source file, add a Future<IModule.ModuleReader> to the list 
+		if (dependentFeatures.size() > 0) {
+			moduleList.getDependentFeatures().addAll(dependentFeatures);
+			dependentFeatures.clear();
+		}
+		// For each source file, add the build output to the string buffer 
 		for (ModuleBuildFuture future : futures) {
-			processFuture(future, readerList);
+			processFuture(future, sb);
+
+			if (dependentFeatures.size() > 0) {
+				moduleList.getDependentFeatures().addAll(dependentFeatures);
+				dependentFeatures.clear();
+			}
 		}
 		
 		if (count > 0) {
-			addTransportContribution(request, transport, readerList, 
+			addTransportContribution(request, transport, sb, 
 					required ? LayerContributionType.END_REQUIRED_MODULES : LayerContributionType.END_MODULES,
 					required ? moduleList.getRequiredModules() : null);
 		}
-		addTransportContribution(request, transport, readerList, 
+		addTransportContribution(request, transport, sb, 
 				LayerContributionType.END_RESPONSE, null);
 		
-		/*
-		 * Add an epilogue reader.  Note that we can't call the layer listeners here
-		 * because not all the module builders have necessarily completed.  Instead,
-		 * we add an epilogue reader that will call the listeners once the build output
-		 * of all the builders have been read.
-		 */
-		readerList.add(new ModuleBuildReader(new EpilogueReader()));
-		
-		return new BuildListReader(readerList);
+        String epilogue = notifyLayerListeners(EventType.END_LAYER, request, null);
+		if (epilogue != null) {
+			sb.append(epilogue);
+		}
+
+		if (dependentFeatures.size() > 0) {
+			moduleList.getDependentFeatures().addAll(dependentFeatures);
+			dependentFeatures.clear();
+		}
+        
+		return sb.toString();
 		
 	}
 
+	/**
+	 * Returns true if any of the module builds indicated an error
+	 * 
+	 * @return true if there was an error in one of the module builds
+	 */
+	protected boolean hasErrors() {
+		return hasErrors;
+	}
+	
 	/**
 	 * Adds the reader associated with the future, together with any transport
 	 * contributions, to the response aggregation.
@@ -160,7 +182,7 @@ public class LayerBuilder {
 	 *            The module build future
 	 * @throws IOException
 	 */
-	private void processFuture(ModuleBuildFuture future, List<ModuleBuildReader> readerList)
+	protected void processFuture(ModuleBuildFuture future, StringBuffer sb)
 		throws IOException {
 
 		ModuleBuildReader reader;
@@ -178,7 +200,7 @@ public class LayerBuilder {
 		ModuleSpecifier source = future.getModuleSpecifier();
 		if (source == ModuleSpecifier.REQUIRED) {
 			if (!required && count > 0) {
-    			addTransportContribution(request, transport, readerList, 
+    			addTransportContribution(request, transport, sb, 
     					LayerContributionType.END_MODULES, null);
     			count = 0;
 			}
@@ -190,7 +212,7 @@ public class LayerBuilder {
 		// Process any before modules by recursively calling this method
 		if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
 			for (ModuleBuildFuture beforeFuture : reader.getBefore()) {
-				processFuture(beforeFuture, readerList);
+				processFuture(beforeFuture, sb);
 			}
 		}		
 		// Add the cache key generator list to the result list
@@ -200,16 +222,15 @@ public class LayerBuilder {
 		}
 		
 		if (count == 0) {
-			addTransportContribution(request, transport, readerList, 
+			addTransportContribution(request, transport, sb, 
 					required ? LayerContributionType.BEGIN_REQUIRED_MODULES : LayerContributionType.BEGIN_MODULES, 
 					required ? moduleList.getRequiredModules() : null);
 		}
-		
-        String interlude = notifyLayerListeners(EventType.BEGIN_MODULE, request, future.getModule());
-		if (interlude != null) {
-			readerList.add(new ModuleBuildReader(interlude));
+		String str = notifyLayerListeners(EventType.BEGIN_MODULE, request, future.getModule());
+		if (str != null) {
+			sb.append(str);
 		}
-		
+
 		// Get the layer contribution from the transport
 		// Note that we depend on the behavior that all non-required
 		// modules in the module list appear before all required 
@@ -220,35 +241,38 @@ public class LayerBuilder {
 		} else {
 			type = required ? LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
 		}
-		addTransportContribution(request, transport, readerList, type, future.getModule().getModuleId());
+		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
 		
 		count++;
 		// Add the reader to the result
-		readerList.add(reader);
+		StringWriter writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		sb.append(writer.toString());
+		hasErrors |= reader.isError();
 		
 		// Add post-module transport contribution
 		type = (source == ModuleSpecifier.REQUIRED || source == ModuleSpecifier.BUILD_ADDED && required) ? 
 				LayerContributionType.AFTER_REQUIRED_MODULE : LayerContributionType.AFTER_MODULE;
-		addTransportContribution(request, transport, readerList, type, future.getModule().getModuleId());
+		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
 		
 		// Process any after modules by recursively calling this method
 		if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
 			for (ModuleBuildFuture afterFuture : reader.getAfter()) {
-				processFuture(afterFuture, readerList);
+				processFuture(afterFuture, sb);
 			}
 		}
 	}
 
 	/**
-	 * Appends the reader for the layer contribution specified by {@code type}
-	 * (contributed by the transport) to the end of {@code readerList}.
+	 * Appends the layer contribution specified by {@code type}
+	 * (contributed by the transport) to the string buffer.
 	 * 
 	 * @param request
 	 *            The http request object
 	 * @param transport
 	 *            The transport object
-	 * @param readerList
-	 *            The reader list to append to
+	 * @param sb
+	 *            The string buffer to append to
 	 * @param type
 	 *            The layer contribution type
 	 * @param arg
@@ -258,7 +282,7 @@ public class LayerBuilder {
 	protected void addTransportContribution(
 			HttpServletRequest request,
 			IHttpTransport transport, 
-			List<ModuleBuildReader> readerList, 
+			StringBuffer sb, 
 			LayerContributionType type,
 			Object arg) {
 
@@ -268,9 +292,7 @@ public class LayerBuilder {
 				arg
 		);
 		if (transportContrib != null) {
-    		readerList.add(
-   				new ModuleBuildReader(transportContrib)
-        	);
+    		sb.append(transportContrib);
 		}
 	}
 	
@@ -348,30 +370,5 @@ public class LayerBuilder {
 			}
 		}
 		return sb.length() != 0 ? sb.toString() : null;
-	}
-	
-	private class EpilogueReader extends Reader {
-		private boolean initialized = false;
-		private StringReader reader = null;
-		
-		private void initialize() throws IOException {
-			if (!initialized) {
-				initialized = true;
-				String epilogue = notifyLayerListeners(EventType.END_LAYER, request, null);
-				reader = new StringReader(epilogue != null ? epilogue : ""); //$NON-NLS-1$
-			}
-		}
-		
-		@Override
-		public int read(char[] cbuf, int off, int len) throws IOException {
-			initialize();
-			return reader.read(cbuf, off, len);
-		}
-
-		@Override
-		public void close() throws IOException {
-			initialize();
-			reader.close();
-		}
 	}
 }

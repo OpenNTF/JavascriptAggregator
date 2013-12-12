@@ -61,6 +61,13 @@ public interface ILayer extends Serializable {
 	 * {@link IHttpTransport#NOADDMODULES_REQATTRNAME} is true);
 	 */
 	public static final String BUILDFUTURESQUEUE_REQATTRNAME = ILayer.class.getName() + ".buildQueue"; //$NON-NLS-1$
+	
+	/**
+	 * Object of type {@link Set}&lt;{@link String}&gt; specifying the set of dependent features.
+	 * Note that the set is not thread save, and should not be modified by asynchronous threads
+	 * such as module builders.
+	 */
+	public static final String DEPENDENT_FEATURES = ILayer.class.getName() + ".dependentFeatures"; //$NON-NLS-1$
 
 	/**
 	 * Returns the {@link InputStream} for the assembled and gzipped layer build

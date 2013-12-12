@@ -63,6 +63,7 @@ import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
 import com.ibm.jaggr.service.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
+import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.layer.ILayerListener.EventType;
 import com.ibm.jaggr.service.module.IModule;
@@ -149,7 +150,7 @@ public class LayerBuilderTest {
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
 		IAggregator mockAggregator = TestUtils.createMockAggregator(mockTransport);
-		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		final HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		EasyMock.replay(mockRequest);
 		EasyMock.replay(mockAggregator);
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
@@ -163,8 +164,7 @@ public class LayerBuilderTest {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES)
 		}));
 		TestLayerBuilder builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		Reader reader = builder.build();
-		String output = toString(reader);
+		String output = builder.build();
 		System.out.println(output);
 		Assert.assertEquals("[(\"<m1>foo<m1>\")]", output);
 
@@ -175,8 +175,7 @@ public class LayerBuilderTest {
 				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
 		}));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		System.out.println(output);
 		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
 		
@@ -189,8 +188,7 @@ public class LayerBuilderTest {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES)
 		}));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals(
 				"/* " + Messages.LayerImpl_1 + " */\r\n[("+String.format(AggregatorLayerListener.PREAMBLEFMT, "file:/c:/m1.js") + "\"<m1>foo<m1>\")]",
 				output);
@@ -200,8 +198,7 @@ public class LayerBuilderTest {
 		options.setOption("developmentMode", Boolean.FALSE);
 		options.setOption("debugMode", Boolean.TRUE);
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals(
 				"/* " + Messages.LayerImpl_2 + " */\r\n[("+String.format(AggregatorLayerListener.PREAMBLEFMT, "file:/c:/m1.js") + "\"<m1>foo<m1>\")]",
 				output);
@@ -210,8 +207,7 @@ public class LayerBuilderTest {
 		// showFilenames only (no filenames output)
 		options.setOption("debugMode", Boolean.FALSE);
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[(\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 	
@@ -219,8 +215,7 @@ public class LayerBuilderTest {
 		options.setOption("debugMode", Boolean.TRUE);
 		requestAttributes.remove(IHttpTransport.SHOWFILENAMES_REQATTRNAME);
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals(
 				"/* " + Messages.LayerImpl_2 + " */\r\n[(\"<m1>foo<m1>\")]",
 				output);
@@ -233,8 +228,7 @@ public class LayerBuilderTest {
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[[m1]{'<m1>foo<m1>'}[m1]]", output);
 		System.out.println(output);
 
@@ -245,8 +239,7 @@ public class LayerBuilderTest {
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1", "m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[[m1, m2]{'<m1>foo<m1>','<m2>bar<m2>'}[m1, m2]]", output);
 		System.out.println(output);
 	
@@ -257,8 +250,7 @@ public class LayerBuilderTest {
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[(\"<m1>foo<m1>\")[m2]{'<m2>bar<m2>'}[m2]]", output);
 		System.out.println(output);
 		
@@ -271,7 +263,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		boolean exceptionCaught = false;
 		try {
-			reader = builder.build();
+			output = builder.build();
 		} catch (IllegalStateException ex) {
 			exceptionCaught = true;
 		}
@@ -301,8 +293,7 @@ public class LayerBuilderTest {
 				return futures;
 			}
 		};
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[[m1]{'<mBefore>bar<mBefore>','<m1>foo<m1>'}[m1]]", output);
 		System.out.println(output);
 	
@@ -329,8 +320,7 @@ public class LayerBuilderTest {
 				return futures;
 			}
 		};
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[(\"<mBefore>bar<mBefore>\",\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 		
@@ -358,8 +348,7 @@ public class LayerBuilderTest {
 				return futures;
 			}
 		};
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[[m1]{'<m1>foo<m1>','<mAfter>bar<mAfter>'}[m1]]", output);
 		System.out.println(output);
 		
@@ -386,8 +375,7 @@ public class LayerBuilderTest {
 				return futures;
 			}
 		};
-		reader = builder.build();
-		output = toString(reader);
+		output = builder.build();
 		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<mAfter>bar<mAfter>\")]", output);
 		System.out.println(output);
 		
@@ -435,8 +423,7 @@ public class LayerBuilderTest {
 				return futures;
 			}
 		};
-		reader = builder.build();		
-		output = toString(reader);
+		output = builder.build();		
 		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<mAfter>after<mAfter>\")[m2]{'<mBefore>before<mBefore>','<m2>bar<m2>'}[m2]]", output);
 		System.out.println(output);
 
@@ -473,8 +460,7 @@ public class LayerBuilderTest {
 				return futures;
 			}
 		};
-		reader = builder.build();		
-		output = toString(reader);
+		output = builder.build();		
 		Assert.assertEquals("[(\"<m1>foo<m1>\")[m2]{'<m2>bar<m2>'}[m2]]", output);
 		System.out.println(output);
 		
@@ -489,19 +475,35 @@ public class LayerBuilderTest {
 			@Override
 			public String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {
 				String result = "<no type>";
+				@SuppressWarnings("unchecked")
+				Set<String> layerDependentFeatures = (Set<String>)request.getAttribute(ILayer.DEPENDENT_FEATURES);
 				if (type == EventType.BEGIN_LAYER) {
+					layerDependentFeatures.add("prologueFeature");
 					result = "prologue";
 				} else if (type == EventType.END_LAYER) {
+					layerDependentFeatures.add("epilogueFeature");
 					result = "epilogue";
 				} else if (type == EventType.BEGIN_MODULE) {
 					result = "interlude " + module.getURI();
+					layerDependentFeatures.add("interludeFeature");
 				}
 				return result;
 			}
+			@Override
+			protected void processFuture(ModuleBuildFuture future, StringBuffer sb) throws IOException {
+				super.processFuture(future, sb);
+				@SuppressWarnings("unchecked")
+				Set<String> dependentFeatures = (Set<String>)mockRequest.getAttribute(ILayer.DEPENDENT_FEATURES);
+				dependentFeatures.add("processFuture");
+			}
 		};
-		reader = builder.build();		
-		output = toString(reader);
+		output = builder.build();		
 		Assert.assertEquals("prologue[(interlude file:/c:/m1.js\"<m1>foo<m1>\"interlude file:/c:/m2.js,\"<m2>bar<m2>\")]epilogue", output);
+		Assert.assertEquals(
+				(Set<String>)new HashSet<String>(Arrays.asList(new String[]{
+						"prologueFeature", "interludeFeature", "processFuture", "epilogueFeature"
+				})),
+				moduleList.getDependentFeatures());
 		System.out.println(output);
 	}
 	
@@ -721,7 +723,12 @@ public class LayerBuilderTest {
 		protected String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			ILayerListener listener = new AggregatorLayerListener(aggr);
-			return listener.layerBeginEndNotifier(type, request, Arrays.asList(new IModule[]{module}), new HashSet<String>());
+			return listener.layerBeginEndNotifier(type, request, 
+					type == EventType.BEGIN_MODULE ? 
+							Arrays.asList(new IModule[]{module}) :
+							moduleList.getModules(),
+					new HashSet<String>());
+							
 		}
 	}
 }
