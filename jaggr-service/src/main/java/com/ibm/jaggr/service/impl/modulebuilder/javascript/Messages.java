@@ -24,6 +24,7 @@ public class Messages extends NLS {
 	public static String JavaScriptModuleBuilder_1;
 	public static String JavaScriptModuleBuilder_2;
 	public static String JavaScriptModuleBuilder_3;
+	public static String JavaScriptModuleBuilder_4;
 	public static String RequireExpansionCompilerPass_0;
 	public static String RequireExpansionCompilerPass_1;
 	public static String RequireExpansionCompilerPass_10;

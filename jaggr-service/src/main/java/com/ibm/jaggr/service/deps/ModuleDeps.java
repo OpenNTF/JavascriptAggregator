@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.ibm.jaggr.service.util.BooleanTerm;
+import com.ibm.jaggr.service.util.Features;
 
 /**
  * This class extends LinkedHashMap to provide additional methods for 
@@ -39,8 +40,16 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	public ModuleDeps() {
 	}
 	
+	/**
+	 * Copy constructor.  Creates a deep copy (clones the {@link ModuleDepInfo}
+	 * objects) of {@code other}.
+	 * 
+	 * @param other
+	 */
 	public ModuleDeps(ModuleDeps other) {
-		addAll(other);
+		for (Map.Entry<String, ModuleDepInfo> entry : other.entrySet()) {
+			super.put(entry.getKey(), new ModuleDepInfo(entry.getValue()));
+		}
 	}
 	
 	/**
@@ -80,7 +89,7 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	public boolean addAll(ModuleDeps other) {
 		boolean modified = false;
 		for (Map.Entry<String, ModuleDepInfo> entry : other.entrySet()) {
-			modified |= add(entry.getKey(), entry.getValue());
+			modified |= add(entry.getKey(), new ModuleDepInfo(entry.getValue()));
 		}
 		return modified;
 	}
@@ -103,6 +112,22 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 			result = existing.containsTerm(term);
 		}
 		return result;
+	}
+	
+	/**
+	 * Calls {@link ModuleDepInfo#andWith(ModuleDepInfo)} on each of the 
+	 * entries in this list.
+	 * 
+	 * @param info
+	 *            the {@link ModuleDepInfo} who's formula will be anded with the
+	 *            entries in the list.
+	 * @return this object.
+	 */
+	public ModuleDeps andWith(ModuleDepInfo info) {
+		for (Map.Entry<String, ModuleDepInfo> entry : entrySet()) {
+			entry.getValue().andWith(info);
+		}
+		return this;
 	}
 	
 	/**
@@ -193,23 +218,16 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	}
 	
 	/**
-	 * Calls {@link ModuleDepInfo#simplify()} on each of the
+	 * Calls {@link ModuleDepInfo#resolveWith(Features)} on each of the
 	 * values in the map.
+	 * 
+	 * @param features the feature set to apply.
+	 * 
+	 * @return the current object
 	 */
-	public ModuleDeps simplify() {
+	public ModuleDeps resolveWith(Features features) {
 		for (ModuleDepInfo info : values()) {
-			info.simplify();
-		}
-		return this;
-	}
-	
-	/**
-	 * Calls {@link ModuleDepInfo#simplifyInvariants()} on each of the
-	 * values in the map.
-	 */
-	public ModuleDeps simplifyInvariants() {
-		for (ModuleDepInfo info : values()) {
-			info.simplifyInvariants();
+			info.resolveWith(features);
 		}
 		return this;
 	}
@@ -223,6 +241,4 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	public void putAll(Map<? extends String, ? extends ModuleDepInfo> map) {
 		throw new UnsupportedOperationException();
 	}
-
-
 }

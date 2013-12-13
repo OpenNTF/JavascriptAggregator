@@ -29,18 +29,21 @@ import java.util.TreeMap;
 
 import com.ibm.jaggr.service.util.BooleanTerm;
 import com.ibm.jaggr.service.util.BooleanVar;
+import com.ibm.jaggr.service.util.Features;
 
 /**
- * Object that represents a boolean expression of the form
- * (A*B*C)|(!A*B)|(B*!C) 
+ * Object that represents a boolean expression in <a
+ * href="http://en.wikipedia.org/wiki/Disjunctive_normal_form">Disjunctive
+ * Normal Form (DNF)</a><br>
+ * e.g. (A*B*C)|(!A*B)|(B*!C)
  * <p>
  * The variable names are instances of {@link BooleanVar}.
  * <p>
- * The group of variables that are and'ed together are terms, instances 
- * of {@link BooleanTerm}.
+ * The group of variables that are and'ed together are terms (a.k.a. clauses),
+ * instances of {@link BooleanTerm}.
  * <p>
- * The group of terms that are or'ed together are the formula encapsulated
- * by this object.
+ * The group of terms that are or'ed together are the formula encapsulated by
+ * this object.
  */
 public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	
@@ -89,6 +92,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 */
 	public BooleanFormula(BooleanFormula other) {
 		this.booleanTerms = other.booleanTerms != null ? new HashSet<BooleanTerm>(other.booleanTerms) : null;
+		this.isSimplified = other.isSimplified;
 	}
 	
 	/**
@@ -125,9 +129,27 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		if (isSimplified) {
 			return this;
 		}
-		if (booleanTerms == null || booleanTerms.size() == 0) {
+		if (booleanTerms == null || booleanTerms.size() < 2) {
 			isSimplified = true;
 			return this;
+		}
+		
+		// Remove true and false terms.  False terms are discarded.  True terms
+		// make the entire formula evaluate to true.
+		Set<BooleanTerm> trimmed = new HashSet<BooleanTerm>();
+		for (BooleanTerm term : booleanTerms) {
+			if (term.isTrue()) {
+				booleanTerms = null;
+				isSimplified = true;
+				return this;
+			} else if (term.isFalse()) {
+				continue;			// omitting a false term
+			} else {
+				trimmed.add(term);
+			}
+		}
+		if (trimmed.size() != booleanTerms.size()) {
+			booleanTerms = trimmed;
 		}
 		
 		// Determine number of unique variable names in the formula
@@ -164,9 +186,9 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 				terms.add(new Term(bytes));
 			}
 		}
-		BooleanFormula result = new BooleanFormula();
+		Set<BooleanTerm> result = new HashSet<BooleanTerm>();
 		if (terms.size() == 0) {
-			return result;		// FALSE
+			return new BooleanFormula(false);
 		}
 		
 		terms = expandDontCares(count, terms);
@@ -178,11 +200,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		// now convert back to featureExpression form
 		List<Term> termList = formula.getTermList();
 		if (termList.size() == 0) {
-			return result;		// FALSE
+			return new BooleanFormula(false);
 		}
 		for (Term term : termList) {
 			byte[] varValues = term.getVarValues();
-			BooleanTerm states = new BooleanTerm();
+			Set<BooleanVar> states = new HashSet<BooleanVar>();
 			for (Map.Entry<String, Integer> entry : names.entrySet()) {
 				if (varValues[entry.getValue()] == (byte)1) {
 					states.add(new BooleanVar(entry.getKey(), true));
@@ -191,14 +213,49 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 				}
 			}
 			if (states.size() > 0) {
-				result.add(states);
+				result.add(new BooleanTerm(states));
 			}
 		}
 		if (result.size() == 0) {
-			result.booleanTerms = null;	// TRUE
+			return new BooleanFormula(true);
 		}
-		result.isSimplified = true;
-		return result;
+		BooleanFormula newFormula = new BooleanFormula();
+		newFormula.booleanTerms = result;
+		newFormula.isSimplified = true;
+		return newFormula;
+	}
+	
+	/**
+	 * Resolves the formula using the boolean values specified in
+	 * <code>features</code>. If there are no more un-resolved variables in the
+	 * forumula, the resulting formula will be either TRUE or FALSE.
+	 * 
+	 * @param features
+	 *            the values to assign to variables in the formula
+	 * @return this object
+	 */
+	public BooleanFormula resolveWith(Features features) {
+		if (isTrue() || isFalse()) {
+			return this;
+		}
+		BooleanFormula formula = new BooleanFormula();
+		for (BooleanTerm term : this) {
+			BooleanTerm evaluated = term.resolveWith(features);
+			if (evaluated.isFalse()) {
+				// term is false.  Don't add to result
+			} else if (evaluated.isTrue()) {
+				// term is true so formula is true
+				booleanTerms = null;
+				isSimplified = true;
+				return this;
+			} else {
+				formula.addInternal(evaluated);
+			}
+		}
+		booleanTerms = formula.booleanTerms;
+		isSimplified = formula.isSimplified;
+		simplifyInvariant();
+		return this;
 	}
 	
 	/**
@@ -210,6 +267,46 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 */
 	public boolean addAll(BooleanFormula other) {
 		return addAll(other.booleanTerms);
+	}
+	
+	/**
+	 * Logically ands the provided terms with the terms in the formula, 
+	 * replacing this formula with the result
+	 * 
+	 * @param terms
+	 *            the terms to and with this formula
+	 * @return this object.
+	 */
+	public BooleanFormula andWith(BooleanFormula other) {
+		if (other.isTrue()) {
+			return this;
+		}
+		if (other.isFalse() || isFalse()) {
+			if (booleanTerms == null) {
+				booleanTerms = new HashSet<BooleanTerm>();
+			} else {
+				booleanTerms.clear();
+			}
+			isSimplified = true;
+			return this;
+		}
+		if (isTrue()) {
+			booleanTerms = new HashSet<BooleanTerm>(other.booleanTerms);
+			return this;
+		}
+		BooleanFormula newTerms = new BooleanFormula();
+		for (BooleanTerm otherTerm : other) {
+			for (BooleanTerm term : booleanTerms) {
+				BooleanTerm newTerm = term.andWith(otherTerm);
+				if (newTerm != null) {
+					newTerms.addInternal(newTerm);
+				}
+			}
+		}
+		booleanTerms = newTerms.booleanTerms;
+		isSimplified = newTerms.isSimplified;
+		simplifyInvariant();
+		return this;
 	}
 	
 	/**
@@ -226,9 +323,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		} else if (booleanTerms != null) {
 			modified = removeAll(toRemove);
 		}
-		if (modified) {
-			isSimplified = false;
-		}
+		simplifyInvariant();
 		return modified;
 	}				
 
@@ -265,18 +360,31 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * <p>
 	 * A null term represents an expression of true and sets
 	 * the formula to true (null).
+	 * 
+	 * @return true if the formula was modified
 	 */
-	@Override
-	public boolean add(BooleanTerm booleanTerm) {
+	private boolean addInternal(BooleanTerm booleanTerm) {
 		boolean modified = false;
-		if (booleanTerm == null) {
+		if (booleanTerm.isTrue()) {
 			modified = booleanTerms != null;
 			booleanTerms = null;
-		} else if (booleanTerms != null) {
-			modified = booleanTerms.add(booleanTerm);
-		}
-		if (modified) {
+		} else if (booleanTerms != null && !booleanTerm.isFalse()) {
+			for (BooleanTerm term : booleanTerms) {
+				if (booleanTerm.containsAll(term)) {
+					// formula already includes the term
+					return false;
+				}
+			}
+			Set<BooleanTerm> newTerms = new HashSet<BooleanTerm>();
+			newTerms.add(booleanTerm);
+			for (BooleanTerm term : booleanTerms) {
+				if (!term.containsAll(booleanTerm)) {
+					newTerms.add(term);
+				}
+			}
+			booleanTerms = newTerms;
 			isSimplified = false;
+			modified = true;
 		}
 		return modified;
 	}
@@ -295,10 +403,24 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			modified = booleanTerms != null;
 			booleanTerms = null;
 		} else if (booleanTerms != null) {
-			modified = booleanTerms.addAll(terms);
+			for (BooleanTerm term : terms) {
+				modified |= addInternal(term);
+			}
 		}
 		if (modified) {
-			isSimplified = false;
+			simplifyInvariant();
+		}
+		return modified;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.util.Set#add(java.lang.Object)
+	 */
+	@Override
+	public boolean add(BooleanTerm booleanTerm) {
+		boolean modified = addInternal(booleanTerm);
+		if (modified) {
+			simplifyInvariant();
 		}
 		return modified;
 	}
@@ -308,6 +430,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 */
 	@Override
 	public void clear() {
+		// This makes the formula false
 		if (booleanTerms != null) {
 			booleanTerms.clear();
 		} else {
@@ -362,8 +485,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		if (booleanTerms == null) {
 			return false;
 		}
-		boolean result = booleanTerms.remove(object);
-		return result;
+		return booleanTerms.remove(object);
 	}
 
 	/* (non-Javadoc)
@@ -374,11 +496,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		if (booleanTerms == null) {
 			return false;
 		}
-		boolean modified = booleanTerms.removeAll(collection);
-		if (modified) {
-			isSimplified = false;
-		}
-		return modified;
+		return booleanTerms.removeAll(collection);
 	}
 
 	/* (non-Javadoc)
@@ -389,11 +507,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		if (booleanTerms == null) {
 			return false;
 		}
-		boolean modified = booleanTerms.retainAll(collection);
-		if (modified) {
-			isSimplified = false;
-		}
-		return modified;
+		return booleanTerms.retainAll(collection);
 	}
 
 	/* (non-Javadoc)
@@ -531,4 +645,17 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		}
 	}
 	
+	/**
+	 * Simplify the formula and replace the existing formula with the simplified
+	 * equivalent only if it is invariant (evaluates to true of false).
+	 */
+	private void simplifyInvariant() {
+		if (!isSimplified) {
+			BooleanFormula simplified = simplify();
+			if  (simplified.isTrue() || simplified.isFalse() || simplified.equals(this)) {
+				booleanTerms = simplified.booleanTerms;
+				isSimplified = true;
+			}
+		}
+	}
 }

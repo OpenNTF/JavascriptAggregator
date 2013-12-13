@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import junit.framework.Assert;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
@@ -52,7 +53,6 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
@@ -75,7 +75,7 @@ public class ModuleImplTest {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 	IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
-	static final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
+	static final Map<String, String[]> testDepMap = TestUtils.createTestDepMap();
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -91,39 +91,20 @@ public class ModuleImplTest {
 		}
 	}
 
-	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
-		EasyMock.expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
-			public IDependencies answer() throws Throwable {
-				return mockDependencies;
-			}
-		}).anyTimes();
-		
-		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
-			public ModuleDeps answer() throws Throwable {
+		EasyMock.expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
+		EasyMock.expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
+		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.isA(String.class))).andAnswer(new IAnswer<String[]>() {
+			@Override
+			public String[] answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
-				Features features = (Features)EasyMock.getCurrentArguments()[1];
-				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
-				ModuleDeps result = testDepMap.get(name);
-				if (result == null) {
-					result = TestUtils.emptyDepMap;
-				}
-				// resolve aliases
-				ModuleDeps temp = new ModuleDeps();
-				IConfig config = mockAggregator.getConfig();
-				for (Map.Entry<String, ModuleDepInfo> entry : result.entrySet()) {
-					String depName = entry.getKey();
-					String resolved = config.resolve(depName, features, dependentFeatures, null, true);
-					temp.add(resolved != null ? resolved : depName, entry.getValue());
-				}
-				return temp;
+				return testDepMap.get(name);
 			}
 		}).anyTimes();
-		
+
 		URI p1Path = new File(tmpdir, "p1").toURI();
 		URI p2Path = new File(tmpdir, "p2").toURI();
 		final Map<String, URI> map = new HashMap<String, URI>();
@@ -155,7 +136,7 @@ public class ModuleImplTest {
 	 */
 	@Test
 	public void testModuleImpl() throws Exception {
-		testDepMap.get("p2/a").add("p1/aliased/d", new ModuleDepInfo(null, null, ""));
+		testDepMap.put("p2/a", (String[])ArrayUtils.add(testDepMap.get("p2/a"), "p1/aliased/d"));
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		

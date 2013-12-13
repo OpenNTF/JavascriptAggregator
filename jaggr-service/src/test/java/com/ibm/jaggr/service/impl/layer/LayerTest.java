@@ -42,7 +42,6 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
@@ -50,6 +49,7 @@ import java.util.zip.Deflater;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.lang.ArrayUtils;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
@@ -69,8 +69,6 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
@@ -108,7 +106,7 @@ public class LayerTest extends EasyMock {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
 	IDependencies mockDependencies = createMock(IDependencies.class);
-	static Map<String, ModuleDeps> testDepMap;
+	static Map<String, String[]> testDepMap;
 	
 
 	@BeforeClass
@@ -129,7 +127,6 @@ public class LayerTest extends EasyMock {
 
 	static long lastModified = 0;
 
-	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
 		mockBundleContext = null;
@@ -148,26 +145,12 @@ public class LayerTest extends EasyMock {
 			}
 		}).anyTimes();
 		
-		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		expect(mockDependencies.getDelcaredDependencies(eq("p1/a"))).andReturn(Arrays.asList(new String[]{"p1/b"})).anyTimes();
-		expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
-			public ModuleDeps answer() throws Throwable {
-				String name = (String)EasyMock.getCurrentArguments()[0];
-				Features features = (Features)EasyMock.getCurrentArguments()[1];
-				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
-				ModuleDeps result = testDepMap.get(name);
-				if (result == null) {
-					result = TestUtils.emptyDepMap;
-				}
-				// resolve aliases
-				ModuleDeps temp = new ModuleDeps();
-				IConfig config = mockAggregator.getConfig();
-				for (Map.Entry<String, ModuleDepInfo> entry : result.entrySet()) {
-					String depName = entry.getKey();
-					String resolved = config.resolve(depName, features, dependentFeatures, null, true);
-					temp.add(resolved != null ? resolved : depName, entry.getValue());
-				}
-				return temp;
+		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
+		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<String[]>() {
+			@Override
+			public String[] answer() throws Throwable {
+				String name = (String)getCurrentArguments()[0];
+				return testDepMap.get(name);
 			}
 		}).anyTimes();
 		
@@ -551,7 +534,7 @@ public class LayerTest extends EasyMock {
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		long totalSize = 0;
-		testDepMap.get("p2/a").add("p1/aliased/d", new ModuleDepInfo(null, null, ""));
+		testDepMap.put("p1/a", (String[])ArrayUtils.add(testDepMap.get("p2/a"), "p1/aliased/d"));
 		List<String> layerCacheInfo = new LinkedList<String>();
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
@@ -658,7 +641,7 @@ public class LayerTest extends EasyMock {
 	
 	@Test
 	public void gzipTests() throws Exception {
-		testDepMap.get("p2/a").add("p1/aliased/d", new ModuleDepInfo(null, null, ""));
+		testDepMap.put("p1/a", (String[])ArrayUtils.add(testDepMap.get("p2/a"), "p1/aliased/d"));
 		String configJson = "{paths:{p1:'p1',p2:'p2'}}";
 		List<String> layerCacheInfo = new LinkedList<String>();
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));

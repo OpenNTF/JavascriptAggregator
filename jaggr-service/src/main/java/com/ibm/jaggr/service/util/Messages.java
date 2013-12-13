@@ -22,6 +22,9 @@ public class Messages extends NLS {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.util.messages"; //$NON-NLS-1$
 	public static String DependencyList_0;
 	public static String DependencyList_1;
+	public static String DependencyList_2;
+	public static String DependencyList_3;
+	public static String DependencyList_4;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

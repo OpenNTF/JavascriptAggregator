@@ -16,7 +16,6 @@
 
 package com.ibm.jaggr.service.util;
 
-import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -102,6 +101,13 @@ public class HasNode {
 		evaluateAll(pluginName, features, discovered, term, results, comment);
 		return results;
 	}
+	
+	public ModuleDeps evaluateAll(String pluginName, Features features, Set<String> discovered, ModuleDepInfo terms, String comment) {
+		ModuleDeps results = new ModuleDeps();
+		evaluateAll(pluginName, features, discovered, BooleanTerm.TRUE, results, comment);
+		return results.andWith(terms);
+	}
+	
 	private void evaluateAll(String pluginName, Features features, Set<String> discovered, BooleanTerm term, ModuleDeps results, String comment) {
 		if (feature != null && discovered != null) {
 			discovered.add(feature);
@@ -111,13 +117,9 @@ public class HasNode {
 				results.add(nodeName, new ModuleDepInfo(pluginName, term, comment, true));
 			}
 		} else if (!features.contains(feature)) {
-			Set<BooleanVar> vars = (term != null ? new HashSet<BooleanVar>(term) : new HashSet<BooleanVar>());
-			vars.add(new BooleanVar(feature, true));
-			BooleanTerm newTerm = new BooleanTerm(vars);
+			BooleanTerm newTerm = term.andWith(new BooleanTerm(new BooleanVar(feature, true)));
 			trueNode.evaluateAll(pluginName, features, discovered, newTerm, results, comment);
-			vars = (term != null ? new HashSet<BooleanVar>(term) : new HashSet<BooleanVar>());
-			vars.add(new BooleanVar(feature, false));
-			newTerm = new BooleanTerm(vars);
+			newTerm = term.andWith(new BooleanTerm(new BooleanVar(feature, false)));
 			falseNode.evaluateAll(pluginName, features, discovered, newTerm, results, comment);
 		} else {
 			if (features.isFeature(feature)) {

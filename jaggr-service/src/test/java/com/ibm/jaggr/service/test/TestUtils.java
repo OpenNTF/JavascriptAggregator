@@ -41,8 +41,6 @@ import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.InitParams.InitParam;
 import com.ibm.jaggr.service.cache.ICacheManager;
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.executors.IExecutors;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
@@ -80,27 +78,18 @@ public class TestUtils {
 	public static String err = "/* Comment */define([\"p1/a\", \"p1/b\",], function(){}};";
 	static String hello = "Hello world text";
 
-	static public final ModuleDeps emptyDepMap = new ModuleDeps();
-
-	static  public Map<String, ModuleDeps> createTestDepMap() {
-		ModuleDeps temp = new ModuleDeps();
-		Map<String, ModuleDeps> depMap = new HashMap<String, ModuleDeps>();
-		temp.add("p2/b", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/c", new ModuleDepInfo(null, null, ""));
-		depMap.put("p2/a",  temp);
-		temp = new ModuleDeps();
-		temp.add("p1/b", new ModuleDepInfo(null, null, ""));
-		temp.add("p1/c", new ModuleDepInfo(null, null, ""));
-		temp.add("p1/a", new ModuleDepInfo(null, null, ""));
-		temp.add("p1/noexist", new ModuleDepInfo(null, null, ""));
-		depMap.put("p1/a", temp);
-		temp = new ModuleDeps();
-		temp.add("p2/p1/p1/a", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/p1/p1/b", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/p1/p1/noexist", new ModuleDepInfo(null, null, ""));
-		temp.add("p2/p1/p1/c", new ModuleDepInfo(null, null, ""));
-		depMap.put("p2/p1/p1/c", temp);
-
+	static  public Map<String, String[]> createTestDepMap() {
+		Map<String, String[]> depMap = new HashMap<String, String[]>();
+		depMap.put("p1/p1", new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"});
+		depMap.put("p2/a", new String[]{"p2/b"});
+		depMap.put("p2/b", new String[]{"p2/c"});
+		depMap.put("p2/c", new String[]{"p2/a", "p2/b", "p2/noexist"});
+		depMap.put("p1/a", new String[]{"p1/b"});
+		depMap.put("p1/b", new String[]{"p1/c"});
+		depMap.put("p1/c", new String[]{"p1/a", "p1/b", "p1/noexist"});
+		depMap.put("p2/p1/p1/a", new String[]{"p2/p1/p1/b"});
+		depMap.put("p2/p1/p1/b", new String[]{"p2/p1/p1/c"});
+		depMap.put("p2/p1/p1/c", new String[]{"p2/p1/p1/a", "p2/p1/p1/b", "p2/p1/p1/noexist"});
 		return depMap;
 	}
 	static public void deleteRecursively(File file) throws InterruptedException {

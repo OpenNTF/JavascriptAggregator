@@ -112,7 +112,6 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			if (enclosingDeps != null) {
 				expanded.subtractAll(enclosingDeps);
 			}
-			expanded.simplify();
 			Set<String> moduleIds = expanded.getModuleIds();
 			sb.append(contentFragments.get(i));
 			boolean isLog = isLogOutput != null && isLogOutput.get(i);

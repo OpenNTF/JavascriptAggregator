@@ -56,7 +56,6 @@ import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerCache;
@@ -88,6 +87,7 @@ public class LayerImpl implements ILayer {
     // The following request attributes are used by unit tests
     static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
     static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
+    static final String BOOTLAYERDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
     
     protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
     	new AbstractCacheKeyGenerator() {
@@ -680,9 +680,11 @@ public class LayerImpl implements ILayer {
 		        for (String name : moduleNames) {
 		        	if (name != null) {
 		        		name = aggr.getConfig().resolve(name, features, dependentFeatures, null,
-		        				false);	// Don't resolve aliases when locating modules requested by the loader
+		        				false,	// Don't resolve aliases when locating modules requested by the loader
 		        		                //  because the loader should have already done alias resolution and 
 		        		                //  we can't rename a requested module. 
+		        				true	// Resolve has! loader plugin
+		        		);
 		        		result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
 		        	}
 		        }
@@ -692,26 +694,22 @@ public class LayerImpl implements ILayer {
 			Set<String> required = (Set<String>)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
 			if (required != null) {
 			
-				// resolve required module names
-				Set<String> temp = new HashSet<String>();
-				for (String name : required) {
-				  temp.add(aggr.getConfig().resolve(name, features, dependentFeatures, null, true));
-				}
-				required = temp;
-        
 				// If there's a required module, then add it and its dependencies
 				// to the module list.  
-	    		IDependencies deps = aggr.getDependencies();
-	    		DependencyList depList = new DependencyList(
+	    		final DependencyList depList = new DependencyList(
 	    				required,
-	    				aggr.getConfig(),
-	    				deps,
+	    				aggr,
 	    				features,
-	    				false, false);
-				result.setRequiredModules(required);
-	    		ModuleDeps combined = depList.getExplicitDeps();
+	    				true, 	// resolveAliases
+	    				RequestUtil.isRequireExpLogging(request)	// include details
+	    		);
+	    		dependentFeatures.addAll(depList.getDependentFeatures());
+
+	    		result.setRequiredModules(depList.getExplicitDeps().getModuleIds());
+	    		
+	    		ModuleDeps combined = new ModuleDeps(depList.getExplicitDeps());
 	    		combined.addAll(depList.getExpandedDeps());
-	    		for (String name : combined.keySet()) {
+	    		for (String name : combined.getModuleIds()) {
 	    			if (aggr.getTransport().isServerExpandable(request, name)) {
 		        		result.add(
 		        				new ModuleList.ModuleListEntry(
@@ -720,6 +718,9 @@ public class LayerImpl implements ILayer {
 		        				)
 		        		);
 	    			}
+	    		}
+	    		if (RequestUtil.isRequireExpLogging(request)) {
+	    			request.setAttribute(BOOTLAYERDEPS_PROPNAME, depList);
 	    		}
 			}
 			if (result.isEmpty()) {

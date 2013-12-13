@@ -106,22 +106,18 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	public static void setupBeforeClass() {
 	}
 
-	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
-		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
+		final Map<String, String[]> testDepMap = TestUtils.createTestDepMap();
 		tmpdir = Files.createTempDir();
-		expect(mockDependencies.getDelcaredDependencies(eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		expect(mockDependencies.getExpandedDependencies((String)anyObject(), (Features)anyObject(), (Set<String>)anyObject(), anyBoolean(), anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
-			public ModuleDeps answer() throws Throwable {
+		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<String[]>() {
+			@Override
+			public String[] answer() throws Throwable {
 				String name = (String)getCurrentArguments()[0];
-				ModuleDeps result = testDepMap.get(name);
-				if (result == null) {
-					result = TestUtils.emptyDepMap;
-				}
-				return result;
+				return testDepMap.get(name);
 			}
 		}).anyTimes();
+		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
@@ -580,7 +576,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExplicitDeps);
 		expectedDeps.addAll(layerExpandedDeps);
 
-		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IConfig.class), isA(IDependencies.class), eq(features), eq(false), eq(false))
+		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), eq(false))
 		                .andAnswer(new IAnswer<DependencyList>() {
 							@Override public DependencyList answer() throws Throwable {
 								@SuppressWarnings("unchecked")
@@ -607,7 +603,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
 	}
 	
-	private static final String loggingOutput = "console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
+	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
 	@Test
 	public void testLayerBeginEndNotifier_exportModuleNamesWithDetails() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
@@ -651,7 +647,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExplicitDeps);
 		expectedDeps.addAll(layerExpandedDeps);
 
-		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IConfig.class), isA(IDependencies.class), eq(features), anyBoolean(), eq(false))
+		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), anyBoolean())
 		                .andAnswer(new IAnswer<DependencyList>() {
 							@Override public DependencyList answer() throws Throwable {
 								@SuppressWarnings("unchecked")

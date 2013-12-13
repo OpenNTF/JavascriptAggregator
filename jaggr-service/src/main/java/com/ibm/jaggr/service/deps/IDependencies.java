@@ -16,15 +16,11 @@
 
 package com.ibm.jaggr.service.deps;
 
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
-import java.util.Set;
 
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.util.Features;
 
 /**
  * This class encapsulates the dependency graph of a collection of AMD modules.
@@ -46,7 +42,7 @@ public interface IDependencies {
 		Arrays.asList(new String[]{"require", "exports", "module"}); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	
 	/**
-	 * Returns the list of dependencies for the specified module. This is the
+	 * Returns the dependencies for the specified module. This is the
 	 * list of modules listed in the module's define function. The module ids
 	 * are normalized to remove relative paths.
 	 * 
@@ -56,48 +52,7 @@ public interface IDependencies {
 	 *         the specified module was not found when the dependencies were
 	 *         processed.
 	 */
-	List<String> getDelcaredDependencies(String mid) throws ProcessingDependenciesException;
-	
-	/**
-	 * Returns the set of module names that are either direct or nested
-	 * dependencies of the specified module. The module name are the key set of
-	 * the returned map. The value set of the map contains detail info about how
-	 * the dependencies were derived if <code>includeDetails</code> is true,
-	 * otherwise, the value set contains all null values.
-	 * 
-	 * @param mid
-	 *            The normalized module id (all relative path components
-	 *            removed) of the module whose expanded dependencies are
-	 *            desired.
-	 * @param features
-	 *            The features specified in the request. Used to resolve
-	 *            module dependencies specified using the has! loader plugin.
-	 * @param dependentFeatures
-	 *            <b>Output</b> - Used for cache key generation. The provided
-	 *            set is updated by this method to include the set of feature
-	 *            names that needed to be evaluated in order to determine the
-	 *            expanded dependency list.
-	 * @param includeDetails
-	 *            If true, then the value set of the returned map object
-	 *            contains plain text comments for each dependency indicating
-	 *            information such as the depending module and whether or not
-	 *            the module's dependencies were expanded. This feature is
-	 *            provided to facilitate debugging aids such as console commands
-	 *            to list a module's expanded dependencies.
-	 *            
-	 * @return A map who's key set is the set of expanded dependencies and who's
-	 *         values are the diagnostic details relating to each module name
-	 *         key if includeDetails was specified, or String if includeDetails
-	 *         was not specified.
-	 * 
-	 */
-	public ModuleDeps getExpandedDependencies(
-			String mid,
-			Features features,
-			Set<String> dependentFeatures, 
-			boolean includeDetails,
-			boolean performHasBranching
-	) throws IOException;
+	String[] getDelcaredDependencies(String mid) throws ProcessingDependenciesException;
 	
 	/**
 	 * Returns the cumulative last-modified date of these dependencies which was

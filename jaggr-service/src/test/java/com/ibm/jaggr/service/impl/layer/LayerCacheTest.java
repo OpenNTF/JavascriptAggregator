@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -51,7 +50,6 @@ import com.ibm.jaggr.service.InitParams;
 import com.ibm.jaggr.service.NotFoundException;
 import com.ibm.jaggr.service.config.IConfig;
 import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.layer.ILayer;
@@ -62,7 +60,6 @@ import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.Features;
 
 public class LayerCacheTest {
 	
@@ -282,9 +279,8 @@ public class LayerCacheTest {
 		Assert.assertEquals(50 * 1024 * 1024, layerCache.getMaxCapacity());
 	}
 	
-	@SuppressWarnings("unchecked")
 	private void createMockObjects(List<InitParams.InitParam> initParams) throws Exception {
-		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
+		final Map<String, String[]> testDepMap = TestUtils.createTestDepMap();
 		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
 		mockAggregator = new Proxy(easyMockAggregator);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
@@ -296,15 +292,12 @@ public class LayerCacheTest {
 			}
 		}).anyTimes();
 		
-		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.eq("p1/p1"))).andReturn(Arrays.asList(new String[]{"p1/a", "p2/p1/b", "p2/p1/p1/c", "p2/noexist"})).anyTimes();
-		EasyMock.expect(mockDependencies.getExpandedDependencies((String)EasyMock.anyObject(), (Features)EasyMock.anyObject(), (Set<String>)EasyMock.anyObject(), EasyMock.anyBoolean(), EasyMock.anyBoolean())).andAnswer(new IAnswer<ModuleDeps>() {
-			public ModuleDeps answer() throws Throwable {
+		EasyMock.expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
+		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.isA(String.class))).andAnswer(new IAnswer<String[]>() {
+			@Override
+			public String[] answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
-				ModuleDeps result = testDepMap.get(name);
-				if (result == null) {
-					result = TestUtils.emptyDepMap;
-				}
-				return result;
+				return testDepMap.get(name);
 			}
 		}).anyTimes();
 		

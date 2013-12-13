@@ -26,23 +26,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.util.BooleanTerm;
-import com.ibm.jaggr.service.util.BooleanVar;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.HasNode;
 import com.ibm.jaggr.service.util.PathUtil;
 
 /**
@@ -54,14 +45,6 @@ import com.ibm.jaggr.service.util.PathUtil;
  * both children and a dependency list is that the names of javascript modules
  * omit the .js extension, so a directory can have both a child directory named
  * bar and a javascript module named bar (named bar.js on the file system).
- * <p>
- * When a node tree is resolved by calling {@link #resolveDependencyRefs()} on
- * the root node of the tree, then each node with a dependency list will also
- * contains an array of {@link DepRef} objects where each member of the array
- * corresponds to the name in the dependency list at the same index and
- * represents a reference to the {@code DepTreeNode} in the same tree for the
- * named dependency.
- * 
  */
 public class DepTreeNode implements Cloneable, Serializable {
 	private static final long serialVersionUID = 5598497628602046531L;
@@ -94,16 +77,6 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * collected when there are no more references to the root node
 	 */
 	private transient WeakReference<DepTreeNode> parent;
-
-	/**
-	 * List of {@link DepRef} objects, each of which encapsulates a
-	 * {@code DepTreeNode} reference to a node in the same tree for the module
-	 * named in {@link #dependencies} at the same index location. Initialized by
-	 * {@link #resolveDependencyRefs()}. List members in a resolved tree will
-	 * never by null, although the reference returned by the {@link DepRef} may
-	 * be null if the named dependency could not be located in the tree.
-	 */
-	private transient List<WeakReference<DepTreeNode>> depRefs;
 
 	/**
 	 * Object constructor. Creates a node with the given name.
@@ -465,73 +438,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		if (dependencies != null) {
 			clone.dependencies = Arrays.copyOf(dependencies, dependencies.length);
 		}
-		/* 
-		 * Dependency references need to be recalculated on cloned trees after the
-		 * entire tree has been cloned.
-		 */
-		depRefs = null;
-		
 		return clone;
-	}
-	
-	void resolveDependencyRefs() {
-		if (dependencies != null) {
-			depRefs = new ArrayList<WeakReference<DepTreeNode>>();
-			for (int i = 0; i < dependencies.length; i++) {
-				String depname = dependencies[i];
-				depRefs.add(new WeakReference<DepTreeNode>(
-						depname.contains("!") ? null : getRoot().getDescendent(depname)));  //$NON-NLS-1$
-						
-			}
-		}
-		if (children != null) {
-			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
-				entry.getValue().resolveDependencyRefs();
-			}
-		}
-	}
-
-	/**
-	 * Returns the expanded set of module dependencies for this node. The
-	 * expanded dependencies are the modules declared in this node's dependency
-	 * list, plus the dependencies declared by each of those modules, and so on.
-	 * The returned list of module dependencies are unique (no duplicates).
-	 * <p>
-	 * The order of the modules declared in the returned map is guaranteed to
-	 * be the same as the order that the dependencies are declared in the
-	 * define() function in the source file for this node's module, but the
-	 * order of the additional expanded dependencies is undefined.
-	 * <p>
-	 * If a feature set is specified, then any conditional dependencies
-	 * specified using the has plugin (e.g.
-	 * {@code has!feature-name?modulea:moduleb)} will be expanded according to
-	 * the set of features provided.
-	 * 
-	 * @param features
-	 *            The features defined in the request.
-	 *            Use for resolving dependencies specified using the has! plugin.
-	 * @param dependentFeatures
-	 *            Collections of features that this compiled build depends on
-	 * @param includeComments
-	 *            True if the resulting dependencies should include comment
-	 *            strings for debugging.
-	 * @return The map of expanded dependencies/debug comment pairs.
-	 */
-	public ModuleDeps getExpandedDependencies(
-			Features features,
-			Set<String> dependentFeatures, 
-			boolean includeComments,
-			boolean performHasBranching) throws IOException {
-		
-		// Create the Dependencies map.  Use a LinkedHashMap to maintain ordering
-		// of dependencies as some types of modules (i.e. css) are sensitive to 
-		// the order that modules are required relative to one another.
-		ModuleDeps deps = new ModuleDeps();
-		if (dependencies != null) {
-			expandDependencies(deps, features, dependentFeatures, includeComments, performHasBranching, null, null);
-			deps.keySet().removeAll(IDependencies.excludes);
-		}
-		return deps;
 	}
 	
 	public IConfig getConfig() {
@@ -591,138 +498,6 @@ public class DepTreeNode implements Cloneable, Serializable {
 	}
 
 	/**
-	 * Recursively called to follow dependency references, accumulating 
-	 * module dependency info representing the requested set of
-	 * expanded dependencies.
-	 * 
-	 * @param result
-	 *            {@link ModuleDeps} object containing the mapping of 
-	 *            module-name to {@link ModuleDepinfo} pairs. Newly discovered 
-	 *            dependencies are added to this map.
-	 * @param features
-	 *            The features defined in the request.
-	 *            Used to resolve dependencies specified using the has! plugin.
-	 * @param dependentFeatures
-	 *            Collections of features that this compiled build depends on
-	 * @param includeComments
-	 *            True if debug comments should be included. If false, the map
-	 *            valueSet will be a set of empty strings.
-	 * @param performHasBranching
-	 *            True if has! loader plugin branching should be performed
-	 * @param term
-	 *            The boolean term representing the accumulated has! plugin 
-	 *            branching variables for the current dependency.  May be null
-	 *            if not terms have been accumulated or if 
-	 *            <code>performHasBranching</code> is false.
-	 * @param hasPluginName
-	 *            The name of the has! plugin module that initiated 
-	 *            <code>term</code>
-	 */
-	private void expandDependencies(
-			ModuleDeps result,
-			Features features,
-			Set<String> dependentFeatures,
-			boolean includeComments,
-			boolean performHasBranching,
-			BooleanTerm term, String hasPluginName) throws IOException {
-		if (dependencies != null) {
-			if (depRefs == null) {
-				// Module dependencies must be resolved by calling resolveDepenedencyRefs() 
-				// before you can call getExpandedDependencies()
-				throw new NullPointerException();
-			}
-			List<ChildNode> childNodes = new ArrayList<ChildNode>(dependencies.length);
-			for (int i = 0; i < dependencies.length; i++) {
-				// provide a StringBuffer for comments if requested
-				StringBuffer comment = (includeComments ? new StringBuffer(MessageFormat.format(
-							Messages.DepTreeNode_0,
-							new Object[]{getFullPathName()}
-				)) : null);
-				// Get the reference to the DepTreeNode for this dependency
-				// (can be null)
-				String depName = dependencies[i];
-				DepTreeNode node = depRefs.get(i).get();
-
-				String resolved = getConfig().resolve(depName, features, dependentFeatures, comment, true);
-				if (resolved != depName) {
-					depName = resolved;
-					node = getRoot().getDescendent(depName);
-				}
-				if (depName.length() > 0) {
-					int idx = depName.indexOf("!"); //$NON-NLS-1$
-					if (node != null && idx == -1) {
-						// We need to check for containment here in order to avoid 
-						// infinite recursion resulting from circular dependencies.
-						if (!result.containsDep(depName, term)) {
-							childNodes.add(new ChildNode(node, term, hasPluginName));
-							if (comment != null) {
-								comment.append(", ").append(Messages.DepTreeNode_1); //$NON-NLS-1$
-							}
-							result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null));
-						}
-					} else if (performHasBranching && 
-							idx > 0 && 
-							hasPattern.matcher(depName.substring(0, idx)).find()) {
-						// Handle has plugin
-						String pluginName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment, true);
-						HasNode hasNode = new HasNode(depName.substring(idx+1));
-						ModuleDeps deps = hasNode.evaluateAll(
-								pluginName, 
-								features, 
-								dependentFeatures, 
-								term,
-								comment != null ? 
-									comment.toString() : 
-									null
-						);
-						for (Map.Entry<String, ModuleDepInfo> entry : deps.entrySet()) {
-							DepTreeNode depNode = getRoot().getDescendent(entry.getKey());
-							if (depNode != null) {
-								for (BooleanTerm depTerm : entry.getValue().getTerms()) {
-									if (term != null) {
-										Set<BooleanVar> vars = new HashSet<BooleanVar>(depTerm);
-										vars.addAll(term);
-										depTerm = new BooleanTerm(vars);
-									}
-									// We need to check for containment here in order to avoid 
-									// infinite recursion resulting from circular dependencies.
-									if (!result.containsDep(depNode.getFullPathName(), depTerm)) {
-										childNodes.add(new ChildNode(depNode, depTerm, pluginName));
-									}
-								}
-							}
-						}
-						result.addAll(deps);
-					} else {
-						if (comment != null) {
-							comment.append(", ").append(Messages.DepTreeNode_2); //$NON-NLS-1$
-						}
-						result.add(depName, new ModuleDepInfo(hasPluginName, term, comment != null ? comment.toString() : null));
-					}
-				}
-				// If depName specifies a plugin, then add the plugin module to the expanded
-				// dependencies
-				int idx = depName.indexOf("!"); //$NON-NLS-1$
-				if (idx != -1 && idx > 0 && !hasPattern.matcher(depName.substring(0, idx)).find()) {
-					depName = getConfig().resolve(depName.substring(0, idx), features, dependentFeatures, comment, true);
-					if (!result.containsDep(depName, term)) {
-						// We need to check for containment here in order to avoid 
-						// infinite recursion resulting from circular dependencies.
-						node = getRoot().getDescendent(depName);
-						if (node != null) {
-							result.add(depName, new ModuleDepInfo(hasPluginName, term, includeComments ? Messages.DepTreeNode_4 : null));
-							childNodes.add(new ChildNode(node, term, hasPluginName));
-						}
-					}
-				}
-			}
-			for (ChildNode child : childNodes) {
-				child.node.expandDependencies(result, features, dependentFeatures, includeComments, performHasBranching, child.term, child.hasPluginName);
-			}
-		}
-	}
-
-	/**
 	 * Normalizes any module names in this node's dependency list
 	 * (i.e. removes ./ and ../ path components) so that all the dependency 
 	 * names are based on this node's parent path.  For example, if a child
@@ -740,6 +515,24 @@ public class DepTreeNode implements Cloneable, Serializable {
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
 				entry.getValue().normalizeDependencies();
+			}
+		}
+	}
+	
+	/**
+	 * Populates the provided map with the dependencies, keyed by 
+	 * full path name.  This is done to facilitate more efficient 
+	 * lookups of the dependencies.
+	 * 
+	 * @param depMap
+	 */
+	void populateDepMap(Map<String, String[]> depMap) {
+		if (dependencies != null) {
+			depMap.put(getFullPathName(), dependencies);
+		}
+		if (children != null) {
+			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
+				entry.getValue().populateDepMap(depMap);
 			}
 		}
 	}
@@ -764,18 +557,6 @@ public class DepTreeNode implements Cloneable, Serializable {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
 				entry.getValue().setParent(this);
 			}
-		}
-	}
-	
-	private class ChildNode {
-		final DepTreeNode node;
-		final BooleanTerm term;
-		final String hasPluginName;
-		
-		ChildNode(DepTreeNode node, BooleanTerm term, String hasPluginName) {
-			this.node = node;
-			this.term = term;
-			this.hasPluginName = hasPluginName;
 		}
 	}
 }
