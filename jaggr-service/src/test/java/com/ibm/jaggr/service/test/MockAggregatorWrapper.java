@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.core.test;
+package com.ibm.jaggr.service.test;
 
 import java.io.File;
 import java.io.IOException;
@@ -24,15 +24,14 @@ import java.util.List;
 import javax.servlet.http.HttpServlet;
 
 import org.easymock.EasyMock;
+import org.osgi.framework.BundleContext;
 
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
-import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
@@ -40,35 +39,36 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
 /**
  * Wrapper class for mock aggregator to make it easy to override
  * methods for test.
  */
-public class MockAggregatorWrapper implements IAggregator {
+public class MockAggregatorWrapper implements ITestAggregator {
 	
-	protected IAggregator mock;
+	protected ITestAggregator mock;
 	
 	public MockAggregatorWrapper() throws Exception {
-		mock = BaseTestUtils.createMockAggregator();
+		mock = TestUtils.createMockAggregator();
 		EasyMock.replay(mock);
 	}
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
-		mock = BaseTestUtils.createMockAggregator(configRef, workingDirectory);
+		mock = TestUtils.createMockAggregator(configRef, workingDirectory);
 		EasyMock.replay(mock);
 	}
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory,
 			List<InitParam> initParams) throws Exception {
-		mock = BaseTestUtils.createMockAggregator(configRef, workingDirectory, initParams);
+		mock = TestUtils.createMockAggregator(configRef, workingDirectory, initParams);
 		EasyMock.replay(mock);
 	}
 	
-	public MockAggregatorWrapper(IAggregator mock) {
+	public MockAggregatorWrapper(ITestAggregator mock) {
 		this.mock = mock;
 	}
 	
@@ -105,7 +105,13 @@ public class MockAggregatorWrapper implements IAggregator {
 	@Override
 	public IHttpTransport getTransport() {
 		return mock.getTransport();
-	}	
+	}
+
+	@Override
+	public BundleContext getBundleContext() {
+		System.out.println("entered in bundle context");
+		return mock.getBundleContext();
+	}
 
 	@Override
 	public IResource newResource(URI uri) {

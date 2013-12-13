@@ -46,7 +46,6 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
-import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 import com.ibm.jaggr.core.impl.module.ModuleCacheImpl;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
@@ -61,6 +60,7 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 
 public class BaseTestUtils {
 	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";

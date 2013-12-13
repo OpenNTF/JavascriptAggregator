@@ -72,6 +72,7 @@ import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 
 /**
  * A LayerImpl is a collection of LayerBuild objects that are composed using the same

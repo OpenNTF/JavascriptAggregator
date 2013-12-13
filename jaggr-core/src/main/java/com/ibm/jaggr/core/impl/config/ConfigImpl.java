@@ -108,7 +108,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	
 	static {
 		ContextFactory.initGlobal(new ConfigContextFactory());
-	}
+	}	
 	
 	public ConfigImpl(IAggregator aggregator) throws IOException {
 		this.aggregator = aggregator;
@@ -170,6 +170,17 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		} finally {
 			Context.exit();
 		}
+	}
+	
+	/**
+	 * 
+	 * This constructor is just for testing purpose. It should not be used for production.
+	 */
+	public ConfigImpl(IAggregator aggregator, boolean forTest) throws URISyntaxException, FileNotFoundException {
+		this.aggregator = aggregator;
+		rawConfig = null;
+		lastModified = 0;
+		configUri = loadConfigUri();		
 	}
 	
 	protected void init() throws IOException {
@@ -1279,6 +1290,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			return replacement;
 		}
 		
+		
 	}
 	
 	
@@ -1326,6 +1338,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		public Set<String> getDependentFeatures() {
 			return dependentFeatures;
 		}
+		
+		
 	}
 
 	/**

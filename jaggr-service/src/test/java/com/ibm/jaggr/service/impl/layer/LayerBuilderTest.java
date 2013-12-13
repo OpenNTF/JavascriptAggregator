@@ -64,12 +64,14 @@ import com.ibm.jaggr.core.impl.layer.ModuleList;
 import com.ibm.jaggr.core.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.test.TestCacheManager;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.service.PlatformServicesImpl;
+import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
+import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -81,7 +83,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.service.test.ITestAggregator;
-import com.ibm.jaggr.service.test.TestUtils;
+
 
 public class LayerBuilderTest {
 	public static final Pattern moduleNamePat = Pattern.compile("^module[0-9]$");
@@ -153,10 +155,11 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testBuild() throws Exception {
+		PlatformAggregatorFactory.setPlatformAggregator(null);
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
-		IAggregator mockAggregator = BaseTestUtils.createMockAggregator(mockTransport);
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
+		IAggregator mockAggregator = TestUtils.createMockAggregator(mockTransport);
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		EasyMock.replay(mockRequest);
 		EasyMock.replay(mockAggregator);
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
@@ -514,8 +517,9 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testCollectFutures() throws Exception {
-		IAggregator mockAggregator = BaseTestUtils.createMockAggregator();
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator);
+		PlatformAggregatorFactory.setPlatformAggregator(null);
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
 		ICache mockCache = createMock(ICache.class);
 		IModuleCache mockModuleCache = createMock(IModuleCache.class);
 		expect(mockCache.getModules()).andReturn(mockModuleCache).anyTimes();
@@ -559,7 +563,7 @@ public class LayerBuilderTest {
 		                  dependentFeatures2 = new HashSet<String>();
 
 		expect(mockAggregator.getBundleContext()).andReturn(mockBundleContext).anyTimes();
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator);
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
 		ModuleList moduleList = new ModuleList();
 		IModule module1 = new ModuleImpl("module1", new URI("file://module1.js")),
 				module2 = new ModuleImpl("module2", new URI("file://module2.js"));
@@ -596,6 +600,10 @@ public class LayerBuilderTest {
 		listener1Result[0] = "foo";
 		listener2Result[0] = "bar";
 		expectedModuleList.addAll(moduleList.getModules());
+		
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
+		osgiPlatformAggregator.setBundleContext(mockBundleContext);
+		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
 		
 		// Test BEGIN_LAYER with two string contributions
 		String result = builder.notifyLayerListeners(EventType.BEGIN_LAYER, mockRequest, module1);

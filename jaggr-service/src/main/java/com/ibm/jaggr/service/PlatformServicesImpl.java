@@ -161,7 +161,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Dictionary<String, String> getHeaders() {
-		if (bundleContext != null) {
+		if (bundleContext != null && bundleContext.getBundle() != null) {
 			return bundleContext.getBundle().getHeaders();
 		} else {
 			return null;

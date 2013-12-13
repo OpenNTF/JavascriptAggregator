@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 
 /**
  * Wrapper for the layer builds map to help maintain a layer specific view

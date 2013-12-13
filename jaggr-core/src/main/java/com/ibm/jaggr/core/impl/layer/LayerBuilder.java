@@ -315,25 +315,27 @@ public class LayerBuilder {
 		// notify any listeners that the config has been updated
 		
 		Object[] refs;		
-		refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
-		
-		if (refs != null) {
-			for (Object ref : refs) {
-				ILayerListener listener = (ILayerListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
-				try {
-					Set<String> dependentFeatures = new HashSet<String>();
-					String str = listener.layerBeginEndNotifier(type, request, 
-							type == ILayerListener.EventType.BEGIN_MODULE ?
-									Arrays.asList(new IModule[]{module}) : layerListenerModuleList, 
-							dependentFeatures);
-					if (dependentFeatures.size() != 0) {
-						moduleList.getDependentFeatures().addAll(dependentFeatures);
+		if(PlatformAggregatorFactory.getPlatformAggregator() != null){
+			refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
+			
+			if (refs != null) {
+				for (Object ref : refs) {
+					ILayerListener listener = (ILayerListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+					try {
+						Set<String> dependentFeatures = new HashSet<String>();
+						String str = listener.layerBeginEndNotifier(type, request, 
+								type == ILayerListener.EventType.BEGIN_MODULE ?
+										Arrays.asList(new IModule[]{module}) : layerListenerModuleList, 
+								dependentFeatures);
+						if (dependentFeatures.size() != 0) {
+							moduleList.getDependentFeatures().addAll(dependentFeatures);
+						}
+						if (str != null) {
+							sb.append(str);
+						}
+					} finally {
+						PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 					}
-					if (str != null) {
-						sb.append(str);
-					}
-				} finally {
-					PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
 				}
 			}
 		}
