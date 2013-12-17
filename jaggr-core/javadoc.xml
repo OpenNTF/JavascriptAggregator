@@ -31,7 +31,7 @@
         	     noindex="false" 
         	     nonavbar="false" 
         	     notree="false" 
-        	     packagenames="" 
+        	     packagenames="com.ibm.jaggr.core,com.ibm.jaggr.core.cachekeygenerator,com.ibm.jaggr.core.transport,com.ibm.jaggr.core.options,com.ibm.jaggr.core.modulebuilder,com.ibm.jaggr.core.layer,com.ibm.jaggr.core.executors,com.ibm.jaggr.core.config,com.ibm.jaggr.core.cache,com.ibm.jaggr.core.util,com.ibm.jaggr.core.deps,com.ibm.jaggr.core.module,com.ibm.jaggr.core.resource,com.ibm.jaggr.core.readers" 
         	     source="1.6" 
         	     sourcepath="src/main/java/" 
         	     splitindex="true" 
