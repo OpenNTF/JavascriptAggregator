@@ -59,7 +59,7 @@ import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
 import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.OverrideFoldersTreeWalker;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -71,6 +71,7 @@ import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.service.PlatformServicesImpl;
 
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
@@ -142,7 +143,10 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
         try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
-    		((com.ibm.jaggr.service.PlatformServicesImpl)(PlatformAggregatorFactory.getPlatformAggregator())).setBundleContext(bundleContext);
+    		
+    		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(bundleContext);
+    		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);    		
+    		
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);

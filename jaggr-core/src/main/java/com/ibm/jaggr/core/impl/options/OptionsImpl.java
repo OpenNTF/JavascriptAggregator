@@ -30,7 +30,7 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
@@ -247,7 +247,7 @@ public class OptionsImpl  implements IOptions {
 		    	}
 		    	if (in == null) {
 		    		// Try to load it from the bundle		   			
-		   			URL url = PlatformAggregatorFactory.getPlatformAggregator().getResource(getPropsFilename());
+		   			URL url = PlatformAggregatorProvider.getPlatformAggregator().getResource(getPropsFilename());
 		    		if (url != null) { 
 		    			in = url.openStream();
 		    		}
@@ -299,17 +299,17 @@ public class OptionsImpl  implements IOptions {
 		
 		Object[] refs = null;
 		try {
-			if(PlatformAggregatorFactory.getPlatformAggregator() != null){
-				refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
+			if(PlatformAggregatorProvider.getPlatformAggregator() != null){
+				refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
 				if (refs != null) {
 					for (Object ref : refs) {
-						IOptionsListener listener = (IOptionsListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+						IOptionsListener listener = (IOptionsListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
 						if (listener != null) {
 							try {
 								listener.optionsUpdated(this, sequence);
 							} catch (Throwable ignore) {
 							} finally {
-								PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+								PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 							}
 						}
 					}

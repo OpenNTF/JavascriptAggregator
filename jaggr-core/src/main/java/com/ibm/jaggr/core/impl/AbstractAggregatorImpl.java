@@ -154,16 +154,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
     	// Make sure the bundle context is valid
     	//int state = bundle != null ? bundle.getState() : Bundle.RESOLVED;
     	//if (state == Bundle.ACTIVE || state == Bundle.STOPPING) {
-    	if(PlatformAggregatorFactory.getPlatformAggregator().isShuttingdown()){
+    	if(PlatformAggregatorProvider.getPlatformAggregator().isShuttingdown()){
     		//BundleContext bundleContext = getBundleContext();
 			//bundle = null;	// make sure we don't shutdown more than once
     		
 			Object[] refs = null;				
-			refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")");
+			refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")");
 			
 	    	if (refs != null) {
 	    		for (Object ref : refs) {
-	    			IShutdownListener listener = (IShutdownListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+	    			IShutdownListener listener = (IShutdownListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
 	    			if (listener != null) {
 	    				try {
 	    					listener.shutdown(this);
@@ -172,13 +172,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	    						log.log(Level.SEVERE, e.getMessage(), e);
 	    					}
 	    				} finally {
-	    					PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+	    					PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 	    				}
 	    			}
 	    		}
 	    	}
 			for (Object registration : registrations) {
-				PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(registration);
+				PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(registration);
 			}			
     	}			
 	}
@@ -515,17 +515,17 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// Options have been updated.  Notify any listeners that registered using this
 		// aggregator instance's name.
 		Object[] refs = null;		
-		refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")");//$NON-NLS-1$ //$NON-NLS-2$
+		refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")");//$NON-NLS-1$ //$NON-NLS-2$
 	
 		if (refs != null) {
 			for (Object ref : refs) {
-				IOptionsListener listener = (IOptionsListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+				IOptionsListener listener = (IOptionsListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
 				if (listener != null) {
 					try {
 						listener.optionsUpdated(options, sequence);
 					} catch (Throwable ignore) {
 					} finally {
-						PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+						PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 					}
 				}
 			}
@@ -637,10 +637,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected void notifyRequestListeners(RequestNotifierAction action, HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		// notify any listeners that the config has been updated
 		Object[] refs = null;			
-		refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")");
+		refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")");
 		if (refs != null) {
 			for (Object ref : refs) {
-				IRequestListener listener = (IRequestListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+				IRequestListener listener = (IRequestListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
 				try {
 					if (action == RequestNotifierAction.start) {
 						listener.startRequest(req, resp);
@@ -648,7 +648,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						listener.endRequest(req, resp);
 					}
 				} finally {
-					PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+					PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 				}
 			}
 		}
@@ -662,12 +662,12 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	protected void notifyConfigListeners(long seq) throws IOException {
 		Object[] refs;		
-		refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IConfigListener.class.getName(),  "(name="+getName()+")");
+		refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IConfigListener.class.getName(),  "(name="+getName()+")");
 		
 		if (refs != null) {
 			for (Object ref : refs) {
 				IConfigListener listener = 
-					(IConfigListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+					(IConfigListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
 				if (listener != null) {
 					try {
 						listener.configLoaded(config, seq);
@@ -677,7 +677,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						}
 						throw new IOException(t);
 					} finally {
-						PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+						PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 					}
 				}
 			}

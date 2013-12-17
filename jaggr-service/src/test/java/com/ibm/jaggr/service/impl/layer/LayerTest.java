@@ -80,7 +80,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -259,7 +259,7 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		
 		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();		
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);		
 		Writer writer = new StringWriter();
@@ -532,8 +532,8 @@ public class LayerTest extends EasyMock {
 	 */
 	@Test
 	public void testToString() throws Exception {
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();			
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(null);			
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
 		requestAttributes.put(
@@ -686,8 +686,8 @@ public class LayerTest extends EasyMock {
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
 		
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();		
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(null);		
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();

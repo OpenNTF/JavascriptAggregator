@@ -39,13 +39,17 @@ import com.ibm.jaggr.service.util.ConsoleService;
  */
 public class PlatformServicesImpl implements IPlatformServices {
 
-	private BundleContext bundleContext;
+	private final BundleContext bundleContext;
 	private static final Logger log = Logger.getLogger(PlatformServicesImpl.class
 			.getName());
 	public static int resolved = Bundle.RESOLVED;
 	public static int active = Bundle.ACTIVE;
 	public static int stopping = Bundle.STOPPING;
 
+	public PlatformServicesImpl(BundleContext bc){
+		bundleContext = bc;
+	}
+	
 	/*
 	 * (non-Javadoc)
 	 * 
@@ -135,9 +139,9 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * 
 	 * @param bc
 	 */
-	public void setBundleContext(BundleContext bc) {
+	/*public void setBundleContext(BundleContext bc) {
 		bundleContext = bc;
-	}
+	}*/
 
 	/*
 	 * (non-Javadoc)
@@ -188,12 +192,10 @@ public class PlatformServicesImpl implements IPlatformServices {
 	}
 
 	@Override
-	public URI getConfigURL(String configName) throws URISyntaxException {
+	public URI getAppContextURI() throws URISyntaxException {
 		URI uri = null;
 		uri = new URI("namedbundleresource://" +  //$NON-NLS-1$
-					bundleContext.getBundle().getSymbolicName()  +
-					(configName.startsWith("/") ? "" : "/") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ 
-					configName);		
+					bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-2$
 		return uri;
 	}
 

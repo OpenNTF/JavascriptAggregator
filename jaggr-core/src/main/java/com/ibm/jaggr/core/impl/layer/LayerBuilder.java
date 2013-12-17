@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletRequest;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -315,12 +315,12 @@ public class LayerBuilder {
 		// notify any listeners that the config has been updated
 		
 		Object[] refs;		
-		if(PlatformAggregatorFactory.getPlatformAggregator() != null){
-			refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
+		if(PlatformAggregatorProvider.getPlatformAggregator() != null){
+			refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
 			
 			if (refs != null) {
 				for (Object ref : refs) {
-					ILayerListener listener = (ILayerListener)PlatformAggregatorFactory.getPlatformAggregator().getService(ref);
+					ILayerListener listener = (ILayerListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
 					try {
 						Set<String> dependentFeatures = new HashSet<String>();
 						String str = listener.layerBeginEndNotifier(type, request, 
@@ -334,7 +334,7 @@ public class LayerBuilder {
 							sb.append(str);
 						}
 					} finally {
-						PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+						PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 					}
 				}
 			}

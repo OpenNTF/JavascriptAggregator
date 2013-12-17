@@ -6,6 +6,10 @@ OpenNTF Alliance (http://www.OpenNTF.org/)
 
 This product is licensed under the terms of the Apache 2.0 license.
 
+The product includes the following third party code, licensed under the Eclipse Public License, modified and integrated into the file jaggr-core\src\main\java\com\ibm\jaggr\core\util\NLS.java
+from the org.eclipse.osgi.util.NLS package.
+Available from http://archive.eclipse.org/equinox/drops/R-3.6.2-201102101200/download.php?dropFile=equinox-SDK-3.6.2.zip 
+
 The product includes the following third party packages:
 
 A Dojo patch file (for Dojo 1.7.2)

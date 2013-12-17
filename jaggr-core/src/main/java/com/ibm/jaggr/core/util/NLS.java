@@ -7,6 +7,7 @@
  * 
  * Contributors:
  *     IBM - Initial API and implementation
+ * © Copyright 2013 IBM Corporation
  *******************************************************************************/
 package com.ibm.jaggr.core.util;
 

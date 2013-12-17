@@ -58,7 +58,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.layer.CacheEntry;
 import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
@@ -118,7 +118,7 @@ public class LayerCacheTest {
 		
 		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
 		//osgiPlatformAggregator.setBundleContext(mockBundleContext);
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		boolean exceptionThrown = false;
 		try {

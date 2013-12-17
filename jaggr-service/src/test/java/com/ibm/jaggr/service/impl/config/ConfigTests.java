@@ -47,7 +47,7 @@ import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.service.test.ITestAggregator;
@@ -69,7 +69,7 @@ public class ConfigTests {
 		tmpDir = tmpFile.toURI();
 		
 		
-		PlatformAggregatorFactory.setPlatformAggregator(null);
+		PlatformAggregatorProvider.setPlatformAggregator(null);
 		mockAggregator = TestUtils.createMockAggregator();
 		EasyMock.replay(mockAggregator);
 		
@@ -235,9 +235,9 @@ public class ConfigTests {
 		EasyMock.replay(mockOSGiAggregator);
 		
 		//instantiate the platformAggregator object for this test case to read the headers from the bundleContext
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
-		osgiPlatformAggregator.setBundleContext(mockBundleContext);
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(mockBundleContext);	
+		//osgiPlatformAggregator.setBundleContext(mockBundleContext);
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		mockOSGiAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
@@ -779,9 +779,9 @@ public class ConfigTests {
 		EasyMock.expect(mockBundle.getSymbolicName()).andReturn("org.mock.name");		
 		EasyMock.replay(mockOSGiAggregator, mockContext, mockBundle);
 		
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
-		osgiPlatformAggregator.setBundleContext(mockContext);
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(mockContext);	
+		//osgiPlatformAggregator.setBundleContext(mockContext);
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		ConfigImpl cfg = new ConfigImpl(mockOSGiAggregator, true);		
 		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());

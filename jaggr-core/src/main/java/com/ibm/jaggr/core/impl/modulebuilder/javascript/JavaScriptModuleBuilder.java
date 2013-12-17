@@ -54,7 +54,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
@@ -123,10 +123,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		Dictionary<String,String> props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformAggregatorFactory.getPlatformAggregator().registerService(ILayerListener.class.getName(), this, props));
+		registrations.add(PlatformAggregatorProvider.getPlatformAggregator().registerService(ILayerListener.class.getName(), this, props));
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(PlatformAggregatorFactory.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(PlatformAggregatorProvider.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
 	}
 
 	@Override
@@ -206,7 +206,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : registrations) {
-			PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(reg);			
+			PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(reg);			
 		}
 	}
 

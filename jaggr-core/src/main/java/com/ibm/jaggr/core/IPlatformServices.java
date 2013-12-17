@@ -131,12 +131,10 @@ public interface IPlatformServices {
 	public boolean isShuttingdown();
 	
 	/**
-	 * This method returns the URL pointing to server side aggregator config file. The file name is mentioned as a servlet 
-	 * parameter of the aggregator servlet as defined in the consuming application of the aggregator.
+	 * This method returns the URI pointing to the context root of the consuming application. 
 	 * 
-	 * @param configName Name of the server side aggregator config file
-	 * @return URI object pointing to server side aggregator config file.
+	 * @return URI object pointing to the context root of the consuming application. 
 	 */
-	public URI getConfigURL(String configName) throws URISyntaxException;
+	public URI getAppContextURI() throws URISyntaxException;
 
 }

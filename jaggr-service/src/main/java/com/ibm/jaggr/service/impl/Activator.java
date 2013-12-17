@@ -32,11 +32,9 @@ import org.osgi.framework.ServiceRegistration;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.Messages;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
 import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.service.PlatformServicesImpl;
 
 
 public class Activator extends Plugin implements BundleActivator {
@@ -93,9 +91,7 @@ public class Activator extends Plugin implements BundleActivator {
 		} else if (options.isDebugMode() && log.isLoggable(Level.WARNING)) {
 			log.warning(Messages.Activator_2);
 		}
-		// Instantiate the PlatformAggregator implementation and set in the PlatformAggregatorFactory.
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		
 	}
 
 	/* (non-Javadoc)

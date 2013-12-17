@@ -71,7 +71,7 @@ import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -155,7 +155,7 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testBuild() throws Exception {
-		PlatformAggregatorFactory.setPlatformAggregator(null);
+		PlatformAggregatorProvider.setPlatformAggregator(null);
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
 		IAggregator mockAggregator = TestUtils.createMockAggregator(mockTransport);
@@ -517,7 +517,7 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testCollectFutures() throws Exception {
-		PlatformAggregatorFactory.setPlatformAggregator(null);
+		PlatformAggregatorProvider.setPlatformAggregator(null);
 		IAggregator mockAggregator = TestUtils.createMockAggregator();
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
 		ICache mockCache = createMock(ICache.class);
@@ -601,9 +601,9 @@ public class LayerBuilderTest {
 		listener2Result[0] = "bar";
 		expectedModuleList.addAll(moduleList.getModules());
 		
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();	
-		osgiPlatformAggregator.setBundleContext(mockBundleContext);
-		PlatformAggregatorFactory.setPlatformAggregator(osgiPlatformAggregator);
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(mockBundleContext);	
+		//osgiPlatformAggregator.setBundleContext(mockBundleContext);
+		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		// Test BEGIN_LAYER with two string contributions
 		String result = builder.notifyLayerListeners(EventType.BEGIN_LAYER, mockRequest, module1);

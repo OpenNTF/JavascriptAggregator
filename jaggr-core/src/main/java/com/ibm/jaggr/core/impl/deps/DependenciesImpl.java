@@ -45,7 +45,7 @@ import com.ibm.jaggr.core.config.IConfig.Location;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.PlatformAggregatorFactory;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.resource.IResource;
@@ -85,9 +85,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
 		
-		shutdownListener = PlatformAggregatorFactory.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
-		configUpdateListener= PlatformAggregatorFactory.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
-		optionsUpdateListener= PlatformAggregatorFactory.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
+		shutdownListener = PlatformAggregatorProvider.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);		
+		configUpdateListener= PlatformAggregatorProvider.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
+		optionsUpdateListener= PlatformAggregatorProvider.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
 
 			if (aggregator.getConfig() != null) {
 				configLoaded(aggregator.getConfig(), 1);
@@ -100,9 +100,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		this.aggregator = null;
-		PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(configUpdateListener);
-		PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(optionsUpdateListener);
-		PlatformAggregatorFactory.getPlatformAggregator().unRegisterService(shutdownListener);
+		PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(configUpdateListener);
+		PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(optionsUpdateListener);
+		PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(shutdownListener);
 		
 	}
 
@@ -287,11 +287,11 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						// Notify listeners that dependencies have been updated
 						Object[] refs = null;
 						
-						refs = PlatformAggregatorFactory.getPlatformAggregator().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")");
+						refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")");
 						
 						if (refs != null) {
 							for (Object ref : refs) {								
-								IDependenciesListener listener = (IDependenciesListener)(PlatformAggregatorFactory.getPlatformAggregator().getService(ref));
+								IDependenciesListener listener = (IDependenciesListener)(PlatformAggregatorProvider.getPlatformAggregator().getService(ref));
 								if (listener != null) {
 									try {
 										listener.dependenciesLoaded(DependenciesImpl.this, sequence);
@@ -300,7 +300,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 											log.log(Level.SEVERE, e.getMessage(), e);
 										}
 									} finally {
-										PlatformAggregatorFactory.getPlatformAggregator().ungetService(ref);
+										PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
 									}
 								}
 							}
