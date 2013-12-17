@@ -186,7 +186,11 @@
     	<groupId>com.ibm.jaggr</groupId>
     	<artifactId>jaggr-core</artifactId>
     	<scope>provided</scope>
-    </dependency>      
+    </dependency> 
+    <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>     
     <dependency>
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.gogo.command</artifactId>
