@@ -232,7 +232,7 @@ public class LayerTest extends EasyMock {
 	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
 	 * @throws Exception 
 	 */
-	/*@SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetInputStream() throws Exception {
 		
@@ -258,7 +258,7 @@ public class LayerTest extends EasyMock {
 		List<String> layerCacheInfo = new LinkedList<String>();
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl();		
+		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(mockBundleContext);		
 		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
 		
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);		
@@ -331,7 +331,7 @@ public class LayerTest extends EasyMock {
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
 		result = writer.toString();
-		System.out.println("**PSStart" + result + "**PSEnd");
+		System.out.println(result);
 		assertEquals("[update_lastmod, update_keygen, update_key, update_add]", layerCacheInfo.toString());
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
@@ -487,7 +487,7 @@ public class LayerTest extends EasyMock {
 				.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"foo/main\\\"\\]\\);").toString());
 		assertTrue(p.matcher(result).find());
 	}
-*/
+
 	/**
 	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
 	 */

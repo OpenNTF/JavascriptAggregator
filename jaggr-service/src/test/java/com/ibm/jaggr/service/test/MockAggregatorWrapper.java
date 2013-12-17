@@ -26,6 +26,7 @@ import javax.servlet.http.HttpServlet;
 import org.easymock.EasyMock;
 import org.osgi.framework.BundleContext;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
@@ -39,6 +40,7 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.test.BaseMockAggregatorWrapper;
 import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
@@ -46,142 +48,31 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
  * Wrapper class for mock aggregator to make it easy to override
  * methods for test.
  */
-public class MockAggregatorWrapper implements ITestAggregator {
-	
-	protected ITestAggregator mock;
+public class MockAggregatorWrapper extends BaseMockAggregatorWrapper implements ITestAggregator {	
 	
 	public MockAggregatorWrapper() throws Exception {
-		mock = TestUtils.createMockAggregator();
-		EasyMock.replay(mock);
+		super();
 	}
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
-		mock = TestUtils.createMockAggregator(configRef, workingDirectory);
-		EasyMock.replay(mock);
+		super(configRef, workingDirectory);		
 	}
 	
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory,
 			List<InitParam> initParams) throws Exception {
-		mock = TestUtils.createMockAggregator(configRef, workingDirectory, initParams);
-		EasyMock.replay(mock);
+		super(configRef, workingDirectory, initParams);		
 	}
 	
-	public MockAggregatorWrapper(ITestAggregator mock) {
-		this.mock = mock;
+	public MockAggregatorWrapper(IAggregator mock) {
+		super(mock);
 	}
 	
 	@Override
-	public String getName() {
-		return mock.getName();
+	public BundleContext getBundleContext() {		
+		return ((ITestAggregator) mock).getBundleContext();
 	}
 
-	@Override
-	public IConfig getConfig() {
-		return mock.getConfig();
-	}
-
-	@Override
-	public IOptions getOptions() {
-		return mock.getOptions();
-	}
-
-	@Override
-	public IExecutors getExecutors() {
-		return mock.getExecutors();
-	}
-
-	@Override
-	public ICacheManager getCacheManager() {
-		return mock.getCacheManager();
-	}
-
-	@Override
-	public IDependencies getDependencies() {
-		return mock.getDependencies();
-	}
-
-	@Override
-	public IHttpTransport getTransport() {
-		return mock.getTransport();
-	}
-
-	@Override
-	public BundleContext getBundleContext() {
-		System.out.println("entered in bundle context");
-		return mock.getBundleContext();
-	}
-
-	@Override
-	public IResource newResource(URI uri) {
-		return mock.newResource(uri);
-	}
-
-	@Override
-	public IModuleBuilder getModuleBuilder(String mid, IResource res) {
-		return mock.getModuleBuilder(mid, res);
-	}
-
-	@Override
-	public InitParams getInitParams() {
-		return mock.getInitParams();
-	}
-
-	@Override
-	public File getWorkingDirectory() {
-		return mock.getWorkingDirectory();
-	}
-
-	@Override
-	public boolean reloadConfig() throws IOException {
-		return mock.reloadConfig();
-	}
-
-	@Override
-	public HttpServlet asServlet() {
-		return mock.asServlet();
-	}
-
-	@Override
-	public Iterable<IAggregatorExtension> getResourceFactoryExtensions() {
-		return mock.getResourceFactoryExtensions();
-	}
-
-	@Override
-	public Iterable<IAggregatorExtension> getModuleBuilderExtensions() {
-		return mock.getModuleBuilderExtensions();
-	}
-
-	@Override
-	public IAggregatorExtension getHttpTransportExtension() {
-		return mock.getHttpTransportExtension();
-	}
-
-	@Override
-	public IModule newModule(String mid, URI uri) {
-		return mock.newModule(mid, uri);
-	}
-
-	@Override
-	public ILayerCache newLayerCache() {
-		return mock.newLayerCache();
-	}
-
-	@Override
-	public IModuleCache newModuleCache() {
-		return mock.newModuleCache();
-	}
-
-	@Override
-	public String substituteProps(String str) {
-		return mock.substituteProps(str);
-	}
-
-	@Override
-	public String substituteProps(String str,
-			SubstitutionTransformer transformer) {
-		return mock.substituteProps(str, transformer);
-	}
-
+	
 }
