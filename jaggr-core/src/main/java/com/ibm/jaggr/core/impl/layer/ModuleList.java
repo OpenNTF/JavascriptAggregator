@@ -28,30 +28,30 @@ import com.ibm.jaggr.core.module.ModuleSpecifier;
 // This class is not thread safe.  It is assumed that it does not
 // need to be.  If that assumption changes, then the implementation 
 // will need to be reworked.
-public class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
+class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -5874021341817546757L;
 	
-	public static class ModuleListEntry {
+	static class ModuleListEntry {
 		final IModule module;
 		final ModuleSpecifier source;
-		public ModuleListEntry(IModule module, ModuleSpecifier source) {
+		ModuleListEntry(IModule module, ModuleSpecifier source) {
 			this.module = module;
 			this.source = source;
 		}
-		public ModuleSpecifier getSource() {
+		ModuleSpecifier getSource() {
 			return source;
 		}
-		public IModule getModule() {
+		IModule getModule() {
 			return module;
 		}
 	}
 	private Set<String> dependentFeatures = null;
 	private Set<String> requiredModules = null;
 	
-	public ModuleList() {
+	ModuleList() {
 	}
 	
-	public ModuleList(List<ModuleListEntry> other) {
+	ModuleList(List<ModuleListEntry> other) {
 		super(other);
 	}
 	
@@ -59,7 +59,7 @@ public class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		this.dependentFeatures = dependentFeatures;
 	}
 	
-	public void setRequiredModules(Set<String> requiredModules) {
+	void setRequiredModules(Set<String> requiredModules) {
 		this.requiredModules = requiredModules;
 	}
 	
@@ -70,14 +70,14 @@ public class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		return requiredModules;
 	}
 	
-	public Set<String> getDependentFeatures() {
+	Set<String> getDependentFeatures() {
 		if (dependentFeatures == null) {
 			dependentFeatures = new HashSet<String>();
 		}
 		return dependentFeatures;
 	}
 	
-	public List<IModule> getModules() {
+	List<IModule> getModules() {
 		List<IModule> result = new ArrayList<IModule>(size());
 		for (ModuleListEntry entry : this) {
 			result.add(entry.getModule());

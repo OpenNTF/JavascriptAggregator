@@ -27,7 +27,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 
 import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 
 /**
  * Wrapper for the layer builds map to help maintain a layer specific view
@@ -41,7 +40,7 @@ import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
  * owning layer so that entries belonging to the layer can be retrieved (see
  * {@link LayerBuildsAccessor#entrySet()}).
  */
-public class LayerBuildsAccessor {
+class LayerBuildsAccessor {
 
 	/**
 	 * 
@@ -63,7 +62,7 @@ public class LayerBuildsAccessor {
 	private final String keyPrefixUpperBound;
 	private final WeakReference<LayerCacheImpl> layerCacheRef;
 	
-	public LayerBuildsAccessor(
+	LayerBuildsAccessor(
 			int layerId, 
 			ConcurrentMap<String, CacheEntry> map, 
 			ICacheManager cacheMgr, 
