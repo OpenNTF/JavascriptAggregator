@@ -131,18 +131,6 @@ public class PlatformServicesImpl implements IPlatformServices {
 		}
 	}
 
-	/**
-	 * This method sets the bundleContext reference that is used by the other
-	 * methods in this class. The method is called by the
-	 * {@link AggregatorImpl#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, String, Object)}
-	 * to set the bundleContext.
-	 * 
-	 * @param bc
-	 */
-	/*public void setBundleContext(BundleContext bc) {
-		bundleContext = bc;
-	}*/
-
 	/*
 	 * (non-Javadoc)
 	 * 

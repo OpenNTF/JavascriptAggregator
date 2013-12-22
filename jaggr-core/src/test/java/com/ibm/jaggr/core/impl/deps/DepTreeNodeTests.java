@@ -46,18 +46,18 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.deps.DepTreeNode;
 import com.ibm.jaggr.core.impl.deps.DepTreeRoot;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.util.Features;
 
 public class DepTreeNodeTests extends EasyMock {
 	File tmpdir = null;
-	BaseTestUtils.Ref<IConfig> configRef = new BaseTestUtils.Ref<IConfig>(null);
+	TestUtils.Ref<IConfig> configRef = new TestUtils.Ref<IConfig>(null);
 	IAggregator mockAggregator;
 	
 	@Before
 	public void setup() throws Exception {
 		tmpdir = Files.createTempDir();
-		mockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir);
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		EasyMock.replay(mockAggregator);
 		configRef.set(new ConfigImpl(
 				mockAggregator,
@@ -69,7 +69,7 @@ public class DepTreeNodeTests extends EasyMock {
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
-			BaseTestUtils.deleteRecursively(tmpdir);
+			TestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}

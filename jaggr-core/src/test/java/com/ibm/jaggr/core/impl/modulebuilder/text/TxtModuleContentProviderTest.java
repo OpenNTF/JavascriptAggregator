@@ -36,7 +36,7 @@ import org.junit.Test;
 
 import com.google.common.io.Files;
 import com.ibm.jaggr.core.impl.resource.FileResource;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -60,7 +60,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
-			BaseTestUtils.deleteRecursively(tmpdir);
+			TestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}

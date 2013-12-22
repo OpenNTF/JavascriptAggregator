@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.config;
+package com.ibm.jaggr.core.impl.config;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -39,20 +39,19 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mozilla.javascript.Context;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
+
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.PlatformServicesImpl;
+
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.service.test.ITestAggregator;
-import com.ibm.jaggr.service.test.MockAggregatorWrapper;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.core.test.MockAggregatorWrapper;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.PathUtil;
 
@@ -61,14 +60,11 @@ public class ConfigTests {
 	File tmpFile = null;
 	URI tmpDir = null;
 	IAggregator mockAggregator;
-	ITestAggregator mockOSGiAggregator;
-
+	
 	@Before 
 	public void setup() throws Exception {
 		tmpFile = Files.createTempDir();
 		tmpDir = tmpFile.toURI();
-		
-		
 		PlatformAggregatorProvider.setPlatformAggregator(null);
 		mockAggregator = TestUtils.createMockAggregator();
 		EasyMock.replay(mockAggregator);
@@ -175,9 +171,8 @@ public class ConfigTests {
 		
 	}
 	
-	//@Test
+	@Test
 	public void testVariableSubstitution() throws Exception {
-		
 		mockAggregator = new MockAggregatorWrapper() {
 			@Override public String substituteProps(String str, IAggregator.SubstitutionTransformer transformer) {
 				str = str.replace("${REPLACE_THIS}", "file:/c:/substdir/");
@@ -187,8 +182,6 @@ public class ConfigTests {
 				return str;
 			}
 		};
-		
-		
 		String config = "{paths:{subst:'${REPLACE_THIS}/resources'}}";
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		IConfig.Location loc = cfg.getPaths().get("subst");
@@ -210,39 +203,23 @@ public class ConfigTests {
 		initParams.add(new InitParams.InitParam("param1", "param1Value1"));
 		initParams.add(new InitParams.InitParam("param1", "param1Value2"));
 		initParams.add(new InitParams.InitParam("param2", "param2Value"));
-		final Bundle mockBundle = EasyMock.createNiceMock(Bundle.class);
+		final IPlatformServices mockPlatformServices = EasyMock.createNiceMock(IPlatformServices.class);
+		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);
 		final Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("foo", "foobar");
-		EasyMock.expect(mockBundle.getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
+		EasyMock.expect(PlatformAggregatorProvider.getPlatformAggregator().getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
 			public Dictionary<String, String> answer() throws Throwable {
 				return dict;
 			}
 		}).anyTimes();
-		EasyMock.replay(mockBundle);
-		final BundleContext mockBundleContext = EasyMock.createNiceMock(BundleContext.class);
-		EasyMock.expect(mockBundleContext.getBundle()).andAnswer(new IAnswer<Bundle>() {
-			public Bundle answer() throws Throwable {
-				return mockBundle;
-			}
-		}).anyTimes();
-		EasyMock.replay(mockBundleContext);
-		mockOSGiAggregator = TestUtils.createMockAggregator(null, null, initParams);
-		EasyMock.expect((mockOSGiAggregator).getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
-			public BundleContext answer() throws Throwable {
-				return mockBundleContext;
-			}
-		}).anyTimes();
-		EasyMock.replay(mockOSGiAggregator);
+		EasyMock.replay(mockPlatformServices);		
+		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);		
+		EasyMock.replay(mockAggregator);
 		
-		//instantiate the platformAggregator object for this test case to read the headers from the bundleContext
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(mockBundleContext);	
-		//osgiPlatformAggregator.setBundleContext(mockBundleContext);
-		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
-		
-		mockOSGiAggregator.getOptions().setOption("foo", "bar");
+		mockAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
 		final TestConsoleLogger logger = new TestConsoleLogger();
-		ConfigImpl cfg = new ConfigImpl(mockOSGiAggregator, tmpDir, config) {
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config) {
 			@Override
 			protected ConfigImpl.Console newConsole() {
 				return logger;
@@ -771,19 +748,13 @@ public class ConfigTests {
 		
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, "config.js"));
-		mockOSGiAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
-		BundleContext mockContext = EasyMock.createMock(BundleContext.class);			
-		final Bundle mockBundle = EasyMock.createMock(Bundle.class);
-		EasyMock.expect(mockOSGiAggregator.getBundleContext()).andReturn(mockContext);
-		EasyMock.expect(mockContext.getBundle()).andReturn(mockBundle);
-		EasyMock.expect(mockBundle.getSymbolicName()).andReturn("org.mock.name");		
-		EasyMock.replay(mockOSGiAggregator, mockContext, mockBundle);
-		
-		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(mockContext);	
-		//osgiPlatformAggregator.setBundleContext(mockContext);
-		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);
-		
-		ConfigImpl cfg = new ConfigImpl(mockOSGiAggregator, true);		
+		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
+		EasyMock.replay(mockAggregator);
+		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);		
+		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);
+		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/"));
+		EasyMock.replay(mockPlatformServices);
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);		
 		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());
 	}
 
@@ -813,7 +784,6 @@ public class ConfigTests {
 	@Test
 	public void testGetTextPluginDelegators() throws Exception {
 		String config = "{textPluginDelegators:[\"foo/bar\", \"t2\"]}";
-		
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getTextPluginDelegators());
 		
@@ -833,7 +803,6 @@ public class ConfigTests {
 	@Test
 	public void testGetJsPluginDelegators() throws Exception {
 		String config = "{jsPluginDelegators:[\"foo/bar\", \"t2\"]}";
-		
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getJsPluginDelegators());
 		

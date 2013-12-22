@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 
 public class JavaScriptBuildRendererTest {
 	static final String content = "define([],function() {require(\"foo\",\"" + 
@@ -48,7 +48,7 @@ public class JavaScriptBuildRendererTest {
 		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer(content, depsList, false);
 		
 		// validate the rendered output
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(BaseTestUtils.createMockAggregator());
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		EasyMock.replay(mockRequest);
 		String result = compiled.renderBuild(mockRequest);
 		System.out.println(result);
@@ -80,7 +80,7 @@ public class JavaScriptBuildRendererTest {
 		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer(contentWithComments, depsList, true);
 		
 		// validate the rendered output
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(BaseTestUtils.createMockAggregator());
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		EasyMock.replay(mockRequest);
 		String result = compiled.renderBuild(mockRequest);
 		System.out.println(result);

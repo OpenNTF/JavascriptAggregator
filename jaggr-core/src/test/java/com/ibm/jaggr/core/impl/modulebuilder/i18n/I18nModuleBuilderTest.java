@@ -40,8 +40,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.ibm.jaggr.core.impl.resource.FileResource;
-import com.ibm.jaggr.core.test.BaseTestUtils;
-import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
+import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
@@ -109,15 +109,15 @@ public class I18nModuleBuilderTest extends EasyMock {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		BaseTestUtils.deleteRecursively(testdir);
+		TestUtils.deleteRecursively(testdir);
 	}
 
 	@Before
 	public void setUp() throws Exception {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IAggregator.CONCURRENTMAP_REQATTRNAME, concurrentMap);
-		mockAggregator = BaseTestUtils.createMockAggregator(configRef, testdir);
-		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
+		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		replay(mockRequest);
 		replay(mockAggregator);
 		res = new FileResource(new File(nls, "strings.js").toURI());
@@ -197,7 +197,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(0, build.getBefore().size());
 
 		// Now enable development mode and make sure the addition of the new locale is detected
-		BaseTestUtils.deleteRecursively(eb);
+		TestUtils.deleteRecursively(eb);
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		keyGens = null;
 		build = buildIt();

@@ -60,9 +60,9 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
-import com.ibm.jaggr.core.test.BaseMockAggregatorWrapper;
-import com.ibm.jaggr.core.test.BaseTestUtils;
-import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
+import com.ibm.jaggr.core.test.MockAggregatorWrapper;
+import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -70,7 +70,7 @@ import com.ibm.jaggr.core.util.Features;
 
 public class LayerCacheTest {
 	
-	protected static File tmpdir = null;
+	static File tmpdir = null;
 	IAggregator mockAggregator;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
@@ -89,13 +89,13 @@ public class LayerCacheTest {
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
-		BaseTestUtils.createTestFiles(tmpdir);
+		TestUtils.createTestFiles(tmpdir);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		if (tmpdir != null) {
-			BaseTestUtils.deleteRecursively(tmpdir);
+			TestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}
@@ -233,7 +233,7 @@ public class LayerCacheTest {
 		
 		Thread.sleep(1500L);  // wait long enough for systems with coarse grain last-mod times
 		                      // to recognize that the file has changed
-		BaseTestUtils.createTestFile(tmpdir, "p1/a.js", BaseTestUtils.a.replace("hello", "Hello"));
+		TestUtils.createTestFile(tmpdir, "p1/a.js", TestUtils.a.replace("hello", "Hello"));
 		requestAttributes.clear();
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/a"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
@@ -288,10 +288,10 @@ public class LayerCacheTest {
 	
 	@SuppressWarnings("unchecked")
 	private void createMockObjects(List<InitParams.InitParam> initParams) throws Exception {
-		final Map<String, ModuleDeps> testDepMap = BaseTestUtils.createTestDepMap();
-		IAggregator easyMockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
-		mockAggregator = (IAggregator) new Proxy(easyMockAggregator);
-		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
+		final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
+		IAggregator easyMockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, initParams, Proxy.class, null);
+		mockAggregator = new Proxy(easyMockAggregator);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 		mockDependencies = EasyMock.createMock(IDependencies.class);
 		EasyMock.expect(easyMockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
@@ -306,7 +306,7 @@ public class LayerCacheTest {
 				String name = (String)EasyMock.getCurrentArguments()[0];
 				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
-					result = BaseTestUtils.emptyDepMap;
+					result = TestUtils.emptyDepMap;
 				}
 				return result;
 			}
@@ -361,15 +361,14 @@ public class LayerCacheTest {
 	 * Proxy class to override the behavior of newLayerCache in the mocked aggregator.
 	 * We could define our own mocked aggregator that implements the desired behavior,
 	 * but it's easier to use the mock aggregator created by TestUtils.createMockAggregator()
-	 * and just override this one method using the BaseMockAggregatorWrapper.  Would be nice
+	 * and just override this one method using the MockAggregatorWrapper.  Would be nice
 	 * if EasyMock allowed re-defining of previously defined methods in a mocked object.
 	 */
-	public static class Proxy extends BaseMockAggregatorWrapper implements IAggregator {
+	public static class Proxy extends MockAggregatorWrapper implements IAggregator {
 		public Proxy(IAggregator mock) {super(mock);}
 		public ILayerCache newLayerCache() {
 			return new TestLayerCacheImpl(mock);
 		}
-		
 	}
 
 	/*

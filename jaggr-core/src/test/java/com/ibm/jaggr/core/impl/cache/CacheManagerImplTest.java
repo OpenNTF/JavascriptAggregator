@@ -32,7 +32,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cache.ICacheManager.CreateCompletionCallback;
@@ -62,7 +62,7 @@ public class CacheManagerImplTest {
 	@Before 
 	public void setup() throws Exception {
 		tmpDir = Files.createTempDir();
-		mockAggregator = BaseTestUtils.createMockAggregator(null, tmpDir);
+		mockAggregator = TestUtils.createMockAggregator(null, tmpDir);
 		EasyMock.replay(mockAggregator);
 		
 	}

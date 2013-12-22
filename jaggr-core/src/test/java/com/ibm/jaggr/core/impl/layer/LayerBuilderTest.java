@@ -61,7 +61,7 @@ import com.ibm.jaggr.core.impl.layer.ModuleBuildFuture;
 import com.ibm.jaggr.core.impl.layer.ModuleList;
 import com.ibm.jaggr.core.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
@@ -151,10 +151,11 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testBuild() throws Exception {
+		PlatformAggregatorProvider.setPlatformAggregator(null);
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
-		IAggregator mockAggregator = BaseTestUtils.createMockAggregator(mockTransport);
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
+		IAggregator mockAggregator = TestUtils.createMockAggregator(mockTransport);
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		EasyMock.replay(mockRequest);
 		EasyMock.replay(mockAggregator);
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
@@ -289,7 +290,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
 			@Override
-			public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 					throws IOException {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
@@ -317,7 +318,7 @@ public class LayerBuilderTest {
 		}));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
 			@Override
-			public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 					throws IOException {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
@@ -346,7 +347,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
 			@Override
-			public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 					throws IOException {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
@@ -374,7 +375,7 @@ public class LayerBuilderTest {
 		}));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
 			@Override
-			public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 					throws IOException {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
@@ -416,7 +417,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
 			@Override
-			public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 					throws IOException {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
@@ -454,7 +455,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
 			@Override
-			public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 					throws IOException {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
@@ -513,8 +514,8 @@ public class LayerBuilderTest {
 	@Test
 	public void testCollectFutures() throws Exception {
 		PlatformAggregatorProvider.setPlatformAggregator(null);
-		IAggregator mockAggregator = BaseTestUtils.createMockAggregator();
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator);
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
 		ICache mockCache = createMock(ICache.class);
 		IModuleCache mockModuleCache = createMock(IModuleCache.class);
 		expect(mockCache.getModules()).andReturn(mockModuleCache).anyTimes();
@@ -551,10 +552,10 @@ public class LayerBuilderTest {
 	@Test
 	public void testNotifyLayerListeners() throws Exception {
 		
-		IAggregator mockAggregator = BaseTestUtils.createMockAggregator();			
+		IAggregator mockAggregator = TestUtils.createMockAggregator();			
 		final IPlatformServices mockPlatformServices = createMock(IPlatformServices.class);
 		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);				
-		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator);		
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);		
 		Object mockServiceRef1 = createMock(Object.class),
 				        mockServiceRef2 = createMock(Object.class);
 		Object[] serviceReferences = new Object[]{mockServiceRef1, mockServiceRef2}; 		
@@ -700,8 +701,8 @@ public class LayerBuilderTest {
 			mbrKeygens = keyGenerators;
 		}
 		
-		@Override
-		public List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
+		@Override 
+		protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 				throws IOException {
 			List<ModuleBuildFuture> result = new ArrayList<ModuleBuildFuture>();
 			for (ModuleListEntry entry : moduleList) {
@@ -722,7 +723,7 @@ public class LayerBuilderTest {
 		}
 		
 		@Override
-		public String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {
+		protected String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			ILayerListener listener = new AggregatorLayerListener(aggr);
 			return listener.layerBeginEndNotifier(type, request, Arrays.asList(new IModule[]{module}), new HashSet<String>());

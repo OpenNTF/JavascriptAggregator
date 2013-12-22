@@ -24,6 +24,7 @@ import java.util.List;
 import javax.servlet.http.HttpServlet;
 
 import org.easymock.EasyMock;
+import org.osgi.framework.BundleContext;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
@@ -39,36 +40,36 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
 /**
  * Wrapper class for mock aggregator to make it easy to override
  * methods for test.
  */
-public class BaseMockAggregatorWrapper implements IAggregator {
+public class MockAggregatorWrapper implements IAggregator {
 	
 	protected IAggregator mock;
 	
-	public BaseMockAggregatorWrapper() throws Exception {
-		mock = BaseTestUtils.createMockAggregator();
+	public MockAggregatorWrapper() throws Exception {
+		mock = TestUtils.createMockAggregator();
 		EasyMock.replay(mock);
 	}
 	
-	public BaseMockAggregatorWrapper(Ref<IConfig> configRef,
+	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
-		mock = BaseTestUtils.createMockAggregator(configRef, workingDirectory);
+		mock = TestUtils.createMockAggregator(configRef, workingDirectory);
 		EasyMock.replay(mock);
 	}
 	
-	public BaseMockAggregatorWrapper(Ref<IConfig> configRef,
+	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory,
 			List<InitParam> initParams) throws Exception {
-		mock = BaseTestUtils.createMockAggregator(configRef, workingDirectory, initParams);
+		mock = TestUtils.createMockAggregator(configRef, workingDirectory, initParams);
 		EasyMock.replay(mock);
 	}
 	
-	public BaseMockAggregatorWrapper(IAggregator mock) {
+	public MockAggregatorWrapper(IAggregator mock) {
 		this.mock = mock;
 	}
 	
@@ -105,13 +106,7 @@ public class BaseMockAggregatorWrapper implements IAggregator {
 	@Override
 	public IHttpTransport getTransport() {
 		return mock.getTransport();
-	}
-
-	/*@Override
-	public BundleContext getBundleContext() {
-		System.out.println("entered in bundle context");
-		return mock.getBundleContext();
-	}*/
+	}	
 
 	@Override
 	public IResource newResource(URI uri) {

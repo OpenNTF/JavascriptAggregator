@@ -46,8 +46,8 @@ import com.google.common.io.Files;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.test.BaseTestUtils;
-import com.ibm.jaggr.core.test.BaseTestUtils.Ref;
+import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -65,18 +65,18 @@ public class ModuleImplTest {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 	IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
-	static final Map<String, ModuleDeps> testDepMap = BaseTestUtils.createTestDepMap();
+	static final Map<String, ModuleDeps> testDepMap = TestUtils.createTestDepMap();
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
-		BaseTestUtils.createTestFiles(tmpdir);
+		TestUtils.createTestFiles(tmpdir);
 	}
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
 		if (tmpdir != null) {
-			BaseTestUtils.deleteRecursively(tmpdir);
+			TestUtils.deleteRecursively(tmpdir);
 			tmpdir = null;
 		}
 	}
@@ -84,8 +84,8 @@ public class ModuleImplTest {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
-		mockAggregator = BaseTestUtils.createMockAggregator(configRef, tmpdir);
-		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes);
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		EasyMock.expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;
@@ -100,7 +100,7 @@ public class ModuleImplTest {
 				Set<String> dependentFeatures = (Set<String>)EasyMock.getCurrentArguments()[2];
 				ModuleDeps result = testDepMap.get(name);
 				if (result == null) {
-					result = BaseTestUtils.emptyDepMap;
+					result = TestUtils.emptyDepMap;
 				}
 				// resolve aliases
 				ModuleDeps temp = new ModuleDeps();

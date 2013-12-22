@@ -45,7 +45,7 @@ import com.google.javascript.rhino.Node;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.util.Features;
@@ -78,7 +78,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setUp() throws Exception {
-		mockAggregator = BaseTestUtils.createMockAggregator();
+		mockAggregator = TestUtils.createMockAggregator();
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		expect(mockDependencies.getDelcaredDependencies(
 				(String)anyObject())).andAnswer(new IAnswer<List<String>>() {

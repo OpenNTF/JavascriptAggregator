@@ -39,7 +39,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
-import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 
 public class DojoHttpTransportTest {
 

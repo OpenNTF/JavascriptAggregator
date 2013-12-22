@@ -44,7 +44,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.core.test.BaseTestUtils;
+import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
@@ -92,13 +92,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	@AfterClass
 	public static void tearDownAfterClass() throws Exception {
-		BaseTestUtils.deleteRecursively(testdir);
+		TestUtils.deleteRecursively(testdir);
 	}
 
 	@Before
 	public void setUp() throws Exception {
-		mockAggregator = BaseTestUtils.createMockAggregator();
-		mockRequest = BaseTestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		mockAggregator = TestUtils.createMockAggregator();
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
