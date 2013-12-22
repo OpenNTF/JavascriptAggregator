@@ -64,6 +64,7 @@ import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.test.BaseTestUtils;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -79,10 +80,8 @@ import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.util.CopyUtil;
-//import com.ibm.jaggr.service.test.ITestAggregator;
 
-
-public class BaseLayerBuilderTest {
+public class LayerBuilderTest {
 	public static final Pattern moduleNamePat = Pattern.compile("^module[0-9]$");
 
 	@BeforeClass
@@ -152,7 +151,6 @@ public class BaseLayerBuilderTest {
 	
 	@Test
 	public void testBuild() throws Exception {
-		PlatformAggregatorProvider.setPlatformAggregator(null);
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
 		IAggregator mockAggregator = BaseTestUtils.createMockAggregator(mockTransport);
@@ -550,8 +548,17 @@ public class BaseLayerBuilderTest {
 		// Verfity 
 	}
 
-	public void testNotifyLayerListeners(IAggregator mockAggregator, HttpServletRequest mockRequest, Object mockBundleContext, Object mockServiceRef1, Object mockServiceRef2, Object[] serviceReferences) throws Exception {
+	@Test
+	public void testNotifyLayerListeners() throws Exception {
 		
+		IAggregator mockAggregator = BaseTestUtils.createMockAggregator();			
+		final IPlatformServices mockPlatformServices = createMock(IPlatformServices.class);
+		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);				
+		HttpServletRequest mockRequest = BaseTestUtils.createMockRequest(mockAggregator);		
+		Object mockServiceRef1 = createMock(Object.class),
+				        mockServiceRef2 = createMock(Object.class);
+		Object[] serviceReferences = new Object[]{mockServiceRef1, mockServiceRef2}; 		
+			
 		final String[] listener1Result = new String[1], listener2Result = new String[1];
 		final List<IModule> expectedModuleList = new ArrayList<IModule>();
 		final Set<String> dependentFeatures1 = new HashSet<String>(),
@@ -581,7 +588,7 @@ public class BaseLayerBuilderTest {
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef2)).andReturn(testListener2);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef1)).andReturn(true);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef2)).andReturn(true);
-		replay(mockAggregator, mockRequest, mockBundleContext, mockServiceRef1, mockServiceRef2);
+		replay(mockAggregator, mockRequest,  mockServiceRef1, mockServiceRef2, mockPlatformServices);
 		
 		LayerBuilder builder = new LayerBuilder(mockRequest, null, moduleList) {
 			@Override 
@@ -591,85 +598,79 @@ public class BaseLayerBuilderTest {
 		};
 		listener1Result[0] = "foo";
 		listener2Result[0] = "bar";
-		expectedModuleList.addAll(moduleList.getModules());		
+		expectedModuleList.addAll(moduleList.getModules());
 		
 		// Test BEGIN_LAYER with two string contributions
 		String result = builder.notifyLayerListeners(EventType.BEGIN_LAYER, mockRequest, module1);
-		EasyMock.verify(mockBundleContext);
 		Assert.assertEquals("foobar", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
-		reset(mockBundleContext);
+		reset(mockPlatformServices);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef1)).andReturn(testListener1);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef2)).andReturn(testListener2);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef1)).andReturn(true);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef2)).andReturn(true);
-		replay(mockBundleContext);
+		replay(mockPlatformServices);
 		listener2Result[0] = null;
 		// Test END_LAYER with one null and one string contributions
 		result = builder.notifyLayerListeners(EventType.END_LAYER, mockRequest, module1);
-		EasyMock.verify(mockBundleContext);
 		Assert.assertEquals("foo", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
-		reset(mockBundleContext);
+		reset(mockPlatformServices);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef1)).andReturn(testListener1);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef2)).andReturn(testListener2);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef1)).andReturn(true);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef2)).andReturn(true);
-		replay(mockBundleContext);
+		replay(mockPlatformServices);
 		listener1Result[0] = null;
 		// Test END_LAYER with two null contributions
 		result = builder.notifyLayerListeners(EventType.END_LAYER, mockRequest, module1);
-		EasyMock.verify(mockBundleContext);
 		Assert.assertNull(result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
-		reset(mockBundleContext);
+		reset(mockPlatformServices);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef1)).andReturn(testListener1);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef2)).andReturn(testListener2);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef1)).andReturn(true);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef2)).andReturn(true);
-		replay(mockBundleContext);
+		replay(mockPlatformServices);
 		listener1Result[0] = "foo";
 		listener2Result[0] = "bar";
 		expectedModuleList.clear();
 		expectedModuleList.add(module2);
 		// Test BEGIN_MODULE with two string contributions
 		result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module2);
-		EasyMock.verify(mockBundleContext);
 		Assert.assertEquals("foobar", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
-		reset(mockBundleContext);
+		reset(mockPlatformServices);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef1)).andReturn(testListener1);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef1)).andReturn(true);
-		replay(mockBundleContext);
+		replay(mockPlatformServices);
 		// Test exception
 		try {
 			result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module1);
 			Assert.fail();
 		} catch (AssertionFailedError e) {
 		}
-		EasyMock.verify(mockBundleContext);		// verifies that bundleContext.getService()/ungetService() 
-												// are matched even though exception was thrown by listener
-		
-		reset(mockBundleContext);
+		// verifies that bundleContext.getService()/ungetService() 
+		// are matched even though exception was thrown by listener
+		reset(mockPlatformServices);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef1)).andReturn(testListener1);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().getService(mockServiceRef2)).andReturn(testListener2);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef1)).andReturn(true);
 		expect(PlatformAggregatorProvider.getPlatformAggregator().ungetService(mockServiceRef2)).andReturn(true);
-		replay(mockBundleContext);
+		replay(mockPlatformServices);
 		dependentFeatures1.add("feature1");
 		dependentFeatures2.add("feature2");
 		// Verify that dependent features can be updated by listeners
 		result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module2);
-		EasyMock.verify(mockBundleContext);
 		Assert.assertEquals("foobar", result);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), moduleList.getDependentFeatures());
 	}
@@ -680,17 +681,6 @@ public class BaseLayerBuilderTest {
 		return writer.toString();
 		
 	}
-	
-	public ModuleList getModuleList() throws Exception{
-		ModuleList moduleList = new ModuleList();
-		IModule module1 = new ModuleImpl("module1", new URI("file://module1.js")),
-				module2 = new ModuleImpl("module2", new URI("file://module2.js"));
-		moduleList.add(new ModuleListEntry(module1, ModuleSpecifier.MODULES));
-		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.REQUIRED));
-		return moduleList;
-	}
-	
-	
 	
 	static class TestLayerBuilder extends LayerBuilder {
 		Map<String, String> content;

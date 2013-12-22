@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.core.impl.layer;
 
+import static org.easymock.EasyMock.createMock;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FilenameFilter;
@@ -39,15 +41,21 @@ import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
+import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.Weigher;
 import com.googlecode.concurrentlinkedhashmap.Weighers;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -60,7 +68,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
 
-public class BaseLayerCacheTest {
+public class LayerCacheTest {
 	
 	protected static File tmpdir = null;
 	IAggregator mockAggregator;
@@ -76,8 +84,23 @@ public class BaseLayerCacheTest {
 		}
 	};
 
-	static int maxCapacity = 10;	
+	static int maxCapacity = 10;
 
+	@BeforeClass
+	public static void setUpBeforeClass() throws Exception {
+		tmpdir = Files.createTempDir();
+		BaseTestUtils.createTestFiles(tmpdir);
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		if (tmpdir != null) {
+			BaseTestUtils.deleteRecursively(tmpdir);
+			tmpdir = null;
+		}
+	}
+
+	@Test
 	public void test() throws Exception {
 		createMockObjects(null);
 		
@@ -86,8 +109,10 @@ public class BaseLayerCacheTest {
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[]{"layer1"}));
 		ILayer layer = layerCache.getLayer(mockRequest);
 		Assert.assertEquals("[layer1]", layer.getKey());
-		Assert.assertEquals(1, layerCache.size());		
-		Assert.assertEquals(0,  layerCache.getLayerBuildMap().size());		
+		Assert.assertEquals(1, layerCache.size());
+		
+		Assert.assertEquals(0,  layerCache.getLayerBuildMap().size());
+		
 		boolean exceptionThrown = false;
 		try {
 			layer.getInputStream(mockRequest, mockResponse);
@@ -249,7 +274,7 @@ public class BaseLayerCacheTest {
 		Assert.assertEquals(10, mockAggregator.getCacheManager().getCacheDir().listFiles(layerFileFilter).length);
 	}
 	
-	
+	@Test
 	public void testGetMaxCapacity() throws Exception {
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		createMockObjects(initParams);
@@ -362,7 +387,7 @@ public class BaseLayerCacheTest {
 		@Override
 		protected int getMaxCapacity(IAggregator aggregator) {
 			// return our test defined max capacity
-			return BaseLayerCacheTest.maxCapacity;
+			return LayerCacheTest.maxCapacity;
 		}
 		
 		@Override
