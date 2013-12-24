@@ -50,7 +50,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -191,11 +191,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	        // Register listeners
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		
-		if(PlatformAggregatorProvider.getPlatformAggregator() != null){
-			_shutdownListener = PlatformAggregatorProvider.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict);
-			_configUpdateListener = PlatformAggregatorProvider.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, dict);
-			_depsUpdateListener = PlatformAggregatorProvider.getPlatformAggregator().registerService(IDependenciesListener.class.getName(), this, dict);
-			_optionsUpdateListener = PlatformAggregatorProvider.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict);
+		if(PlatformServicesProvider.getPlatformServices() != null){
+			_shutdownListener = PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
+			_configUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+			_depsUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
+			_optionsUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 		}
 		
 		optionsUpdated(aggregator.getOptions(), 1);
@@ -243,16 +243,16 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     @Override
 	public void shutdown(IAggregator aggregator) {
     	if (_shutdownListener != null) {    		
-    		PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(_shutdownListener);
+    		PlatformServicesProvider.getPlatformServices().unRegisterService(_shutdownListener);
     	}
 		if (_configUpdateListener != null) {			
-			PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(_configUpdateListener);
+			PlatformServicesProvider.getPlatformServices().unRegisterService(_configUpdateListener);
 		}
 		if (_depsUpdateListener != null) {			
-			PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(_depsUpdateListener);
+			PlatformServicesProvider.getPlatformServices().unRegisterService(_depsUpdateListener);
 		}
 		if (_optionsUpdateListener != null) {			
-			PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(_optionsUpdateListener);
+			PlatformServicesProvider.getPlatformServices().unRegisterService(_optionsUpdateListener);
 		}
     	
 		// Serialize the cache metadata one last time
@@ -473,7 +473,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 								Messages.CacheManagerImpl_5,
 								new Object[]{_aggregator.getName()}
 						);
-						PlatformAggregatorProvider.getPlatformAggregator().println(msg);
+						PlatformServicesProvider.getPlatformServices().println(msg);
 						if (log.isLoggable(Level.INFO)) {
 							log.info(msg);
 						}
@@ -501,7 +501,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 								Messages.CacheManagerImpl_6,
 								new Object[]{ _aggregator.getName()}
 						);
-						PlatformAggregatorProvider.getPlatformAggregator().println(msg);
+						PlatformServicesProvider.getPlatformServices().println(msg);
 						if (log.isLoggable(Level.INFO)) {
 							log.info(msg);
 						}
@@ -529,7 +529,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 								Messages.CacheManagerImpl_7,
 								new Object[]{ _aggregator.getName()}
 						);
-						PlatformAggregatorProvider.getPlatformAggregator().println(msg);
+						PlatformServicesProvider.getPlatformServices().println(msg);
 						if (log.isLoggable(Level.INFO)) {
 							log.info(msg);
 						}

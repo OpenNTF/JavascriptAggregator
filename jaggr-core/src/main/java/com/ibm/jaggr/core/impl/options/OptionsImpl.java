@@ -30,7 +30,8 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.PlatformServicesException;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
@@ -247,7 +248,7 @@ public class OptionsImpl  implements IOptions {
 		    	}
 		    	if (in == null) {
 		    		// Try to load it from the bundle		   			
-		   			URL url = PlatformAggregatorProvider.getPlatformAggregator().getResource(getPropsFilename());
+		   			URL url = PlatformServicesProvider.getPlatformServices().getResource(getPropsFilename());
 		    		if (url != null) { 
 		    			in = url.openStream();
 		    		}
@@ -295,27 +296,27 @@ public class OptionsImpl  implements IOptions {
 	 * 
 	 * @param sequence The change sequence number.
 	 */
-	protected void updateNotify(long sequence) {
+	protected void updateNotify (long sequence) {
 		
 		Object[] refs = null;
 		try {
-			if(PlatformAggregatorProvider.getPlatformAggregator() != null){
-				refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
+			if(PlatformServicesProvider.getPlatformServices() != null){
+				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
 				if (refs != null) {
 					for (Object ref : refs) {
-						IOptionsListener listener = (IOptionsListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
+						IOptionsListener listener = (IOptionsListener)PlatformServicesProvider.getPlatformServices().getService(ref);
 						if (listener != null) {
 							try {
 								listener.optionsUpdated(this, sequence);
 							} catch (Throwable ignore) {
 							} finally {
-								PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
+								PlatformServicesProvider.getPlatformServices().ungetService(ref);
 							}
 						}
 					}
 				}
 			}
-		} catch (Exception e) {
+		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}

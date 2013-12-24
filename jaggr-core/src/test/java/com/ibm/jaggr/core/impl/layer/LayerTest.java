@@ -71,7 +71,7 @@ import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.module.NotFoundModule;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
@@ -132,7 +132,7 @@ public class LayerTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
-		PlatformAggregatorProvider.setPlatformAggregator(null);
+		PlatformServicesProvider.setPlatformServices(null);
 		mockPlatformServices = null;	
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, requestHeaders);
@@ -224,7 +224,7 @@ public class LayerTest extends EasyMock {
 		
 		final AggregatorLayerListener layerListener = new AggregatorLayerListener(mockAggregator);
 		mockPlatformServices = createMock(IPlatformServices.class);
-		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);	
+		PlatformServicesProvider.setPlatformServices(mockPlatformServices);	
 		Object mockServiceReference = createMock(Object.class);
 		final Object[] serviceReferences = new Object[]{mockServiceReference};
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<Object[]>() {

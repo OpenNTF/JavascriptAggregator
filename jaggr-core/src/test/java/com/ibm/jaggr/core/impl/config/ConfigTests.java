@@ -47,7 +47,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.test.MockAggregatorWrapper;
@@ -65,7 +65,7 @@ public class ConfigTests {
 	public void setup() throws Exception {
 		tmpFile = Files.createTempDir();
 		tmpDir = tmpFile.toURI();
-		PlatformAggregatorProvider.setPlatformAggregator(null);
+		PlatformServicesProvider.setPlatformServices(null);
 		mockAggregator = TestUtils.createMockAggregator();
 		EasyMock.replay(mockAggregator);
 		
@@ -204,10 +204,10 @@ public class ConfigTests {
 		initParams.add(new InitParams.InitParam("param1", "param1Value2"));
 		initParams.add(new InitParams.InitParam("param2", "param2Value"));
 		final IPlatformServices mockPlatformServices = EasyMock.createNiceMock(IPlatformServices.class);
-		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);
+		PlatformServicesProvider.setPlatformServices(mockPlatformServices);
 		final Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("foo", "foobar");
-		EasyMock.expect(PlatformAggregatorProvider.getPlatformAggregator().getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
+		EasyMock.expect(PlatformServicesProvider.getPlatformServices().getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
 			public Dictionary<String, String> answer() throws Throwable {
 				return dict;
 			}
@@ -751,7 +751,7 @@ public class ConfigTests {
 		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
 		EasyMock.replay(mockAggregator);
 		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);		
-		PlatformAggregatorProvider.setPlatformAggregator(mockPlatformServices);
+		PlatformServicesProvider.setPlatformServices(mockPlatformServices);
 		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/"));
 		EasyMock.replay(mockPlatformServices);
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);		

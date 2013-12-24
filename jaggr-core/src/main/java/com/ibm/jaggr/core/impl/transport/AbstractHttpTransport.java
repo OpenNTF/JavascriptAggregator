@@ -54,7 +54,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.readers.AggregationReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
@@ -523,7 +523,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		Hashtable<String, String> dict = new Hashtable<String, String>();
 		//Properties dict = new Properties();
 		dict.put("name", name); //$NON-NLS-1$    	
-    	configModifierReg = PlatformAggregatorProvider.getPlatformAggregator().registerService(IConfigModifier.class.getName(), this, dict);		
+    	configModifierReg = PlatformServicesProvider.getPlatformServices().registerService(IConfigModifier.class.getName(), this, dict);		
 	}
 
 	/* (non-Javadoc)
@@ -533,7 +533,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void shutdown(IAggregator aggregator) {
 		// unregister our config modifier
 		if (configModifierReg != null) {
-			PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(configModifierReg);
+			PlatformServicesProvider.getPlatformServices().unRegisterService(configModifierReg);
 		}
 	}
 

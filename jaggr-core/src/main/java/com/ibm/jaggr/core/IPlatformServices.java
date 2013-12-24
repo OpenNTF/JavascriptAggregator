@@ -74,7 +74,7 @@ public interface IPlatformServices {
 	 *         implementation, this object refers to implementation of
 	 *         {@code org.osgi.framework.ServiceReference} interface.
 	 */
-	public Object[] getServiceReferences(String clazz, String filter);
+	public Object[] getServiceReferences(String clazz, String filter) throws PlatformServicesException;
 
 	/**
 	 * Returns the service object corresponding to the service registration.

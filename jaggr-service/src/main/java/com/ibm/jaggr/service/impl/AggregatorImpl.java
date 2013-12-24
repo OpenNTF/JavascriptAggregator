@@ -59,7 +59,7 @@ import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
 import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.OverrideFoldersTreeWalker;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -145,7 +145,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
     		BundleContext bundleContext = contributingBundle.getBundleContext();
     		
     		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(bundleContext);
-    		PlatformAggregatorProvider.setPlatformAggregator(osgiPlatformAggregator);    		
+    		PlatformServicesProvider.setPlatformServices(osgiPlatformAggregator);    		
     		
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);

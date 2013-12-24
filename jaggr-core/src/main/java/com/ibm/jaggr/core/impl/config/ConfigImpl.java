@@ -57,9 +57,10 @@ import org.mozilla.javascript.ScriptableObject;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -664,7 +665,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		String configName = configNames.iterator().next();
 		configUri = new URI(configName);
 		if (!configUri.isAbsolute()) {
-			configUri = PlatformAggregatorProvider.getPlatformAggregator().getAppContextURI().resolve(configName);
+			configUri = PlatformServicesProvider.getPlatformServices().getAppContextURI().resolve(configName);
 			if (!getAggregator().newResource(configUri).exists()) {
 				throw new FileNotFoundException(configName);
 			}
@@ -743,9 +744,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 
 			// set up bundle manifest headers property
-			if (PlatformAggregatorProvider.getPlatformAggregator() != null) {
-				if(PlatformAggregatorProvider.getPlatformAggregator().getHeaders() != null){				
-					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformAggregatorProvider.getPlatformAggregator().getHeaders());
+			if (PlatformServicesProvider.getPlatformServices() != null) {
+				if(PlatformServicesProvider.getPlatformServices().getHeaders() != null){				
+					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformServicesProvider.getPlatformServices().getHeaders());
 				    Scriptable jsHeaders = cx.newObject(sharedScope);
 					Enumeration<String> keys = headers.keys();
 					while (keys.hasMoreElements()) {
@@ -1096,14 +1097,20 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            are represented as {@code Map<String, Object>}.
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
-		if(PlatformAggregatorProvider.getPlatformAggregator() != null){
+		if(PlatformServicesProvider.getPlatformServices() != null){
 			Object[] refs = null;		
-			refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")");//$NON-NLS-1$ //$NON-NLS-2$
+			try {
+				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
 			
 			if (refs != null) {
 				for (Object ref : refs) {
 					IConfigModifier modifier = 
-						(IConfigModifier)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
+						(IConfigModifier)PlatformServicesProvider.getPlatformServices().getService(ref);
 					if (modifier != null) {
 						try {
 							modifier.modifyConfig(getAggregator(), rawConfig);
@@ -1112,7 +1119,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
+							PlatformServicesProvider.getPlatformServices().ungetService(ref);
 						}
 					}
 				}
@@ -1153,8 +1160,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : serviceRegs) {
-			if(PlatformAggregatorProvider.getPlatformAggregator() != null){
-				PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(reg);
+			if(PlatformServicesProvider.getPlatformServices() != null){
+				PlatformServicesProvider.getPlatformServices().unRegisterService(reg);
 			}
 		}
 	}
@@ -1162,13 +1169,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {	
 	        // Register listeners
-		if(PlatformAggregatorProvider.getPlatformAggregator() != null){
+		if(PlatformServicesProvider.getPlatformServices() != null){
 			Dictionary dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add(PlatformAggregatorProvider.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, dict));
+			serviceRegs.add(PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 			dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add(PlatformAggregatorProvider.getPlatformAggregator().registerService(IOptionsListener.class.getName(), this, dict));	
+			serviceRegs.add(PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));	
 		}
 	}
 

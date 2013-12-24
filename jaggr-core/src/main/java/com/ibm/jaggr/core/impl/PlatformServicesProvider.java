@@ -22,17 +22,17 @@ import com.ibm.jaggr.core.IPlatformServices;
  * Aggregator Factory class would return the underlying Aggregator Implementation class
  */
 
-public class PlatformAggregatorProvider {
+public class PlatformServicesProvider {
 	
 	private static IPlatformServices platformAggregator;
 	
-	private PlatformAggregatorProvider(){}
+	private PlatformServicesProvider(){}
 	
-	public static void setPlatformAggregator(IPlatformServices aggregator){
+	public static void setPlatformServices(IPlatformServices aggregator){
 		platformAggregator = aggregator;
 	}	
 	
-	public static IPlatformServices getPlatformAggregator(){
+	public static IPlatformServices getPlatformServices(){
 		return platformAggregator;
 	}	
 

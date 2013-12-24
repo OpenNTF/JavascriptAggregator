@@ -30,6 +30,7 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.service.impl.AggregatorImpl;
 import com.ibm.jaggr.service.util.ConsoleService;
 
@@ -84,16 +85,14 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * String filter)
 	 */
 	@Override
-	public ServiceReference[] getServiceReferences(String clazz, String filter) {
+	public ServiceReference[] getServiceReferences(String clazz, String filter) throws PlatformServicesException {
 		ServiceReference[] refs = null;
 		try {
 			if (bundleContext != null) {
 				refs = bundleContext.getServiceReferences(clazz, filter);
 			}
 		} catch (InvalidSyntaxException e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			}
+			throw new PlatformServicesException(e);
 		}
 		return refs;
 

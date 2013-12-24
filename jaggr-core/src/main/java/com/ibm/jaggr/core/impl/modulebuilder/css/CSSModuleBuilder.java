@@ -52,7 +52,7 @@ import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.CommentStrippingReader;
@@ -651,7 +651,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : registrations) {
-			PlatformAggregatorProvider.getPlatformAggregator().unRegisterService(reg);
+			PlatformServicesProvider.getPlatformServices().unRegisterService(reg);
 		}
 	}
 
@@ -665,11 +665,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		Hashtable<String, String> props = new Hashtable<String, String>();
 		//Properties props = new Properties();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformAggregatorProvider.getPlatformAggregator().registerService(IConfigListener.class.getName(), this, props));
+		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
 		//props = new Properties();
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformAggregatorProvider.getPlatformAggregator().registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
 			configLoaded(config, 1);

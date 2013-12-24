@@ -29,13 +29,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.impl.PlatformAggregatorProvider;
+import com.ibm.jaggr.core.impl.PlatformServicesProvider;
+import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -53,6 +57,8 @@ import com.ibm.jaggr.core.util.TypeUtil;
  * {@link ModuleBuildFuture}s into the {@link BuildListReader} for the response
  */
 public class LayerBuilder {
+	
+	private static final Logger log = Logger.getLogger(LayerBuilder.class.getName());
 	final HttpServletRequest request;
 	final List<ICacheKeyGenerator> keyGens;
 	final IAggregator aggr;
@@ -314,13 +320,19 @@ public class LayerBuilder {
 		StringBuffer sb = new StringBuffer();
 		// notify any listeners that the config has been updated
 		
-		Object[] refs;		
-		if(PlatformAggregatorProvider.getPlatformAggregator() != null){
-			refs = PlatformAggregatorProvider.getPlatformAggregator().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
+		Object[] refs = null;		
+		if(PlatformServicesProvider.getPlatformServices() != null){
+			try {
+				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
 			
 			if (refs != null) {
 				for (Object ref : refs) {
-					ILayerListener listener = (ILayerListener)PlatformAggregatorProvider.getPlatformAggregator().getService(ref);
+					ILayerListener listener = (ILayerListener)PlatformServicesProvider.getPlatformServices().getService(ref);
 					try {
 						Set<String> dependentFeatures = new HashSet<String>();
 						String str = listener.layerBeginEndNotifier(type, request, 
@@ -334,7 +346,7 @@ public class LayerBuilder {
 							sb.append(str);
 						}
 					} finally {
-						PlatformAggregatorProvider.getPlatformAggregator().ungetService(ref);
+						PlatformServicesProvider.getPlatformServices().ungetService(ref);
 					}
 				}
 			}
