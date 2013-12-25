@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.transport;
+package com.ibm.jaggr.core.impl.transport;
 
 import java.io.IOException;
 import java.net.URI;
@@ -57,8 +57,8 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
  */
-public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
-	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
+public class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
+	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 	
     static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
     static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
