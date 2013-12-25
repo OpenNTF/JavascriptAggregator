@@ -391,7 +391,7 @@ public class DepTree implements Serializable {
 	 * 
 	 * @return The root {@link DepTreeNode} for the new tree
 	 */
-	public DepTreeRoot mapDependencies(DepTreeRoot root, Object context, Map<String, URI> map, IConfig config) {
+	public DepTreeRoot mapDependencies(DepTreeRoot root, Map<String, URI> map, IConfig config) {
 		// For each config path entry...
 		for (Entry<String, URI> configPathEntry : map.entrySet()) {
 			String name = configPathEntry.getKey();

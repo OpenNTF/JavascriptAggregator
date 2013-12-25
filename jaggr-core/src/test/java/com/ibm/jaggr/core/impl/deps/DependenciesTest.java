@@ -179,7 +179,7 @@ public class DependenciesTest extends EasyMock {
 		configJson = "{paths: {p1Alias:'p1', p2Alias:'p2', p3Alias:'p3'}}"; 
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		DepTreeRoot root = new DepTreeRoot(configRef.get());
-		deps.mapDependencies(root, null, map, configRef.get());
+		deps.mapDependencies(root, map, configRef.get());
 		
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
@@ -199,7 +199,7 @@ public class DependenciesTest extends EasyMock {
 		// Test validation
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, false, true);
 		root = new DepTreeRoot(configRef.get());
-		deps.mapDependencies(root, null, map, configRef.get());
+		deps.mapDependencies(root, map, configRef.get());
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
 		assertEquals(0, root.getChild("p3Alias").getChildren().size());
@@ -218,7 +218,7 @@ public class DependenciesTest extends EasyMock {
 		// the timestamps are identical to the file timestamps, but it should be updated by specifying
 		// the clean flag.
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, true, false);
-		deps.mapDependencies(root, null, map, configRef.get());
+		deps.mapDependencies(root, map, configRef.get());
 		assertEquals("[./b]",
 				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDepArray()).toString());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModified());

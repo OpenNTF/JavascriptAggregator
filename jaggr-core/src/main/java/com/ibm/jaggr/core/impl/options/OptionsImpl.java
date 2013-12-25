@@ -301,7 +301,7 @@ public class OptionsImpl  implements IOptions {
 		Object[] refs = null;
 		try {
 			if(PlatformServicesProvider.getPlatformServices() != null){
-				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");			
+				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");	//$NON-NLS-1$ //$NON-NLS-2$ 		
 				if (refs != null) {
 					for (Object ref : refs) {
 						IOptionsListener listener = (IOptionsListener)PlatformServicesProvider.getPlatformServices().getService(ref);

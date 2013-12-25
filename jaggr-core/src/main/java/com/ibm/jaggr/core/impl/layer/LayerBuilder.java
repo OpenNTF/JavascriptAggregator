@@ -34,12 +34,10 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.PlatformServicesProvider;
-import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -323,7 +321,7 @@ public class LayerBuilder {
 		Object[] refs = null;		
 		if(PlatformServicesProvider.getPlatformServices() != null){
 			try {
-				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")");
+				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);

@@ -177,7 +177,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * 
 	 * This constructor is just for testing purpose. It should not be used for production.
 	 */
-	public ConfigImpl(IAggregator aggregator, boolean forTest) throws URISyntaxException, FileNotFoundException {
+	protected ConfigImpl(IAggregator aggregator, boolean forTest) throws URISyntaxException, FileNotFoundException {
 		this.aggregator = aggregator;
 		rawConfig = null;
 		lastModified = 0;

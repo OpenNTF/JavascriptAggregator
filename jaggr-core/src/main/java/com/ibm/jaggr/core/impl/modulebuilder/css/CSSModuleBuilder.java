@@ -662,11 +662,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		
-		Hashtable<String, String> props = new Hashtable<String, String>();
-		//Properties props = new Properties();
+		Hashtable<String, String> props;
+		props = new Hashtable<String, String>();		
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
 		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
-		//props = new Properties();
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
 		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));

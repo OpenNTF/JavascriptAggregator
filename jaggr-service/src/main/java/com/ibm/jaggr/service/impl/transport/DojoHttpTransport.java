@@ -41,7 +41,7 @@ import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
  */
 public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
 	
-	protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
+	protected static String comboUriStr = "namedbundleresource://" + "com.ibm.jaggr.core" + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	protected static String loaderExtensionPath  = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$	
 	protected static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$	
 

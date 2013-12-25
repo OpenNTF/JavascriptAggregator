@@ -55,38 +55,42 @@ import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
 
-	protected static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
+	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
     
-	protected String servletName;
-	protected long depsLastModified = -1;
-	protected long initStamp;
-	private String rawConfig = null;
-    protected DepTreeRoot depTree = null;
-    protected CountDownLatch initialized;
-	protected boolean processingDeps = false;
-	private boolean validate = false;
-	private String cacheBust = null;
-	protected boolean initFailed = false;
-	
-	public IAggregator aggregator = null;
-	
-	private Object configUpdateListener;
+    private Object configUpdateListener;
     private Object optionsUpdateListener;
 	private Object shutdownListener;
+	private String servletName;
+	private long depsLastModified = -1;
+	private long initStamp;
+	private String rawConfig = null;
+    private DepTreeRoot depTree = null;
+	private CountDownLatch initialized;
+	private boolean processingDeps = false;
+	private boolean validate = false;
+	private String cacheBust = null;
+	private boolean initFailed = false;
 	
-	
+	private IAggregator aggregator = null;
 	protected ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 	
 	public DependenciesImpl(IAggregator aggregator, long stamp) {
-		Hashtable<String, String> dict = new Hashtable<String, String>();
-		dict.put("name", aggregator.getName());
+		Hashtable<String, String> dict; 		
 		this.aggregator = aggregator;
 		this.initStamp = stamp;
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
 		
-		shutdownListener = PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);		
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		shutdownListener = PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);	
+		
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		configUpdateListener= PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+		
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		optionsUpdateListener= PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 
 			if (aggregator.getConfig() != null) {
@@ -259,11 +263,11 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 										validate); 
 						
 								DepTreeRoot depTree = new DepTreeRoot(config);
-						deps.mapDependencies(depTree, null, baseURIs, config);
-						deps.mapDependencies(depTree, null, packageURIs, config);
-						deps.mapDependencies(depTree, null, packageOverrideURIs, config);
-						deps.mapDependencies(depTree, null, pathURIs, config);
-						deps.mapDependencies(depTree, null, pathOverrideURIs, config);
+						deps.mapDependencies(depTree, baseURIs, config);
+						deps.mapDependencies(depTree, packageURIs, config);
+						deps.mapDependencies(depTree, packageOverrideURIs, config);
+						deps.mapDependencies(depTree, pathURIs, config);
+						deps.mapDependencies(depTree, pathOverrideURIs, config);
 								/*
 								 * For each module name in the dependency lists, try to resolve the name
 								 * to a reference to another node in the tree
@@ -287,7 +291,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						// Notify listeners that dependencies have been updated
 						Object[] refs = null;
 						
-						refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")");
+						refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
 						
 						if (refs != null) {
 							for (Object ref : refs) {								

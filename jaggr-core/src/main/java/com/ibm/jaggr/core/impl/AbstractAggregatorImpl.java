@@ -47,6 +47,7 @@ import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IAggregator.SubstitutionTransformer;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.core.IRequestListener;
 import com.ibm.jaggr.core.IShutdownListener;
@@ -58,11 +59,11 @@ import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
-import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
@@ -156,7 +157,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
     	if(PlatformServicesProvider.getPlatformServices().isShuttingdown()){    		
 			Object[] refs = null;				
 			try {
-				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")");
+				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
@@ -357,10 +358,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	@Override
 	public ICacheManager getCacheManager() {
 		return cacheMgr;
-	}
-
-	
-	
+	}	
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.IAggregator#getInitParams()
@@ -517,7 +515,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// aggregator instance's name.
 		Object[] refs = null;		
 		try {
-			refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")");
+			refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
@@ -645,7 +643,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// notify any listeners that the config has been updated
 		Object[] refs = null;			
 		try {
-			refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")");
+			refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
 		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
@@ -676,7 +674,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected void notifyConfigListeners(long seq) throws IOException {
 		Object[] refs = null;		
 		try {
-			refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IConfigListener.class.getName(),  "(name="+getName()+")");
+			refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IConfigListener.class.getName(),  "(name="+getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
 		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
@@ -841,6 +839,18 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected ICacheManager newCacheManager(long stamp) throws IOException {
 		return new CacheManagerImpl(this, stamp);
 	}
+	
+	@Override
+    public abstract IOptions getOptions();
+	
+	@Override
+    public abstract IExecutors getExecutors();
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#substituteProps(java.lang.String, com.ibm.jaggr.core.IAggregator.SubstitutionTransformer)
+	 */
+	@Override
+	public abstract String substituteProps(String str, SubstitutionTransformer transformer);
 
 	/**
 	 * Implements the {@link IExtensionRegistrar} interface

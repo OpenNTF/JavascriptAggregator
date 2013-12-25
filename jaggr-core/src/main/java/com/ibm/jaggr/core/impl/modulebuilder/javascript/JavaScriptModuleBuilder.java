@@ -121,7 +121,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		Dictionary<String,String> props = new Hashtable<String,String>();
+		Dictionary<String,String> props;
+		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
 		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(ILayerListener.class.getName(), this, props));
 		props = new Hashtable<String,String>();

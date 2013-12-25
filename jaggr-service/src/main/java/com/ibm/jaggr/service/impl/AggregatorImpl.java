@@ -227,12 +227,9 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		return Activator.BUNDLE_NAME;
 	}
 
-	
-
-
 
 	/* (non-Javadoc)
-	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String, com.ibm.servlets.amd.aggregator.IAggregator.SubstitutionTransformer)
+	 * @see com.ibm.jaggr.core.IAggregator#substituteProps(java.lang.String, com.ibm.jaggr.core.IAggregator.SubstitutionTransformer)
 	 */
 	@Override
 	public String substituteProps(String str, SubstitutionTransformer transformer) {

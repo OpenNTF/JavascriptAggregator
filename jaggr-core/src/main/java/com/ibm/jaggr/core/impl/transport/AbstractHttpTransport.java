@@ -520,8 +520,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		// register a config listener so that we get notified of changes to 
 		// the server-side AMD config file.
 		String name = aggregator.getName();
-		Hashtable<String, String> dict = new Hashtable<String, String>();
-		//Properties dict = new Properties();
+		Hashtable<String, String> dict = new Hashtable<String, String>();		
 		dict.put("name", name); //$NON-NLS-1$    	
     	configModifierReg = PlatformServicesProvider.getPlatformServices().registerService(IConfigModifier.class.getName(), this, dict);		
 	}

@@ -187,14 +187,24 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         	}
         }, 10, 10, TimeUnit.MINUTES);
         
-		Dictionary<String,String> dict = new Hashtable<String, String>();	
-	        // Register listeners
-		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		Dictionary<String,String> dict;
+		
 		
 		if(PlatformServicesProvider.getPlatformServices() != null){
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_shutdownListener = PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
+			
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_configUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+			
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_depsUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
+			
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_optionsUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 		}
 		

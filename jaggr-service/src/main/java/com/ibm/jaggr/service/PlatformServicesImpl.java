@@ -20,8 +20,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Dictionary;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -31,7 +29,6 @@ import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.PlatformServicesException;
-import com.ibm.jaggr.service.impl.AggregatorImpl;
 import com.ibm.jaggr.service.util.ConsoleService;
 
 /**
@@ -41,8 +38,6 @@ import com.ibm.jaggr.service.util.ConsoleService;
 public class PlatformServicesImpl implements IPlatformServices {
 
 	private final BundleContext bundleContext;
-	private static final Logger log = Logger.getLogger(PlatformServicesImpl.class
-			.getName());
 	public static int resolved = Bundle.RESOLVED;
 	public static int active = Bundle.ACTIVE;
 	public static int stopping = Bundle.STOPPING;
@@ -182,7 +177,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	public URI getAppContextURI() throws URISyntaxException {
 		URI uri = null;
 		uri = new URI("namedbundleresource://" +  //$NON-NLS-1$
-					bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-2$
+					bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-1$
 		return uri;
 	}
 
