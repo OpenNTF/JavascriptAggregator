@@ -33,7 +33,7 @@ import org.junit.Test;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.service.impl.transport.DojoHttpTransport;
+import com.ibm.jaggr.service.impl.transport.DojoTransport;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.config.IConfig;
@@ -76,8 +76,8 @@ public class DojoHttpTransportTest {
 		String config = "{packages:[{name:\"dojo\", location:\"namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo\"}]}";
 		URI tmpDir = new File(System.getProperty("java.io.tmpdir")).toURI();
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		final URI newcomboUri = new URI(DojoHttpTransport.comboUriStr);
-		DojoHttpTransport transport = new DojoHttpTransport() {
+		final URI newcomboUri = new URI(DojoTransport.comboUriStr);
+		DojoTransport transport = new DojoTransport() {
 			@Override protected String getResourcePathId() {return "combo";}
 			@Override protected URI getComboUri() { return newcomboUri; }
 			@Override public List<String[]> getClientConfigAliases() {
@@ -96,20 +96,20 @@ public class DojoHttpTransportTest {
 				rawConfig);
 		Assert.assertEquals(3, modifiedConfig.getPaths().size());
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text",
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
-		Assert.assertNull(modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getOverride());
-		Assert.assertEquals(DojoHttpTransport.textPluginProxyUriStr,
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
+				modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
+		Assert.assertNull(modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginAliasFullPath).getOverride());
+		Assert.assertEquals(DojoTransport.textPluginProxyUriStr,
+				modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(newcomboUri, modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
-		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, modifiedConfig.getAliases().get(0).getPattern());
-		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, modifiedConfig.getAliases().get(0).getReplacement());
+		Assert.assertEquals(DojoTransport.dojoTextPluginAlias, modifiedConfig.getAliases().get(0).getPattern());
+		Assert.assertEquals(DojoTransport.dojoTextPluginAliasFullPath, modifiedConfig.getAliases().get(0).getReplacement());
 		Assert.assertEquals(2, transport.getClientConfigAliases().size());
 		String[] alias = transport.getClientConfigAliases().get(0);
-		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, alias[0]);
-		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, alias[1]);
+		Assert.assertEquals(DojoTransport.dojoTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoTransport.dojoTextPluginAliasFullPath, alias[1]);
 		alias = transport.getClientConfigAliases().get(1);
-		Assert.assertEquals(DojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
 		
 		// make sure overrides are handled properly
@@ -122,7 +122,7 @@ public class DojoHttpTransportTest {
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
 				rawConfig);
 		System.out.println(Context.toString(rawConfig));
-		IConfig.Location loc = modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath);
+		IConfig.Location loc = modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginAliasFullPath);
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text", loc.getPrimary().toString());
 		Assert.assertNull(loc.getOverride());
 
@@ -135,7 +135,7 @@ public class DojoHttpTransportTest {
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
 				rawConfig);
 		System.out.println(Context.toString(rawConfig));
-		loc = modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath);
+		loc = modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginAliasFullPath);
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text", loc.getPrimary().toString());
 		Assert.assertEquals("file:/c:/customizations/dojo/text", loc.getOverride().toString());
 		
@@ -172,15 +172,15 @@ public class DojoHttpTransportTest {
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
 		Assert.assertEquals(newcomboUri, modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text",
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
-		Assert.assertEquals(DojoHttpTransport.textPluginProxyUriStr,
-				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
+				modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
+		Assert.assertEquals(DojoTransport.textPluginProxyUriStr,
+				modifiedConfig.getPaths().get(DojoTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(2, transport.getClientConfigAliases().size());
 		alias = transport.getClientConfigAliases().get(0);
-		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, alias[0]);
-		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, alias[1]);
+		Assert.assertEquals(DojoTransport.dojoTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoTransport.dojoTextPluginAliasFullPath, alias[1]);
 		alias = transport.getClientConfigAliases().get(1);
-		Assert.assertEquals(DojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
 		Context.exit();
 	}

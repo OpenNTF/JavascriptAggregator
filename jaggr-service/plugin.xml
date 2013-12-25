@@ -60,6 +60,6 @@
    		id="dojo.httptransport"
    		point="com.ibm.jaggr.service.httptransport">
    		<transport path="combo"
-   		    class="com.ibm.jaggr.service.impl.transport.DojoHttpTransport"/>
+   		    class="com.ibm.jaggr.service.impl.transport.DojoTransport"/>
    </extension>
 </plugin>

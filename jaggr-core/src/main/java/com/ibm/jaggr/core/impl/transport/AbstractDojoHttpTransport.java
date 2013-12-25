@@ -23,7 +23,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,48 +30,38 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
-import org.eclipse.core.runtime.Status;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.config.IConfig.Location;
-import com.ibm.jaggr.service.impl.Activator;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.resource.AggregationResource;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceFactory;
-import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.TypeUtil;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.AggregationResource;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 /**
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
  */
-public class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
+public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 	
-    static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-    static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
-    static final String loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
     static final String[] loaderExtensionResources = {
     	"../loaderExtCommon.js", //$NON-NLS-1$
     	"./_loaderExt.js" //$NON-NLS-1$
     };
     static final String dojo = "dojo"; //$NON-NLS-1$
-    static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
-    static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
-    static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
+    public static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
+    public static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
+    public static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
     static final String dojoTextPluginName = "text"; //$NON-NLS-1$
-    static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
+    public static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
     static final URI dojoPluginUri;
 
     static {
@@ -84,9 +73,9 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
     	}
     }
 
-    private String pluginUniqueId = ""; //$NON-NLS-1$
-    private URI comboUri;
-
+    
+    protected URI comboUri;
+    protected String pluginUniqueId = ""; //$NON-NLS-1$
     private List<String[]> clientConfigAliases = new LinkedList<String[]>();
     
     /**
@@ -94,10 +83,15 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
      * 
      * @return the combo URI string value
      */
-    protected String getComboUriStr() {
-    	return comboUriStr;
-    }
+    protected abstract String getComboUriStr();
     
+    /**
+     * Property accessor for the TextPluginProxyUriStr property
+     * 
+     * @return the TextPluginProxy URI string value
+     */
+    
+    protected abstract String getTextPluginProxyUriStr();
     /**
      * Property accessor for the plugin unique id for this extension
      * 
@@ -112,9 +106,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
      * 
      * @return the loader extension path
      */
-    protected String getLoaderExtensionPath() {
-    	return loaderExtensionPath;
-    }
+    protected abstract String getLoaderExtensionPath();
     
     /**
      * Property accessor for the loaderExtensionResources property
@@ -130,7 +122,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
      * 
      * @return the client aliases
      */
-    protected List<String[]> getClientConfigAliases() {
+    public List<String[]> getClientConfigAliases() {
     	return clientConfigAliases;
     }
     
@@ -139,7 +131,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
     }
     
     /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, java.lang.String)
+     * @see com.ibm.jaggr.core.transport.AbstractHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType, java.lang.String)
      */
     @Override
 	public String getLayerContribution(HttpServletRequest request,
@@ -178,7 +170,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
     
     static final Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/"); //$NON-NLS-1$
     /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
+     * @see com.ibm.jaggr.core.impl.transport.AbstractHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
      */
     @Override
 	public boolean isServerExpandable(HttpServletRequest request, String mid) {
@@ -233,7 +225,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
     }
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getCacheKeyGenerators()
+	 * @see com.ibm.jaggr.core.transport.AbstractHttpTransport#getCacheKeyGenerators()
 	 */
 	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators() {
@@ -246,7 +238,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getComboUri()
+	 * @see com.ibm.jaggr.core.transport.AbstractHttpTransport#getComboUri()
 	 */
 	@Override 
 	protected URI getComboUri() {
@@ -271,54 +263,9 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 			request.setAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME, true);
 		}
 	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
-	 */
-	@Override
-	public void setInitializationData(IConfigurationElement config, String propertyName,
-			Object data) throws CoreException {
-		
-		// Save this extension's pluginUniqueId
-		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
-
-		// Initialize the combo uri
-		super.setInitializationData(config, propertyName, data);
-		try {
-			comboUri = new URI(getComboUriStr()); 
-		} catch (URISyntaxException e) {
-			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(), 
-							e.getMessage(), e)
-				);
-		}
-	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
-	 */
-	@Override
-	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
-		super.initialize(aggregator, extension, reg);
-
-		// Get first resource factory extension so we can add to beginning of list
-    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
-    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
-    	
-    	// Register the loaderExt resource factory
-    	Properties attributes = new Properties();
-    	attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
-		reg.registerExtension(
-				new LoaderExtensionResourceFactory(), 
-				attributes,
-				IResourceFactoryExtensionPoint.ID,
-				getPluginUniqueId(),
-				first);
-		
-	}
-	
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getDynamicLoaderExtensionJavaScript()
+	 * @see com.ibm.jaggr.core.transport.AbstractHttpTransport#getDynamicLoaderExtensionJavaScript()
 	 */
 	@Override
 	protected String getDynamicLoaderExtensionJavaScript() {
@@ -343,7 +290,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
+	 * @see com.ibm.jaggr.core.config.IConfigModifier#modifyConfig(com.ibm.jaggr.core.IAggregator, java.util.Map)
 	 */
 	/**
 	 * Add paths and aliases mappings to the config for the dojo text plugin.
@@ -469,12 +416,11 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 			// Specify paths entry to map dojo/text to our text plugin proxy
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(
-						Messages.DojoHttpTransport_3,
-						new Object[]{dojoTextPluginFullPath, textPluginProxyUriStr}
+						Messages.DojoHttpTransport_3, new Object[]{dojoTextPluginFullPath, getTextPluginProxyUriStr()}
 				));
 			}
 		
-			paths.put(dojoTextPluginFullPath, paths, textPluginProxyUriStr);
+			paths.put(dojoTextPluginFullPath, paths, getTextPluginProxyUriStr());
 			
 			// Specify paths entry to map the dojo text plugin alias name to the original
 			// dojo text plugin
@@ -541,10 +487,10 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 	 * {@link AbstractHttpTransport.LoaderExtensionResource} for the dojo http
 	 * transport when the loader extension resource URI is requested
 	 */
-	private class LoaderExtensionResourceFactory implements IResourceFactory {
+	public class LoaderExtensionResourceFactory implements IResourceFactory {
 
 		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResourceFactory#handles(java.net.URI)
+		 * @see com.ibm.jaggr.core.resource.IResourceFactory#handles(java.net.URI)
 		 */
 		@Override
 		public boolean handles(URI uri) {
@@ -559,7 +505,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 		}
 
 		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResourceFactory#newResource(java.net.URI)
+		 * @see com.ibm.jaggr.core.resource.IResourceFactory#newResource(java.net.URI)
 		 */
 		@Override
 		public IResource newResource(URI uri) {
