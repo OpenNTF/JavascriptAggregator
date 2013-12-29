@@ -272,10 +272,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	        			Messages.DepVerificationFailed,
 	        			new Object[]{
 	        				e.getMessage(), 
-	        				"**PS" + " " + //$NON-NLS-1$
-	        					"**PS"+ " " + //$NON-NLS-1$
+	        				"aggregator" + " " + //$NON-NLS-1$ //$NON-NLS-2$
+	        					"validatedeps"+ " " + //$NON-NLS-1$ //$NON-NLS-2$
 	        					getName() + " " + //$NON-NLS-1$
-	        					"**PS",
+	        					"clean", //$NON-NLS-1$
 	        				getWorkingDirectory().toString().replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
 	        			}
 	        		)
