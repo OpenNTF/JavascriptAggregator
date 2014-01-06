@@ -36,8 +36,8 @@ import com.ibm.jaggr.service.util.Features;
  */
 public class ModuleDepInfo implements Serializable {
 	
-	private static final long serialVersionUID = 8798463630504113388L;
-	
+	private static final long serialVersionUID = 3224914379637472034L;
+
 	/**
 	 * Boolean formula representing the has! plugin expressions used to refer to
 	 * the module associated with this object.

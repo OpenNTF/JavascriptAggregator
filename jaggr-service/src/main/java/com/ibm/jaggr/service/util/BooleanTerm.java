@@ -27,7 +27,7 @@ import java.util.TreeSet;
  */
 public class BooleanTerm extends HashSet<BooleanVar> {
 	
-	private static final long serialVersionUID = -2969569532410527153L;
+	private static final long serialVersionUID = 3749929877967465829L;
 
 	private boolean initialized = false;	// true except when the object is being constructed
 	
