@@ -71,7 +71,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	private boolean validate = false;
 	private String cacheBust = null;
 	private boolean initFailed = false;
-	private Map<String, String[]> depMap;
+	private Map<String, List<String>> depMap;
 	
 	private IAggregator aggregator = null;
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -262,7 +262,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 								deps.mapDependencies(depTree, bundleContext, pathURIs, config);
 								deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
 								depTree.normalizeDependencies();
-								DependenciesImpl.this.depMap = new HashMap<String, String[]>();
+								DependenciesImpl.this.depMap = new HashMap<String, List<String>>();
 								depTree.populateDepMap(depMap);
 								depsLastModified = depTree.lastModifiedDepTree();
 							} catch (Exception e) {
@@ -335,8 +335,8 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 
 	@Override
-	public String[] getDelcaredDependencies(String mid) throws ProcessingDependenciesException {
-		String[] result = null;
+	public List<String> getDelcaredDependencies(String mid) throws ProcessingDependenciesException {
+		List<String> result = null;
 		try {
 			getReadLock();
 			try {

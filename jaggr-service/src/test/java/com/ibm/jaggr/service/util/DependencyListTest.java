@@ -27,6 +27,7 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -65,9 +66,11 @@ public class DependencyListTest {
 		features = new Features();
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
-		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<String[]>() {
-			@Override public String[] answer() throws Throwable {
-				return moduleDeps.get((String)getCurrentArguments()[0]);
+		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<List<String>>() {
+			@Override public List<String> answer() throws Throwable {
+				String name = (String)getCurrentArguments()[0];
+				String[] result = moduleDeps.get(name);
+				return result != null ? Arrays.asList(result) : null;
 			}
 		}).anyTimes();
 		replay(mockAggregator, mockDependencies);

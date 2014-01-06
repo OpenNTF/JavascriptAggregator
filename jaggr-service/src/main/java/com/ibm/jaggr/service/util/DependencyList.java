@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
@@ -336,7 +337,7 @@ public class DependencyList {
 			log.entering(DependencyList.class.getName(), methodName, new Object[]{name, depInfo, expandedDependencies});
 		}
 
-		String[] declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
+		List<String> declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
 		if (traceLogging) {
 			log.finest("declaredDeps = " + declaredDeps); //$NON-NLS-1$
 		}

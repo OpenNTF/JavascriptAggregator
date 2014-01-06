@@ -228,9 +228,9 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 							}
 							int idx = moduleName.lastIndexOf("/"); //$NON-NLS-1$
 							String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
-							String[] normalized = PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()]));
-							String[] processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
-							if (processedDeps != null && !Arrays.equals(normalized, processedDeps)) {
+							List<String> normalized = Arrays.asList(PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()])));
+							List<String> processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
+							if (processedDeps != null && !processedDeps.equals(normalized)) {
 								// The dependency list for this module has changed since the dependencies
 								// were last created/validated.  Throw an exception.
 								throw new DependencyVerificationException(moduleName);
@@ -238,11 +238,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 						}
 						// Add the expanded dependencies to the set of enclosing dependencies for 
 						// the module.
-						String[] moduleDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
+						List<String> moduleDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
 						if (moduleDeps != null) {
 							enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
 							DependencyList depList = new DependencyList(
-									Arrays.asList(moduleDeps), 
+									moduleDeps, 
 									aggregator, 
 									hasFeatures, 
 									true,	// resolveAliases

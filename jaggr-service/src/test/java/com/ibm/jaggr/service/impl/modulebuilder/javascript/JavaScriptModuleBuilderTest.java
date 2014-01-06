@@ -110,11 +110,12 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	public void setup() throws Exception {
 		final Map<String, String[]> testDepMap = TestUtils.createTestDepMap();
 		tmpdir = Files.createTempDir();
-		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<String[]>() {
+		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<List<String>>() {
 			@Override
-			public String[] answer() throws Throwable {
+			public List<String> answer() throws Throwable {
 				String name = (String)getCurrentArguments()[0];
-				return testDepMap.get(name);
+				String[] result = testDepMap.get(name);
+				return result != null ? Arrays.asList(result) : null;
 			}
 		}).anyTimes();
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();

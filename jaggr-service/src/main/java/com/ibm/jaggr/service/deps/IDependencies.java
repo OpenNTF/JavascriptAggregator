@@ -18,6 +18,7 @@ package com.ibm.jaggr.service.deps;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 
 import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.config.IConfig;
@@ -42,17 +43,17 @@ public interface IDependencies {
 		Arrays.asList(new String[]{"require", "exports", "module"}); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	
 	/**
-	 * Returns the dependencies for the specified module. This is the
-	 * list of modules listed in the module's define function. The module ids
-	 * are normalized to remove relative paths.
+	 * Returns the dependencies for the specified module. This is the list of
+	 * modules listed in the module's define function. The module ids are
+	 * normalized to remove relative paths.
 	 * 
 	 * @param mid
 	 *            The module id
-	 * @return The list of explicitly specified dependent modules, or null if
-	 *         the specified module was not found when the dependencies were
-	 *         processed.
+	 * @return An unmodifiable list of explicitly specified dependent modules,
+	 *         or null if the specified module was not found when the
+	 *         dependencies were processed.
 	 */
-	String[] getDelcaredDependencies(String mid) throws ProcessingDependenciesException;
+	List<String> getDelcaredDependencies(String mid) throws ProcessingDependenciesException;
 	
 	/**
 	 * Returns the cumulative last-modified date of these dependencies which was

@@ -293,11 +293,12 @@ public class LayerCacheTest {
 		}).anyTimes();
 		
 		EasyMock.expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
-		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.isA(String.class))).andAnswer(new IAnswer<String[]>() {
+		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.isA(String.class))).andAnswer(new IAnswer<List<String>>() {
 			@Override
-			public String[] answer() throws Throwable {
+			public List<String> answer() throws Throwable {
 				String name = (String)EasyMock.getCurrentArguments()[0];
-				return testDepMap.get(name);
+				String[] result = testDepMap.get(name);
+				return result != null ? Arrays.asList(result) : null;
 			}
 		}).anyTimes();
 		

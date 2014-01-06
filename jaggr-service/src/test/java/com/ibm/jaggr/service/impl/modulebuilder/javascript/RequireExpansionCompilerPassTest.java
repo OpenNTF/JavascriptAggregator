@@ -77,9 +77,11 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		mockAggregator = TestUtils.createMockAggregator();
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		expect(mockDependencies.getDelcaredDependencies(
-				(String)anyObject())).andAnswer(new IAnswer<String[]>() {
-			public String[] answer() throws Throwable {
-				return declaredDependencies.get((String)getCurrentArguments()[0]);
+				(String)anyObject())).andAnswer(new IAnswer<List<String>>() {
+			public List<String> answer() throws Throwable {
+				String name = (String)getCurrentArguments()[0];
+				String[] result = declaredDependencies.get(name);
+				return result != null ? Arrays.asList(result) : null;
 			}
 		}).anyTimes();
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();

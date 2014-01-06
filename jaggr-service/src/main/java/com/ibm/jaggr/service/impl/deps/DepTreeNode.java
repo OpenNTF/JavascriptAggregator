@@ -526,9 +526,9 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * 
 	 * @param depMap
 	 */
-	void populateDepMap(Map<String, String[]> depMap) {
+	void populateDepMap(Map<String, List<String>> depMap) {
 		if (dependencies != null) {
-			depMap.put(getFullPathName(), dependencies);
+			depMap.put(getFullPathName(), Collections.unmodifiableList(Arrays.asList(dependencies)));
 		}
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
