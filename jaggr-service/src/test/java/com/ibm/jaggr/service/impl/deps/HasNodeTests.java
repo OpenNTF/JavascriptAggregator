@@ -219,36 +219,36 @@ public class HasNodeTests extends EasyMock {
 	public void testEvaluateAll() throws Exception {
 		HashSet<String> discovered = new HashSet<String>();
 		HasNode node = new HasNode("foo?bar");
-		ModuleDeps deps = node.evaluateAll("has", Features.emptyFeatures, discovered, null, null);
+		ModuleDeps deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(1, deps.size());
 		Assert.assertTrue(deps.containsDep("bar", new BooleanTerm("foo")));
 		
 		node = new HasNode("foo?:car");
-		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, null, null);
+		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(1, deps.size());
 		Assert.assertTrue(deps.containsDep("car", new BooleanTerm("!foo")));
 
 		node = new HasNode("foo?bar:car");
-		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, null, null);
+		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(2, deps.size());
 		Assert.assertTrue(deps.containsDep("bar", new BooleanTerm("foo")));
 		Assert.assertTrue(deps.containsDep("car", new BooleanTerm("!foo")));
 		
 		node = new HasNode("foo?bar?foobar:foonotbar");
-		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, null, null);
+		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(2, deps.size());
 		Assert.assertTrue(deps.containsDep("foobar", new BooleanTerm("foo*bar")));
 		Assert.assertTrue(deps.containsDep("foonotbar", new BooleanTerm("foo*!bar")));
 		
 		
 		node = new HasNode("foo?:bar?notfoobar:notfoonotbar");
-		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, null, null);
+		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(2, deps.size());
 		Assert.assertTrue(deps.containsDep("notfoobar", new BooleanTerm("!foo*bar")));
 		Assert.assertTrue(deps.containsDep("notfoonotbar", new BooleanTerm("!foo*!bar")));
 		
 		node = new HasNode("foo?:bar?notfoobar:notfoonotbar");
-		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, null, null);
+		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 
 		node = new HasNode("foo?bar?foobar:foonotbar");
 		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, new BooleanTerm("fe*fi*fo"), null);

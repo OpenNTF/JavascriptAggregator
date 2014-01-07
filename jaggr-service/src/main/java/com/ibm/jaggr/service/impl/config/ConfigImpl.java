@@ -431,7 +431,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.servlets.amd.aggregator.config.IConfig#resolve(java.lang.String, com.ibm.servlets.amd.aggregator.util.Features, java.util.Set, java.lang.StringBuffer)
+	 * @see com.ibm.jaggr.service.config.IConfig#resolve(java.lang.String, com.ibm.jaggr.service.util.Features, java.util.Set, java.lang.StringBuffer, boolean)
 	 */
 	@Override
 	public String resolve(
@@ -440,9 +440,28 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Set<String> dependentFeatures,
 			StringBuffer sb,
 			boolean resolveAliases) {
+		return resolve(mid, features, dependentFeatures, sb, resolveAliases, true);
+	}	
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.config.IConfig#resolve(java.lang.String, com.ibm.jaggr.service.util.Features, java.util.Set, java.lang.StringBuffer, boolean, boolean)
+	 */
+	@Override
+	public String resolve(
+			String mid, 
+			Features features, 
+			Set<String> dependentFeatures,
+			StringBuffer sb,
+			boolean resolveAliases,
+			boolean resolveHasPlugin) {
 		
-		// Resolve has plugin first
-		mid = resolveHasPlugin(mid, features, dependentFeatures, sb);
+		// Resolve has plugin first.  Note that we call <code>resolveHasPlugin</code>
+		// method unconditionally, passing an empty feature set if the flag is false,
+		// so that the features specified by the plugin will be added to the 
+		// dependent features.
+		mid = resolveHasPlugin(mid, 
+				resolveHasPlugin ? features : Features.emptyFeatures, 
+				dependentFeatures, sb);
 		
 		if (resolveAliases) {
 			String aliased = null;
@@ -463,7 +482,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				// If alias resolution introduced a has plugin, then try to resolve it
 				int idx = mid.indexOf("!"); //$NON-NLS-1$
 				if (idx == -1 || !HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
-					mid = resolveHasPlugin(aliased, features, dependentFeatures, sb);
+					mid = resolveHasPlugin(aliased, 
+							resolveHasPlugin ? features : Features.emptyFeatures, 
+							dependentFeatures, sb);
 				} else {
 					mid = aliased;
 				}

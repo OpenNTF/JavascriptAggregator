@@ -44,6 +44,9 @@ import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
 import com.ibm.jaggr.service.impl.resource.FileResourceTests;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
 import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
+import com.ibm.jaggr.service.util.BooleanTermTest;
+import com.ibm.jaggr.service.util.DependencyListTest;
+import com.ibm.jaggr.service.util.DependencyListTest_processDep;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(value = { 
@@ -71,6 +74,9 @@ import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 	AggregatorImplTest.class,
 	BundleResourceFactoryTests.class,
 	FileResourceTests.class,
-	CacheManagerImplTest.class
+	CacheManagerImplTest.class,
+	BooleanTermTest.class,
+	DependencyListTest.class,
+	DependencyListTest_processDep.class
 })
 public class EverythingSuite { }

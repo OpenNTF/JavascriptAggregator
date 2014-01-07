@@ -79,7 +79,7 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 			@Descriptor("<servlet>")String servlet, 
 			@Descriptor("<modle>")String module 
 			) throws InvalidSyntaxException, IOException {
-		return super.getdeps(makeArgumentArray(servlet, module), false);
+		return super.getdeps(makeArgumentArray(servlet, module));
 	}
 
 	@Descriptor("displays dependencies for the specified module with the specified features defined")
@@ -88,24 +88,7 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 			@Descriptor("<modle>")String module, 
 			@Descriptor("<feature list> (false features begin with !)")String[] featureList
 			) throws InvalidSyntaxException, IOException {
-		return super.getdeps(makeArgumentArray(servlet, module, featureList), false);
-	}
-
-	@Descriptor("displays dependencies for the specified module with has branching for undefined features")
-	public String getdepswithhasbranching(
-			@Descriptor("<servlet>")String servlet, 
-			@Descriptor("<modle>")String module 
-			) throws InvalidSyntaxException, IOException {
-		return super.getdeps(makeArgumentArray(servlet, module), true);
-	}
-
-	@Descriptor("displays dependencies for the specified module with has branching for undefined features with the specified features defined")
-	public String getdepswithhasbranching(
-			@Descriptor("<servlet>")String servlet, 
-			@Descriptor("<modle>")String module, 
-			@Descriptor("<feature list> (false features begin with !)")String[] featureList
-			) throws InvalidSyntaxException, IOException {
-		return super.getdeps(makeArgumentArray(servlet, module, featureList), true);
+		return super.getdeps(makeArgumentArray(servlet, module, featureList));
 	}
 
 	@Descriptor("clears the cache for the specified servlet")

@@ -17,13 +17,17 @@
 package com.ibm.jaggr.service.util;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDepInfo;
 import com.ibm.jaggr.service.deps.ModuleDeps;
@@ -36,7 +40,7 @@ public class DependencyList {
 
 	/** regular expression for detecting if a plugin name is the has! plugin */
 	static final Pattern hasPattern = Pattern.compile("(^|\\/)has$"); //$NON-NLS-1$
-
+	
 	/**
 	 * The explicit dependencies (i.e. the modules specified in the names list, plus
 	 * any additional modules resulting from has! plugin evaluation and alias
@@ -57,7 +61,7 @@ public class DependencyList {
 	 * expressions or aliases.  This can include the names of features not
 	 * included in <code>features</code>.
 	 */
-	private Set<String> dependentFeatures = Collections.emptySet();
+	private final Set<String> dependentFeatures;
 	
 	/**
 	 * The list of module names provided in the constructor
@@ -65,14 +69,10 @@ public class DependencyList {
 	private final Iterable<String> names;
 	
 	/**
-	 * The {@link IDependencies} object used to resolved dependencies
+	 * The {@link IAggregator} object from which we obtain references to other
+	 * required objects used in processing the dependencies.
 	 */
-	private final IDependencies deps;
-	
-	/**
-	 * The {@link IConfig} object used to resolve aliases
-	 */
-	private final IConfig config;
+	private final IAggregator aggr;
 	
 	/**
 	 * The features to be used in resolving has! plug-in 
@@ -81,15 +81,18 @@ public class DependencyList {
 	private final Features features;
 	
 	/**
+	 * If true, then resolve aliases for the explicit dependencies.
+	 * Note that alias resolution is always performed for the 
+	 * expanded dependencies.
+	 */
+	private boolean resolveAliases;
+	
+	/**
 	 * Flag indicating whether or not to include dependency resolution details
 	 * as comments in the results
 	 */
 	private final boolean includeDetails;
 	
-	/**
-	 * True if has! plugin branching should be performed
-	 */
-	private final boolean performHasBranching;
 
 	/**
 	 * Flag indicating if this object has been initialized.
@@ -102,35 +105,42 @@ public class DependencyList {
 	private String label = null;
 	
 	/**
-	 * Object constructor.  Note that resolution of expanded dependencies
-	 * is not done at object creation time, but rather, the first time
-	 * that one of the accessors is called.
+	 * Object constructor. Note that resolution of expanded dependencies is not
+	 * done at object creation time, but rather, the first time that one of the
+	 * accessors is called.
 	 * 
 	 * @param names
-	 *            The list of normalized module names for which expanded
+	 *            The list of normalized module ids for which expanded
 	 *            dependencies are needed.
-	 * @param config
-	 *            The config object to use for resolving aliases
-	 * @param deps
-	 *            The dependencies object to use for expanding dependencies
+	 * @param aggr
+	 *            The aggregator servlet
 	 * @param features
 	 *            The map of feature-name value pairs to use for resolving has!
 	 *            plugin expressions and aliases
+	 * @param resolveAliases
+	 *            Flag indicating if alias resolution should be performed on the
+	 *            module ids specified in <code>names</code>. (Note: alias
+	 *            resolution is always performed for expanded dependencies.
 	 * @param includeDetails
 	 *            Flag indicating if diagnostic details should be included with
 	 *            the expanded dependencies
-	 * @param performHasBranching
-	 *            Flag indicating if has branching should be performed during
-	 *            require list expansion
 	 */
 	@SuppressWarnings("unchecked")
-	public DependencyList(Iterable<String> names, IConfig config, IDependencies deps, Features features, boolean includeDetails, boolean performHasBranching) {
+	public DependencyList(Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails) {
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "<ctor>"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName, new Object[]{names, aggr, features, resolveAliases, includeDetails});
+		}
 		this.names = (Iterable<String>) (names != null ? names : Collections.emptySet());
-		this.deps = deps;
-		this.config = config;
+		this.aggr = aggr;
 		this.features = features;
+		this.resolveAliases = resolveAliases;
 		this.includeDetails = includeDetails;
-		this.performHasBranching = performHasBranching;
+		this.dependentFeatures = new HashSet<String>();
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName);
+		}
 	}
 	
 	/**
@@ -148,8 +158,16 @@ public class DependencyList {
 	 *         <code>names</code>.
 	 */
 	public ModuleDeps getExplicitDeps() throws IOException {
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "getExplicitDeps"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName);
+		}
 		if (!initialized) {
 			initialize();
+		}
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName, explicitDeps);
 		}
 		return explicitDeps;
 	}
@@ -171,8 +189,16 @@ public class DependencyList {
 	 *         <code>names</code>.
 	 */
 	public ModuleDeps getExpandedDeps() throws IOException { 
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "getExpandedDeps"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName);
+		}
 		if (!initialized) {
 			initialize();
+		}
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName, expandedDeps);
 		}
 		return expandedDeps;
 	}
@@ -186,8 +212,16 @@ public class DependencyList {
 	 * @return The set of discovered feature names. 
 	 */
 	public Set<String> getDependentFeatures() throws IOException { 
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "getDependentFeatures"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName);
+		}
 		if (!initialized) {
 			initialize();
+		}
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName, dependentFeatures);
 		}
 		return dependentFeatures; 
 	}
@@ -198,7 +232,15 @@ public class DependencyList {
 	 * @param label The string to associate with this object
 	 */
 	public void setLabel(String label) {
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "setLabel"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName, new Object[]{label});
+		}
 		this.label = label;
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName);
+		}
 	}
 	
 	/**
@@ -206,6 +248,11 @@ public class DependencyList {
 	 * @return The previously set label string
 	 */
 	public String getLabel() {
+		if (log.isLoggable(Level.FINER)) {
+			final String methodName = "getLabel"; //$NON-NLS-1$
+			log.entering(DependencyList.class.getName(), methodName);
+			log.exiting(DependencyList.class.getName(), methodName, label);
+		}
 		return label;
 	}
 
@@ -215,72 +262,237 @@ public class DependencyList {
 	 * light-weight and to avoid the possibility of throwing an exception in the
 	 * object constructor.
 	 */
-	private synchronized void initialize() throws IOException {
+	synchronized void initialize() throws IOException {
 		if (initialized) {
 			return;
 		}
+		final boolean traceLogging = log.isLoggable(Level.FINEST);
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "initialize"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName);
+		}
+		long stamp = aggr.getDependencies().getLastModified();  // save time stamp
 		try {
-			dependentFeatures = new HashSet<String>();
-			/*
-			 * Use LinkedHashMaps to maintain ordering of expanded dependencies
-			 * as some types of modules (i.e. css) are sensitive to the order
-			 * that modules are required relative to one another.
-			 */
 			explicitDeps = new ModuleDeps();
 			expandedDeps = new ModuleDeps();
+			if (traceLogging) {
+				log.finest("dependent features = " + dependentFeatures); //$NON-NLS-1$
+			}
 			for (String name : names) {
-				StringBuffer sb1 = null, sb2 = null;
-				if (includeDetails) {
-					sb1 = new StringBuffer(Messages.DependencyList_0);
-					sb2 = new StringBuffer();
-				}
-				int idx = (name != null) ? name.indexOf("!") : -1; //$NON-NLS-1$
-				String resolved = config.resolve(name, features, dependentFeatures, sb2, true);
-				String pluginName = idx > 0 ? name.substring(0, idx) : null;
-				if (resolved != null && !resolved.equals(name)) {
-					explicitDeps.add(name, new ModuleDepInfo(null, null, sb1 != null ? sb1.toString() : null));
-					explicitDeps.add(resolved, new ModuleDepInfo(null, null, sb2 != null ? sb2.toString() : null));
-					name = resolved;
-				} else {
-					explicitDeps.add(name, new ModuleDepInfo(null, null, sb1 != null ? sb1.append(sb2).toString() : null));
-				}
-				if (pluginName != null) {
-					String resolvedPluginName = config.resolve(pluginName, features, dependentFeatures, null, true);
-					expandedDeps.add(resolvedPluginName, new ModuleDepInfo(null, null, includeDetails ? Messages.DependencyList_1 : null));
-					expandedDeps.addAll(
-							deps.getExpandedDependencies(resolvedPluginName, features, dependentFeatures, includeDetails, performHasBranching));
-				}
-				if (name != null && name.length() > 0) {
-					idx = name.indexOf("!"); //$NON-NLS-1$
-					if (idx == -1) { 
-						expandedDeps.addAll(
-								deps.getExpandedDependencies(name, features, dependentFeatures, includeDetails, performHasBranching));
-					} else {
-						if (hasPattern.matcher(name.substring(0, idx)).find()) {
-							explicitDeps.addAll(
-								new HasNode(name.substring(idx+1)).evaluateAll(
-										pluginName, 
-										features, 
-										dependentFeatures, 
-										null,
-										includeDetails ? Messages.DependencyList_0 : null
-								)
-							);
-						}
-						// If a plugin module is specified, then add it and its expanded dependencies.
-						
-						String pluginName2 = name.substring(0, idx);
-						if (!pluginName2.equals(pluginName)) {
-							String resolvedPluginName2 = config.resolve(pluginName2, features, dependentFeatures, null, true);
-							expandedDeps.add(resolvedPluginName2, new ModuleDepInfo(null, null, includeDetails ? Messages.DependencyList_1 : null));
-							expandedDeps.addAll(
-									deps.getExpandedDependencies(resolvedPluginName2, features, dependentFeatures, includeDetails, performHasBranching));
-						}
-					}
-				}
+				processDep(name, explicitDeps, null, new HashSet<String>(), null);
+			}
+			// Now expand the explicit dependencies
+			resolveAliases = true;
+			for (Map.Entry<String, ModuleDepInfo> entry : explicitDeps.entrySet()) {
+				expandDependencies(entry.getKey(), entry.getValue(), expandedDeps);
+			}
+			expandedDeps.keySet().removeAll(IDependencies.excludes);
+			
+			// Resolve feature conditionals based on the specified feature set.  This is
+			// necessary because we don't specify features when doing has! plugin branching
+			// so that dependent features that are discovered by has! plugin branching don't
+			// vary based on the specified features.
+			explicitDeps.resolveWith(features);
+			expandedDeps.resolveWith(features);
+			
+			
+			if (traceLogging) {
+				log.finest("explicitDeps after applying features: " + explicitDeps); //$NON-NLS-1$
+				log.finest("expandedDeps after applying features: " + expandedDeps); //$NON-NLS-1$
+			}
+			if (stamp != aggr.getDependencies().getLastModified()) {
+				// if time stamp has changed, that means that dependencies have been
+				// updated while we were processing them.  Throw an exception to avoid
+				// caching the response with possibly corrupt dependency info.
+				throw new IllegalStateException("" + stamp + "!=" + aggr.getDependencies().getLastModified()); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		} finally {
 			initialized = true;
+		}
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName);
+		}
+	}
+	
+	/**
+	 * Expands the nested dependencies for the specified module
+	 * 
+	 * @param name
+	 *            the name of the module who's dependencies are to be expanded.
+	 *            Alias name resolution and has! loader plugin branching is
+	 *            assumed to have been already performed.
+	 * @param depInfo
+	 *            the {@link ModuleDepInfo} for the module provided by
+	 *            {@link #processDep(String, ModuleDeps, ModuleDepInfo, Set)}.
+	 * @param expandedDependencies
+	 *            Output - the map that the expanded dependencies are written to.
+	 * @throws IOException
+	 */
+	void expandDependencies(String name, ModuleDepInfo depInfo, ModuleDeps expandedDependencies) throws IOException {
+		final String methodName = "expandDependencies"; //$NON-NLS-1$
+		final boolean traceLogging = log.isLoggable(Level.FINEST);
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName, new Object[]{name, depInfo, expandedDependencies});
+		}
+
+		List<String> declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
+		if (traceLogging) {
+			log.finest("declaredDeps = " + declaredDeps); //$NON-NLS-1$
+		}
+		if (declaredDeps != null) {
+			for (String dep : declaredDeps) {
+				ModuleDeps moduleDeps = new ModuleDeps();
+				processDep(dep, moduleDeps, depInfo, new HashSet<String>(), name);
+				for (Map.Entry<String, ModuleDepInfo> entry : moduleDeps.entrySet()) {
+					if (traceLogging) {
+						log.finest("Adding " + entry + " to expandedDependencies"); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+					if (expandedDependencies.add(entry.getKey(), new ModuleDepInfo(entry.getValue()))) {
+						expandDependencies(entry.getKey(), entry.getValue(), expandedDependencies);
+					}
+				}
+			}
+		}
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName);
+		}
+	}
+	
+	/**
+	 * Handles initial processing of explicit dependencies, including alias
+	 * resolution and has! loader plugin branching/resolution.
+	 * 
+	 * @param name
+	 *            The explicit dependency to process
+	 * @param deps
+	 *            Output - one or more {@link ModuleDepInfo} objects are added
+	 *            to <code>deps</code> for each module specified by
+	 *            <code>name</code>. Plugin dependencies and has! loader plugin
+	 *            branching can result in multiple entries being added to
+	 *            <code>deps</code>.
+	 * @param callerInfo
+	 *            {@link ModuleDepInfo} object specifying feature conditionals
+	 *            that should be ANDed with this module. Used in has! loader
+	 *            plugin branching when this method is called recursively.
+	 * @param recursionCheck
+	 *            Set of module names used to break recursion loops
+	 * @param dependee
+	 *            Use by require expansion logging.  Specifies the name of the 
+	 *            module that includes this module in its dependencies.  
+	 */
+	void processDep(String name, ModuleDeps deps, ModuleDepInfo callerInfo, Set<String> recursionCheck, String dependee) {
+		final String methodName = "processDep"; //$NON-NLS-1$
+		final boolean traceLogging = log.isLoggable(Level.FINEST);
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName, new Object[]{deps, name, callerInfo});
+		}
+
+		boolean performHasBranching = !aggr.getOptions().isDisableHasPluginBranching();
+		if (traceLogging && !performHasBranching) {
+			log.finest("Has branching is disabled."); //$NON-NLS-1$
+		}
+		StringBuffer sb = includeDetails ? new StringBuffer() : null;
+		String comment = null, resolved = null;
+		
+		// If a plugin is specified, save the plguin name in case alias resolution or 
+		// has! loader plugin resolution eliminates the plugin from the module id.
+		int idx = (name != null) ? name.indexOf("!") : -1; //$NON-NLS-1$
+		String pluginName = idx > 0 ? name.substring(0, idx) : null;
+
+		resolved = aggr.getConfig().resolve(name, features, dependentFeatures, sb, resolveAliases, !performHasBranching);
+		if (traceLogging) {
+			log.finest("Module name \"" + name + "resolved to \"" + resolved + "\"."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+
+		if (resolved != null && resolved.length() > 0 && !resolved.equals(name)) {
+			name = resolved;
+			if (includeDetails) comment = Messages.DependencyList_0 + sb.toString();
+			if (recursionCheck.contains(name)) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.warning(MessageFormat.format(
+						Messages.DependencyList_3,
+						new Object[] {name,	recursionCheck}
+					));
+				}
+				return;
+			}
+			recursionCheck.add(name);
+		} else {
+			if (includeDetails) {
+				comment = (dependee == null) ? 
+					Messages.DependencyList_0 + sb.toString() :
+					MessageFormat.format(Messages.DependencyList_4, dependee);
+			}
+		}
+		ModuleDepInfo info = callerInfo != null ? 
+				new ModuleDepInfo(callerInfo, dependee == null ? null : comment) : 
+				new ModuleDepInfo(null, null, comment);
+
+		if (traceLogging) {
+			log.finest("pluginName = " + pluginName); //$NON-NLS-1$
+		}
+		// check for plugin again in case one was introduced by config aliasing.
+		idx = (name != null) ? name.indexOf("!") : -1; //$NON-NLS-1$
+		if (idx > 0) {
+			pluginName = name.substring(0, idx);
+		}
+		if (pluginName != null) {
+			processDep(pluginName, deps,
+					callerInfo != null ? 
+							new ModuleDepInfo(callerInfo, Messages.DependencyList_1) :
+							new ModuleDepInfo(null, null, Messages.DependencyList_1),
+					recursionCheck != null ? new HashSet<String>(recursionCheck) : null, 
+					dependee);
+			if (performHasBranching) {
+				if (hasPattern.matcher(pluginName).find()) {
+					HasNode hasNode = new HasNode(name.substring(idx+1));
+					if (traceLogging) {
+						log.finest("hasNode = " + hasNode); //$NON-NLS-1$
+					}
+					ModuleDeps hasDeps = hasNode.evaluateAll(
+							pluginName, 
+							// Specify empty feature set so that dependent features discovered
+							// by has! plugin branching will not vary depending on the specified
+							// features.
+							Features.emptyFeatures, 
+							dependentFeatures, 
+							callerInfo,
+							includeDetails ? MessageFormat.format(
+													Messages.DependencyList_2,
+													new Object[]{name}) 
+							               : null
+					);
+					if (traceLogging) {
+						log.finest("hasDeps = " + hasDeps); //$NON-NLS-1$
+					}
+					for (Map.Entry<String, ModuleDepInfo> entry : hasDeps.entrySet()) {
+						processDep(entry.getKey(), deps, entry.getValue(), 
+								recursionCheck != null ? new HashSet<String>(recursionCheck) : null,
+								dependee);
+					}
+				} else {
+					if (traceLogging) {
+						log.finest("Adding module \"" + name + "\" with ModuleDepInfo: " + info + " to result deps - 3"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					}
+					deps.add(name, info);
+				}
+			} else {
+				if (traceLogging) {
+					log.finest("Adding module \"" + name + "\" with ModuleDepInfo: " + info + " to result deps - 2"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				}
+				deps.add(name, info);
+			}
+		} else {
+			if (traceLogging) {
+				log.finest("Adding module \"" + name + "\" with ModuleDepInfo: " + info + " to result deps - 1"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			}
+			deps.add(name, info);
+		}
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName);
 		}
 	}
 }

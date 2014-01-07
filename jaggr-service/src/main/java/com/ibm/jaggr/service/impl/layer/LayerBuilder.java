@@ -18,6 +18,7 @@ package com.ibm.jaggr.service.impl.layer;
 
 import java.io.IOException;
 import java.io.StringWriter;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -37,6 +38,7 @@ import org.osgi.framework.ServiceReference;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.layer.ILayerListener;
 import com.ibm.jaggr.service.layer.ILayerListener.EventType;
@@ -48,6 +50,8 @@ import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.service.util.CopyUtil;
+import com.ibm.jaggr.service.util.DependencyList;
+import com.ibm.jaggr.service.util.RequestUtil;
 import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
@@ -116,6 +120,14 @@ public class LayerBuilder {
         Set<String> dependentFeatures = new HashSet<String>();
         request.setAttribute(ILayer.DEPENDENT_FEATURES, dependentFeatures);
 
+		if (RequestUtil.isExplodeRequires(request)) {
+			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.BOOTLAYERDEPS_PROPNAME);
+			if (depList != null) {
+				// Output require expansion logging
+				sb.append(requireExpansionLogging(depList));
+			}
+		}
+        
         String prologue = notifyLayerListeners(EventType.BEGIN_LAYER, request, null);
 		if (prologue != null) {
 			sb.append(prologue);
@@ -370,5 +382,29 @@ public class LayerBuilder {
 			}
 		}
 		return sb.length() != 0 ? sb.toString() : null;
+	}
+	
+	protected String requireExpansionLogging(DependencyList depList) throws IOException {
+		StringBuffer sb = new StringBuffer();
+		sb.append("console.log(\"%c") //$NON-NLS-1$
+		  .append(MessageFormat.format(Messages.LayerImpl_6, new Object[]{request.getRequestURI()+"?"+request.getQueryString()})) //$NON-NLS-1$
+		  .append("\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$
+		sb.append("console.log(\"%c") //$NON-NLS-1$
+		  .append(Messages.LayerImpl_4)
+		  .append("\", \"color:blue\");") //$NON-NLS-1$
+		  .append("console.log(\"%c"); //$NON-NLS-1$
+		for (Map.Entry<String, String> entry : new ModuleDeps(depList.getExplicitDeps()).getModuleIdsWithComments().entrySet()) {
+			sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+		sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
+		sb.append("console.log(\"%c") //$NON-NLS-1$
+		  .append(Messages.LayerImpl_5)
+		  .append("\", \"color:blue\");") //$NON-NLS-1$
+		  .append("console.log(\"%c"); //$NON-NLS-1$
+		for (Map.Entry<String, String> entry : new ModuleDeps(depList.getExpandedDeps()).getModuleIdsWithComments().entrySet()) {
+			sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+		sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
+		return sb.toString();
 	}
 }

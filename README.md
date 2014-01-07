@@ -41,3 +41,8 @@ This project is an OpenNTF project, and is available under the Apache License V2
 ####From 1.0.0 to 1.1.1####
 * Resources defined in the server-side amd config file that use a "namedbundleresource" scheme url should leave the authority section of the uri blank and have the bundle name be the first segment in the path. (ex: namedbundleresource:///bundle.name/path/to/file)
 * Interface change in IResource (added IResource resolve(String relative);) will affect any third-party resource providers. 
+
+####From 1.1.7 to 1.1.8####
+The changes described below don't affect casual users.  Only implementors of JAGGR extensions that deal with calculation of expanded dependencies are affected.
+* com.ibm.jaggr.service.deps.IDependencies.getExpandedDependencies() has been removed.  Use com.ibm.jaggr.service.util.DependencyList instead
+* com.ibm.jaggr.service.util.DependencyList constructor arguments have changed.

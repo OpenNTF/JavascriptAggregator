@@ -406,12 +406,40 @@ public interface IConfig {
 	 *            missing required feature.
 	 * @param resolveAliases
 	 *            If true, then module name aliases will be resolved
+	 * @param resolveHasPlugin
+	 *            If true, then attempt has plugin resolution using the features
+	 *            provided in <code>features</code>
 	 * @return The resolved module id.  If the module id is unchanged, then
 	 *         {@code name} should be returned.
 	 * 
 	 */
 	public String resolve(String name, Features features,
-			Set<String> dependentFeatures, StringBuffer sb, boolean resolveAliases);
+			Set<String> dependentFeatures, StringBuffer sb, 
+			boolean resolveAliases, boolean resolveHasPlugin);
+	
+	/**
+	 * Legacy method that calls {@link #resolve(String, Features, Set, StringBuffer, boolean, boolean)}
+	 * with {@code resolveHasPlugin} equal to true.
+	 * 
+	 * @param name
+	 *            The module name to resolve
+	 * @param features
+	 *            Features that are defined in the request
+	 * @param dependentFeatures
+	 *            Output - Set of feature names that the returned value is
+	 *            conditioned on. Used for cache management.
+	 * @param sb
+	 *            If not null, then a reference to a string buffer that can be
+	 *            used to specify debug/diagnostic information
+	 *            about the module name resolution. For example, the resolver may
+	 *            indicate that alias resolution was not performed due to a
+	 *            missing required feature.
+	 * @param resolveAliases
+	 *            If true, then module name aliases will be resolved
+	 */
+	public String resolve(String name, Features features,
+			Set<String> dependentFeatures, StringBuffer sb, 
+			boolean resolveAliases);
 
 	/**
 	 * Interface for a config alias. Aliases are resolved by the aggreagtor when

@@ -20,14 +20,13 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
 import com.ibm.jaggr.service.impl.deps.BooleanFormula;
 import com.ibm.jaggr.service.util.BooleanTerm;
 import com.ibm.jaggr.service.util.BooleanVar;
+import com.ibm.jaggr.service.util.Features;
 
 
 /**
@@ -37,12 +36,11 @@ import com.ibm.jaggr.service.util.BooleanVar;
  */
 public class ModuleDepInfo implements Serializable {
 	
-	private static final long serialVersionUID = 8798463630504113388L;
+	private static final long serialVersionUID = 3224914379637472034L;
 
 	/**
 	 * Boolean formula representing the has! plugin expressions used to refer to
-	 * the module associated with this object.  If null, then the module is 
-	 * referenced un-conditionally.
+	 * the module associated with this object.
 	 */
 	private BooleanFormula formula;
 	
@@ -51,7 +49,9 @@ public class ModuleDepInfo implements Serializable {
 	 * {@link BooleanTerm#emptyTerm} is used as the map key when {@link #formula}
 	 * is null (TRUE).  
 	 */
-	private Map<BooleanTerm, String> comments = null;
+	private String comment = null;
+	
+	int commentTermSize = 0;
 	
 	private String pluginName = null;
 	
@@ -64,7 +64,38 @@ public class ModuleDepInfo implements Serializable {
 	private boolean isPluginNameDeclared = false;
 	
 	public ModuleDepInfo() {
-		this(null, null, null);
+		this(null, BooleanTerm.TRUE, null);
+	}
+	
+	/**
+	 * Copy constructor
+	 * 
+	 * @param other
+	 */
+	public ModuleDepInfo(ModuleDepInfo other) {
+		this(other, null);
+	}
+	
+	/**
+	 * Creates an instance of this class with the same properties as the
+	 * specified instance except that the specified comment string is associated
+	 * with each of the terms in the new instance
+	 * 
+	 * @param other
+	 *            the instance who's properties will be used to initialize this
+	 *            object
+	 * @param comment
+	 *            the comment to associate with each of the terms in the new
+	 *            object, or null if the comments of {@code other} should be
+	 *            preserved in the new object.
+	 */
+	public ModuleDepInfo(ModuleDepInfo other, String comment) {
+		pluginName = other.pluginName;
+		formula = new BooleanFormula(other.formula);
+		isPluginNameDeclared = other.isPluginNameDeclared;
+		this.comment = (comment != null) ? comment : other.comment;
+		commentTermSize = other.commentTermSize;
+		simplifyInvariant();
 	}
 	
 	/**
@@ -100,7 +131,11 @@ public class ModuleDepInfo implements Serializable {
 	 *            class using {@link #add(ModuleDepInfo)}
 	 */
 	public ModuleDepInfo(String pluginName, BooleanTerm term, String comment, boolean isPluginNameDeclared) {
-		if (term != null) {
+		if (term == null || term.isTrue()) {
+			formula = new BooleanFormula(true);
+		} else if (term.isFalse()) {
+			formula = new BooleanFormula(false);
+		} else {
 			formula = new BooleanFormula();
 			if (term.size() > 0) {
 				formula.add(term);
@@ -110,13 +145,12 @@ public class ModuleDepInfo implements Serializable {
 			}
 			this.pluginName = pluginName;
 			this.isPluginNameDeclared = isPluginNameDeclared;
-		} else {
-			formula = new BooleanFormula(true);
 		}
 		if (comment != null) {
-			comments = new LinkedHashMap<BooleanTerm, String>();
-			comments.put(term == null ? BooleanTerm.emptyTerm : term, comment);
-		}		
+			this.comment = comment;
+			commentTermSize = term != null ? term.size() : 0;
+		}
+		simplifyInvariant();
 	}
 	
 	/**
@@ -128,7 +162,8 @@ public class ModuleDepInfo implements Serializable {
 	 * prefixes that should be used with this module. One module id per list
 	 * entry specifying the same module name should be used.
 	 * <p>
-	 * This method has the side effect of simplifying the boolean formula.
+	 * {@link TreeSet} is used to obtain predictable ordering of terms in 
+	 * compound has conditionals, mostly for unit tests.
 	 * 
 	 * @return The list of has! plugin prefixes for this module.
 	 */
@@ -139,10 +174,10 @@ public class ModuleDepInfo implements Serializable {
 		if (formula.isFalse()) {
 			return Collections.emptySet();
 		}
-		Set<String> result = new TreeSet<String>();
-		for (BooleanTerm term : formula) {
+		Set<String> result = new HashSet<String>();
+		for (BooleanTerm term : formula.simplify()) {
 			StringBuffer sb = new StringBuffer(pluginName).append("!"); //$NON-NLS-1$
-			for (BooleanVar featureVar : term) {
+			for (BooleanVar featureVar : new TreeSet<BooleanVar>(term)) {
 				sb.append(featureVar.name).append("?"); //$NON-NLS-1$
 				if (!featureVar.state) {
 					sb.append(":"); //$NON-NLS-1$
@@ -157,41 +192,64 @@ public class ModuleDepInfo implements Serializable {
 	 * Returns true if the specified term is logically included by the formula
 	 * for this object.
 	 * <p>
-	 * A term logically includes another term if it evaluates to the same result
-	 * for all vars within the term. For example, the term A contains (A*B), but
-	 * not vice-versa.
+	 * Put another way, this method returns true if adding the specified term
+	 * to the formula for this object does not change the truth table for 
+	 * the formula.
 	 * 
 	 * @param term
 	 *            The term to test for logical inclusion
 	 * @return True if the formula logically includes the specified term
 	 */
 	public boolean containsTerm(BooleanTerm term) {
-		if (formula.isTrue() || term != null && term.equals(BooleanTerm.emptyTerm)) {
+		if (term.isFalse() || formula.isTrue()) {
+			// If the term is false, then adding it won't change the formula
+			// Similarly if the formula is true.  No additional term added 
+			// will make it not true.
 			return true;
 		}
-		if (term != null) {
-			for (BooleanTerm termToTest : formula) {
-				if (term.containsAll(termToTest)) {
-					return true;
-				}
+		if (term.isTrue()) {
+			// answer has to be false because we are here only if formula.isTrue() is false
+			return false;
+		}
+		for (BooleanTerm termToTest : formula) {
+			// check for true terms in case formula hasn't been simplified.
+			if (termToTest.isTrue()) {
+				// A true term means the formula is true, and a true
+				// formula contains all terms.
+				return true;
+			}
+			if (term.containsAll(termToTest)) {
+				// If a term in the formula includes all the vars that are 
+				// in the term we are testing, then the term is included
+				// in the formula.
+				return true;
 			}
 		}
 		return false;
 	}
 	
 	/**
-	 * @return An Iterable for the terms in the formula or zero if formula is
-	 *         null
+	 * logically ands the provided terms with the formula belonging to this
+	 * object, updating this object with the result.
+	 * 
+	 * @param other
+	 *            the {@link ModuleDepInfo} to and with this object.
+	 * @return this object
 	 */
-	public Iterable<BooleanTerm> getTerms() {
-		return formula.isTrue() ? null : formula;
-	}
-	
-	/**
-	 * @return The number of terms in the formula or zero if formula is null
-	 */
-	public int size() {
-		return formula.size();
+	public ModuleDepInfo andWith(ModuleDepInfo other) {
+		if (other == null) {
+			return this;
+		}
+		formula.andWith(other.formula);
+		if (!isPluginNameDeclared && other.isPluginNameDeclared) {
+			pluginName = other.pluginName;
+			isPluginNameDeclared = true;
+		} else if (pluginName == null) {
+			pluginName = other.pluginName;
+			isPluginNameDeclared = other.isPluginNameDeclared;
+		}
+		simplifyInvariant();
+		return this;
 	}
 	
 	/**
@@ -201,27 +259,7 @@ public class ModuleDepInfo implements Serializable {
 	 * @return The comment string
 	 */
 	public String getComment() {
-		String result = null;
-		if (comments != null) {
-			if (formula.iterator() == null) {
-				result = comments.get(BooleanTerm.emptyTerm);
-			} else {
-				// return the comment associated with the first lowest 
-				//  (least number of vars) term.
-				BooleanTerm firstLowest = null;
-				for (BooleanTerm term : comments.keySet()) {
-					if (firstLowest == null) {
-						firstLowest = term;
-					} else if (term.size() < firstLowest.size()) {
-						firstLowest = term;
-					}
-				}
-				if (firstLowest != null) {
-					result = comments.get(firstLowest);
-				}
-			}
-		}
-		return result;
+		return comment;
 	}
 
 	/**
@@ -234,34 +272,35 @@ public class ModuleDepInfo implements Serializable {
 	public boolean add(ModuleDepInfo other) {
 		Boolean modified = false;
 		if (formula.isTrue()) {
-			String comment = other.getComment();
-			if (getComment() == null && 
-					other.formula.isTrue() && 
-					comment != null) {
-				modified |= setComment(comment, BooleanTerm.emptyTerm);
-			}
-			return modified;
+			// No terms added to a true formula will change the evaluation.
+			return false;
 		}
 		if (other.formula.isTrue()) {
+			// Adding true to this formula makes this formula true.
 			modified = !formula.isTrue();
 			formula = new BooleanFormula(true);
-			String comment = other.getComment();
-			if (comment != null) {
-				modified |= setComment(comment, BooleanTerm.emptyTerm);
+			if (modified && other.comment != null && other.commentTermSize < commentTermSize) {
+				comment = other.comment;
+				commentTermSize = other.commentTermSize;
 			}
+			simplifyInvariant();
 			return modified;
 		}
+		// Add the terms
 		modified = formula.addAll(other.formula);
+		
+		// Copy over plugin name if needed
 		if (!isPluginNameDeclared && other.isPluginNameDeclared) {
 			pluginName = other.pluginName;
 			isPluginNameDeclared = true;
 			modified = true;
 		}
-		if (other.comments != null) {
-			for (Map.Entry<BooleanTerm, String> entry : other.comments.entrySet()) {
-				modified |= setComment(entry.getValue(), entry.getKey());
-			}
+		// And comments...
+		if (other.comment != null && other.commentTermSize < commentTermSize) {
+			comment = other.comment;
+			commentTermSize = other.commentTermSize;
 		}
+		simplifyInvariant();
 		return modified;
 	}
 	
@@ -282,12 +321,19 @@ public class ModuleDepInfo implements Serializable {
 	public boolean subtract(ModuleDepInfo toSub) {
 		boolean modified = false;
 		if (toSub.formula.isTrue()) {
+			// Subtracting true makes this formula false
 			modified = !formula.isFalse();
-			formula.clear();
-			if (comments != null) {
-				comments.clear();
-			}
-		} else if (!formula.isTrue()) {
+			formula = new BooleanFormula(false);
+		} else if (formula.isTrue()) {
+			// Subtracting anything from true (other than true) 
+			// has no effect
+			return false;
+		} else {
+			// Remove terms from this formula that contain the same vars
+			// (or a superset of the same vars) as terms in the formula
+			// being subtracted.  For example, if toSub.formula contains 
+			// the term (A*B), then the terms (A*B) and (A*B*C) would be 
+			// removed from this formula, but the term (A) would not.
 			Set<BooleanTerm> termsToRemove = new HashSet<BooleanTerm>();
 			for (BooleanTerm t1 : formula) {
 				for (BooleanTerm t2 : toSub.formula) {
@@ -297,31 +343,27 @@ public class ModuleDepInfo implements Serializable {
 				}
 			}
 			modified |= formula.removeTerms(termsToRemove);
-			if (modified && comments != null) {
-				for (BooleanTerm termToRemove : termsToRemove) {
-					comments.remove(termToRemove);
-				}
+			if (formula.size() == 0) {
+				formula = new BooleanFormula(false);
 			}
 		}
+		if (formula.isFalse()) {
+			comment = null;
+			commentTermSize = 0;
+		}
+		simplifyInvariant();
 		return modified;
 	}
 	
 	/**
-	 * Simplifies the boolean formula
+	 * Resolves the formula using the variable values provided
+	 * in <code>features</code>
+	 * 
+	 * @param features the variable values to resolve with
 	 */
-	public void simplify() {
-		formula = formula.simplify();
-	}
-	
-	/**
-	 * Simplifies the formula only if it is invariant.  If not
-	 * invariant, the terms in the formula remain unchanged.
-	 */
-	public void simplifyInvariants() {
-		BooleanFormula test = formula.simplify();
-		if (test.isTrue() || test.isFalse()) {
-			formula = test;
-		}
+	public void resolveWith(Features features) {
+		formula.resolveWith(features);
+		simplifyInvariant();
 	}
 	
 	/* (non-Javadoc)
@@ -333,29 +375,58 @@ public class ModuleDepInfo implements Serializable {
 	}
 
 	/**
-	 * Associates the specified comment string with the specified term.
-	 * @param comment The comment string
-	 * @param term The term to associate with the comment string
-	 * @return true if this object was modified
+	 * Simplify the formula and replace the existing formula with the simplified
+	 * equivalent only if it is invariant (evaluates to true of false).
+	 * <p>
+	 * Note that we don't replace non-invariants with the simplified version
+	 * of the expression because keeping the terms in their original form
+	 * makes it easier to match terms when subtracting.
 	 */
-	private boolean setComment(String comment, BooleanTerm term) {
-		if (comment == null) {
-			return false;
+	private void simplifyInvariant() {
+		BooleanFormula simplified = formula.simplify();
+		if  (simplified.isTrue() || simplified.isFalse() || simplified.equals(formula)) {
+			formula = simplified;
+		}		
+		if (formula.isTrue() || formula.isFalse()) {
+			pluginName = null;
+			isPluginNameDeclared = false;
 		}
-		Boolean modified = false;
-		if (comments == null) {
-			comments = new LinkedHashMap<BooleanTerm, String>();
-			modified = true;
-		}
-		if (term.equals(BooleanTerm.emptyTerm)) {
-			modified |= comments.size() != 0;
-			comments.clear();
-		}
-		if (!comments.containsKey(term)) {
-			comments.put(term, comment);
-			modified = true;
-		}
-		return modified;
 	}
 	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#equals(java.lang.Object)
+	 */
+	/**
+	 * Returns true if this module is equal to the specified module
+	 * (ignoring comments)
+	 */
+	@Override
+	public boolean equals(Object otherObj) {
+		if (this == otherObj) {
+			return true;
+		}
+		if (otherObj != null && otherObj.getClass().getName().equals(ModuleDepInfo.class.getName())) {
+			ModuleDepInfo other = (ModuleDepInfo)otherObj;
+			return formula.equals(other.formula) && 
+				isPluginNameDeclared == other.isPluginNameDeclared &&
+				(pluginName == null && other.pluginName == null ||
+				 pluginName != null && pluginName.equals(other.pluginName));
+				
+		}
+		return false;
+	}
+	
+	/* (non-Javadoc)
+	 * @see java.lang.Object#hashCode()
+	 */
+	/**
+	 * Return a hashCode for this object that ignores comments
+	 */
+	@Override
+	public int hashCode() {
+		int result = formula.hashCode();
+		result = 31 * result + Boolean.valueOf(isPluginNameDeclared).hashCode();
+		result = 31 * result + (pluginName != null ? pluginName.hashCode() : 0);
+		return result;
+	}
 }

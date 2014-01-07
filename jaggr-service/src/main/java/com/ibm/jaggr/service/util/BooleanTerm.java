@@ -17,7 +17,7 @@
 package com.ibm.jaggr.service.util;
 
 import java.util.Collection;
-import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -25,27 +25,49 @@ import java.util.TreeSet;
  * A collection of BooleanVar objects which are logically anded together.
  * Implements an unmodifiable set of BooleanVar objects. 
  */
-public class BooleanTerm extends TreeSet<BooleanVar> {
+public class BooleanTerm extends HashSet<BooleanVar> {
 	
-	private static final long serialVersionUID = -2969569532410527153L;
-
-	public static BooleanTerm emptyTerm = new BooleanTerm(Collections.<BooleanVar> emptySet());
+	private static final long serialVersionUID = 3749929877967465829L;
 
 	private boolean initialized = false;	// true except when the object is being constructed
 	
-	public BooleanTerm() { super(); }
+	public static final BooleanTerm TRUE = new BooleanTerm();
+	
+	public static final BooleanTerm FALSE = new BooleanTerm();
+	
+	/*
+	 * This is private because only the static singletons TRUE and FALSE can have 
+	 * an empty term list. 
+	 */
+	private BooleanTerm() {
+		initialized = true;
+	}
 	
 	public BooleanTerm(BooleanVar var) {
 		super();
+		if (var == null) {
+			throw new NullPointerException();
+		}
 		add(var);
 		initialized = true;
 	}
 
 	public BooleanTerm(Set<BooleanVar> term) { 
 		super(term);
+		if (term.isEmpty()) {
+			throw new UnsupportedOperationException();
+		}
 		initialized = true;
 	}
 
+	public boolean isTrue() {
+		return this == TRUE;
+	}
+	
+	public boolean isFalse() {
+		return this == FALSE;
+	}
+	
 	/**
 	 * Constructs an object from a string of the form "A*B*!C" where
 	 * A, B and C are variable names and names preceeded by ! are 
@@ -76,15 +98,83 @@ public class BooleanTerm extends TreeSet<BooleanVar> {
 		initialized = true;
 	}
 
+	/**
+	 * Applies the feature values specified in <code>features</code> to the term
+	 * and returns a new term with the resolved result. A result of null
+	 * indicates the term is false. An empty term indicates the the term is true
+	 * 
+	 * @param features
+	 *            the varialbe names and values to resolve with
+	 * 
+	 * @return the result
+	 */
+	public BooleanTerm resolveWith(Features features) {
+		if (isEmpty()) {
+			return this;
+		}
+		Set<BooleanVar> term = new HashSet<BooleanVar>();
+		for (BooleanVar var : this) {
+			if (features.contains(var.name)) {
+				boolean featureState = features.isFeature(var.name);
+				if (featureState && var.state || !featureState && !var.state) {
+					// The var is true.  Don't add to term
+				} else {
+					return BooleanTerm.FALSE;
+				}
+			} else {
+				term.add(var);
+			}
+		}
+		return term.isEmpty() ? BooleanTerm.TRUE : new BooleanTerm(term);
+	}
+	
+	/**
+	 * Returns the logical AND of this term with the specified 
+	 * term.
+	 * 
+	 * @param other the term to and this term with.
+	 * @return
+	 */
+	public BooleanTerm andWith(BooleanTerm other) {
+		if (isFalse() || other.isFalse()) {
+			// anding with false, the result is false
+			return BooleanTerm.FALSE;
+		}
+		if (other.isTrue()) {
+			// anding with true, the result is unchanged
+			return this;
+		}
+		if (isTrue()) {
+			// anding with true, other is unchanged
+			return other;
+		}
+		Set<BooleanVar> result = new HashSet<BooleanVar>(this);
+		for (BooleanVar var : other) {
+			if (result.contains(var.negate())) {
+				// If the same term has the same var with opposite states
+				// then the resulting term is false;
+				return BooleanTerm.FALSE;
+			}
+			result.add(var);
+		}
+		return new BooleanTerm(result);
+	}
+	
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
+		if (isTrue()) {
+			return "[TRUE]"; //$NON-NLS-1$
+		}
+		if (isFalse()) {
+			return "[FALSE]"; //$NON-NLS-1$
+		}
 		StringBuffer sb = new StringBuffer();
 		if (size() > 1) sb.append("("); //$NON-NLS-1$
 		int i = 0;
-		for (BooleanVar var : this) {
+		for (BooleanVar var : new TreeSet<BooleanVar>(this)) {
 			sb.append(i++ > 0 ? "*" : "").append(var); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		if (size() > 1) sb.append(")"); //$NON-NLS-1$
@@ -143,5 +233,24 @@ public class BooleanTerm extends TreeSet<BooleanVar> {
 	@Override
 	public boolean retainAll(Collection<?> collection) {
 		throw new UnsupportedOperationException();
+	}
+	
+	@Override
+	public int hashCode() {
+		if (this == FALSE) {
+			return Boolean.FALSE.hashCode();
+		} else if (this == TRUE) {
+			return Boolean.TRUE.hashCode();
+		}
+		return super.hashCode();
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (this == FALSE && other == TRUE ||
+			this == TRUE && other == FALSE) {
+			return false;
+		}
+		return super.equals(other);
 	}
 }

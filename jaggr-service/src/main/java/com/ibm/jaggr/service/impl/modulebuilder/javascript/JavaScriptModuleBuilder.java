@@ -156,17 +156,17 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	    		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
 	    		DependencyList configDepList = new DependencyList(
 	    				aggr.getConfig().getDeps(),
-	    				aggr.getConfig(),
-	    				aggr.getDependencies(),
+	    				aggr,
 	    				features,
-	    				isReqExpLogging, false);
+	    				true,	// resolveAliases
+	    				isReqExpLogging);
 	    				
 	    		DependencyList layerDepList = new DependencyList(
 	    				moduleIds,
-	    				aggr.getConfig(),
-	    				aggr.getDependencies(),
+	    				aggr,
 	    				features,
-	    				isReqExpLogging, false);
+	    				false,	// Don't resolve aliases for module ids requested by the loader
+	    				isReqExpLogging);
 	    		
 	    		ModuleDeps configDeps = new ModuleDeps();
 	    		ModuleDeps layerDeps = new ModuleDeps();
@@ -183,6 +183,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				
 				if (isReqExpLogging) {
 					StringBuffer sb = new StringBuffer();
+					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_4 + "\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$ //$NON-NLS-2$
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_2 + "\", \"color:blue\");") //$NON-NLS-1$ //$NON-NLS-2$
 					  .append("console.log(\"%c"); //$NON-NLS-1$
 					for (Map.Entry<String, String> entry : configDeps.getModuleIdsWithComments().entrySet()) {
@@ -298,8 +299,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						discoveredHasConditionals,
 						expandedDepsList,
 						(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
-						isReqExpLogging,
-						RequestUtil.isPerformHasBranching(request));
+						isReqExpLogging);
 			
 			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, recp);
 		}

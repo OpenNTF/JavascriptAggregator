@@ -104,19 +104,4 @@ public class RequestUtil {
 		Boolean value = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
 		return value != null ? value : false;
 	}
-
-	/**
-	 * @param request
-	 * @return True if has! plugin branching should be performed as part of
-	 *         require list expansion
-	 */
-	public static boolean isPerformHasBranching(HttpServletRequest request) {
-		boolean result = false;
-		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		IOptions options = aggr.getOptions();
-		if (!options.isDisableHasPluginBranching()) {
-			result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.HASPLUGINBRANCHING_REQATTRNAME));
-		}
-		return result;
-	}
 }

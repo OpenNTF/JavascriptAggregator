@@ -25,6 +25,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.ibm.jaggr.service.util.BooleanTerm;
+import com.ibm.jaggr.service.util.Features;
 
 
 public class BooleanFormulaTest {
@@ -44,7 +45,7 @@ public class BooleanFormulaTest {
 	@After
 	public void tearDown() throws Exception {
 	}
-
+	
 	@Test
 	public void testSimplify() {
 		// (!A!B!C)+(!AB)+(AB!C)+(AC) == (B)+(AC)+(!A!C)
@@ -109,6 +110,72 @@ public class BooleanFormulaTest {
 		System.out.println(expression);
 		Assert.assertTrue(expression.isTrue());
 		Assert.assertFalse(expression.isFalse());
+		
+		Assert.assertTrue(new BooleanFormula(true).simplify().isTrue());
+		Assert.assertFalse(new BooleanFormula(true).simplify().isFalse());
+		Assert.assertTrue(new BooleanFormula(false).simplify().isFalse());
+		Assert.assertFalse(new BooleanFormula(false).simplify().isTrue());
+	}
+
+	@Test
+	public void testAdd() {
+		BooleanFormula expression = new BooleanFormula("(A*B)");
+		Assert.assertTrue(expression.add(new BooleanTerm("(A*C)")));
+		Assert.assertEquals(expression, new BooleanFormula("(A*B)+(A*C)"));
+		Assert.assertFalse(expression.add(new BooleanTerm("(A*B)")));
+		Assert.assertFalse(expression.add(new BooleanTerm("(A*B*C)")));
+		Assert.assertEquals(expression, new BooleanFormula("(A*B)+(A*C)"));
+		Assert.assertTrue(expression.add(new BooleanTerm("C")));
+		Assert.assertEquals(expression, new BooleanFormula("(A*B)+C"));
+		Assert.assertTrue(expression.add(new BooleanTerm("A")));
+		Assert.assertEquals(expression, new BooleanFormula("A+C"));
+		Assert.assertFalse(expression.add(new BooleanTerm("(A*D)")));
+		Assert.assertFalse(expression.add(new BooleanTerm("(C*D)")));
+		Assert.assertEquals(expression, new BooleanFormula("A+C"));
+		Assert.assertTrue(expression.add(new BooleanTerm("(B*D)")));
+		Assert.assertEquals(expression, new BooleanFormula("A+C+(B*D)"));
+		expression = new BooleanFormula(false);
+		Assert.assertTrue(expression.add(new BooleanTerm("A*B")));
+		Assert.assertEquals(new BooleanFormula("A*B"), expression);
+	}
+	
+	
+	@Test 
+	public void testResolveWith() {
+		BooleanFormula expression = 
+				new BooleanFormula("(!A*!B*!C)+(!A*B)+(A*B*!C)+(A*C)");
+		Features features = new Features();
+		features.put("A", false);
+		Assert.assertEquals(new BooleanFormula("B+!C"), new BooleanFormula(expression).resolveWith(features).simplify());
+		
+		features.put("B", false);
+		Assert.assertEquals(new BooleanFormula("!C"), new BooleanFormula(expression).resolveWith(features).simplify());
+
+		features.put("C", false);
+		Assert.assertEquals(new BooleanFormula(true), new BooleanFormula(expression).resolveWith(features).simplify());
+	
+		features = new Features();
+		features.put("C", true);
+		Assert.assertEquals(new BooleanFormula("A+B"), new BooleanFormula(expression).resolveWith(features).simplify());
+		features.put("A", false);
+		Assert.assertEquals(new BooleanFormula("B"), new BooleanFormula(expression).resolveWith(features).simplify());
+		features.put("B", false);
+		Assert.assertEquals(new BooleanFormula(false), new BooleanFormula(expression).resolveWith(features).simplify());
+		
+		expression = new BooleanFormula("(!A*!B*!C)+(!A*!B*C)+(!A*B*D)+(A*!B*!D)+(A*B*!C)+(A*B*C*D)");
+		features = new Features();
+		features.put("A", true);
+		Assert.assertEquals(new BooleanFormula("(!B*!D)+(!C*!D)+(B*D)"), new BooleanFormula(expression).resolveWith(features).simplify());
+		features.put("D", false);
+		Assert.assertEquals(new BooleanFormula("!B+!C"), new BooleanFormula(expression).resolveWith(features).simplify());
+		features.put("B", false);
+		Assert.assertEquals(new BooleanFormula(true), new BooleanFormula(expression).resolveWith(features).simplify());
+		
+		expression = new BooleanFormula(true);
+		Assert.assertEquals(new BooleanFormula(true), new BooleanFormula(expression).resolveWith(features));
+		
+		expression = new BooleanFormula(false);
+		Assert.assertEquals(new BooleanFormula(false), new BooleanFormula(expression).resolveWith(features));
 	}
 
 	@Test
@@ -154,6 +221,77 @@ public class BooleanFormulaTest {
 		expression = new BooleanFormula(false);
 		expression.removeTerms(new BooleanFormula("A+B"));
 		Assert.assertTrue(expression.isFalse());
+	}
+	
+	@Test
+	public void testAndWith() throws Exception {
+		BooleanFormula expression1 = 
+				new BooleanFormula("(A*B)+(C*D)");
+		BooleanFormula expression2 =
+				new BooleanFormula("!Z");
+		Assert.assertEquals(new BooleanFormula("(A*B*!Z)+(C*D*!Z)"),expression1.andWith(expression2));
+		// Test associativity
+		expression1 = new BooleanFormula("(A*B)+(C*D)");
+		Assert.assertEquals(new BooleanFormula("(A*B*!Z)+(C*D*!Z)"),expression2.andWith(expression1));
+		
+		// Test with a result term that is false
+		expression1 = new BooleanFormula("(A*B)+(C*D)");
+		expression2 = new BooleanFormula("!A");
+		Assert.assertEquals(new BooleanFormula("(!A*C*D)"),expression1.andWith(expression2));
+		expression1 = new BooleanFormula("(A*B)+(C*D)");
+		Assert.assertEquals(new BooleanFormula("(!A*C*D)"),expression2.andWith(expression1));
+
+		// Test compound inputs
+		expression1 = new BooleanFormula("(A*B)+(C*D)");
+		expression2 = new BooleanFormula("(A*X)+(C*Y)");
+		Assert.assertEquals(new BooleanFormula("(A*B*X)+(A*C*D*X)+(A*B*C*Y)+(C*D*Y)"),expression1.andWith(expression2));
+		expression1 = new BooleanFormula("(A*B)+(C*D)");
+		Assert.assertEquals(new BooleanFormula("(A*B*X)+(A*C*D*X)+(A*B*C*Y)+(C*D*Y)"),expression2.andWith(expression1));
+		
+		// Test with a false result
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		expression2 = new BooleanFormula("!A");
+		Assert.assertEquals(new BooleanFormula(false),expression1.andWith(expression2));
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		Assert.assertEquals(new BooleanFormula(false),expression2.andWith(expression1));
+		
+		// Test with unchanged result
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		expression2 = new BooleanFormula("A");
+		Assert.assertEquals(new BooleanFormula("(A*B)+(A*C)"),expression1.andWith(expression2));
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		Assert.assertEquals(new BooleanFormula("(A*B)+(A*C)"),expression2.andWith(expression1));
+		
+		// one input true
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		expression2 = new BooleanFormula(true);
+		Assert.assertEquals(new BooleanFormula("(A*B)+(A*C)"),expression1.andWith(expression2));
+		Assert.assertEquals(new BooleanFormula("(A*B)+(A*C)"),expression2.andWith(expression1));
+		
+		// one input false
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		expression2 = new BooleanFormula(false);
+		Assert.assertEquals(new BooleanFormula(false),expression1.andWith(expression2));
+		expression1 = new BooleanFormula("(A*B)+(A*C)");
+		Assert.assertEquals(new BooleanFormula(false),expression2.andWith(expression1));
+		
+		// both inputs true
+		expression1 = new BooleanFormula(true);
+		expression2 = new BooleanFormula(true);
+		Assert.assertEquals(new BooleanFormula(true), expression1.andWith(expression2));
+		
+		// both inputs false
+		expression1 = new BooleanFormula(false);
+		expression2 = new BooleanFormula(false);
+		Assert.assertEquals(new BooleanFormula(false), expression1.andWith(expression2));
+		
+		// one true, one false
+		expression1 = new BooleanFormula(true);
+		expression2 = new BooleanFormula(false);
+		Assert.assertEquals(new BooleanFormula(false), expression1.andWith(expression2));
+		expression1 = new BooleanFormula(true);
+		Assert.assertEquals(new BooleanFormula(false), expression2.andWith(expression1));
+		
 	}
 	
 }

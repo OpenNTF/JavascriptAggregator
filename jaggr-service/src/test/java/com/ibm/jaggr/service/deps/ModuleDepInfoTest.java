@@ -82,11 +82,9 @@ public class ModuleDepInfoTest {
 		
 		depInfo = new ModuleDepInfo("has", new BooleanTerm("!A*A"), null);
 		depInfo.add(new ModuleDepInfo("has", new BooleanTerm("B*!B"), null));
-		depInfo.simplify();
 		Assert.assertEquals(0, depInfo.getHasPluginPrefixes().size());
 		depInfo = new ModuleDepInfo("has", new BooleanTerm("!A"), null);
 		depInfo.add(new ModuleDepInfo("has", new BooleanTerm("A"), null));
-		depInfo.simplify();
 		System.out.println(depInfo.getHasPluginPrefixes());
 		Assert.assertNull(depInfo.getHasPluginPrefixes());
 	}
@@ -95,18 +93,23 @@ public class ModuleDepInfoTest {
 	public void testContainsTerm() {
 		ModuleDepInfo depInfo =
 				new ModuleDepInfo(null, null, null);
-		Assert.assertTrue(depInfo.containsTerm(null));
-		Assert.assertTrue(depInfo.containsTerm(new BooleanTerm()));
+		Assert.assertTrue(depInfo.containsTerm(BooleanTerm.FALSE));
+		Assert.assertTrue(depInfo.containsTerm(BooleanTerm.TRUE));
 		Assert.assertTrue(depInfo.containsTerm(new BooleanTerm("A")));
 		
-		depInfo = new ModuleDepInfo("has", BooleanTerm.emptyTerm, null);
-		Assert.assertTrue(depInfo.containsTerm(new BooleanTerm()));
-		Assert.assertFalse(depInfo.containsTerm(null));
+		depInfo = new ModuleDepInfo("has", BooleanTerm.TRUE, null);
+		Assert.assertTrue(depInfo.containsTerm(BooleanTerm.TRUE));
+		Assert.assertTrue(depInfo.containsTerm(BooleanTerm.FALSE));
+		Assert.assertTrue(depInfo.containsTerm(new BooleanTerm("A")));
+		
+		depInfo = new ModuleDepInfo("has", BooleanTerm.FALSE, null);
+		Assert.assertFalse(depInfo.containsTerm(BooleanTerm.TRUE));
+		Assert.assertTrue(depInfo.containsTerm(BooleanTerm.FALSE));
 		Assert.assertFalse(depInfo.containsTerm(new BooleanTerm("A")));
 		
 		depInfo = new ModuleDepInfo("has", new BooleanTerm("A*B"), null);
-		Assert.assertFalse(depInfo.containsTerm(null));
-		Assert.assertTrue(depInfo.containsTerm(new BooleanTerm()));
+		Assert.assertTrue(depInfo.containsTerm(BooleanTerm.FALSE));
+		Assert.assertFalse(depInfo.containsTerm(BooleanTerm.TRUE));
 		Assert.assertFalse(depInfo.containsTerm(new BooleanTerm("A")));
 		Assert.assertTrue(depInfo.containsTerm(new BooleanTerm("B*A")));
 		
@@ -119,23 +122,20 @@ public class ModuleDepInfoTest {
 		ModuleDepInfo depInfo =
 				new ModuleDepInfo(null, null, null);
 		Assert.assertFalse(depInfo.add(new ModuleDepInfo(null, null, null)));
-		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", new BooleanTerm(), null)));
+		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", BooleanTerm.TRUE, null)));
 		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", new BooleanTerm("A"), null)));
 		
-		depInfo = new ModuleDepInfo("has", new BooleanTerm(), null);
-		Assert.assertEquals(0, depInfo.size());
-		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", new BooleanTerm(), null)));
-		Assert.assertTrue(depInfo.add(new ModuleDepInfo("has", new BooleanTerm("A"), null)));
-		Assert.assertEquals(1, depInfo.size());
-		Assert.assertEquals(new BooleanTerm("A"), depInfo.getTerms().iterator().next());
-		Assert.assertTrue(depInfo.add(new ModuleDepInfo(null, null, null)));
-		Assert.assertNull(depInfo.getTerms());
-		Assert.assertEquals(0, depInfo.size());
+		depInfo = new ModuleDepInfo("has", BooleanTerm.TRUE, null);
+		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", BooleanTerm.TRUE, null)));
+		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", new BooleanTerm("A"), null)));
 		
-		depInfo = new ModuleDepInfo("has", new BooleanTerm(), null);
-		Assert.assertTrue(depInfo.add(new ModuleDepInfo(null, null, null)));
-		Assert.assertNull(depInfo.getTerms());
-		Assert.assertEquals(0, depInfo.size());
+		depInfo = new ModuleDepInfo("has", new BooleanTerm("A"), null);
+		Assert.assertTrue(depInfo.add(new ModuleDepInfo()));
+		Assert.assertEquals(new ModuleDepInfo(), depInfo);
+		
+		depInfo = new ModuleDepInfo("has", BooleanTerm.TRUE, null);
+		Assert.assertFalse(depInfo.add(new ModuleDepInfo()));
+		Assert.assertEquals(new ModuleDepInfo(), depInfo);
 		
 		// Test isPluginNameDeclared constructor option
 		depInfo = new ModuleDepInfo("has1", new BooleanTerm("A*B"), null);
@@ -150,7 +150,6 @@ public class ModuleDepInfoTest {
 		}
 		depInfo = new ModuleDepInfo("has1", new BooleanTerm("A*B"), null, true);
 		Assert.assertTrue(depInfo.add(new ModuleDepInfo("has2", new BooleanTerm("B*C"), null)));
-		depInfo.simplify();
 		prefixes = depInfo.getHasPluginPrefixes();
 		for (String prefix : prefixes) {
 			Assert.assertTrue(prefix.startsWith("has1!"));
@@ -160,12 +159,10 @@ public class ModuleDepInfoTest {
 		depInfo = new ModuleDepInfo(null, null, null);
 		Assert.assertFalse(depInfo.add(new ModuleDepInfo(null, null, null)));
 		Assert.assertNull(depInfo.getComment());
-		Assert.assertTrue(depInfo.add(new ModuleDepInfo(null, null, "Comment")));
-		Assert.assertEquals("Comment", depInfo.getComment());
-		Assert.assertFalse(depInfo.add(new ModuleDepInfo(null, null, "Comment 1")));
-		Assert.assertEquals("Comment", depInfo.getComment());
+		Assert.assertFalse(depInfo.add(new ModuleDepInfo(null, null, "Comment")));
+		Assert.assertNull(depInfo.getComment());
 		Assert.assertFalse(depInfo.add(new ModuleDepInfo("has", new BooleanTerm("A"), "Comment 2")));
-		Assert.assertEquals("Comment", depInfo.getComment());
+		Assert.assertNull(depInfo.getComment());
 		
 		depInfo = new ModuleDepInfo("has", new BooleanTerm("A*B"), "Comment 2");
 		Assert.assertEquals("Comment 2", depInfo.getComment());
@@ -175,7 +172,6 @@ public class ModuleDepInfoTest {
 		Assert.assertEquals("Comment 1", depInfo.getComment());
 		Assert.assertTrue(depInfo.add(new ModuleDepInfo("has", new BooleanTerm("D"), "Comment 1.1")));
 		Assert.assertEquals("Comment 1", depInfo.getComment());
-		depInfo.simplify();
 		Assert.assertEquals(
 				new HashSet<String>(Arrays.asList(new String[]{"has!A?B?", "has!C?", "has!D?"})),
 				depInfo.getHasPluginPrefixes()
@@ -223,10 +219,11 @@ public class ModuleDepInfoTest {
 		Assert.assertTrue(depInfo.add(new ModuleDepInfo("has", new BooleanTerm("C"), "Comment C")));
 		Assert.assertEquals("Comment A", depInfo.getComment());
 		Assert.assertTrue(depInfo.subtract(new ModuleDepInfo("has", new BooleanTerm("A"), null)));
-		Assert.assertEquals("Comment B", depInfo.getComment());
+		Assert.assertEquals("Comment A", depInfo.getComment());
 		Assert.assertTrue(depInfo.subtract(new ModuleDepInfo("has", new BooleanTerm("C"), null)));
-		Assert.assertEquals("Comment B", depInfo.getComment());
+		Assert.assertEquals("Comment A", depInfo.getComment());
 		Assert.assertTrue(depInfo.subtract(new ModuleDepInfo("has", new BooleanTerm("B"), null)));
 		Assert.assertNull(depInfo.getComment());
 	}
+	
 }

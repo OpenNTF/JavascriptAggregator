@@ -21,7 +21,6 @@ import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 
 import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.util.PathUtil;
 
 @SuppressWarnings("serial")
 public class DepTreeRoot extends DepTreeNode {
@@ -54,24 +53,4 @@ public class DepTreeRoot extends DepTreeNode {
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		throw new NotSerializableException();
 	}
-
-	/**
-	 * Resolves dependency references.  This method must be called on a root
-	 * node with an empty name.  The child nodes of the root are the top level
-	 * packages and paths specified in the config.  The dependencies may contain
-	 * relative paths (./ and ../) and they will be normalized by calling 
-	 * {@link PathUtil#normalizePaths(String, String[])}.  Note that relative 
-	 * paths cannot be used to jump across top level child nodes (i.e. each 
-	 * child of root acts as a virtual root for the purpose of normalizing
-	 * path names. 
-	 * <p>
-	 * After calling this method, you may call {@link getExpandedDependencies}
-	 * on any node which is rooted at this node in order to get it's expanded
-	 * dependencies.
-	 */
-	public void resolveDependencyRefs() {
-		normalizeDependencies();
-		super.resolveDependencyRefs();
-	}
-	
 }

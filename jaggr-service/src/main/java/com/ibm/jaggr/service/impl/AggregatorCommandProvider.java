@@ -24,6 +24,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +42,7 @@ import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.util.CIConsoleWriter;
 import com.ibm.jaggr.service.util.ConsoleService;
+import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.StringBufferWriter;
 
@@ -160,9 +162,7 @@ public class AggregatorCommandProvider implements
 			} else if (command.equals(CMD_VALIDATEDEPS)) {
 				ci.println(validatedeps(args));
 			} else if (command.equals(CMD_GETDEPS)) {
-				ci.println(getdeps(args, false));
-			} else if (command.equals(CMD_GETDEPSWITHHASBRANCHING)) {
-				ci.println(getdeps(args, true));
+				ci.println(getdeps(args));
 			} else if (command.equals(CMD_CLEARCACHE)){
 				ci.println(clearcache(args));
 			} else if (command.equals(CMD_DUMPCACHE)) {
@@ -214,14 +214,14 @@ public class AggregatorCommandProvider implements
 			try {
 				aggregator.reloadConfig();
 				sb.append(Messages.CommandProvider_20);
-				// Call getExpandedDependencies().  It will block and not return till the 
+				// Call getDeclaredDependencies().  It will block and not return till the 
 				// dependencies have been loaded/validated.  We do this so that the 
 				// command interpreter will remain valid so that console output will be
 				// displayed.  If in development mode, we'll get a ProcessingDependenciesException.
 				IDependencies deps = aggregator.getDependencies();
 				while (true) {
 					try {
-						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false); //$NON-NLS-1$
+						deps.getDelcaredDependencies(""); //$NON-NLS-1$ 
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
@@ -245,13 +245,13 @@ public class AggregatorCommandProvider implements
 			try {
 				IDependencies deps = aggregator.getDependencies();
 				deps.validateDeps(clean);
-				// Call getExpandedDependencies().  It will block and not return till the 
+				// Call getDeclaredDependencies().  It will block and not return till the 
 				// dependencies have been loaded/validated.  We do this so that the 
 				// command interpreter will remain valid so that console output will be
 				// displayed.  If in development mode, we'll get a ProcessingDependenciesException.
 				while (true) {
 					try {
-						deps.getExpandedDependencies("", new Features(), new HashSet<String>(), false, false); //$NON-NLS-1$
+						deps.getDelcaredDependencies(""); //$NON-NLS-1$
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
@@ -265,8 +265,8 @@ public class AggregatorCommandProvider implements
     return sb.toString();
 	}
 	
-	protected String getdeps(String[] args, boolean performHasPluginBranching) throws InvalidSyntaxException, IOException {
-		ModuleDeps moduleDeps = null;
+	protected String getdeps(String[] args) throws InvalidSyntaxException, IOException {
+		DependencyList moduleDeps = null;
 		StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
 		if (ref != null) {
@@ -294,21 +294,20 @@ public class AggregatorCommandProvider implements
 					Messages.CommandProvider_23,
 					new Object[]{features.toString()})).append(NEWLINE);
 			try {
-				IDependencies deps = aggregator.getDependencies();
-				if (deps != null) {
-					moduleDeps = deps.getExpandedDependencies(
-							moduleName, 
-							features, 
-							new HashSet<String>(), 
-							true, 
-							performHasPluginBranching);
+				if (aggregator.getDependencies() != null) {
+					moduleDeps = new DependencyList(
+							new HashSet<String>(Arrays.asList(new String[]{moduleName})),
+							aggregator,
+							features,
+							true,
+							true);
 				}
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
 			if (moduleDeps != null) {
-				moduleDeps.simplify();
-				for (Map.Entry<String, String> entry : moduleDeps.getModuleIdsWithComments().entrySet()) {
+				ModuleDeps depList = moduleDeps.getExpandedDeps();
+				for (Map.Entry<String, String> entry : depList.getModuleIdsWithComments().entrySet()) {
 					sb.append("\"" + entry.getKey() + "\" /*" + entry.getValue() + " */").append(NEWLINE); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				}
 			}

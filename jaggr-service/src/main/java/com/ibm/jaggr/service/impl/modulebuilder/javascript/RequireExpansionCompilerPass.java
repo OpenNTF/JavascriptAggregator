@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -89,11 +90,6 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	private boolean logDebug;
 	
 	/**
-	 * True if has! loader plugin branching should be performed
-	 */
-	private final boolean performHasBranching;
-	
-	/**
 	 * Constructs a instance of this class for a specific module that is being compiled.
 	 * 
 	 * @param moduleName The name of the module 
@@ -110,8 +106,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			Set<String> dependentFeatures,
 			List<ModuleDeps> expandedDepsList,
 			String configVarName,
-			boolean logDebug,
-			boolean performHasBranching) {
+			boolean logDebug) {
 		
 		this.aggregator = aggregator;
 		this.hasFeatures = features;
@@ -120,7 +115,6 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		this.configVarName = configVarName;
 		this.consoleDebugOutput = logDebug ? new LinkedList<List<String>>() : null;
 		this.logDebug = logDebug;
-		this.performHasBranching = performHasBranching;
 		
 		if (configVarName == null || configVarName.length() == 0) {
 			this.configVarName = "require"; //$NON-NLS-1$
@@ -221,7 +215,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 							// declared dependencies against the dependencies that were
 							// used to calculate the dependency graph.
 							Node strNode = param.getFirstChild();
-							List<String> deps = new LinkedList<String>();
+							List<String> deps = new ArrayList<String>();
 							while (strNode != null) {
 								if (strNode.getType() == Token.STRING) {
 									String mid = strNode.getString();
@@ -234,9 +228,9 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 							}
 							int idx = moduleName.lastIndexOf("/"); //$NON-NLS-1$
 							String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
-							deps = Arrays.asList(PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()])));
+							List<String> normalized = Arrays.asList(PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()])));
 							List<String> processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
-							if (processedDeps != null && !deps.equals(processedDeps)) {
+							if (processedDeps != null && !processedDeps.equals(normalized)) {
 								// The dependency list for this module has changed since the dependencies
 								// were last created/validated.  Throw an exception.
 								throw new DependencyVerificationException(moduleName);
@@ -244,19 +238,21 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 						}
 						// Add the expanded dependencies to the set of enclosing dependencies for 
 						// the module.
-						enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
 						List<String> moduleDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
-						DependencyList depList = new DependencyList(
-								moduleDeps, 
-								aggregator.getConfig(), 
-								aggregator.getDependencies(), 
-								hasFeatures, 
-								logDebug, performHasBranching);
-						depList.setLabel(MessageFormat.format(
-							Messages.RequireExpansionCompilerPass_1,
-							new Object[] {cursor.getLineno()}
-						));
-						enclosingDependencies.add(depList);
+						if (moduleDeps != null) {
+							enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
+							DependencyList depList = new DependencyList(
+									moduleDeps, 
+									aggregator, 
+									hasFeatures, 
+									true,	// resolveAliases
+									logDebug);
+							depList.setLabel(MessageFormat.format(
+								Messages.RequireExpansionCompilerPass_1,
+								new Object[] {cursor.getLineno()}
+							));
+							enclosingDependencies.add(depList);
+						}
 					}
 				}
 			} else if (cursor.getType() == Token.STRING && cursor.getString().equals("deps")) { //$NON-NLS-1$
@@ -367,10 +363,10 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		String[] normalizedNames = PathUtil.normalizePaths(ref, names.toArray(new String[names.size()]));
 		DependencyList depList = new DependencyList(
 				Arrays.asList(normalizedNames), 
-				aggregator.getConfig(), 
-				aggregator.getDependencies(), 
-				hasFeatures,  
-				logDebug, performHasBranching);
+				aggregator, 
+				hasFeatures,
+				true,	// resolveAliases
+				logDebug);
 		depList.setLabel(detail);
 
 		if (logDebug) {
@@ -379,7 +375,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("color:blue"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 			StringBuffer sb = new StringBuffer();
-			for (Map.Entry<String, String> entry : depList.getExplicitDeps().getModuleIdsWithComments().entrySet()) {
+			for (Map.Entry<String, String> entry : new ModuleDeps(depList.getExplicitDeps()).getModuleIdsWithComments().entrySet()) {
 				sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			msg = new LinkedList<String>();
@@ -387,7 +383,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("font-size:x-small"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 		}		
-		ModuleDeps filter = depList.getExplicitDeps();
+		ModuleDeps filter = new ModuleDeps(depList.getExplicitDeps());
 		for (String exclude : IDependencies.excludes) {
 			filter.add(exclude, new ModuleDepInfo(null, (BooleanTerm)null, null));
 		}
@@ -403,11 +399,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				));
 				msg.add("color:blue"); //$NON-NLS-1$
 				consoleDebugOutput.add(msg);
-				ModuleDeps depMap = encDep.getExplicitDeps();
+				ModuleDeps depMap = new ModuleDeps(encDep.getExplicitDeps());
 				depMap.addAll(encDep.getExpandedDeps());
 				depMap.subtractAll(filter);
 				StringBuffer sb = new StringBuffer();
-				for (Map.Entry<String, String> entry : depMap.getModuleIdsWithComments().entrySet()) {
+				for (Map.Entry<String, String> entry : new ModuleDeps(depMap).getModuleIdsWithComments().entrySet()) {
 					sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				}
 				msg = new LinkedList<String>();
@@ -417,9 +413,12 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			}
 			filter.addAll(encDep.getExplicitDeps());
 			filter.addAll(encDep.getExpandedDeps());
+			if (dependentFeatures != null) {
+				dependentFeatures.addAll(encDep.getDependentFeatures());
+			}
 		}
 		
-		ModuleDeps expandedDeps = depList.getExpandedDeps();
+		ModuleDeps expandedDeps = new ModuleDeps(depList.getExpandedDeps());
 		
 		if (logDebug) {
 			msg = new LinkedList<String>();
@@ -427,7 +426,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("color:blue"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 			StringBuffer sb = new StringBuffer();
-			for (Map.Entry<String, String> entry : expandedDeps.getModuleIdsWithComments().entrySet()) {
+			for (Map.Entry<String, String> entry : new ModuleDeps(expandedDeps).getModuleIdsWithComments().entrySet()) {
 				sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			msg = new LinkedList<String>();
@@ -442,19 +441,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		}
 		
 		/*
-		 * Simplify invariant has! conditionals (those that evaluate to true
-		 * or false) but don't simplify non-invariants.  This makes it easier
-		 * to match terms when subsequently calling subtactAll to remove filter
-		 * terms.
-		 */
-		expandedDeps.simplifyInvariants();
-		/*
 		 * Use LinkedHashMap to maintain ordering of expanded dependencies
 		 * as some types of modules (i.e. css) are sensitive to the order
 		 * that modules are required relative to one another.
 		 */
 		expandedDeps.subtractAll(filter);
-		expandedDeps.simplify();
 		
 		expandedDepsList.add(expandedDeps);
 		if (expandedDeps.getModuleIds().size() > 0) {

@@ -33,8 +33,18 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 			// null names not allowed
 			throw new NullPointerException();
 		}
+		if (name.length() == 0) {
+			throw new UnsupportedOperationException();
+		}
 		this.name = name;
 		this.state = state;		// false if negated, otherwise true
+	}
+	
+	/**
+	 * @return the logical negation of this BooleanVar
+	 */
+	public BooleanVar negate() {
+		return new BooleanVar(name, !state);
 	}
 	
 	/* (non-Javadoc)
@@ -73,5 +83,6 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 		}
 		return result;
 	}
+
 
 }

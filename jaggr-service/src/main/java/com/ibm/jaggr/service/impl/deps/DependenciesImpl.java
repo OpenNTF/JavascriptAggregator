@@ -19,14 +19,13 @@ package com.ibm.jaggr.service.impl.deps;
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,13 +47,11 @@ import com.ibm.jaggr.service.config.IConfig.Location;
 import com.ibm.jaggr.service.config.IConfigListener;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.deps.IDependenciesListener;
-import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.options.IOptionsListener;
 import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
 import com.ibm.jaggr.service.util.ConsoleService;
-import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.SequenceNumberProvider;
 
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
@@ -69,12 +66,12 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	private long depsLastModified = -1;
 	private long initStamp;
 	private String rawConfig = null;
-    private DepTreeRoot depTree = null;
 	private CountDownLatch initialized;
 	private boolean processingDeps = false;
 	private boolean validate = false;
 	private String cacheBust = null;
 	private boolean initFailed = false;
+	private Map<String, List<String>> depMap;
 	
 	private IAggregator aggregator = null;
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -129,32 +126,6 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		return aggregator;
 	}
 	
-	@Override
-	public ModuleDeps getExpandedDependencies(String modulePath,
-			Features features, Set<String> dependentFeatures,
-			boolean includeDetails, boolean performHasBranching) throws IOException {
-
-		ModuleDeps result = new ModuleDeps();
-		try {
-			DepTreeNode node;
-			getReadLock();
-			try {
-				modulePath = aggregator.getConfig().resolve(modulePath, features, dependentFeatures, null, true);
-				node = depTree.getDescendent(modulePath);
-				if (node != null) {
-					result = node.getExpandedDependencies(features, dependentFeatures, includeDetails, performHasBranching);
-				}
-			} finally {
-				releaseReadLock();
-			}
-		} catch (InterruptedException e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			}
-		}
-		return result;
-	}
-
 	@Override
 	public void validateDeps(boolean clean) {
 		if (aggregator.getConfig() == null) {
@@ -290,13 +261,10 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 								deps.mapDependencies(depTree, bundleContext, packageOverrideURIs, config);
 								deps.mapDependencies(depTree, bundleContext, pathURIs, config);
 								deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
-								/*
-								 * For each module name in the dependency lists, try to resolve the name
-								 * to a reference to another node in the tree
-								 */
-								depTree.resolveDependencyRefs();
+								depTree.normalizeDependencies();
+								DependenciesImpl.this.depMap = new HashMap<String, List<String>>();
+								depTree.populateDepMap(depMap);
 								depsLastModified = depTree.lastModifiedDepTree();
-								DependenciesImpl.this.depTree = depTree;
 							} catch (Exception e) {
 								if (!cleanCache && (deps == null || deps.isFromCache())) {
 									if (log.isLoggable(Level.WARNING)) {
@@ -371,15 +339,8 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		List<String> result = null;
 		try {
 			getReadLock();
-			DepTreeNode node;
 			try {
-				node = depTree.getDescendent(mid);
-				if (node != null) {
-					String[] deps = node.getDepArray();
-					if (deps != null) {
-						result = Arrays.asList(node.getDepArray());
-					}
-				}
+				result = depMap.get(mid);
 			} finally {
 				releaseReadLock();
 			}
