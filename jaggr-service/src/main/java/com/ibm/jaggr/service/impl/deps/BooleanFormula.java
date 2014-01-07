@@ -249,12 +249,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 				isSimplified = true;
 				return this;
 			} else {
-				formula.addInternal(evaluated);
+				formula.add(evaluated);
 			}
 		}
 		booleanTerms = formula.booleanTerms;
 		isSimplified = formula.isSimplified;
-		simplifyInvariant();
 		return this;
 	}
 	
@@ -299,13 +298,12 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			for (BooleanTerm term : booleanTerms) {
 				BooleanTerm newTerm = term.andWith(otherTerm);
 				if (newTerm != null) {
-					newTerms.addInternal(newTerm);
+					newTerms.add(newTerm);
 				}
 			}
 		}
 		booleanTerms = newTerms.booleanTerms;
 		isSimplified = newTerms.isSimplified;
-		simplifyInvariant();
 		return this;
 	}
 	
@@ -323,7 +321,6 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		} else if (booleanTerms != null) {
 			modified = removeAll(toRemove);
 		}
-		simplifyInvariant();
 		return modified;
 	}				
 
@@ -363,7 +360,8 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * 
 	 * @return true if the formula was modified
 	 */
-	private boolean addInternal(BooleanTerm booleanTerm) {
+	@Override
+	public boolean add(BooleanTerm booleanTerm) {
 		boolean modified = false;
 		if (booleanTerm.isTrue()) {
 			modified = booleanTerms != null;
@@ -404,23 +402,8 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			booleanTerms = null;
 		} else if (booleanTerms != null) {
 			for (BooleanTerm term : terms) {
-				modified |= addInternal(term);
+				modified |= add(term);
 			}
-		}
-		if (modified) {
-			simplifyInvariant();
-		}
-		return modified;
-	}
-	
-	/* (non-Javadoc)
-	 * @see java.util.Set#add(java.lang.Object)
-	 */
-	@Override
-	public boolean add(BooleanTerm booleanTerm) {
-		boolean modified = addInternal(booleanTerm);
-		if (modified) {
-			simplifyInvariant();
 		}
 		return modified;
 	}
@@ -642,20 +625,6 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		} else {
 			// add the term to the term list
 			terms.add(byteValue);
-		}
-	}
-	
-	/**
-	 * Simplify the formula and replace the existing formula with the simplified
-	 * equivalent only if it is invariant (evaluates to true of false).
-	 */
-	private void simplifyInvariant() {
-		if (!isSimplified) {
-			BooleanFormula simplified = simplify();
-			if  (simplified.isTrue() || simplified.isFalse() || simplified.equals(this)) {
-				booleanTerms = simplified.booleanTerms;
-				isSimplified = true;
-			}
 		}
 	}
 }

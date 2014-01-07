@@ -95,7 +95,7 @@ public class ModuleDepInfo implements Serializable {
 		isPluginNameDeclared = other.isPluginNameDeclared;
 		this.comment = (comment != null) ? comment : other.comment;
 		commentTermSize = other.commentTermSize;
-		checkInvariant();
+		simplifyInvariant();
 	}
 	
 	/**
@@ -150,7 +150,7 @@ public class ModuleDepInfo implements Serializable {
 			this.comment = comment;
 			commentTermSize = term != null ? term.size() : 0;
 		}
-		checkInvariant();
+		simplifyInvariant();
 	}
 	
 	/**
@@ -248,7 +248,7 @@ public class ModuleDepInfo implements Serializable {
 			pluginName = other.pluginName;
 			isPluginNameDeclared = other.isPluginNameDeclared;
 		}
-		checkInvariant();
+		simplifyInvariant();
 		return this;
 	}
 	
@@ -283,7 +283,7 @@ public class ModuleDepInfo implements Serializable {
 				comment = other.comment;
 				commentTermSize = other.commentTermSize;
 			}
-			checkInvariant();
+			simplifyInvariant();
 			return modified;
 		}
 		// Add the terms
@@ -300,7 +300,7 @@ public class ModuleDepInfo implements Serializable {
 			comment = other.comment;
 			commentTermSize = other.commentTermSize;
 		}
-		checkInvariant();
+		simplifyInvariant();
 		return modified;
 	}
 	
@@ -351,7 +351,7 @@ public class ModuleDepInfo implements Serializable {
 			comment = null;
 			commentTermSize = 0;
 		}
-		checkInvariant();
+		simplifyInvariant();
 		return modified;
 	}
 	
@@ -363,7 +363,7 @@ public class ModuleDepInfo implements Serializable {
 	 */
 	public void resolveWith(Features features) {
 		formula.resolveWith(features);
-		checkInvariant();
+		simplifyInvariant();
 	}
 	
 	/* (non-Javadoc)
@@ -375,9 +375,18 @@ public class ModuleDepInfo implements Serializable {
 	}
 
 	/**
-	 * If the formula is invariant (true or false), then do some cleanup
+	 * Simplify the formula and replace the existing formula with the simplified
+	 * equivalent only if it is invariant (evaluates to true of false).
+	 * <p>
+	 * Note that we don't replace non-invariants with the simplified version
+	 * of the expression because keeping the terms in their original form
+	 * makes it easier to match terms when subtracting.
 	 */
-	private void checkInvariant() {
+	private void simplifyInvariant() {
+		BooleanFormula simplified = formula.simplify();
+		if  (simplified.isTrue() || simplified.isFalse() || simplified.equals(formula)) {
+			formula = simplified;
+		}		
 		if (formula.isTrue() || formula.isFalse()) {
 			pluginName = null;
 			isPluginNameDeclared = false;
