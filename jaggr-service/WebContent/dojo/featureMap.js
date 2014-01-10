@@ -13,10 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["dojo/has", "dojox/encoding/base64"], function(has, base64) {
-	var featureList=[]; // this gets replace with the feature list by JAGGR on the server - DO NOT EDIT!
-	has.add("combo-feature-map", function(){return featureList.length > 0;});
-	return {
+define([
+    "dojo/has", 
+    "combo/featureList", 	// not a physical module.  Resolved by JAGGR 
+                            //  to return array of dependent features 
+    "dojox/encoding/base64"
+], function(has, featureList, base64) {
+	var result = {
 		getQueryString: function(hasArg) {
 			// hasArg is expected to begin with 'has=' followed by the '*'
 			// delimited list of features
@@ -47,4 +50,8 @@ define(["dojo/has", "dojox/encoding/base64"], function(has, base64) {
 			return hasArg;
 		}
 	};
+	if (featureList && featureList.length > 0) {
+		has.add("combo-feature-map", function(){return result;});
+	}
+	return result;
 });

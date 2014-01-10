@@ -23,12 +23,9 @@ define([
     './sniff'           // initializes basic set of features used by dojo
     ], 
 function(has, lang, md5, cookie) {
-	if (cookie.isSupported()) {
-		has.add("combo-feature-cookie", function(){return true;});
-	}
 	// If we have an MD5 digest we can hash the has string, use the hash in the URL and put the has conditions in a cookie.
 	// This saves space in the URL for times when the number of has conditions is lengthy.
-	return {
+	var result = {
 		setCookie: function(hasArg, contextPath) {
 			var matches = /^[^:\/]+:\/\/([^\/]+)(\/.*)?$/.exec(contextPath);
 			if (matches) {
@@ -72,4 +69,8 @@ function(has, lang, md5, cookie) {
 			return ret;
 		}
 	};
+	if (cookie.isSupported()) {
+		has.add("combo-feature-cookie", function(){return result;});
+	}
+	return result;
 });

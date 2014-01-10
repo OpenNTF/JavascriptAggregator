@@ -20,7 +20,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
@@ -82,7 +81,6 @@ import com.ibm.jaggr.service.resource.IResourceVisitor;
 import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.service.resource.StringResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.TypeUtil;
 
@@ -123,13 +121,16 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
     public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
+    
+    static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
+    public static final String FEATURE_LIST_PRELUDE = "define([], function() { return "; //$NON-NLS-1$
+    public static final String FEATURE_LIST_PROLOGUE = ";});"; //$NON-NLS-1$
 
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
     private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
     
     private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
     private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
-    private static final Pattern featureListJSArrayPat = Pattern.compile("(\\s+var\\s+featureList\\s*=\\s*)\\[\\](\\s*;)"); //$NON-NLS-1$
 
     private String resourcePathId;
     private List<ServiceRegistration> serviceRegistrations = new ArrayList<ServiceRegistration>();
@@ -392,7 +393,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
      * @throws  
      */
     protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
-		Features features = new Features();
+		Features features = getFeaturesFromRequestEncoded(request);
+		if (features != null) {
+			return features;
+		}
+		features = new Features();
 		String has  = getHasConditionsFromRequest(request);
 		if (has != null) {
 			if (log.isLoggable(Level.FINEST))
@@ -420,12 +425,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * @throws UnsupportedEncodingException 
 	 */
 	protected String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
-		
-		String ret = getHasConditionsEncodedFromRequest(request);
-		if (ret != null) {
-			return ret;
-		}
-		
+
+		String ret = null;
 		if (request.getParameter(FEATUREMAPHASH_REQPARAM) != null) {
 			// The cookie called 'has' contains the has conditions
 			Cookie[] cookies = request.getCookies();
@@ -591,7 +592,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
 		this.aggregator = aggregator;
 
-		URI featureMapJSResourceUri = getFeatureMapJSResourceUri();
+		URI featureListResourceUri = getFeatureListResourceUri();
 		// register a config listener so that we get notified of changes to 
 		// the server-side AMD config file.
 		String name = aggregator.getName();
@@ -606,7 +607,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 				IShutdownListener.class.getName(), this, dict
 		));
 
-		if (featureMapJSResourceUri != null) {
+		if (featureListResourceUri != null) {
 		    depsInitialized = new CountDownLatch(1); 
 
 			// Get first resource factory extension so we can add to beginning of list
@@ -617,7 +618,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	    	dict = new Properties();
 	    	dict.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
 			reg.registerExtension(
-					newFeatureMapJSResourceFactory(featureMapJSResourceUri), 
+					newFeatureListResourceFactory(featureListResourceUri), 
 					dict,
 					IResourceFactoryExtensionPoint.ID,
 					getPluginUniqueId(),
@@ -660,8 +661,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * 
 	 * @return null
 	 */
-	protected URI getFeatureMapJSResourceUri() {
-		return null;
+	protected URI getFeatureListResourceUri() {
+		return getComboUri().resolve(FEATUREMAP_JS_PATH);
 	}
 
 	/**
@@ -843,7 +844,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * don't care) represents the state of a feature in the list of
 	 * deendentFeatures that was sent to the client in the featureMap JavaScript
 	 * resource served by
-	 * {@link AbstractHttpTransport.FeatureMapJSResourceFactory}.
+	 * {@link AbstractHttpTransport.FeatureListResourceFactory}.
 	 * <p>
 	 * Each byte from the base64 decoded byte array encodes 5 trits (3**5 = 243
 	 * states out of the 256 possible states).
@@ -853,8 +854,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * @return the decoded feature list as a string, or null
 	 * @throws IOException
 	 */
-	protected String getHasConditionsEncodedFromRequest(HttpServletRequest request) throws IOException {
-		final String methodName = "getHasConditionsEncodedFromRequest"; //$NON-NLS-1$
+	protected Features getFeaturesFromRequestEncoded(HttpServletRequest request) throws IOException {
+		final String methodName = "getFeaturesFromRequestEncoded"; //$NON-NLS-1$
 		final boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{request});
@@ -892,22 +893,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 				q = q / 3;
 			}
 		}
-		StringBuffer sb = new StringBuffer();
+		Features result = new Features();
 		int i = 0;
 		for (byte b : bos.toByteArray()) {
-			if (b == 0) {
-				sb.append(i>0?"*":"").append("!").append(dependentFeatures.get(i)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			} else if (b == 1) {
-				sb.append(i>0?"*":"").append(dependentFeatures.get(i)); //$NON-NLS-1$ //$NON-NLS-2$
-			} else if (b != 2) {
-				throw new IllegalStateException();
+			if (b < 2) {
+				result.put(dependentFeatures.get(i), b == 1);
 			}
 			i++;
 		}
 		if (traceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName, sb.toString());
+			log.exiting(AbstractHttpTransport.class.getName(), methodName, result);
 		}
-		return sb.toString();
+		return result;
 	}
 	
 	/**
@@ -917,13 +914,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 *            the resource path
 	 * @return a new factory object
 	 */
-	protected FeatureMapJSResourceFactory newFeatureMapJSResourceFactory(URI resourceUri) {
+	protected FeatureListResourceFactory newFeatureListResourceFactory(URI resourceUri) {
 		final String methodName = "newFeatureMapJSResourceFactory"; //$NON-NLS-1$
 		final boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{resourceUri});
 		}
-		FeatureMapJSResourceFactory factory = new FeatureMapJSResourceFactory(resourceUri);
+		FeatureListResourceFactory factory = new FeatureListResourceFactory(resourceUri);
 		if (traceLogging) {
 			log.exiting(AbstractHttpTransport.class.getName(), methodName);
 		}
@@ -937,11 +934,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * the list, where each trit in the encoded data is the value of a feature 
 	 * in the list. 
 	 */
-	protected class FeatureMapJSResourceFactory implements IResourceFactory {
+	protected class FeatureListResourceFactory implements IResourceFactory {
 		
 		private final URI resourceUri;
 		
-		public FeatureMapJSResourceFactory(URI resourceUri) {
+		public FeatureListResourceFactory(URI resourceUri) {
 			this.resourceUri = resourceUri;
 		}
 
@@ -953,17 +950,16 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			final String methodName = "handles"; //$NON-NLS-1$
 			final boolean traceLogging = log.isLoggable(Level.FINER);
 			if (traceLogging) {
-				log.entering(AbstractHttpTransport.FeatureMapJSResourceFactory.class.getName(), methodName, new Object[]{uri});
+				log.entering(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, new Object[]{uri});
 			}
 			boolean result = false;
 			if (StringUtils.equals(uri.getPath(), resourceUri.getPath()) &&
 				StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) &&
-				StringUtils.equals(uri.getHost(),  resourceUri.getHost()) &&
-				uri.getFragment() == null) {
+				StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
 				result = true;
 			}
 			if (traceLogging) {
-				log.exiting(AbstractHttpTransport.FeatureMapJSResourceFactory.class.getName(), methodName, result);
+				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, result);
 			}
 			return result;
 		}
@@ -976,13 +972,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			final String methodName = "newResource"; //$NON-NLS-1$
 			final boolean traceLogging = log.isLoggable(Level.FINER);
 			if (traceLogging) {
-				log.entering(AbstractHttpTransport.FeatureMapJSResourceFactory.class.getName(), methodName, new Object[]{uri});
+				log.entering(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, new Object[]{uri});
 			}
 			// validate the URI
 			if (!StringUtils.equals(uri.getPath(), resourceUri.getPath()) ||
 				!StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) ||
-				!StringUtils.equals(uri.getHost(),  resourceUri.getHost()) ||
-				uri.getFragment() != null) {
+				!StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
 				return new ExceptionResource(uri, 0, new IOException(new UnsupportedOperationException()));
 			}
 			// wait for dependencies to be initialized
@@ -991,18 +986,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			} catch (InterruptedException e) {
 				return new ExceptionResource(uri, 0L, new IOException(e));
 			}
-			// Get the resource from the aggregator and read it into a string.  The fragment 
-			// on the end of the URL prevents this code from being re-entered.
-			IResource res = getAggregator().newResource(URI.create(uri.toString()+"#direct")); //$NON-NLS-1$
-			long lastmod = Math.max(res.lastModified(), getAggregator().getDependencies().getLastModified());
-			StringWriter writer = new StringWriter();
-			try {
-				CopyUtil.copy(res.getReader(), writer);
-			} catch (IOException ex) {
-				return new ExceptionResource(uri, lastmod, ex);
-			}
-			String str = writer.toString();
-			
+			long lastmod = getAggregator().getDependencies().getLastModified();
 			// Now replace the empty list declaration in the javascript code with the 
 			// contents of the feature list from the dependencies and return the result
 			JSONArray json;
@@ -1011,18 +995,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			} catch (JSONException ex) {
 				return new ExceptionResource(uri, lastmod, new IOException(ex));
 			}
-			Matcher m = featureListJSArrayPat.matcher(str);
 			StringBuffer sb = new StringBuffer();
-			while (m.find()) {
-				m.appendReplacement(sb, ""); //$NON-NLS-1$
-				sb.append(m.group(1));
-				sb.append(json.toString());
-				sb.append(m.group(2));
-			}
-			m.appendTail(sb);
+			sb.append(FEATURE_LIST_PRELUDE).append(json).append(FEATURE_LIST_PROLOGUE);
 			IResource result = new StringResource(sb.toString(), uri, lastmod); 
 			if (traceLogging) {
-				log.exiting(AbstractHttpTransport.FeatureMapJSResourceFactory.class.getName(), methodName, sb.toString());
+				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, sb.toString());
 			}
 			return result;
 		}

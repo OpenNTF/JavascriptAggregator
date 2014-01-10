@@ -33,7 +33,6 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.StringUtils;
 import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.junit.After;
@@ -47,7 +46,6 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.StringResource;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.Features;
@@ -151,40 +149,44 @@ public class AbstractHttpTransportTest {
 		Map<String, String[]> requestParams = new HashMap<String, String[]>();
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(null, new HashMap<String, Object>(), requestParams, new Cookie[0], new HashMap<String, String>());
 		EasyMock.replay(mockRequest);
-		String features = "0*2*!10*!17*21*50*99";
+		Features features = new Features();
+		features.put("0", true);
+		features.put("2", true);
+		features.put("10", false);
+		features.put("17", false);
+		features.put("21", true);
+		features.put("50", true);
+		features.put("99", true);
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
-		String result = transport.getHasConditionsEncodedFromRequest(mockRequest);
+		Features result = transport.getFeaturesFromRequestEncoded(mockRequest);
 		System.out.println(result);
 		Assert.assertEquals(features, result);
 		
-		features = "";
+		features = new Features();
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
-		result = transport.getHasConditionsEncodedFromRequest(mockRequest);
+		result = transport.getFeaturesFromRequestEncoded(mockRequest);
 		Assert.assertEquals(features, result);
 		
-		features = StringUtils.join(featureList, "*");
+		features = new Features();
+		for (String name : featureList) {features.put(name, true); }
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
-		result = transport.getHasConditionsEncodedFromRequest(mockRequest);
+		result = transport.getFeaturesFromRequestEncoded(mockRequest);
 		System.out.println(result);
 		Assert.assertEquals(features, result);
 	}
 	
 	@Test
-	public void testFeatureMapJSResourceFactory_newResource() throws IOException {
-		String content = "define([], function() { var featureList = []; });";
-		URI uri = URI.create("namedbundleresource://com.ibm.jaggr-service/combo/featureMap.js");
-		URI requestedUri = URI.create("namedbundleresource://com.ibm.jaggr-service/combo/featureMap.js#direct");
-		StringBuffer expected = new StringBuffer("define([], function() { var featureList = [");
+	public void testFeatureListResourceFactory_newResource() throws IOException {
+		URI uri = URI.create("namedbundleresource://com.ibm.jaggr-service/combo/featureList.js");
+		StringBuffer expected = new StringBuffer(AbstractHttpTransport.FEATURE_LIST_PRELUDE + "[");
 		for (int i = 0; i < featureList.size(); i++) {
 			expected.append(i == 0 ? "" : ",").append("\"").append(featureList.get(i)).append("\"");
 		}
-		expected.append("]; });");
+		expected.append("]" + AbstractHttpTransport.FEATURE_LIST_PROLOGUE);
 		
-		IResource resourceIn = new StringResource(content, uri, 10L);
 		final IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
 		IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
-		EasyMock.expect(mockDependencies.getLastModified()).andReturn(11L).anyTimes();
-		EasyMock.expect(mockAggregator.newResource((URI)EasyMock.eq(requestedUri))).andReturn(resourceIn).anyTimes();
+		EasyMock.expect(mockDependencies.getLastModified()).andReturn(10L).anyTimes();
 		EasyMock.expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		
 		EasyMock.replay(mockAggregator, mockDependencies);
@@ -192,30 +194,12 @@ public class AbstractHttpTransportTest {
 			@Override
 			protected IAggregator getAggregator() { return mockAggregator; }
 		};
-		AbstractHttpTransport.FeatureMapJSResourceFactory  factory = transport.newFeatureMapJSResourceFactory(uri);
+		AbstractHttpTransport.FeatureListResourceFactory  factory = transport.newFeatureListResourceFactory(uri);
 		IResource resourceOut = factory.newResource(uri);
-		Assert.assertEquals(11L, resourceOut.lastModified());
+		Assert.assertEquals(10L, resourceOut.lastModified());
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(resourceOut.getReader(), writer);
 		Assert.assertEquals(expected.toString(), writer.toString());
-		
-		EasyMock.reset(mockDependencies);
-		EasyMock.expect(mockDependencies.getLastModified()).andReturn(9L).anyTimes();
-		EasyMock.replay(mockDependencies);
-
-		resourceOut = factory.newResource(uri);
-		Assert.assertEquals(10L, resourceOut.lastModified());
-		writer = new StringWriter();
-		CopyUtil.copy(resourceOut.getReader(), writer);
-		Assert.assertEquals(expected.toString(), writer.toString());
-		
-		resourceOut = factory.newResource(requestedUri);
-		writer = new StringWriter();
-		try {
-			CopyUtil.copy(resourceOut.getReader(), writer);
-			Assert.fail();
-		} catch (IOException e) {
-		}
 		
 		resourceOut = factory.newResource(URI.create("namedbundleresource://com.ibm.jaggr-service/combo/foo.js"));
 		writer = new StringWriter();
@@ -224,8 +208,6 @@ public class AbstractHttpTransportTest {
 			Assert.fail();
 		} catch (IOException e) {
 		}
-		
-		
 	}
 	
 	
@@ -261,16 +243,8 @@ public class AbstractHttpTransportTest {
 	 *            preceeded by the '!' character.
 	 * @return
 	 */
-	String encode(String featureString) {
-		String[] split = featureString.split("\\*");
+	String encode(Features features) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		Map<String, Boolean> features = new HashMap<String, Boolean>(split.length);
-		if (featureString.length() > 0) {
-			for (String s : split) {
-				boolean state = s.charAt(0) != '!';
-				features.put(s.substring(state ? 0 : 1), state);
-			}
-		}
 		// Build trit map.  5 trits per byte
 		int trite = 0;
 		for (int i = 0; i < featureList.size(); i++) {
@@ -278,9 +252,9 @@ public class AbstractHttpTransportTest {
 				trite = 0;
 			}
 			int trit = 2;	// don't care
-			Boolean value = features.get(featureList.get(i));
-			if (value != null) {
-				trit = value.booleanValue() ? 1 : 0;
+			String name = featureList.get(i);
+			if (features.contains(name)) {
+				trit = features.isFeature(name) ? 1 : 0;
 			}
 			trite += trit * Math.pow(3, i % 5);
 			if (i % 5 == 4 || i == featureList.size()-1) {

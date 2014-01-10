@@ -110,22 +110,11 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 		
 	// If sending the feature set in a cookie is enabled, then try to 
 	// set the cookie.
-	if (config.has("combo-feature-cookie")) {
-		try {
-			var featureCookie = require("combo/featureCookie");
-			if (featureCookie) {
-				hasArg = featureCookie.setCookie(hasArg, contextPath);
-			}
-		} catch (ignore) {
-		}
-	} else if (config.has("combo-feature-map")) {
-		try {
-			var featureMap = require("combo/featureMap");
-			if (featureMap) {
-				hasArg = featureMap.getQueryString(hasArg);
-			}
-		} catch (ignore) {
-		}
+	var featureMap = null, featureCookie = null;
+	if (featureMap = config.has("combo-feature-map")) {
+		hasArg = featureMap.getQueryString(hasArg);
+	} else if (featureCookie = config.has("combo-feature-cookie")) {
+		hasArg = featureCookie.setCookie(hasArg, contextPath);
 	}
 
 	var url = contextPath + '?count=' + asNames.length +
