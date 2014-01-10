@@ -106,7 +106,7 @@ public class LayerTest extends EasyMock {
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
 	IDependencies mockDependencies = createMock(IDependencies.class);
-	static Map<String, String[]> testDepMap;
+	Map<String, String[]> testDepMap;
 	
 
 	@BeforeClass
@@ -114,7 +114,6 @@ public class LayerTest extends EasyMock {
 		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
 		LayerImpl.LAYERBUILD_REMOVE_DELAY_SECONDS = 0;
-		testDepMap = TestUtils.createTestDepMap();
 	}
 
 	@AfterClass
@@ -130,6 +129,7 @@ public class LayerTest extends EasyMock {
 	@Before
 	public void setup() throws Exception {
 		mockBundleContext = null;
+		testDepMap = TestUtils.createTestDepMap();
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, requestHeaders);
 		expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
