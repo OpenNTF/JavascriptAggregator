@@ -74,6 +74,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     static final String dojoTextPluginName = "text"; //$NON-NLS-1$
     static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
     static final URI dojoPluginUri;
+    static final String FEATUREMAP_JS_PATH = "/WebContent/dojo/featureMap.js"; //$NON-NLS-1$
 
     static {
     	try {
@@ -98,10 +99,8 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     	return comboUriStr;
     }
     
-    /**
-     * Property accessor for the plugin unique id for this extension
-     * 
-     * @return the plugin unique id
+    /* (non-Javadoc)
+     * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getPluginUniqueId()
      */
     protected String getPluginUniqueId() {
     	return pluginUniqueId;
@@ -536,6 +535,17 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		getClientConfigAliases().add(new String[]{aggregatorTextPluginAlias, getAggregatorTextPluginName()});
 	}
 	
+    /* (non-Javadoc)
+     * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getFeatureMapJSPath()
+     */
+    @Override
+	protected URI getFeatureMapJSResourceUri() {
+		return URI.create(
+				getComboUri().getScheme() + "://" + //$NON-NLS-1$
+				getComboUri().getHost() + 
+				FEATUREMAP_JS_PATH);
+	}
+    
 	/**
 	 * Resource factory that creates a
 	 * {@link AbstractHttpTransport.LoaderExtensionResource} for the dojo http

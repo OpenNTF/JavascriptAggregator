@@ -26,7 +26,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.Test;
 
@@ -115,25 +117,33 @@ public class DepUtilsTest {
 		String js4 = "(function(){\ndefine([\"a\", \"b\", \"c\"], function(a, b, c) {\nalert(\"hellow\");\nreturn null;\n});})()";
 		String js5 = "define(deps, function() {\nalert(\"hello\");\nreturn null;\n});";
 		String js6 = "function foo() {\nalert(\"hello\");\nreturn null;\n};";
+		String js7 = "define(['dep1', 'dojo/has!hasTest1?hasTest2?dep1:dep2'], function() { require(['has!hasTest3?:dep3'], function(dep3) { if (has('fooTest')) {return true;} else {return false;} }); if (has('barTest')) return bar;});";
+		
 		
 		Compiler compiler = new Compiler();
 		Node node = compiler.parse(JSSourceFile.fromCode("js1", js1));
-		ArrayList<String> deps = DepUtils.parseDependencies(node);
+		Collection<String> deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.toString(), "[a, b, c]");
 		node = compiler.parse(JSSourceFile.fromCode("js2", js2));
-		deps = DepUtils.parseDependencies(node);
+		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.toString(), "[a, b, c]");
 		node = compiler.parse(JSSourceFile.fromCode("js3", js3));
-		deps = DepUtils.parseDependencies(node);
+		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.size(), 0);
 		node = compiler.parse(JSSourceFile.fromCode("js4", js4));
-		deps = DepUtils.parseDependencies(node);
+		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.toString(), "[a, b, c]");
 		node = compiler.parse(JSSourceFile.fromCode("js5", js5));
-		deps = DepUtils.parseDependencies(node);
-		assertEquals(deps.toString(), "[]");
-		node = compiler.parse(JSSourceFile.fromCode("js6", js6));
-		deps = DepUtils.parseDependencies(node);
+		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertNull(deps);
+		node = compiler.parse(JSSourceFile.fromCode("js6", js6));
+		deps = DepUtils.parseDependencies(node, new HashSet<String>());
+		assertNull(deps);
+		node = compiler.parse(JSSourceFile.fromCode("js6", js7));
+		// Test dependent features
+		Set<String> dependentFeatures = new HashSet<String>();
+		deps = DepUtils.parseDependencies(node, dependentFeatures);
+		assertEquals("[dep1, dojo/has!hasTest1?hasTest2?dep1:dep2]", deps.toString());
+		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"hasTest1", "hasTest2", "hasTest3", "fooTest", "barTest"})), dependentFeatures);
 	}
 }

@@ -118,6 +118,14 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 			}
 		} catch (ignore) {
 		}
+	} else if (config.has("combo-feature-map")) {
+		try {
+			var featureMap = require("combo/featureMap");
+			if (featureMap) {
+				hasArg = featureMap.getQueryString(hasArg);
+			}
+		} catch (ignore) {
+		}
 	}
 
 	var url = contextPath + '?count=' + asNames.length +

@@ -71,7 +71,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	private boolean validate = false;
 	private String cacheBust = null;
 	private boolean initFailed = false;
-	private Map<String, List<String>> depMap;
+	private Map<String, DepTreeNode.DependencyInfo> depMap;
 	
 	private IAggregator aggregator = null;
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
@@ -126,6 +126,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		return aggregator;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.deps.IDependencies#validateDeps(boolean)
+	 */
 	@Override
 	public void validateDeps(boolean clean) {
 		if (aggregator.getConfig() == null) {
@@ -135,6 +138,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		processDeps(true, clean, SequenceNumberProvider.incrementAndGetSequenceNumber());
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.config.IConfigListener#configLoaded(com.ibm.jaggr.service.config.IConfig, long)
+	 */
 	@Override
 	public synchronized void configLoaded(IConfig config, long sequence) {
 		String previousRawConfig = rawConfig;
@@ -146,6 +152,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.options.IOptionsListener#optionsUpdated(com.ibm.jaggr.service.options.IOptions, long)
+	 */
 	@Override
 	public synchronized void optionsUpdated(IOptions options, long sequence) {
 		String previousCacheBust = cacheBust;
@@ -156,6 +165,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IShutdownListener#shutdown(com.ibm.jaggr.service.IAggregator)
+	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		this.aggregator = null;
@@ -164,6 +176,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		optionsUpdateListener.unregister();
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.deps.IDependencies#getLastModified()
+	 */
 	@Override
 	public long getLastModified() {
 		return depsLastModified;
@@ -256,13 +271,13 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 										validate); 
 						
 								DepTreeRoot depTree = new DepTreeRoot(config);
-								deps.mapDependencies(depTree, bundleContext, baseURIs, config);
-								deps.mapDependencies(depTree, bundleContext, packageURIs, config);
-								deps.mapDependencies(depTree, bundleContext, packageOverrideURIs, config);
-								deps.mapDependencies(depTree, bundleContext, pathURIs, config);
-								deps.mapDependencies(depTree, bundleContext, pathOverrideURIs, config);
+								deps.mapDependencies(depTree, baseURIs);
+								deps.mapDependencies(depTree, packageURIs);
+								deps.mapDependencies(depTree, packageOverrideURIs);
+								deps.mapDependencies(depTree, pathURIs);
+								deps.mapDependencies(depTree, pathOverrideURIs);
 								depTree.normalizeDependencies();
-								DependenciesImpl.this.depMap = new HashMap<String, List<String>>();
+								DependenciesImpl.this.depMap = new HashMap<String, DepTreeNode.DependencyInfo>();
 								depTree.populateDepMap(depMap);
 								depsLastModified = depTree.lastModifiedDepTree();
 							} catch (Exception e) {
@@ -334,13 +349,19 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	}
 
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.deps.IDependencies#getDelcaredDependencies(java.lang.String)
+	 */
 	@Override
 	public List<String> getDelcaredDependencies(String mid) throws ProcessingDependenciesException {
 		List<String> result = null;
 		try {
 			getReadLock();
 			try {
-				result = depMap.get(mid);
+				DepTreeNode.DependencyInfo depInfo = depMap.get(mid);
+				if (depInfo != null) {
+					result = depInfo.getDeclaredDependencies();
+				}
 			} finally {
 				releaseReadLock();
 			}
@@ -352,6 +373,51 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		return result;
 	}
 	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.deps.IDependencies#getDependentFeatures()
+	 */
+	@Override
+	public List<String> getDependentFeatures(String mid) throws ProcessingDependenciesException {
+		List<String> result = null;
+		try {
+			getReadLock();
+			try {
+				DepTreeNode.DependencyInfo depInfo = depMap.get(mid);
+				if (depInfo != null) {
+					result = depInfo.getDepenedentFeatures();
+				}
+			} finally {
+				releaseReadLock();
+			}
+		} catch (InterruptedException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+		return result;
+	}
+	
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.deps.IDependencies#getDependencyNames()
+	 */
+	@Override
+	public Iterable<String> getDependencyNames() throws ProcessingDependenciesException {
+		Iterable<String> result = null;
+		try {
+			getReadLock();
+			try {
+				result = depMap.keySet();
+			} finally {
+				releaseReadLock();
+			}
+		} catch (InterruptedException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+		return result;
+	}
+
 	private void getReadLock() throws InterruptedException, ProcessingDependenciesException {
 		if (getAggregator().getOptions().isDevelopmentMode()) {
 			if (!initialized.await(1, TimeUnit.SECONDS)) {

@@ -82,12 +82,19 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 	/**
 	 * Object constructor
 	 * 
+	 * @param aggregator
+	 *            The aggregator instance 
 	 * @param parserCs
 	 *            The {@link CompletionService} to use to start parser threads
 	 * @param path
 	 *            The root path containing the javascrpt modules to be parsed
 	 * @param node
 	 *            The {@link DepTreeNode} corresponding to {@code path}.
+	 * @param cached
+	 *            The cached dependency tree.  Used when validating dependencies
+	 * @param dependentFeatures
+	 *            Output - the set of dependent features discovered while building
+	 *            the dependency tree.
 	 */
 	DepTreeBuilder(IAggregator aggregator, CompletionService<URI> parserCs,
 			URI path, DepTreeNode node, DepTreeNode cached) {
@@ -128,7 +135,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 					cachedNode = (pathname.length() > 0) ? cached.getDescendent(pathname) : cached;
 				}
 				if (cachedNode != null) {
-					node.setDependencies(cachedNode.getDepArray(), 
+					node.setDependencies(cachedNode.getDepArray(), cachedNode.getDependentFeatures(),
 							cachedNode.lastModified(), cachedNode.lastModifiedDep());
 				}
 				/*

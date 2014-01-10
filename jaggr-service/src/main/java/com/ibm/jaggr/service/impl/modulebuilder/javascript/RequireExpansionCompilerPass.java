@@ -38,6 +38,7 @@ import com.ibm.jaggr.service.deps.ModuleDeps;
 import com.ibm.jaggr.service.util.BooleanTerm;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.service.util.NodeUtil;
 import com.ibm.jaggr.service.util.PathUtil;
 
 /**
@@ -181,149 +182,71 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	throws IOException
 	{
 		for (Node cursor = node.getFirstChild(); cursor != null; cursor = cursor.getNext()) {
-			if (cursor.getType() == Token.CALL) {
-				// The node is a function or method call
-				Node name = cursor.getFirstChild();
-				if (name != null && name.getType() == Token.NAME && // named function call
-						name.getString().equals("require")) { // name is "require" //$NON-NLS-1$
-	
-					Node param = name.getNext();
-					if (param.getType() == Token.ARRAYLIT) {
-						enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
-						expandRequireList(
-								param, 
-								enclosingDependencies, 
-								logDebug ? MessageFormat.format(
-										Messages.RequireExpansionCompilerPass_0,
-										new Object[]{cursor.getLineno()})
-									: null);
-					}
-				} else if (name != null && name.getType() == Token.NAME && // named function call
-						name.getString().equals("define")) { //$NON-NLS-1$
-					// The node is for a define function call
-					// Get the module name
-					String moduleName = name.getProp(Node.SOURCENAME_PROP).toString();
+			Node dependencies = null;
+			if ((dependencies = NodeUtil.moduleDepsFromRequire(cursor)) != null) {
+				enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
+				expandRequireList(
+						dependencies, 
+						enclosingDependencies, 
+						logDebug ? MessageFormat.format(
+								Messages.RequireExpansionCompilerPass_0,
+								new Object[]{cursor.getLineno()})
+							: null);
+			} else if ((dependencies = NodeUtil.moduleDepsFromConfigDeps(cursor, configVarName)) != null) {
+				expandRequireList(
+						dependencies, 
+						new LinkedList<DependencyList>(), 
+						logDebug ? 
+							MessageFormat.format(
+								Messages.RequireExpansionCompilerPass_2,
+								new Object[]{cursor.getLineno()}
+							) : null);
+			} else if ((dependencies = NodeUtil.moduleDepsFromDefine(cursor)) != null) {
+				String moduleName = cursor.getFirstChild().getProp(Node.SOURCENAME_PROP).toString();
 
-					Node param = name.getNext();
-					if (param.getType() == Token.STRING) {
-						param = param.getNext();
+				if (aggregator.getOptions().isDevelopmentMode() &&
+						aggregator.getOptions().isVerifyDeps()) {
+					// Validate dependencies for this module by comparing the 
+					// declared dependencies against the dependencies that were
+					// used to calculate the dependency graph.
+					Node strNode = dependencies.getFirstChild();
+					List<String> deps = new ArrayList<String>();
+					while (strNode != null) {
+						if (strNode.getType() == Token.STRING) {
+							String mid = strNode.getString();
+							if (!PathUtil.invalidChars.matcher(mid).find()) {
+								// ignore names with invalid characters
+								deps.add(strNode.getString());
+							}
+						}
+						strNode = strNode.getNext();
 					}
-					if (param.getType() == Token.ARRAYLIT) {
-						if (aggregator.getOptions().isDevelopmentMode() &&
-								aggregator.getOptions().isVerifyDeps()) {
-							// Validate dependencies for this module by comparing the 
-							// declared dependencies against the dependencies that were
-							// used to calculate the dependency graph.
-							Node strNode = param.getFirstChild();
-							List<String> deps = new ArrayList<String>();
-							while (strNode != null) {
-								if (strNode.getType() == Token.STRING) {
-									String mid = strNode.getString();
-									if (!PathUtil.invalidChars.matcher(mid).find()) {
-										// ignore names with invalid characters
-										deps.add(strNode.getString());
-									}
-								}
-								strNode = strNode.getNext();
-							}
-							int idx = moduleName.lastIndexOf("/"); //$NON-NLS-1$
-							String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
-							List<String> normalized = Arrays.asList(PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()])));
-							List<String> processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
-							if (processedDeps != null && !processedDeps.equals(normalized)) {
-								// The dependency list for this module has changed since the dependencies
-								// were last created/validated.  Throw an exception.
-								throw new DependencyVerificationException(moduleName);
-							}
-						}
-						// Add the expanded dependencies to the set of enclosing dependencies for 
-						// the module.
-						List<String> moduleDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
-						if (moduleDeps != null) {
-							enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
-							DependencyList depList = new DependencyList(
-									moduleDeps, 
-									aggregator, 
-									hasFeatures, 
-									true,	// resolveAliases
-									logDebug);
-							depList.setLabel(MessageFormat.format(
-								Messages.RequireExpansionCompilerPass_1,
-								new Object[] {cursor.getLineno()}
-							));
-							enclosingDependencies.add(depList);
-						}
+					int idx = moduleName.lastIndexOf("/"); //$NON-NLS-1$
+					String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
+					List<String> normalized = Arrays.asList(PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()])));
+					List<String> processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
+					if (processedDeps != null && !processedDeps.equals(normalized)) {
+						// The dependency list for this module has changed since the dependencies
+						// were last created/validated.  Throw an exception.
+						throw new DependencyVerificationException(moduleName);
 					}
 				}
-			} else if (cursor.getType() == Token.STRING && cursor.getString().equals("deps")) { //$NON-NLS-1$
-				// handle require.deps assignment of array literal
-				Node parent = cursor.getParent(),
-				     previousSibling = parent.getChildBefore(cursor);
-				if (previousSibling != null && 
-						parent.getType() == Token.GETPROP &&
-						parent.getParent().getType() == Token.ASSIGN &&
-						(previousSibling.getType() == Token.NAME && 
-						previousSibling.getString().equals(configVarName) ||
-						previousSibling.getType() == Token.GETPROP &&
-						previousSibling.getFirstChild().getNext().getString().equals(configVarName)) &&
-						parent.getNext() != null && 
-						parent.getNext().getType() == Token.ARRAYLIT) {
-					// require.deps = [...];
-					expandRequireList(
-							parent.getNext(), 
-							new LinkedList<DependencyList>(), 
-							logDebug ? 
-								MessageFormat.format(
-									Messages.RequireExpansionCompilerPass_2,
-									new Object[]{cursor.getLineno()}
-								) : null);
-				} else if (parent.getType() == Token.OBJECTLIT &&
-						parent.getParent().getType() == Token.ASSIGN &&
-						(parent.getParent().getFirstChild().getType() == Token.NAME &&
-						parent.getParent().getFirstChild().getString().equals(configVarName) ||
-						parent.getParent().getFirstChild().getType() == Token.GETPROP &&
-						parent.getParent().getFirstChild().getFirstChild().getNext().getString().equals(configVarName)) &&
-						cursor.getFirstChild() != null &&
-						cursor.getFirstChild().getType() == Token.ARRAYLIT) {
-					// require = { deps: [...] }
-					expandRequireList(
-							cursor.getFirstChild(),
-							new LinkedList<DependencyList>(), 
-							logDebug ? 
-								MessageFormat.format(
-									Messages.RequireExpansionCompilerPass_2,
-									new Object[]{cursor.getLineno()}
-								) : null);
-				} else if (parent.getType() == Token.OBJECTLIT &&
-						parent.getParent().getType() == Token.NAME &&
-						parent.getParent().getString().equals(configVarName) &&
-						parent.getParent().getParent().getType() == Token.VAR &&
-						cursor.getFirstChild() != null &&
-						cursor.getFirstChild().getType() == Token.ARRAYLIT) {
-					// var require = { deps: [...] }
-					expandRequireList(
-							cursor.getFirstChild(), 
-							new LinkedList<DependencyList>(), 
-							logDebug ? 
-								MessageFormat.format(
-									Messages.RequireExpansionCompilerPass_2,
-									new Object[]{cursor.getLineno()}
-							) : null);
-				} else if (parent.getType() == Token.OBJECTLIT &&
-						parent.getParent().getType() == Token.STRING &&
-						parent.getParent().getString().equals(configVarName) &&
-						parent.getParent().getParent().getType() == Token.OBJECTLIT &&
-						cursor.getFirstChild() != null &&
-						cursor.getFirstChild().getType() == Token.ARRAYLIT) {
-					// require: { deps: [...] }
-					expandRequireList(
-							cursor.getFirstChild(), 
-							new LinkedList<DependencyList>(), 
-							logDebug ? 
-								MessageFormat.format(
-									Messages.RequireExpansionCompilerPass_2,
-									new Object[]{cursor.getLineno()}
-								) : null);
+				// Add the expanded dependencies to the set of enclosing dependencies for 
+				// the module.
+				List<String> moduleDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
+				if (moduleDeps != null) {
+					enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
+					DependencyList depList = new DependencyList(
+							moduleDeps, 
+							aggregator, 
+							hasFeatures, 
+							true,	// resolveAliases
+							logDebug);
+					depList.setLabel(MessageFormat.format(
+						Messages.RequireExpansionCompilerPass_1,
+						new Object[] {cursor.getLineno()}
+					));
+					enclosingDependencies.add(depList);
 				}
 			}
 			// Recursively call this method to process the child nodes

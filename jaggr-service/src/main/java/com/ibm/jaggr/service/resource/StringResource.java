@@ -36,6 +36,12 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 		this.lastModified = new Date().getTime();
 	}
 
+	public StringResource(String content, URI uri, long lastModified) {
+		this.content = content;
+		this.uri = uri;
+		this.lastModified = lastModified;
+	}
+
 	@Override
 	public URI getURI() {
 		return uri;

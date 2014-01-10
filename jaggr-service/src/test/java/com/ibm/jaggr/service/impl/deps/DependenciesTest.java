@@ -124,7 +124,7 @@ public class DependenciesTest extends EasyMock {
 		
 		DepTreeNode p1_a_node = p1Node.getChild("a");
 		long yesterday = new Date().getTime()- 24*60*60*1000;
-		p1_a_node.setDependencies(new String[]{"p2/p1/b", "p2/p1/p1/c", "p2/noexist"}, yesterday, yesterday);
+		p1_a_node.setDependencies(new String[]{"p2/p1/b", "p2/p1/p1/c", "p2/noexist"}, null, yesterday, yesterday);
 		
 	}
 
@@ -145,18 +145,18 @@ public class DependenciesTest extends EasyMock {
 		DepTreeNode p2Node = depMap.get(p2Path);
 		
 		long yesterday = new Date().getTime() - 24*60*60*1000;
-		p1Node.getChild("a").setDependencies(new String[]{"foo/bar"}, yesterday, yesterday);
+		p1Node.getChild("a").setDependencies(new String[]{"foo/bar"}, new String[0], yesterday, yesterday);
 		// Leave deps the same to test that lastModifiedDep doesn't change
-		p1Node.getChild("b").setDependencies(p1Node.getChild("b").getDepArray(), yesterday, yesterday);
+		p1Node.getChild("b").setDependencies(p1Node.getChild("b").getDepArray(), new String[0], yesterday, yesterday);
 		DepTreeNode p3Node = new DepTreeNode("p3");
 		p3Node.add(new DepTreeNode("a"));
 		// create a node that is not on the file system
-		p3Node.getChild("a").setDependencies(new String[]{"./b"}, yesterday, yesterday);
+		p3Node.getChild("a").setDependencies(new String[]{"./b"}, new String[0], yesterday, yesterday);
 		depMap.put(p3Path, p3Node);
 		long p2_p1_a_lastMod = new File(tmpdir, "p2/p1/a.js").lastModified();
 		// change deps but leave timestamps the same so that the deps won't be updated by validation
 		// but will be updated by clean.
-		p2Node.getChild("p1").getChild("a").setDependencies(new String[]{"xxx"}, p2_p1_a_lastMod, p2_p1_a_lastMod);
+		p2Node.getChild("p1").getChild("a").setDependencies(new String[]{"xxx"}, new String[0], p2_p1_a_lastMod, p2_p1_a_lastMod);
 
 		File cacheFile = new File(tmpdir, "deps/depmap.cache");
 		String configJson = "{paths: {p1Alias:'p1', p2Alias:'p2'}}"; 
@@ -176,7 +176,7 @@ public class DependenciesTest extends EasyMock {
 		configJson = "{paths: {p1Alias:'p1', p2Alias:'p2', p3Alias:'p3'}}"; 
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		DepTreeRoot root = new DepTreeRoot(configRef.get());
-		deps.mapDependencies(root, null, map, configRef.get());
+		deps.mapDependencies(root, map);
 		
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
@@ -196,7 +196,7 @@ public class DependenciesTest extends EasyMock {
 		// Test validation
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, false, true);
 		root = new DepTreeRoot(configRef.get());
-		deps.mapDependencies(root, null, map, configRef.get());
+		deps.mapDependencies(root, map);
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
 		assertEquals(0, root.getChild("p3Alias").getChildren().size());
@@ -215,7 +215,7 @@ public class DependenciesTest extends EasyMock {
 		// the timestamps are identical to the file timestamps, but it should be updated by specifying
 		// the clean flag.
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, true, false);
-		deps.mapDependencies(root, null, map, configRef.get());
+		deps.mapDependencies(root, map);
 		assertEquals("[./b]",
 				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDepArray()).toString());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModified());

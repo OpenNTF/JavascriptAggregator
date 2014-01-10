@@ -24,6 +24,7 @@ import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.service.util.NodeUtil;
 
 /**
  * Custom Compiler pass for Google Closure compiler to do has trimming.  Must be called before
@@ -76,38 +77,8 @@ public class HasFilteringCompilerPass implements CompilerPass {
 	private void processChildren(Node n) {
 		for (Node cursor = n.getFirstChild(); cursor != null; cursor = cursor.getNext()) {
 			if (cursor.getType() == Token.CALL) {
-				Node name, arg;
-				if ((name = cursor.getFirstChild()) != null && 
-					name.getType() == Token.NAME && 		// named function call
-					name.getString().equals("has") && 		// name is "has" //$NON-NLS-1$
-					(arg = name.getNext()) != null && 		
-					arg.getType() == Token.STRING && 		// first param is a string literal
-					arg.getNext() == null) 					// only one param
-				{
-					
-					// Ensure that the result of the has function is treated as a 
-					// boolean expression.  This is necessary to avoid problems
-					// with code similar to "if (has("ieVersion") < 6)"
-					Node parent = cursor.getParent();
-					int type = parent.getType();
-					switch (type) {
-					case Token.IF:
-					case Token.HOOK:
-					case Token.AND:
-					case Token.OR:
-					case Token.NOT:
-						// these implicitly coerce the result of the function call
-						// to boolean so we don't need to do anything else
-						break;
-						
-					default:
-						// Replacing the function call with a boolean value might not
-						// have the desired effects if the code treats the result of
-						// the function as a non-boolean, so don't do anything.
-						return;
-					}
-					
-					String hasCondition = arg.getString();
+				String hasCondition = NodeUtil.conditionFromHasNode(cursor);
+				if (hasCondition != null) {
 					if (discoveredHasConditions != null) {
 						discoveredHasConditions.add(hasCondition);
 					}

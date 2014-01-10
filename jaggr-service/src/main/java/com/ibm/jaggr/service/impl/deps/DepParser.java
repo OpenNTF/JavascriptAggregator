@@ -18,8 +18,10 @@ package com.ibm.jaggr.service.impl.deps;
 
 import java.io.InputStream;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -82,9 +84,12 @@ final class DepParser implements Callable<URI> {
 		if (node != null) {
 			// walk the AST for the node looking for define calls
 			// and pull out the required dependency list.
-			ArrayList<String> deps = DepUtils.parseDependencies(node);
+			Set<String> features = new HashSet<String>();
+			Collection<String> deps = DepUtils.parseDependencies(node, features);
 			String[] depArray = (deps == null) ? 
 					new String[0] : deps.toArray(new String[deps.size()]);
+			String[] featureArray = (features == null) ?
+					new String[0] : features.toArray(new String[features.size()]);
 			/*
 			 * Determine if the dependency list has changed.  We keep track of 
 			 * dependency list changes separate from code changes in general
@@ -92,11 +97,13 @@ final class DepParser implements Callable<URI> {
 			 * cached responses for the configs that reference this file, and
 			 * we want to do this only when necessary.
 			 */
-			if (lastModifiedDep ==  -1 || !Arrays.equals(depArray, treeNode.getDepArray())) {
+			if (lastModifiedDep ==  -1 || 
+					!Arrays.equals(depArray, treeNode.getDepArray()) ||
+					!Arrays.equals(featureArray, treeNode.getDependentFeatures())) {
 				lastModifiedDep = lastModified;
 			}
 			// update the dependency info in the node
-			treeNode.setDependencies(depArray, 
+			treeNode.setDependencies(depArray, featureArray,
 					lastModified, lastModifiedDep);
 		}
 		return resource.getURI();

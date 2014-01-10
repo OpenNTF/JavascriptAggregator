@@ -18,7 +18,7 @@ define(["dojo/ready",
        "dijit/layout/TabContainer",
        "js/LazyContentPane",
        "js/css!dijit/themes/claro/claro.css",
-       "combo/featureCookie",
+       "dojo/has!dojo-combo-api?combo/featureMap",
        /*
         * preload selector lite implementation which is used by dojo/query and 
         * supports modern browsers.  If the emulation library is required, it 
