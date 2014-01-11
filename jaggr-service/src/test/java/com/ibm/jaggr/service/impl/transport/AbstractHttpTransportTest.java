@@ -245,9 +245,12 @@ public class AbstractHttpTransportTest {
 	 */
 	String encode(Features features) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		int len = featureList.size();
+		bos.write(len & 0xFF);
+		bos.write((len & 0xFF00) >> 8);
 		// Build trit map.  5 trits per byte
 		int trite = 0;
-		for (int i = 0; i < featureList.size(); i++) {
+		for (int i = 0; i < len; i++) {
 			if (i % 5 == 0) {
 				trite = 0;
 			}
@@ -257,7 +260,7 @@ public class AbstractHttpTransportTest {
 				trit = features.isFeature(name) ? 1 : 0;
 			}
 			trite += trit * Math.pow(3, i % 5);
-			if (i % 5 == 4 || i == featureList.size()-1) {
+			if (i % 5 == 4 || i == len-1) {
 				bos.write((byte)trite);
 			}
 		}

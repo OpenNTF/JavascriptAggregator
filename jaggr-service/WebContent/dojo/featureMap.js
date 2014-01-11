@@ -30,13 +30,16 @@ define([
 					hasMap[hasList[i].substring(value?0:1)] = value;
 				}
 				// Build trit map.  5 trits per byte
-				var b = 0, bytes = [];
-				for (i = 0; i < featureList.length; i++) {
+				var b = 0, bytes = [], len = featureList.length;
+				// First two bytes of the array specify the list size
+				bytes.push(len & 0xFF);
+				bytes.push((len & 0xFF00) >> 8);
+				for (i = 0; i < len; i++) {
 					var mod = i % 5,
 					    value = hasMap[featureList[i]],
 					    trit = (value === null) ? 2 /* don't care */ : (value ? 1 : 0);
 					b += trit * Math.pow(3, mod);
-					if (mod == 4 || i == featureList.length-1) {
+					if (mod == 4 || i == len-1) {
 						bytes.push(b);
 						b = 0;
 					}

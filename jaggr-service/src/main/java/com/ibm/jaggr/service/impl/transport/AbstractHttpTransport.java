@@ -883,12 +883,22 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		} catch (InterruptedException e) {
 			throw new IOException(e);
 		}
-		// Now decode the trit map
+
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		byte[] decoded = Base64.decodeBase64(encoded);
-		for (int i = 0; i < decoded.length; i++) {
+		int len = dependentFeatures.size();
+
+		// Validate the input - first two bytes specify length of feature list on the client
+		if (len != decoded[0]+(decoded[1]<< 8) || decoded.length != len/5 + (len%5==0?0:1) + 2) {
+			if (log.isLoggable(Level.FINER)) {
+				log.finer("Invalid encoded feature list.  Expected feature list length = " + len); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			throw new BadRequestException("Invalid encoded feature list");
+		}
+		// Now decode the trit map
+		for (int i = 2; i < decoded.length; i++) {
 			int q = decoded[i] & 0xFF;
-			for (int j = 0; j < 5 && i*5+j < dependentFeatures.size(); j++) {
+			for (int j = 0; j < 5 && (i-2)*5+j < len; j++) {
 				bos.write(q % 3);
 				q = q / 3;
 			}
