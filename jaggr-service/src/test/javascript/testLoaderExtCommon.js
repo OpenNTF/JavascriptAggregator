@@ -37,7 +37,7 @@ describe("Test foldModuleNames", function() {
 		var result = foldModuleNames(names, depmap);
 		console.log(result);
 		var expected = {foo:{bar:0,baz:{'yyy.txt':[1, 0],'xxx.txt':[2, 1]}}};
-		expected[pluginPrefixesPropName] = {'combo/text':0, abc:1},
+		expected[pluginPrefixesPropName] = {'combo/text':0, abc:1};
 		expect(result).toEqual(expected);
 	});
 	it("should throw invlalid module name", function() {

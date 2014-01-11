@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 define([
-    "dojo/has", 
-    "combo/featureList", 	// not a physical module.  Resolved by JAGGR 
-                            //  to return array of dependent features 
+	"dojo/has", 
+	"dojo/has!dojo-combo-api?combo/featureList",    // not a physical module.  Resolved by JAGGR 
+                                                    //  to return array of dependent features 
     "dojox/encoding/base64"
 ], function(has, featureList, base64) {
 	var result = {
@@ -24,20 +24,20 @@ define([
 			// hasArg is expected to begin with 'has=' followed by the '*'
 			// delimited list of features
 			if (hasArg.indexOf("has=") === 0 && hasArg.indexOf("*") != -1) {
-				var hasList = hasArg.substring(4).split('*'), hasMap = {};
+				var hasList = hasArg.substring(4).split('*'), hasMap = {}, value;
 				for (var i = 0; i < hasList.length; i++) {
-					var value = hasList[i].charAt(0) != "!";
+					value = hasList[i].charAt(0) != "!";
 					hasMap[hasList[i].substring(value?0:1)] = value;
 				}
 				// Build trit map.  5 trits per byte
-				var b = 0, bytes = [], len = featureList.length;
+				var b = 0, bytes = [], len = featureList.length, trit;
 				// First two bytes of the array specify the list size
 				bytes.push(len & 0xFF);
 				bytes.push((len & 0xFF00) >> 8);
 				for (i = 0; i < len; i++) {
-					var mod = i % 5,
-					    value = hasMap[featureList[i]],
-					    trit = (value === null) ? 2 /* don't care */ : (value ? 1 : 0);
+					var mod = i % 5;
+					value = hasMap[featureList[i]];
+					trit = (value === null) ? 2 /* don't care */ : (value ? 1 : 0);
 					b += trit * Math.pow(3, mod);
 					if (mod == 4 || i == len-1) {
 						bytes.push(b);

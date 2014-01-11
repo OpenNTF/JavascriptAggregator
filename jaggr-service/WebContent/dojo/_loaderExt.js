@@ -111,9 +111,9 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 	// If sending the feature set in a cookie is enabled, then try to 
 	// set the cookie.
 	var featureMap = null, featureCookie = null;
-	if (featureMap = config.has("combo-feature-map")) {
+	if (!!(featureMap = config.has("combo-feature-map"))) {
 		hasArg = featureMap.getQueryString(hasArg);
-	} else if (featureCookie = config.has("combo-feature-cookie")) {
+	} else if (!!(featureCookie = config.has("combo-feature-cookie"))) {
 		hasArg = featureCookie.setCookie(hasArg, contextPath);
 	}
 
