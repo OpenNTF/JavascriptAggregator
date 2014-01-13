@@ -66,6 +66,7 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
+import com.ibm.jaggr.service.DependencyVerificationException;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
@@ -99,6 +100,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	IDependencies mockDependencies = createMock(IDependencies.class);
+	Map<String, List<String>> dependentFeaturesMap = new HashMap<String, List<String>>();
 	
 	
 	
@@ -117,6 +119,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				String[] result = testDepMap.get(name);
 				return result != null ? Arrays.asList(result) : null;
 			}
+		}).anyTimes();
+		expect(mockDependencies.getDependentFeatures(isA(String.class))).andAnswer(new IAnswer<List<String>>() {
+			@Override
+			public List<String> answer() throws Throwable {
+				String name = (String)getCurrentArguments()[0];
+				return dependentFeaturesMap.get(name);
+			}
+			
 		}).anyTimes();
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
@@ -305,6 +315,28 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		
 	}
 
+	@Test
+	public void testDependencyVerificationException() throws Exception
+	{
+		TestUtils.createTestFiles(tmpdir);
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		mockAggregator.getOptions().setOption(IOptions.VERIFY_DEPS, true);
+		dependentFeaturesMap.put("p1/p1", Arrays.asList(new String[]{}));
+		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "/p1/p1.js").toURI());
+		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
+		Future<ModuleBuildReader> future = p1.getBuild(mockRequest);
+		try {
+			future.get();
+			fail();
+		} catch (java.util.concurrent.ExecutionException ex) {
+			Assert.assertEquals(DependencyVerificationException.class, ex.getCause().getClass());
+		}
+		
+		dependentFeaturesMap.put("p1/p1", Arrays.asList(new String[]{"conditionTrue", "conditionFalse"}));
+		future = p1.getBuild(mockRequest);
+		future.get();
+	}
+	
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getModuleName()}.
 	 * @throws URISyntaxException 

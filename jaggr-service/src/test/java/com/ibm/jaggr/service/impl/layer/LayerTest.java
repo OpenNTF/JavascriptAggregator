@@ -105,7 +105,7 @@ public class LayerTest extends EasyMock {
 	Map<String, String> responseAttributes = new HashMap<String, String>();
 	HttpServletRequest mockRequest;
 	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
-	IDependencies mockDependencies = createMock(IDependencies.class);
+	IDependencies mockDependencies = createNiceMock(IDependencies.class);
 	Map<String, String[]> testDepMap;
 	
 
