@@ -285,7 +285,7 @@ public class LayerCacheTest {
 		mockAggregator = new Proxy(easyMockAggregator);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
-		mockDependencies = EasyMock.createMock(IDependencies.class);
+		mockDependencies = EasyMock.createNiceMock(IDependencies.class);
 		EasyMock.expect(easyMockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;

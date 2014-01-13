@@ -22,6 +22,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -46,6 +47,7 @@ import com.google.javascript.jscomp.DiagnosticGroups;
 import com.google.javascript.jscomp.JSError;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.jscomp.Result;
+import com.ibm.jaggr.service.DependencyVerificationException;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IExtensionInitializer;
@@ -267,6 +269,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		
 		
 		Set<String> discoveredHasConditionals = new LinkedHashSet<String>();
+		Set<String> hasFiltDiscoveredHasConditionals = new HashSet<String>();
 		String output = null;
 	
 		Compiler compiler = new Compiler();
@@ -278,7 +281,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			// the dependent features for the module to include in the cache key generator.
 			HasFilteringCompilerPass hfcp = new HasFilteringCompilerPass(
 					features, 
-					keyGens == null ? discoveredHasConditionals : null, 
+					keyGens == null ? hasFiltDiscoveredHasConditionals : null, 
 					coerceUndefinedToFalse
 			);
    			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
@@ -328,6 +331,18 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		// compile the module
 		Result result = compiler.compile(externs, sources, compiler_options);
 		if (result.success) {
+			if (aggr.getOptions().isDevelopmentMode() && aggr.getOptions().isVerifyDeps()) {
+				// Validate dependencies for this module by comparing the 
+				// discovered has conditionals against the dependent features 
+				// that were discovered when building the dependency graph
+				List<String> dependentFeatures = aggr.getDependencies().getDependentFeatures(mid);
+				if (dependentFeatures != null) {
+					if (!new HashSet<String>(dependentFeatures).containsAll(hasFiltDiscoveredHasConditionals)) {
+						throw new DependencyVerificationException(mid);
+					}
+				}
+			}
+			discoveredHasConditionals.addAll(hasFiltDiscoveredHasConditionals);
 			if (keyGens != null) {
 				// Determine if we need to update the cache key generator.  Updating may be 
 				// necessary due to require list expansion as a result of different 

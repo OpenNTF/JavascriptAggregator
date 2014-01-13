@@ -60,12 +60,12 @@ import com.ibm.jaggr.service.util.TypeUtil;
 public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 	
-    static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/dojo"; //$NON-NLS-1$ //$NON-NLS-2$
-    static final String textPluginProxyUriStr = comboUriStr + "/text"; //$NON-NLS-1$
-    static final String loaderExtensionPath = "/WebContent/dojo/loaderExt.js"; //$NON-NLS-1$
+    static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent"; //$NON-NLS-1$ //$NON-NLS-2$
+    static final String textPluginProxyUriStr = comboUriStr + "/dojo/text"; //$NON-NLS-1$
+    static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
     static final String[] loaderExtensionResources = {
-    	"../loaderExtCommon.js", //$NON-NLS-1$
-    	"./_loaderExt.js" //$NON-NLS-1$
+    	"./loaderExtCommon.js", //$NON-NLS-1$
+    	"./dojo/_loaderExt.js" //$NON-NLS-1$
     };
     static final String dojo = "dojo"; //$NON-NLS-1$
     static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
@@ -74,7 +74,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     static final String dojoTextPluginName = "text"; //$NON-NLS-1$
     static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
     static final URI dojoPluginUri;
-
+ 
     static {
     	try {
     		dojoPluginUri = new URI("./"+dojoTextPluginName); //$NON-NLS-1$
@@ -98,10 +98,8 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     	return comboUriStr;
     }
     
-    /**
-     * Property accessor for the plugin unique id for this extension
-     * 
-     * @return the plugin unique id
+    /* (non-Javadoc)
+     * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getPluginUniqueId()
      */
     protected String getPluginUniqueId() {
     	return pluginUniqueId;

@@ -43,6 +43,7 @@ import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.service.deps.IDependencies;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
 import com.ibm.jaggr.service.module.IModule;
@@ -70,6 +71,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	HttpServletRequest mockRequest;
 	IAggregator mockAggregator;
+	IDependencies mockDependencies;
 	JSONObject configParams = new JSONObject();
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
@@ -117,9 +119,12 @@ public class I18nModuleBuilderTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IAggregator.CONCURRENTMAP_REQATTRNAME, concurrentMap);
 		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
+		mockDependencies = EasyMock.createNiceMock(IDependencies.class);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
+		EasyMock.expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		replay(mockRequest);
 		replay(mockAggregator);
+		replay(mockDependencies);
 		res = new FileResource(new File(nls, "strings.js").toURI());
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}"));
 	}

@@ -90,4 +90,17 @@ public class Features {
 	public String toString() {
 		return features.toString();
 	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (other != null && other.getClass().equals(Features.class)) {
+			return features.equals(((Features)other).features);
+		}
+		return false;
+	}
+	
+	@Override
+	public int hashCode() {
+		return features.hashCode();
+	}
 }

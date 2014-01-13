@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.service.impl.transport;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -23,6 +24,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -33,7 +35,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -42,7 +46,10 @@ import java.util.regex.Pattern;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.input.ReaderInputStream;
+import org.apache.commons.lang.StringUtils;
+import org.apache.wink.json4j.JSONArray;
 import org.apache.wink.json4j.JSONException;
 import org.apache.wink.json4j.JSONObject;
 import org.eclipse.core.runtime.CoreException;
@@ -60,12 +67,19 @@ import com.ibm.jaggr.service.BadRequestException;
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.IAggregatorExtension;
 import com.ibm.jaggr.service.IShutdownListener;
+import com.ibm.jaggr.service.ProcessingDependenciesException;
 import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.service.config.IConfigModifier;
+import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.service.deps.IDependenciesListener;
+import com.ibm.jaggr.service.impl.resource.ExceptionResource;
 import com.ibm.jaggr.service.readers.AggregationReader;
 import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.service.resource.IResourceFactory;
+import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.service.resource.IResourceVisitor;
 import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.service.resource.StringResource;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.util.Features;
 import com.ibm.jaggr.service.util.TypeUtil;
@@ -74,7 +88,7 @@ import com.ibm.jaggr.service.util.TypeUtil;
  * Implements common functionality useful for all Http Transport implementation
  * and defines abstract methods that subclasses need to implement
  */
-public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener {
+public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener, IDependenciesListener {
 	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 
 	public static final String PATH_ATTRNAME = "path"; //$NON-NLS-1$
@@ -106,21 +120,35 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 	
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
-	
+    public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
+    
+    static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
+    public static final String FEATURE_LIST_PRELUDE = "define([], function() { return "; //$NON-NLS-1$
+    public static final String FEATURE_LIST_PROLOGUE = ";});"; //$NON-NLS-1$
 
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
     private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
     
-    private static Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
-    private static Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
+    private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
+    private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
     private String resourcePathId;
-    private ServiceRegistration configModifierReg;
+    private List<ServiceRegistration> serviceRegistrations = new ArrayList<ServiceRegistration>();
     private IAggregator aggregator = null;
     private List<String> extensionContributions = new LinkedList<String>();
 
+    private List<String> dependentFeatures = null;
     
+    private CountDownLatch depsInitialized = null;
     
+    /** default constructor */
+    public AbstractHttpTransport() {}
+    	
+    /** For unit tests */
+    AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures) {
+    	this.depsInitialized = depsInitialized;
+    	this.dependentFeatures = dependentFeatures;
+    }
     
     /**
      * Returns the URI to the folder containing the javascript resources
@@ -364,8 +392,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
      * @return The map containing the has-condition/value pairs.
      * @throws  
      */
-    protected static Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
-		Features features = new Features();
+    protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
+		Features features = getFeaturesFromRequestEncoded(request);
+		if (features != null) {
+			return features;
+		}
+		features = new Features();
 		String has  = getHasConditionsFromRequest(request);
 		if (has != null) {
 			if (log.isLoggable(Level.FINEST))
@@ -392,7 +424,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * @return The has conditions from the request.
 	 * @throws UnsupportedEncodingException 
 	 */
-	protected static String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
+	protected String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
+
 		String ret = null;
 		if (request.getParameter(FEATUREMAPHASH_REQPARAM) != null) {
 			// The cookie called 'has' contains the has conditions
@@ -559,14 +592,44 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
 		this.aggregator = aggregator;
 
+		URI featureListResourceUri = getFeatureListResourceUri();
 		// register a config listener so that we get notified of changes to 
 		// the server-side AMD config file.
 		String name = aggregator.getName();
 		Properties dict = new Properties();
 		dict.put("name", name); //$NON-NLS-1$
-    	configModifierReg = aggregator.getBundleContext().registerService(
+    	serviceRegistrations.add(aggregator.getBundleContext().registerService(
 				IConfigModifier.class.getName(), this, dict
-		);
+		));
+		dict = new Properties();
+		dict.put("name", name); //$NON-NLS-1$
+    	serviceRegistrations.add(aggregator.getBundleContext().registerService(
+				IShutdownListener.class.getName(), this, dict
+		));
+
+		if (featureListResourceUri != null) {
+		    depsInitialized = new CountDownLatch(1); 
+
+			// Get first resource factory extension so we can add to beginning of list
+	    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+	    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
+	
+	    	// Register the featureMap resource factory
+	    	dict = new Properties();
+	    	dict.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+			reg.registerExtension(
+					newFeatureListResourceFactory(featureListResourceUri), 
+					dict,
+					IResourceFactoryExtensionPoint.ID,
+					getPluginUniqueId(),
+					first);
+
+			// Register the dependencies listener
+			dict = new Properties();
+			dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			serviceRegistrations.add(aggregator.getBundleContext().registerService(
+					IDependenciesListener.class.getName(), this, dict));
+		}	
 	}
 
 	/* (non-Javadoc)
@@ -574,10 +637,32 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		// unregister our config modifier
-		if (configModifierReg != null) {
-			configModifierReg.unregister();
+		// unregister the service registrations
+		for (ServiceRegistration reg : serviceRegistrations) {
+			if (reg != null) {
+				reg.unregister();
+			}
 		}
+		serviceRegistrations.clear();
+	}
+	
+	/**
+	 * Returns the unique id for the implementing plugin.  Must
+	 * be implemented by subclasses.
+	 * 
+	 * @return the plugin unique id.
+	 */
+	abstract protected String getPluginUniqueId();
+
+	/**
+	 * Default implementation that returns null URI. Subclasses should
+	 * implement this method to return the loader specific URI to the resource
+	 * that implements the featureMap JavaScript code.
+	 * 
+	 * @return null
+	 */
+	protected URI getFeatureListResourceUri() {
+		return getComboUri().resolve(FEATUREMAP_JS_PATH);
 	}
 
 	/**
@@ -753,6 +838,216 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     	request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
     }
     
+	/**
+	 * Returns the has conditions specified in the request as a base64 encoded
+	 * trit map of feature values where each trit (three state value - 0, 1 and
+	 * don't care) represents the state of a feature in the list of
+	 * deendentFeatures that was sent to the client in the featureMap JavaScript
+	 * resource served by
+	 * {@link AbstractHttpTransport.FeatureListResourceFactory}.
+	 * <p>
+	 * Each byte from the base64 decoded byte array encodes 5 trits (3**5 = 243
+	 * states out of the 256 possible states).
+	 * 
+	 * @param request
+	 *            The http request object
+	 * @return the decoded feature list as a string, or null
+	 * @throws IOException
+	 */
+	protected Features getFeaturesFromRequestEncoded(HttpServletRequest request) throws IOException {
+		final String methodName = "getFeaturesFromRequestEncoded"; //$NON-NLS-1$
+		final boolean traceLogging = log.isLoggable(Level.FINER);
+		if (traceLogging) {
+			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{request});
+		}
+		if (depsInitialized == null) {
+			if (traceLogging) {
+				log.finer("No initialization semphore"); //$NON-NLS-1$
+				log.exiting(AbstractHttpTransport.class.getName(), methodName);
+			}
+			return null;
+		}
+		String encoded = request.getParameter(ENCODED_FEATURE_MAP_REQPARAM);
+		if (encoded == null) {
+			if (traceLogging) {
+				log.finer(ENCODED_FEATURE_MAP_REQPARAM + " param not specified in request"); //$NON-NLS-1$
+				log.exiting(AbstractHttpTransport.class.getName(), methodName);
+			}
+			return null;
+		}
+		if (traceLogging) {
+			log.finer(ENCODED_FEATURE_MAP_REQPARAM + " param = " + encoded); //$NON-NLS-1$
+		}
+		try {
+			depsInitialized.await();
+		} catch (InterruptedException e) {
+			throw new IOException(e);
+		}
+
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		byte[] decoded = Base64.decodeBase64(encoded);
+		int len = dependentFeatures.size();
+
+		// Validate the input - first two bytes specify length of feature list on the client
+		if (len != decoded[0]+(decoded[1]<< 8) || decoded.length != len/5 + (len%5==0?0:1) + 2) {
+			if (log.isLoggable(Level.FINER)) {
+				log.finer("Invalid encoded feature list.  Expected feature list length = " + len); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			throw new BadRequestException("Invalid encoded feature list");
+		}
+		// Now decode the trit map
+		for (int i = 2; i < decoded.length; i++) {
+			int q = decoded[i] & 0xFF;
+			for (int j = 0; j < 5 && (i-2)*5+j < len; j++) {
+				bos.write(q % 3);
+				q = q / 3;
+			}
+		}
+		Features result = new Features();
+		int i = 0;
+		for (byte b : bos.toByteArray()) {
+			if (b < 2) {
+				result.put(dependentFeatures.get(i), b == 1);
+			}
+			i++;
+		}
+		if (traceLogging) {
+			log.exiting(AbstractHttpTransport.class.getName(), methodName, result);
+		}
+		return result;
+	}
+	
+	/**
+	 * Returns an instance of a FeatureMapJSResourceFactory.
+	 * 
+	 * @param resourcePath
+	 *            the resource path
+	 * @return a new factory object
+	 */
+	protected FeatureListResourceFactory newFeatureListResourceFactory(URI resourceUri) {
+		final String methodName = "newFeatureMapJSResourceFactory"; //$NON-NLS-1$
+		final boolean traceLogging = log.isLoggable(Level.FINER);
+		if (traceLogging) {
+			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{resourceUri});
+		}
+		FeatureListResourceFactory factory = new FeatureListResourceFactory(resourceUri);
+		if (traceLogging) {
+			log.exiting(AbstractHttpTransport.class.getName(), methodName);
+		}
+		return factory;
+	}
+	
+	/**
+	 * Resource factory for serving the featureMap JavaScript resource containing the
+	 * dynamically generated list of dependent features.  This list is used by the 
+	 * client to encode the states of the features as a trit map of values over 
+	 * the list, where each trit in the encoded data is the value of a feature 
+	 * in the list. 
+	 */
+	protected class FeatureListResourceFactory implements IResourceFactory {
+		
+		private final URI resourceUri;
+		
+		public FeatureListResourceFactory(URI resourceUri) {
+			this.resourceUri = resourceUri;
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResourceFactory#handles(java.net.URI)
+		 */
+		@Override
+		public boolean handles(URI uri) {
+			final String methodName = "handles"; //$NON-NLS-1$
+			final boolean traceLogging = log.isLoggable(Level.FINER);
+			if (traceLogging) {
+				log.entering(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, new Object[]{uri});
+			}
+			boolean result = false;
+			if (StringUtils.equals(uri.getPath(), resourceUri.getPath()) &&
+				StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) &&
+				StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
+				result = true;
+			}
+			if (traceLogging) {
+				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, result);
+			}
+			return result;
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResourceFactory#newResource(java.net.URI)
+		 */
+		@Override
+		public IResource newResource(URI uri) {
+			final String methodName = "newResource"; //$NON-NLS-1$
+			final boolean traceLogging = log.isLoggable(Level.FINER);
+			if (traceLogging) {
+				log.entering(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, new Object[]{uri});
+			}
+			// validate the URI
+			if (!StringUtils.equals(uri.getPath(), resourceUri.getPath()) ||
+				!StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) ||
+				!StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
+				return new ExceptionResource(uri, 0, new IOException(new UnsupportedOperationException()));
+			}
+			// wait for dependencies to be initialized
+			try {
+				depsInitialized.await();
+			} catch (InterruptedException e) {
+				return new ExceptionResource(uri, 0L, new IOException(e));
+			}
+			long lastmod = getAggregator().getDependencies().getLastModified();
+			// Now replace the empty list declaration in the javascript code with the 
+			// contents of the feature list from the dependencies and return the result
+			JSONArray json;
+			try {
+				json = new JSONArray(new ArrayList<String>(dependentFeatures));
+			} catch (JSONException ex) {
+				return new ExceptionResource(uri, lastmod, new IOException(ex));
+			}
+			StringBuffer sb = new StringBuffer();
+			sb.append(FEATURE_LIST_PRELUDE).append(json).append(FEATURE_LIST_PROLOGUE);
+			IResource result = new StringResource(sb.toString(), uri, lastmod); 
+			if (traceLogging) {
+				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, sb.toString());
+			}
+			return result;
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.deps.IDependenciesListener#dependenciesLoaded(com.ibm.jaggr.service.deps.IDependencies, long)
+	 */
+	@Override
+	public void dependenciesLoaded(IDependencies deps, long sequence) {
+		/*
+		 * Aggregate the dependent features from all the modules into a single,
+		 * alphabetically sorted, list of features.
+		 */
+		Set<String> features = new TreeSet<String>();
+		try {
+			for (String mid : deps.getDependencyNames()) {
+				features.addAll(deps.getDependentFeatures(mid));
+			}
+			dependentFeatures = Collections.unmodifiableList(Arrays.asList(features.toArray(new String[features.size()])));
+			depsInitialized.countDown();
+		} catch (ProcessingDependenciesException e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, e.getMessage(), e);
+			}
+			// Don't clear the latch as another call to this method can be expected soon
+		} catch (Throwable t) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, t.getMessage(), t);
+			}
+			// Clear the latch to allow the waiting thread to wake up.  If 
+			// dependencies have never been initialized, then NullPointerExceptions
+			// will be thrown for any threads trying to access the uninitialized 
+			// dependencies.
+			depsInitialized.countDown();
+			
+		}
+	}	
 	/**
 	 * Implementation of an {@link IResource} that aggregates the various 
 	 * sources (dynamic and static content) of the loader extension 

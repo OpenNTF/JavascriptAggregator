@@ -27,9 +27,11 @@
 <script src="../dojo-1.8.0/dojo/dojo.js"></script>
 </head>
 <body class="claro">
-    <div data-dojo-type="dijit.Calendar" data-dojo-props="onChange:function(){dojo.byId('formatted').innerHTML=dojo.date.locale.format(arguments[0], {formatLength: 'full', selector:'date'})}">
+	<div data-dojo-type="dijit.layout.TabContainer" style="width: 100%; height: 400px;">
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Calendar" selected="true"></div>
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Color Palette"></div>
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Editor"></div>
+		<div data-dojo-type="dijit.layout.LazyContentPane" title="Chart"></div>
     </div>
-    <p id="formatted">
-    </p>
 </body>
 </html>

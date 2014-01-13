@@ -19,20 +19,29 @@ package com.ibm.jaggr.service.impl.deps;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
+import java.util.regex.Pattern;
 
 import org.apache.commons.lang.StringUtils;
 
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
+import com.ibm.jaggr.service.util.BooleanTerm;
+import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.service.util.HasNode;
+import com.ibm.jaggr.service.util.NodeUtil;
 import com.ibm.jaggr.service.util.PathUtil;
 
 /**
  * Collection of utility classes used for processing Dependency trees
  */
 public class DepUtils {
+
+	static final Pattern hasPattern = Pattern.compile("(^|\\/)has!"); //$NON-NLS-1$
 
 	/**
 	 * Removes URIs containing duplicate and non-orthogonal paths so that the
@@ -139,48 +148,56 @@ public class DepUtils {
 	 *            A parsed AST {@link Node} for a javascript file
 	 * @return The String array of module dependencies.
 	 */
-	static public ArrayList<String> parseDependencies(Node node) {
-		ArrayList<String> result = null;
+	static public Collection<String> parseDependencies(Node node, Set<String> dependentFeatures) {
+		Collection<String> result = null;
 		for (Node cursor = node.getFirstChild(); cursor != null; cursor = cursor
 				.getNext()) {
-			if (cursor.getType() == Token.CALL) {
-				// The node is a function or method call
-				Node name = cursor.getFirstChild();
-				if (name != null && name.getType() == Token.NAME && // named function call
-					name.getString().equals("define")) { // name is "define //$NON-NLS-1$
-					/*
-					 * This is a define() function call.  There are multiple variants and
-					 * the dependency array can be the first or second parameter.
-					 */
-					result = new ArrayList<String>();
-					Node param = name;
-					for (int i = 0; i < 3 && param != null; i++) {
-						param = param.getNext();
-						if (param != null && param.getType() == Token.ARRAYLIT) {
-							// Found the array.  Now copy the string values to the buildReader.
-							Node strNode = param.getFirstChild();
-							while (strNode != null) {
-								if (strNode.getType() == Token.STRING) {
-									String mid = strNode.getString();
-									// Don't add module ids with invalid characters
-									if (!PathUtil.invalidChars.matcher(mid).find()) {
-										result.add(mid);
-									}
-								}
-								strNode = strNode.getNext();
+			Node defineDeps = null, requireDeps = null;
+			String condition;
+			if ((condition = NodeUtil.conditionFromHasNode(cursor)) != null) {
+				dependentFeatures.add(condition);
+			} else if ((defineDeps = NodeUtil.moduleDepsFromDefine(cursor)) != null ||
+					   (requireDeps = NodeUtil.moduleDepsFromRequire(cursor)) != null) {
+				Node dependencies = defineDeps != null ? defineDeps : requireDeps;
+				// Found the array.  Now copy the string values to the buildReader.
+				result = new LinkedHashSet<String>();
+				Node strNode = dependencies.getFirstChild();
+				while (strNode != null) {
+					if (strNode.getType() == Token.STRING) {
+						String mid = strNode.getString();
+						// Don't add module ids with invalid characters
+						if (!PathUtil.invalidChars.matcher(mid).find()) {
+							if (defineDeps != null) { 
+								result.add(mid);
+							}
+							// if the id specifies a has loader plugin, then add the 
+							// has dependencies to the dependencies list
+							if (hasPattern.matcher(mid).find()) {
+								int idx = mid.indexOf("!"); //$NON-NLS-1$
+								HasNode hasNode = new HasNode(mid.substring(idx+1));
+								hasNode.evaluateAll(
+										mid.substring(0, idx), 
+										Features.emptyFeatures, 
+										dependentFeatures, 
+										BooleanTerm.TRUE, null);
 							}
 						}
 					}
-					return result;
+					strNode = strNode.getNext();
 				}
 			}
 			// Recursively call this method to process the child nodes
 			if (cursor.hasChildren()) {
-				result = parseDependencies(cursor);
-				if (result != null)
-					return result;
+				Collection<String> childDeps = parseDependencies(cursor, dependentFeatures);
+				if (childDeps != null) {
+					if (result != null) {
+						result.addAll(childDeps);
+					} else {
+						result = childDeps;
+					}
+				}
 			}
 		}
-		return null;
+		return result;
 	}
 }

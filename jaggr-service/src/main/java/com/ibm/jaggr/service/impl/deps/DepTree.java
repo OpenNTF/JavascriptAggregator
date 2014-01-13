@@ -42,7 +42,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
-import org.osgi.framework.BundleContext;
 
 import com.ibm.jaggr.service.IAggregator;
 import com.ibm.jaggr.service.config.IConfig;
@@ -390,7 +389,7 @@ public class DepTree implements Serializable {
 	 * 
 	 * @return The root {@link DepTreeNode} for the new tree
 	 */
-	public DepTreeRoot mapDependencies(DepTreeRoot root, BundleContext context, Map<String, URI> map, IConfig config) {
+	public DepTreeRoot mapDependencies(DepTreeRoot root, Map<String, URI> map) {
 		// For each config path entry...
 		for (Entry<String, URI> configPathEntry : map.entrySet()) {
 			String name = configPathEntry.getKey();

@@ -19,26 +19,27 @@
 	
 	// make sure we use the global require object
 	this.require = {
+		baseUrl: '/test',
 		packages: [
 	   		{
 	   			name: 'dojo',
-	   			location: '../dojo-1.8.0/dojo',
+	   			location: 'dojo-1.8.0/dojo',
 	   			lib: '.'
 	   		},
 	   		{
 	   			name: 'dijit',
-	   			location: '../dojo-1.8.0/dijit',
+	   			location: 'dojo-1.8.0/dijit',
 	   			lib: '.'
 	   		},
 	   		{
 	   			name: 'dojox',
-	   			location: '../dojo-1.8.0/dojox',
+	   			location: 'dojo-1.8.0/dojox',
 	   			lib: '.'
 	   		}
 	   	],
 	   	
 	   	paths: {
-	   		js: "../res/js"
+	   		js: "res/js"
 	   	},
 	   	
 		has: {

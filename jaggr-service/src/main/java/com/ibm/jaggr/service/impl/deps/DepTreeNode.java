@@ -47,7 +47,7 @@ import com.ibm.jaggr.service.util.PathUtil;
  * bar and a javascript module named bar (named bar.js on the file system).
  */
 public class DepTreeNode implements Cloneable, Serializable {
-	private static final long serialVersionUID = 5598497628602046531L;
+	private static final long serialVersionUID = -4890341014663635619L;
 
 	static final Logger log = Logger.getLogger(DepTreeNode.class.getName());
 
@@ -60,6 +60,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 	private String name;
 	/** The list of module name dependencies for this node if it is a module */
 	private String[] dependencies;
+	/** The list of dependent features in the module */
+	private String[] dependentFeatures;
 	/** The file last modified date if this node is for a module */
 	private long lastModified = -1;
 	/**
@@ -78,6 +80,21 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 */
 	private transient WeakReference<DepTreeNode> parent;
 
+	class DependencyInfo {
+		private List<String> declaredDependencies;
+		private List<String> dependentFeatures;
+		private DependencyInfo(String[] declaredDependencies, String[] dependentFeatures) {
+			this.declaredDependencies = declaredDependencies != null ? 
+					Collections.unmodifiableList(Arrays.asList(declaredDependencies)) :
+					Collections.<String>emptyList();
+			this.dependentFeatures = dependentFeatures != null ?
+					Collections.unmodifiableList(Arrays.asList(dependentFeatures)) :
+					Collections.<String>emptyList();
+		}
+		public List<String> getDeclaredDependencies() { return declaredDependencies; }
+		public List<String> getDepenedentFeatures() { return dependentFeatures; }
+	}
+	
 	/**
 	 * Object constructor. Creates a node with the given name.
 	 * 
@@ -162,6 +179,13 @@ public class DepTreeNode implements Cloneable, Serializable {
 	public String[] getDepArray() {
 		return dependencies;
 	}
+	
+	/**
+	 * @return The depenedent features array
+	 */
+	public String[] getDependentFeatures() {
+		return dependentFeatures;
+	}
 
 	/**
 	 * @return The full path name from root of this node's parent node, or an
@@ -218,8 +242,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * @param child
 	 */
 	public void overlay(DepTreeNode node) {
-		if (node.getDepArray() != null) {
-			setDependencies(node.getDepArray(), node.lastModified(), node.lastModifiedDep());
+		if (node.dependencies != null) {
+			setDependencies(node.dependencies, node.dependentFeatures, node.lastModified(), node.lastModifiedDep());
 		}
 		if (node.getChildren() == null) {
 			return;
@@ -378,14 +402,17 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * 
 	 * @param dependencies
 	 *            The dependency list of module names
+	 * @param dependentFeatures
+	 *            The dependent features for the module
 	 * @param lastModifiedFile
 	 *            The last modified date of the javascript source file
 	 * @param lastModifiedDep
 	 *            The last modified date of the dependency list. See
 	 *            {@link #lastModifiedDep()}
 	 */
-	public void setDependencies(String[] dependencies, long lastModifiedFile, long lastModifiedDep) {
+	public void setDependencies(String[] dependencies, String[] dependentFeatures, long lastModifiedFile, long lastModifiedDep) {
 		this.dependencies = dependencies;
+		this.dependentFeatures = dependentFeatures;
 		this.lastModified = lastModifiedFile;
 		this.lastModifiedDep = lastModifiedDep;
 	}
@@ -526,9 +553,9 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * 
 	 * @param depMap
 	 */
-	void populateDepMap(Map<String, List<String>> depMap) {
+	void populateDepMap(Map<String, DependencyInfo> depMap) {
 		if (dependencies != null) {
-			depMap.put(getFullPathName(), Collections.unmodifiableList(Arrays.asList(dependencies)));
+			depMap.put(getFullPathName(), new DependencyInfo(dependencies, dependentFeatures));
 		}
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
