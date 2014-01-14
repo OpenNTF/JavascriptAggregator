@@ -8,7 +8,7 @@
   <title>Jasmine Spec Runner</title>
   $cssDependencies$
   $javascriptDependencies$
-  $allScriptTags$
+  $preloadScriptTags$
 </head>
 <body>
   <script type="text/javascript">
@@ -17,7 +17,39 @@
     }
     
 
-    var executeJasmineSpecs = function(){
+    var specs = $specsList$;
+        
+    var configuration = {
+      $if(customRunnerConfiguration)$
+      $customRunnerConfiguration$
+      $endif$
+    };
+    
+    if (!configuration.baseUrl) {
+      configuration.baseUrl = '$sourceDir$';
+    }
+    
+    if (!configuration.paths) {
+      configuration.paths = {};
+    }
+    
+    if (!configuration.paths.specs) {
+      var specDir = '$specDir$';
+      if (!specDir.match(/^file/)) {
+        specDir = '/'+specDir;
+      }
+      configuration.paths.specs = specDir;
+    }
+    
+    (function() {
+      for (var i = 0; i < specs.length; i++) {
+        var spec = specs[i],
+            match = /^(.+)[.]js\$/.exec(spec);
+        specs[i] = match && match[1] || spec;
+      }
+    })();
+
+    require(specs, function() {
       window.reporter = new jasmine.$reporter$(); jasmine.getEnv().addReporter(reporter);
       if ('$reporter$' == 'HtmlReporter') {
         jasmine.getEnv().specFilter = function(spec) {
@@ -25,19 +57,12 @@
         };
       }
       
-         //Don't do live updates when running through HTMLUnit
+      //Don't do live updates when running through HTMLUnit
       if ('$reporter$' == 'JsApiReporter'){
-                jasmine.getEnv().updateInterval = Number.MAX_VALUE;
+        jasmine.getEnv().updateInterval = Number.MAX_VALUE;
       }
       
       jasmine.getEnv().execute();
-    };
-
-    if (window.addEventListener) {
-      addEventListener('DOMContentLoaded', executeJasmineSpecs, false);
-    } else {
-      attachEvent('onload', executeJasmineSpecs);
-    }
-  </script>
+    });  </script>
 </body>
 </html>

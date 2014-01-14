@@ -23,7 +23,7 @@ define([
 		getQueryString: function(hasArg) {
 			// hasArg is expected to begin with 'has=' followed by the '*'
 			// delimited list of features
-			if (hasArg.indexOf("has=") === 0 && hasArg.indexOf("*") != -1) {
+			if (hasArg && hasArg.indexOf("has=") === 0 && hasArg.indexOf("*") != -1) {
 				var hasList = hasArg.substring(4).split('*'), hasMap = {}, value;
 				for (var i = 0; i < hasList.length; i++) {
 					value = hasList[i].charAt(0) != "!";
@@ -37,7 +37,7 @@ define([
 				for (i = 0; i < len; i++) {
 					var mod = i % 5;
 					value = hasMap[featureList[i]];
-					trit = (value === null) ? 2 /* don't care */ : (value ? 1 : 0);
+					trit = (value===false)?0:(value===true?1:2/* don't care */);
 					b += trit * Math.pow(3, mod);
 					if (mod == 4 || i == len-1) {
 						bytes.push(b);
