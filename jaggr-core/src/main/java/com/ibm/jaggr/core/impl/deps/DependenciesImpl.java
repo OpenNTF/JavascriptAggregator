@@ -40,16 +40,16 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
@@ -83,15 +83,15 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		shutdownListener = PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);	
+		shutdownListener = aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);	
 		
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		configUpdateListener= PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+		configUpdateListener= aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
 		
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		optionsUpdateListener= PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
+		optionsUpdateListener= aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 
 			if (aggregator.getConfig() != null) {
 				configLoaded(aggregator.getConfig(), 1);
@@ -104,9 +104,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		this.aggregator = null;
-		PlatformServicesProvider.getPlatformServices().unRegisterService(configUpdateListener);
-		PlatformServicesProvider.getPlatformServices().unRegisterService(optionsUpdateListener);
-		PlatformServicesProvider.getPlatformServices().unRegisterService(shutdownListener);
+		aggregator.getPlatformServices().unRegisterService(configUpdateListener);
+		aggregator.getPlatformServices().unRegisterService(optionsUpdateListener);
+		aggregator.getPlatformServices().unRegisterService(shutdownListener);
 		
 	}
 
@@ -183,14 +183,14 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		final ExecutorService executor = Executors.newSingleThreadExecutor();
 		processingDeps = true;
 		final AtomicBoolean processDepsThreadStarted = new AtomicBoolean(false);
-		//final ConsoleService cs = new ConsoleService();
+		final ConsoleService cs = new ConsoleService();
 		try {
 			executor.execute(new Runnable() {
 				public void run() {
 					rwl.writeLock().lock();
 					processDepsThreadStarted.set(true);
 					// initialize the console service for the worker thread.
-					//ConsoleService workerCs = new ConsoleService(cs);
+					ConsoleService workerCs = new ConsoleService(cs);
 					try {
 						// Map of path names to URIs for locations to be scanned for js files 
 						final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
@@ -291,11 +291,11 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						// Notify listeners that dependencies have been updated
 						Object[] refs = null;
 						
-						refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
+						refs = aggregator.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
 						
 						if (refs != null) {
 							for (Object ref : refs) {								
-								IDependenciesListener listener = (IDependenciesListener)(PlatformServicesProvider.getPlatformServices().getService(ref));
+								IDependenciesListener listener = (IDependenciesListener)(aggregator.getPlatformServices().getService(ref));
 								if (listener != null) {
 									try {
 										listener.dependenciesLoaded(DependenciesImpl.this, sequence);
@@ -304,7 +304,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 											log.log(Level.SEVERE, e.getMessage(), e);
 										}
 									} finally {
-										PlatformServicesProvider.getPlatformServices().ungetService(ref);
+										aggregator.getPlatformServices().ungetService(ref);
 									}
 								}
 							}
@@ -319,7 +319,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						executor.shutdown();
 						initialized.countDown();
 						processingDeps = false;
-						//workerCs.close();
+						workerCs.close();
 					}
 				}
 			});

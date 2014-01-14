@@ -651,7 +651,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : registrations) {
-			PlatformServicesProvider.getPlatformServices().unRegisterService(reg);
+			aggregator.getPlatformServices().unRegisterService(reg);
 		}
 	}
 
@@ -665,10 +665,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		Hashtable<String, String> props;
 		props = new Hashtable<String, String>();		
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
 			configLoaded(config, 1);

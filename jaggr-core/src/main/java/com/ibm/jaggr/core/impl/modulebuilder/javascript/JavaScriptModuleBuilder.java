@@ -34,7 +34,6 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-
 import com.google.common.collect.HashMultimap;
 import com.google.javascript.jscomp.CheckLevel;
 import com.google.javascript.jscomp.CompilationLevel;
@@ -54,7 +53,6 @@ import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
@@ -124,10 +122,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Dictionary<String,String> props;
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$		
-		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(ILayerListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(ILayerListener.class.getName(), this, props));
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 	}
 
 	@Override
@@ -207,7 +205,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : registrations) {
-			PlatformServicesProvider.getPlatformServices().unRegisterService(reg);			
+			aggregator.getPlatformServices().unRegisterService(reg);			
 		}
 	}
 

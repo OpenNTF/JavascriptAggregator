@@ -114,14 +114,7 @@ public interface IPlatformServices {
 	 * @return A {@code Dictionary} of key-value pairs depicting the headers.
 	 */
 
-	public Dictionary<String, String> getHeaders();
-
-	/**
-	 * A method to print messages.
-	 * 
-	 * @param msg
-	 */
-	public void println(String msg);
+	public Dictionary<String, String> getHeaders();	
 
 	/**
 	 * This method returns true when the platform is shutting down.

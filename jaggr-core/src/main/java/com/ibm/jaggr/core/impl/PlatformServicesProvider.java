@@ -24,15 +24,15 @@ import com.ibm.jaggr.core.IPlatformServices;
 
 public class PlatformServicesProvider {
 	
-	private static IPlatformServices platformAggregator;
+	private  IPlatformServices platformAggregator;
 	
-	private PlatformServicesProvider(){}
+	//public PlatformServicesProvider(){}
 	
-	public static void setPlatformServices(IPlatformServices aggregator){
+	public void setPlatformServices(IPlatformServices aggregator){
 		platformAggregator = aggregator;
 	}	
 	
-	public static IPlatformServices getPlatformServices(){
+	public IPlatformServices getPlatformServices(){
 		return platformAggregator;
 	}	
 

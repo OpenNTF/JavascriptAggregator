@@ -29,7 +29,6 @@ import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.PlatformServicesException;
-import com.ibm.jaggr.service.util.ConsoleService;
 
 /**
  * This class provides the OSGi implementation of the
@@ -152,12 +151,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		} else {
 			return null;
 		}
-	}
-
-	@Override
-	public void println(String msg) {
-		new ConsoleService().println(msg);
-	}
+	}	
 
 	@Override
 	public boolean isShuttingdown() {

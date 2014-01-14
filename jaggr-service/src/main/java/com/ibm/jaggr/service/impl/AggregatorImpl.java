@@ -48,6 +48,7 @@ import org.osgi.util.tracker.ServiceTracker;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
@@ -109,6 +110,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
     protected ServiceTracker executorsServiceTracker;
 	protected ServiceTracker variableResolverServiceTracker;
 	
+	
     @Override
     public IOptions getOptions() {
     	return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
@@ -144,8 +146,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
         try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
     		
-    		PlatformServicesImpl osgiPlatformAggregator = new PlatformServicesImpl(bundleContext);
-    		PlatformServicesProvider.setPlatformServices(osgiPlatformAggregator);    		
+    		platformServices = new PlatformServicesImpl(bundleContext); 				  		
     		
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
@@ -291,7 +292,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
    			final File file = new File(substituteProps(value));
    			if (file.exists()) {
    				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
-   				localOptions = new OptionsImpl(registrationName, true) {
+   				localOptions = new OptionsImpl(registrationName, true, this) {
    					@Override public File getPropsFile() { return file; }
    				};
    				if (log.isLoggable(Level.INFO)) {
@@ -560,8 +561,6 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
         dict.put("name", getName()); //$NON-NLS-1$
         registrations.add(getBundleContext().registerService(
         		ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
-	}
-	
-	
+	}	
 }
 

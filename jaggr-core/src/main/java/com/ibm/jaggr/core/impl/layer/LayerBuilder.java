@@ -37,7 +37,6 @@ import javax.servlet.http.HttpServletRequest;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -319,9 +318,9 @@ public class LayerBuilder {
 		// notify any listeners that the config has been updated
 		
 		Object[] refs = null;		
-		if(PlatformServicesProvider.getPlatformServices() != null){
+		if(aggr.getPlatformServices() != null){
 			try {
-				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
+				refs = aggr.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
@@ -330,7 +329,7 @@ public class LayerBuilder {
 			
 			if (refs != null) {
 				for (Object ref : refs) {
-					ILayerListener listener = (ILayerListener)PlatformServicesProvider.getPlatformServices().getService(ref);
+					ILayerListener listener = (ILayerListener)aggr.getPlatformServices().getService(ref);
 					try {
 						Set<String> dependentFeatures = new HashSet<String>();
 						String str = listener.layerBeginEndNotifier(type, request, 
@@ -344,7 +343,7 @@ public class LayerBuilder {
 							sb.append(str);
 						}
 					} finally {
-						PlatformServicesProvider.getPlatformServices().ungetService(ref);
+						aggr.getPlatformServices().ungetService(ref);
 					}
 				}
 			}

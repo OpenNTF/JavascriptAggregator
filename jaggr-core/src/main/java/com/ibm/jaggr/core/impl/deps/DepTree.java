@@ -45,7 +45,7 @@ import org.apache.commons.lang.StringUtils;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
+import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.PathUtil;
 
 /**
@@ -206,9 +206,9 @@ public class DepTree implements Serializable {
 				Messages.DepTree_3,
 				new Object[]{aggregator.getName()});
 		
-		if(PlatformServicesProvider.getPlatformServices() != null){
-			PlatformServicesProvider.getPlatformServices().println(msg);
-		}
+		ConsoleService cs = new ConsoleService();
+		cs.println(msg);
+
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);
 		}
@@ -363,9 +363,7 @@ public class DepTree implements Serializable {
 		);
 
 		// Output that we're done.
-		if(PlatformServicesProvider.getPlatformServices() != null){
-			PlatformServicesProvider.getPlatformServices().println(msg);
-		}
+		cs.println(msg);
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);
 		}

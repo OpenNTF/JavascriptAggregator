@@ -50,9 +50,9 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.CopyUtil;
 
 public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConfigListener, IDependenciesListener, IOptionsListener {
@@ -190,22 +190,22 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		Dictionary<String,String> dict;
 		
 		
-		if(PlatformServicesProvider.getPlatformServices() != null){
+		if( aggregator.getPlatformServices() != null){
 			dict = new Hashtable<String, String>();	
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_shutdownListener = PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
+			_shutdownListener =  _aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
 			
 			dict = new Hashtable<String, String>();	
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_configUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+			_configUpdateListener =  _aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
 			
 			dict = new Hashtable<String, String>();	
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_depsUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
+			_depsUpdateListener =  _aggregator.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
 			
 			dict = new Hashtable<String, String>();	
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_optionsUpdateListener = PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
+			_optionsUpdateListener =  _aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 		}
 		
 		optionsUpdated(aggregator.getOptions(), 1);
@@ -253,16 +253,16 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     @Override
 	public void shutdown(IAggregator aggregator) {
     	if (_shutdownListener != null) {    		
-    		PlatformServicesProvider.getPlatformServices().unRegisterService(_shutdownListener);
+    		 _aggregator.getPlatformServices().unRegisterService(_shutdownListener);
     	}
 		if (_configUpdateListener != null) {			
-			PlatformServicesProvider.getPlatformServices().unRegisterService(_configUpdateListener);
+			 _aggregator.getPlatformServices().unRegisterService(_configUpdateListener);
 		}
 		if (_depsUpdateListener != null) {			
-			PlatformServicesProvider.getPlatformServices().unRegisterService(_depsUpdateListener);
+			 _aggregator.getPlatformServices().unRegisterService(_depsUpdateListener);
 		}
 		if (_optionsUpdateListener != null) {			
-			PlatformServicesProvider.getPlatformServices().unRegisterService(_optionsUpdateListener);
+			 _aggregator.getPlatformServices().unRegisterService(_optionsUpdateListener);
 		}
     	
 		// Serialize the cache metadata one last time
@@ -483,7 +483,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 								Messages.CacheManagerImpl_5,
 								new Object[]{_aggregator.getName()}
 						);
-						PlatformServicesProvider.getPlatformServices().println(msg);
+						new ConsoleService().println(msg);
 						if (log.isLoggable(Level.INFO)) {
 							log.info(msg);
 						}
@@ -511,7 +511,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 								Messages.CacheManagerImpl_6,
 								new Object[]{ _aggregator.getName()}
 						);
-						PlatformServicesProvider.getPlatformServices().println(msg);
+						new ConsoleService().println(msg);
 						if (log.isLoggable(Level.INFO)) {
 							log.info(msg);
 						}
@@ -539,7 +539,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 								Messages.CacheManagerImpl_7,
 								new Object[]{ _aggregator.getName()}
 						);
-						PlatformServicesProvider.getPlatformServices().println(msg);
+						new ConsoleService().println(msg);
 						if (log.isLoggable(Level.INFO)) {
 							log.info(msg);
 						}

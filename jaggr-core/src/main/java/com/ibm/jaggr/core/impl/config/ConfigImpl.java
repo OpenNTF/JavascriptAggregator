@@ -60,7 +60,6 @@ import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -670,7 +669,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		String configName = configNames.iterator().next();
 		configUri = new URI(configName);
 		if (!configUri.isAbsolute()) {
-			configUri = PlatformServicesProvider.getPlatformServices().getAppContextURI().resolve(configName);
+			configUri = aggregator.getPlatformServices().getAppContextURI().resolve(configName);
 			if (!getAggregator().newResource(configUri).exists()) {
 				throw new FileNotFoundException(configName);
 			}
@@ -749,9 +748,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 
 			// set up bundle manifest headers property
-			if (PlatformServicesProvider.getPlatformServices() != null) {
-				if(PlatformServicesProvider.getPlatformServices().getHeaders() != null){				
-					Dictionary<String, String> headers = (Dictionary<String, String>)(PlatformServicesProvider.getPlatformServices().getHeaders());
+			if ( aggregator.getPlatformServices() != null) {
+				if( aggregator.getPlatformServices().getHeaders() != null){				
+					Dictionary<String, String> headers = (Dictionary<String, String>)( aggregator.getPlatformServices().getHeaders());
 				    Scriptable jsHeaders = cx.newObject(sharedScope);
 					Enumeration<String> keys = headers.keys();
 					while (keys.hasMoreElements()) {
@@ -1102,10 +1101,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            are represented as {@code Map<String, Object>}.
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
-		if(PlatformServicesProvider.getPlatformServices() != null){
+		if( aggregator.getPlatformServices() != null){
 			Object[] refs = null;		
 			try {
-				refs = PlatformServicesProvider.getPlatformServices().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
+				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
@@ -1115,7 +1114,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			if (refs != null) {
 				for (Object ref : refs) {
 					IConfigModifier modifier = 
-						(IConfigModifier)PlatformServicesProvider.getPlatformServices().getService(ref);
+						(IConfigModifier) aggregator.getPlatformServices().getService(ref);
 					if (modifier != null) {
 						try {
 							modifier.modifyConfig(getAggregator(), rawConfig);
@@ -1124,7 +1123,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							PlatformServicesProvider.getPlatformServices().ungetService(ref);
+							 aggregator.getPlatformServices().ungetService(ref);
 						}
 					}
 				}
@@ -1165,8 +1164,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : serviceRegs) {
-			if(PlatformServicesProvider.getPlatformServices() != null){
-				PlatformServicesProvider.getPlatformServices().unRegisterService(reg);
+			if( aggregator.getPlatformServices() != null){
+				 aggregator.getPlatformServices().unRegisterService(reg);
 			}
 		}
 	}
@@ -1174,13 +1173,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {	
 	        // Register listeners
-		if(PlatformServicesProvider.getPlatformServices() != null){
+		if( aggregator.getPlatformServices() != null){
 			Dictionary dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add(PlatformServicesProvider.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
+			serviceRegs.add( aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 			dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add(PlatformServicesProvider.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));	
+			serviceRegs.add( aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));	
 		}
 	}
 

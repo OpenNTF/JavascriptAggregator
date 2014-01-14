@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.util;
+package com.ibm.jaggr.core.util;
 
 
 public class ConsoleService {
