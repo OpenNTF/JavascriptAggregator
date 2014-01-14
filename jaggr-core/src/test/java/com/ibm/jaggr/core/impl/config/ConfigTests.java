@@ -65,8 +65,9 @@ public class ConfigTests {
 	public void setup() throws Exception {
 		tmpFile = Files.createTempDir();
 		tmpDir = tmpFile.toURI();
-		PlatformServicesProvider.setPlatformServices(null);
+		//PlatformServicesProvider.setPlatformServices(null);
 		mockAggregator = TestUtils.createMockAggregator();
+		mockAggregator.setPlatformServices(null);
 		EasyMock.replay(mockAggregator);
 		
 	}
@@ -204,18 +205,20 @@ public class ConfigTests {
 		initParams.add(new InitParams.InitParam("param1", "param1Value2"));
 		initParams.add(new InitParams.InitParam("param2", "param2Value"));
 		final IPlatformServices mockPlatformServices = EasyMock.createNiceMock(IPlatformServices.class);
-		PlatformServicesProvider.setPlatformServices(mockPlatformServices);
+		//PlatformServicesProvider.setPlatformServices(mockPlatformServices);
+		
+		EasyMock.replay(mockPlatformServices);		
+		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
+		mockAggregator.setPlatformServices(mockPlatformServices);
+		EasyMock.replay(mockAggregator);
+		
 		final Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("foo", "foobar");
-		EasyMock.expect(PlatformServicesProvider.getPlatformServices().getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
+		EasyMock.expect(mockAggregator.getPlatformServices().getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
 			public Dictionary<String, String> answer() throws Throwable {
 				return dict;
 			}
 		}).anyTimes();
-		EasyMock.replay(mockPlatformServices);		
-		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);		
-		EasyMock.replay(mockAggregator);
-		
 		mockAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
 		final TestConsoleLogger logger = new TestConsoleLogger();
@@ -751,7 +754,7 @@ public class ConfigTests {
 		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
 		EasyMock.replay(mockAggregator);
 		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);		
-		PlatformServicesProvider.setPlatformServices(mockPlatformServices);
+		mockAggregator.setPlatformServices(mockPlatformServices);
 		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/"));
 		EasyMock.replay(mockPlatformServices);
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);		

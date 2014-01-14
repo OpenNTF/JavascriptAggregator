@@ -45,6 +45,7 @@ import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cache.ICacheManager;
@@ -221,7 +222,7 @@ public class TestUtils {
 			IHttpTransport transport) throws Exception {
 
 		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
-		IOptions options = new OptionsImpl("test", false);
+		IOptions options = new OptionsImpl("test", false, mockAggregator);
 		options.setOption(IOptions.DELETE_DELAY, "0");
 		if (initParams == null) {
 			initParams = new LinkedList<InitParam>();
@@ -233,12 +234,16 @@ public class TestUtils {
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
 		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new MockDojoHttpTransport() : transport);
+		final Ref<IPlatformServices> platformServicesRef = new Ref<IPlatformServices>(new MockPlatformServices());
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
 				new SynchronousExecutor(), 
 				null, 
 				new SynchronousScheduledExecutor(), 
 				new SynchronousScheduledExecutor()));
+	
 		final File workdir = workingDirectory;
+		
+	//	EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(null).anyTimes();
 		
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test").anyTimes();
@@ -277,6 +282,8 @@ public class TestUtils {
 				return new ModuleCacheImpl();
 			}
 		}).anyTimes();
+		
+		
 		EasyMock.expect(mockAggregator.getInitParams()).andAnswer(new IAnswer<InitParams>() {
 			public InitParams answer() throws Throwable {
 				return aggInitParams;
@@ -297,6 +304,11 @@ public class TestUtils {
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
 		EasyMock.expect(mockAggregator.getOptions()).andReturn(options).anyTimes();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test").anyTimes();
+		EasyMock.expect(mockAggregator.getPlatformServices()).andAnswer(new IAnswer<IPlatformServices>() {
+			public IPlatformServices answer() throws Throwable {
+				return platformServicesRef.get();
+			}
+		}).anyTimes();
 		EasyMock.expect(mockAggregator.getTransport()).andAnswer(new IAnswer<IHttpTransport>() {
 			public IHttpTransport answer() throws Throwable {
 				return transportRef.get();

@@ -132,9 +132,10 @@ public class LayerTest extends EasyMock {
 	@SuppressWarnings("unchecked")
 	@Before
 	public void setup() throws Exception {
-		PlatformServicesProvider.setPlatformServices(null);
+		//PlatformServicesProvider.setPlatformServices(null);
 		mockPlatformServices = null;	
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		mockAggregator.setPlatformServices(null);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, requestHeaders);
 		expect(mockAggregator.getDependencies()).andAnswer(new IAnswer<IDependencies>() {
 			public IDependencies answer() throws Throwable {
@@ -224,7 +225,7 @@ public class LayerTest extends EasyMock {
 		
 		final AggregatorLayerListener layerListener = new AggregatorLayerListener(mockAggregator);
 		mockPlatformServices = createMock(IPlatformServices.class);
-		PlatformServicesProvider.setPlatformServices(mockPlatformServices);	
+		mockAggregator.setPlatformServices(mockPlatformServices);	
 		Object mockServiceReference = createMock(Object.class);
 		final Object[] serviceReferences = new Object[]{mockServiceReference};
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<Object[]>() {
