@@ -891,7 +891,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		int len = dependentFeatures.size();
 
 		// Validate the input - first two bytes specify length of feature list on the client
-		if (len != decoded[0]+(decoded[1]<< 8) || decoded.length != len/5 + (len%5==0?0:1) + 2) {
+		if (len != (decoded[0]&0xFF)+((decoded[1]&0xFF)<< 8) || decoded.length != len/5 + (len%5==0?0:1) + 2) {
 			if (log.isLoggable(Level.FINER)) {
 				log.finer("Invalid encoded feature list.  Expected feature list length = " + len); //$NON-NLS-1$ //$NON-NLS-2$
 			}

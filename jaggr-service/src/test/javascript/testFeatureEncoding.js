@@ -20,7 +20,7 @@ define(["combo/dojo/featureMap", "dojox/encoding/base64", "combo/featureList"], 
 			var base64decoded = base64.decode(encoded.substring(7).replace(/[_-]/g, function(c) {
 				return (c=='-')?'+':'/';
 			}) + '=');
-			var len = base64decoded[0] + (base64decoded[1] << 8);
+			var len = (base64decoded[0]&0xFF) + ((base64decoded[1]&0xFF) << 8);
 			expect(len).toBe(featureList.length);
 			// Now decode the trit map
 			var trits = [];
