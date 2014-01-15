@@ -123,8 +123,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
     
     static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
-    public static final String FEATURE_LIST_PRELUDE = "define([], function() { return "; //$NON-NLS-1$
-    public static final String FEATURE_LIST_PROLOGUE = ";});"; //$NON-NLS-1$
+    public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
+    public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
 
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
     private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
@@ -138,6 +138,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     private List<String> extensionContributions = new LinkedList<String>();
 
     private List<String> dependentFeatures = null;
+    private IResource depFeatureListResource = null;
     
     private CountDownLatch depsInitialized = null;
     
@@ -145,9 +146,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     public AbstractHttpTransport() {}
     	
     /** For unit tests */
-    AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures) {
+    AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures, long depsLastMod) {
     	this.depsInitialized = depsInitialized;
     	this.dependentFeatures = dependentFeatures;
+    	this.depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), depsLastMod);
     }
     
     /**
@@ -996,23 +998,37 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			} catch (InterruptedException e) {
 				return new ExceptionResource(uri, 0L, new IOException(e));
 			}
-			long lastmod = getAggregator().getDependencies().getLastModified();
-			// Now replace the empty list declaration in the javascript code with the 
-			// contents of the feature list from the dependencies and return the result
-			JSONArray json;
-			try {
-				json = new JSONArray(new ArrayList<String>(dependentFeatures));
-			} catch (JSONException ex) {
-				return new ExceptionResource(uri, lastmod, new IOException(ex));
-			}
-			StringBuffer sb = new StringBuffer();
-			sb.append(FEATURE_LIST_PRELUDE).append(json).append(FEATURE_LIST_PROLOGUE);
-			IResource result = new StringResource(sb.toString(), uri, lastmod); 
+			IResource result = depFeatureListResource; 
 			if (traceLogging) {
-				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, sb.toString());
+				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, depFeatureListResource);
 			}
 			return result;
 		}
+	}
+	
+	/**
+	 * Creates an {@link IResource} object for the dependent feature list AMD
+	 * module
+	 * 
+	 * @param list
+	 *            the dependent features list
+	 * @param uri
+	 *            the resource URI
+	 * @param lastmod
+	 *            the last modified time of the resource
+	 * @return the {@link IResource} object for the module
+	 */
+	protected IResource createFeatureListResource(List<String> list, URI uri, long lastmod) {
+		JSONArray json;
+		try {
+			json = new JSONArray(new ArrayList<String>(dependentFeatures));
+		} catch (JSONException ex) {
+			return new ExceptionResource(uri, lastmod, new IOException(ex));
+		}
+		StringBuffer sb = new StringBuffer();
+		sb.append(FEATURE_LIST_PRELUDE).append(json).append(FEATURE_LIST_PROLOGUE);
+		IResource result = new StringResource(sb.toString(), uri, lastmod); 
+		return result;
 	}
 
 	/* (non-Javadoc)
@@ -1030,6 +1046,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 				features.addAll(deps.getDependentFeatures(mid));
 			}
 			dependentFeatures = Collections.unmodifiableList(Arrays.asList(features.toArray(new String[features.size()])));
+			depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), deps.getLastModified());
 			depsInitialized.countDown();
 		} catch (ProcessingDependenciesException e) {
 			if (log.isLoggable(Level.WARNING)) {
