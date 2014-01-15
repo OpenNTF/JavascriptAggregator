@@ -886,9 +886,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			throw new IOException(e);
 		}
 
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
 		byte[] decoded = Base64.decodeBase64(encoded);
 		int len = dependentFeatures.size();
+		ByteArrayOutputStream bos = new ByteArrayOutputStream(len);
 
 		// Validate the input - first two bytes specify length of feature list on the client
 		if (len != (decoded[0]&0xFF)+((decoded[1]&0xFF)<< 8) || decoded.length != len/5 + (len%5==0?0:1) + 2) {
