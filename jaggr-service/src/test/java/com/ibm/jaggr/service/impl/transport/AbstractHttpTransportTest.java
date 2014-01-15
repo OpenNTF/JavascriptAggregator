@@ -145,7 +145,7 @@ public class AbstractHttpTransportTest {
 	@Test
 	public void testGetHasConditionsEncodedFromRequest() throws Exception{
 		CountDownLatch latch = new CountDownLatch(0);
-		AbstractHttpTransport transport = new TestHttpTransport(latch, featureList); 
+		AbstractHttpTransport transport = new TestHttpTransport(latch, featureList, 0L); 
 		Map<String, String[]> requestParams = new HashMap<String, String[]>();
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(null, new HashMap<String, Object>(), requestParams, new Cookie[0], new HashMap<String, String>());
 		EasyMock.replay(mockRequest);
@@ -190,7 +190,7 @@ public class AbstractHttpTransportTest {
 		EasyMock.expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		
 		EasyMock.replay(mockAggregator, mockDependencies);
-		AbstractHttpTransport transport = new TestHttpTransport(new CountDownLatch(0), featureList) {
+		AbstractHttpTransport transport = new TestHttpTransport(new CountDownLatch(0), featureList, 10L) {
 			@Override
 			protected IAggregator getAggregator() { return mockAggregator; }
 		};
@@ -213,8 +213,8 @@ public class AbstractHttpTransportTest {
 	
 	class TestHttpTransport extends AbstractHttpTransport {
 		TestHttpTransport() {}
-		TestHttpTransport(CountDownLatch latch, List<String> dependentFeatures) {super(latch, dependentFeatures);}
-		@Override protected URI getComboUri() { return null; }
+		TestHttpTransport(CountDownLatch latch, List<String> dependentFeatures, long lastMod) {super(latch, dependentFeatures, lastMod);}
+		@Override protected URI getComboUri() { return URI.create("namedbundleresource://bundlename/combo"); }
 		@Override public String getLayerContribution(HttpServletRequest request, LayerContributionType type, Object arg) { return null; }
 		@Override public boolean isServerExpandable(HttpServletRequest request, String mid) { return false; }
 		@Override public List<ICacheKeyGenerator> getCacheKeyGenerators() { return null; }
