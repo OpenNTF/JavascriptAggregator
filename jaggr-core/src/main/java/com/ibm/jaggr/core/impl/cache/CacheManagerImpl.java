@@ -190,7 +190,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		Dictionary<String,String> dict;
 		
 		
-		if( aggregator.getPlatformServices() != null){
+		if(_aggregator.getPlatformServices() != null){
 			dict = new Hashtable<String, String>();	
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_shutdownListener =  _aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);

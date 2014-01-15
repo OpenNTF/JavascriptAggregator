@@ -29,7 +29,6 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -333,13 +332,7 @@ public interface IAggregator {
 	 * Set the implementation of <code>IPlatformServices</code> for this aggregator.
 	 * 
 	 * @param platformServiceImpl An implementation of <code>IPlatformServices</code>
-	 */
-	
-	public void setPlatformServices(IPlatformServices platformServiceImpl);
-	/**
-	 * Transformer interface used by 
-	 * {@link IAggregator#substituteProps(String, SubstitutionTransformer)}. 
-	 */
+	 */	
 	
 	public interface SubstitutionTransformer {
 		/**

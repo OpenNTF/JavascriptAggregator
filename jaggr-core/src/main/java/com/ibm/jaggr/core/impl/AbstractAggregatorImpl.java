@@ -856,12 +856,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	@Override
 	public IPlatformServices getPlatformServices() {
 		return platformServices;
-	}
-	
-	@Override
-	public void setPlatformServices(IPlatformServices platformServiceImpl) {
-		platformServices = platformServiceImpl;
-	}
+	}	
 
 	/**
 	 * Implements the {@link IExtensionRegistrar} interface

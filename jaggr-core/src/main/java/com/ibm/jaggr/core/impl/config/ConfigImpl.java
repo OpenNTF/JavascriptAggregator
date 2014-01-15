@@ -188,9 +188,49 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		configUri = loadConfigUri();		
 	}
 	
+	/**
+	 * 
+	 * This constructor is just for testing purpose. It should not be used for production.
+	 */
+	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript, boolean forTest) throws IOException {
+		Context.enter();
+		try {
+			lastModified = configUri != null ? configUri.toURL().openConnection().getLastModified() : -1;
+			this.configUri = configUri;
+			this.aggregator = aggregator;
+			this.rawConfig = loadConfig(configScript);
+			initForTest();
+		} finally {
+			Context.exit();
+		}
+	}
+	
 	protected void init() throws IOException {
 		try { 
 			registerServices();
+			strConfig = Context.toString(rawConfig);
+			base = loadBaseURI(rawConfig);
+			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
+			paths = Collections.unmodifiableMap(loadPaths(rawConfig));
+			aliases = Collections.unmodifiableList(loadAliases(rawConfig));
+			deps = Collections.unmodifiableList(loadDeps(rawConfig));
+			depsIncludeBaseUrl = loadDepsIncludeBaseUrl(rawConfig);
+			coerceUndefinedToFalse = loadCoerceUndefinedToFalse(rawConfig);
+			expires = loadExpires(rawConfig);
+			notice = loadNotice(rawConfig);
+			cacheBust = loadCacheBust(rawConfig);
+			textPluginDelegators = loadTextPluginDelegators(rawConfig);
+			jsPluginDelegators = loadJsPluginDelegators(rawConfig);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+	}
+	/**
+	 * 
+	 * This method is for test purposes and should not be used for production. 
+	 */
+	protected void initForTest() throws IOException {
+		try { 			
 			strConfig = Context.toString(rawConfig);
 			base = loadBaseURI(rawConfig);
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
@@ -1173,7 +1213,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {	
 	        // Register listeners
-		if( aggregator.getPlatformServices() != null){
+		if(aggregator.getPlatformServices() != null){
 			Dictionary dict = new Properties();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
 			serviceRegs.add( aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));

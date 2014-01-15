@@ -69,7 +69,6 @@ import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
-import com.ibm.jaggr.core.impl.PlatformServicesProvider;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -151,7 +150,7 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testBuild() throws Exception {
-		PlatformServicesProvider.setPlatformServices(null);
+		//PlatformServicesProvider.setPlatformServices(null);
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		IHttpTransport mockTransport = createMockTransport();
 		IAggregator mockAggregator = TestUtils.createMockAggregator(mockTransport);
@@ -513,7 +512,7 @@ public class LayerBuilderTest {
 	
 	@Test
 	public void testCollectFutures() throws Exception {
-		PlatformServicesProvider.setPlatformServices(null);
+		//PlatformServicesProvider.setPlatformServices(null);
 		IAggregator mockAggregator = TestUtils.createMockAggregator();
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
 		ICache mockCache = createMock(ICache.class);
@@ -554,7 +553,7 @@ public class LayerBuilderTest {
 		
 		IAggregator mockAggregator = TestUtils.createMockAggregator();			
 		final IPlatformServices mockPlatformServices = createMock(IPlatformServices.class);
-		PlatformServicesProvider.setPlatformServices(mockPlatformServices);				
+		//PlatformServicesProvider.setPlatformServices(mockPlatformServices);				
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);		
 		Object mockServiceRef1 = createMock(Object.class),
 				        mockServiceRef2 = createMock(Object.class);
@@ -584,11 +583,12 @@ public class LayerBuilderTest {
 			}
 		};
 		
-		expect(PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef1)).andReturn(testListener1);
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef2)).andReturn(testListener2);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef1)).andReturn(true);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef2)).andReturn(true);
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceRef1)).andReturn(testListener1);
+		expect(mockPlatformServices.getService(mockServiceRef2)).andReturn(testListener2);
+		expect(mockPlatformServices.ungetService(mockServiceRef1)).andReturn(true);
+		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
+		expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
 		replay(mockAggregator, mockRequest,  mockServiceRef1, mockServiceRef2, mockPlatformServices);
 		
 		LayerBuilder builder = new LayerBuilder(mockRequest, null, moduleList) {
@@ -607,11 +607,11 @@ public class LayerBuilderTest {
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
 		reset(mockPlatformServices);
-		expect(PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef1)).andReturn(testListener1);
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef2)).andReturn(testListener2);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef1)).andReturn(true);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef2)).andReturn(true);
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceRef1)).andReturn(testListener1);
+		expect(mockPlatformServices.getService(mockServiceRef2)).andReturn(testListener2);
+		expect(mockPlatformServices.ungetService(mockServiceRef1)).andReturn(true);
+		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
 		replay(mockPlatformServices);
 		listener2Result[0] = null;
 		// Test END_LAYER with one null and one string contributions
@@ -620,11 +620,11 @@ public class LayerBuilderTest {
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
 		reset(mockPlatformServices);
-		expect(PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef1)).andReturn(testListener1);
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef2)).andReturn(testListener2);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef1)).andReturn(true);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef2)).andReturn(true);
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceRef1)).andReturn(testListener1);
+		expect(mockPlatformServices.getService(mockServiceRef2)).andReturn(testListener2);
+		expect(mockPlatformServices.ungetService(mockServiceRef1)).andReturn(true);
+		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
 		replay(mockPlatformServices);
 		listener1Result[0] = null;
 		// Test END_LAYER with two null contributions
@@ -633,11 +633,11 @@ public class LayerBuilderTest {
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
 		reset(mockPlatformServices);
-		expect(PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef1)).andReturn(testListener1);
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef2)).andReturn(testListener2);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef1)).andReturn(true);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef2)).andReturn(true);
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceRef1)).andReturn(testListener1);
+		expect(mockPlatformServices.getService(mockServiceRef2)).andReturn(testListener2);
+		expect(mockPlatformServices.ungetService(mockServiceRef1)).andReturn(true);
+		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
 		replay(mockPlatformServices);
 		listener1Result[0] = "foo";
 		listener2Result[0] = "bar";
@@ -649,9 +649,9 @@ public class LayerBuilderTest {
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		
 		reset(mockPlatformServices);
-		expect(PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef1)).andReturn(testListener1);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef1)).andReturn(true);
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceRef1)).andReturn(testListener1);
+		expect(mockPlatformServices.ungetService(mockServiceRef1)).andReturn(true);
 		replay(mockPlatformServices);
 		// Test exception
 		try {
@@ -662,11 +662,11 @@ public class LayerBuilderTest {
 		// verifies that bundleContext.getService()/ungetService() 
 		// are matched even though exception was thrown by listener
 		reset(mockPlatformServices);
-		expect(PlatformServicesProvider.getPlatformServices().getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef1)).andReturn(testListener1);
-		expect(PlatformServicesProvider.getPlatformServices().getService(mockServiceRef2)).andReturn(testListener2);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef1)).andReturn(true);
-		expect(PlatformServicesProvider.getPlatformServices().ungetService(mockServiceRef2)).andReturn(true);
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceRef1)).andReturn(testListener1);
+		expect(mockPlatformServices.getService(mockServiceRef2)).andReturn(testListener2);
+		expect(mockPlatformServices.ungetService(mockServiceRef1)).andReturn(true);
+		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
 		replay(mockPlatformServices);
 		dependentFeatures1.add("feature1");
 		dependentFeatures2.add("feature2");

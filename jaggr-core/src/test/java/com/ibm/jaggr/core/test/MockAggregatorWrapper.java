@@ -184,10 +184,4 @@ public class MockAggregatorWrapper implements IAggregator {
 	public IPlatformServices getPlatformServices() {
 		return mock.getPlatformServices();
 	}
-
-	@Override
-	public void setPlatformServices(IPlatformServices platformServiceImpl) {
-		mock.setPlatformServices(platformServiceImpl);
-	}
-
 }
