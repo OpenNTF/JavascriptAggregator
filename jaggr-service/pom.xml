@@ -28,11 +28,6 @@
   
   <name>Jaggr Service</name>
   <description>Javascript AMD Aggregator Service</description>
-  
-  <properties>
-    <bundle.symbolicName>com.ibm.jaggr.service</bundle.symbolicName>
-    <bundle.namespace>com.ibm.jaggr.service</bundle.namespace>
-  </properties>
 
   <build>
     <resources>
@@ -86,35 +81,27 @@
                       <goal>copy-dependencies</goal>
                     </goals>
                   </pluginExecutionFilter>
-                  <action>
-                    <ignore />
-                  </action>
+                  <action><ignore /></action>
                 </pluginExecution>
                 <pluginExecution>
-                	<pluginExecutionFilter>
-                		<groupId>org.apache.maven.plugins</groupId>
-                		<artifactId>maven-dependency-plugin</artifactId>
-                		<versionRange>[2.4,)</versionRange>
-                		<goals>
-                			<goal>unpack</goal>
-                		</goals>
-                	</pluginExecutionFilter>
-                	<action>
-                		<ignore />
-                	</action>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <versionRange>[2.4,)</versionRange>
+                    <goals>
+                      <goal>unpack</goal>
+                    </goals>
+                  </pluginExecutionFilter>
+                  <action><ignore /></action>
                 </pluginExecution>
                 <pluginExecution>
-                	<pluginExecutionFilter>
-                		<groupId>org.apache.maven.plugins</groupId>
-                		<artifactId>maven-antrun-plugin</artifactId>
-                		<versionRange>[1.7,)</versionRange>
-                		<goals>
-                			<goal>run</goal>
-                		</goals>
-                	</pluginExecutionFilter>
-                	<action>
-                		<ignore />
-                	</action>
+                  <pluginExecutionFilter>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-antrun-plugin</artifactId>
+                    <versionRange>[1.7,)</versionRange>
+                    <goals><goal>run</goal></goals>
+                  </pluginExecutionFilter>
+                  <action><ignore /></action>
                 </pluginExecution>
               </pluginExecutions>
             </lifecycleMappingMetadata>
@@ -131,14 +118,19 @@
           <manifestLocation>META-INF</manifestLocation>
           <instructions>
             <Bundle-Name>jaggr</Bundle-Name>
-            <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
+            <Bundle-SymbolicName>${project.groupId}.service;singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>
-            <Bundle-Activator>${bundle.namespace}.impl.Activator</Bundle-Activator>
+            <Bundle-Activator>${project.groupId}.service.impl.Activator</Bundle-Activator>
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
-            <Export-Package>com.ibm.jaggr.service.impl,!com.ibm.jaggr.service.impl.*,com.ibm.jaggr.service.*</Export-Package>
-            <Private-Package>com.ibm.jaggr.service.impl.*</Private-Package>
+            <Export-Package>
+              ${project.groupId}.service.impl;version="${project.version}",
+              !${project.groupId}.service.impl.*;version="${project.version}",
+              ${project.groupId}.service.*;version="${project.version}"
+            </Export-Package>
+            <Private-Package>${project.groupId}.service.impl.*;version="${project.version}"</Private-Package>
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
+              ${project.groupId}.core;version="${project.version}",
               javax.servlet;version="[2,4)",
               javax.servlet.http;version="[2,4)",
               org.apache.felix.service.command;resolution:=optional,
@@ -242,7 +234,7 @@
           <jsSrcDir>${basedir}/WebContent</jsSrcDir>
           <jsTestSrcDir>${basedir}/src/test/javascript</jsTestSrcDir>
           <preloadSources>
-          	<source>${basedir}/src/test/resources/loader-config.js</source>
+            <source>${basedir}/src/test/resources/loader-config.js</source>
             <source>/target/WebContent/dojo/dojo/dojo.js</source>
             <source>/WebContent/loaderExtCommon.js</source>
           </preloadSources>
@@ -277,6 +269,10 @@
     </plugins>
   </build>
   <dependencies>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-core</artifactId>
+    </dependency>
     <dependency>
       <groupId>org.apache.wink</groupId>
       <artifactId>wink-json4j</artifactId>
