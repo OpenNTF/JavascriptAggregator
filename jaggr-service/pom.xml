@@ -20,7 +20,7 @@
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>1.1.8-SNAPSHOT</version>
+    <version>1.1.8</version>
   </parent>
   
   <artifactId>jaggr-service</artifactId>
@@ -87,7 +87,7 @@
                     </goals>
                   </pluginExecutionFilter>
                   <action>
-                    <ignore></ignore>
+                    <ignore />
                   </action>
                 </pluginExecution>
                 <pluginExecution>
@@ -100,7 +100,7 @@
                 		</goals>
                 	</pluginExecutionFilter>
                 	<action>
-                		<ignore></ignore>
+                		<ignore />
                 	</action>
                 </pluginExecution>
                 <pluginExecution>
@@ -113,7 +113,7 @@
                 		</goals>
                 	</pluginExecutionFilter>
                 	<action>
-                		<ignore></ignore>
+                		<ignore />
                 	</action>
                 </pluginExecution>
               </pluginExecutions>
@@ -265,9 +265,9 @@
                 <target unless="skipTests">
                   <move todir="${basedir}/target/WebContent/dojo">
                     <fileset dir="${basedir}/target/WebContent">
-                      <include name="source_*_dojo/**"/>
+                      <include name="source_*_dojo/**" />
                     </fileset>
-                    <cutdirsmapper dirs="1"/>
+                    <cutdirsmapper dirs="1" />
                   </move>
                 </target>
               </configuration>
