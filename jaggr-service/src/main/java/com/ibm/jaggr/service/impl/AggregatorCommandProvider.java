@@ -36,15 +36,15 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.util.CIConsoleWriter;
-import com.ibm.jaggr.service.util.ConsoleService;
-import com.ibm.jaggr.service.util.DependencyList;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.StringBufferWriter;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.util.CIConsoleWriter;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.StringBufferWriter;
 
 public class AggregatorCommandProvider implements
 		org.eclipse.osgi.framework.console.CommandProvider {

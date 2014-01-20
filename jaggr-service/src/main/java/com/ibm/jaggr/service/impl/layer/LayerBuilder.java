@@ -36,23 +36,24 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.layer.ILayerListener;
-import com.ibm.jaggr.service.layer.ILayerListener.EventType;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
-import com.ibm.jaggr.service.module.ModuleSpecifier;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.DependencyList;
-import com.ibm.jaggr.service.util.RequestUtil;
-import com.ibm.jaggr.service.util.TypeUtil;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.layer.ILayerListener;
+import com.ibm.jaggr.core.layer.ILayerListener.EventType;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 /**
  * Layer builder class used to aggregate the output from the list of

@@ -29,11 +29,11 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.executors.IExecutors;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
-import com.ibm.jaggr.service.options.IOptions;
 
 
 public class Activator extends Plugin implements BundleActivator {

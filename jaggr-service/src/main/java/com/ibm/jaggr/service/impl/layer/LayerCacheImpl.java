@@ -42,13 +42,13 @@ import javax.servlet.http.HttpServletRequest;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import com.googlecode.concurrentlinkedhashmap.EvictionListener;
 import com.googlecode.concurrentlinkedhashmap.Weigher;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.InitParams;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.layer.ILayerCache;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.RequestUtil;
-import com.ibm.jaggr.service.util.TypeUtil;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 /**
  * This class implements the {@link ILayerCache} interface by using

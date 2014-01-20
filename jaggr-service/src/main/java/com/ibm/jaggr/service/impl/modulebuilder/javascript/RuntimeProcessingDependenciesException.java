@@ -16,7 +16,7 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import com.ibm.jaggr.service.ProcessingDependenciesException;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
 
 public class RuntimeProcessingDependenciesException extends RuntimeException {
 

@@ -16,7 +16,7 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import com.ibm.jaggr.service.DependencyVerificationException;
+import com.ibm.jaggr.core.DependencyVerificationException;
 
 /**
  * This class is thrown by custom compiler pass modules when a dependency

@@ -25,8 +25,8 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuildRenderer;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
 
 public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRenderer {
 	

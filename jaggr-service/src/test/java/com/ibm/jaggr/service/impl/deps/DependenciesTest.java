@@ -37,8 +37,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 

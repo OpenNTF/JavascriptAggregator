@@ -29,7 +29,7 @@ import java.util.logging.Logger;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 /**
  * This class implements the {@link Callable} interface to parse an AMD module

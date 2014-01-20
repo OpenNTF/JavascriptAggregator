@@ -49,32 +49,32 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.ibm.jaggr.service.DependencyVerificationException;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.NotFoundException;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.cache.ICacheManager;
-import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.DependencyVerificationException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.module.ModuleIdentifier;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ErrorModuleReader;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.StringUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.layer.CompletedFuture;
-import com.ibm.jaggr.service.impl.layer.ModuleBuildFuture;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
-import com.ibm.jaggr.service.module.ModuleIdentifier;
-import com.ibm.jaggr.service.module.ModuleSpecifier;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuildRenderer;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
-import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.ErrorModuleReader;
-import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.StringUtil;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 public class ModuleImpl extends ModuleIdentifier implements IModule, Serializable {
 

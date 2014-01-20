@@ -43,10 +43,10 @@ import java.util.logging.Logger;
 
 import org.apache.commons.lang.StringUtils;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.util.ConsoleService;
-import com.ibm.jaggr.service.util.PathUtil;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.PathUtil;
 
 /**
  * This class provides the service for creating dependency maps from a set of

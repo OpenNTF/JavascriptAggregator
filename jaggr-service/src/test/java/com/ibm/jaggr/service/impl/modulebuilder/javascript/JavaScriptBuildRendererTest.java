@@ -27,8 +27,8 @@ import junit.framework.Assert;
 import org.easymock.EasyMock;
 import org.junit.Test;
 
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.service.test.TestUtils;
 
 public class JavaScriptBuildRendererTest {

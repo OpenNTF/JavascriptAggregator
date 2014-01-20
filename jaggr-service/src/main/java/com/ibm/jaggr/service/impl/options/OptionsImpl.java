@@ -34,9 +34,9 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.options.IOptionsListener;
-import com.ibm.jaggr.service.util.SequenceNumberProvider;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 public class OptionsImpl  implements IOptions {
 	private static final Logger log = Logger.getLogger(OptionsImpl.class.getName());

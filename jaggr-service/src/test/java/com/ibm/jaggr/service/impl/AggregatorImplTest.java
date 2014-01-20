@@ -25,7 +25,7 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.service.test.TestUtils;
 
 public class AggregatorImplTest {

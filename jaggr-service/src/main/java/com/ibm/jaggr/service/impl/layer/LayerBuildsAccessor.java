@@ -26,7 +26,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 
-import com.ibm.jaggr.service.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.ICacheManager;
 
 /**
  * Wrapper for the layer builds map to help maintain a layer specific view

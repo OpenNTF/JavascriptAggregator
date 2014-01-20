@@ -29,16 +29,16 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.NotFoundException;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
-import com.ibm.jaggr.service.module.ModuleIdentifier;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.util.RequestUtil;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.module.ModuleIdentifier;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.util.RequestUtil;
 
 /**
  * This class implements the {@link IModuleCache} interface by extending {@link ConcurrentHashMap}

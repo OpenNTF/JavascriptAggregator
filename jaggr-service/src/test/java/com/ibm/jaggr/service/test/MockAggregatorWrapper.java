@@ -26,22 +26,22 @@ import javax.servlet.http.HttpServlet;
 import org.easymock.EasyMock;
 import org.osgi.framework.BundleContext;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.InitParams;
-import com.ibm.jaggr.service.InitParams.InitParam;
-import com.ibm.jaggr.service.cache.ICacheManager;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.executors.IExecutors;
-import com.ibm.jaggr.service.layer.ILayerCache;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
-import com.ibm.jaggr.service.transport.IHttpTransport;
 
 /**
  * Wrapper class for mock aggregator to make it easy to override

@@ -23,15 +23,15 @@ import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cache.ICacheManager;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.ModuleIdentifier;
+import com.ibm.jaggr.core.readers.ErrorModuleReader;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.util.StringUtil;
 import com.ibm.jaggr.service.impl.layer.CompletedFuture;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.ModuleIdentifier;
-import com.ibm.jaggr.service.readers.ErrorModuleReader;
-import com.ibm.jaggr.service.readers.ModuleBuildReader;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.util.StringUtil;
 
 @SuppressWarnings("serial")
 public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneable, Serializable {

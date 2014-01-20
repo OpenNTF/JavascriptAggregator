@@ -49,20 +49,20 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
-import com.ibm.jaggr.service.layer.ILayer;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.Features;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JavaScriptModuleBuilder.class)

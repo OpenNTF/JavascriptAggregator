@@ -33,8 +33,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.util.PathUtil;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.util.PathUtil;
 
 /**
  * This class is the node object for a module dependency. Nodes are organized in

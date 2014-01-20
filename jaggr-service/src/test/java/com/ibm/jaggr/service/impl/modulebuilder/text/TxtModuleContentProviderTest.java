@@ -35,11 +35,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.service.impl.resource.FileResource;
 import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.transport.IHttpTransport;
 
 public class TxtModuleContentProviderTest extends EasyMock {
 

@@ -32,9 +32,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cache.ICacheManager;
-import com.ibm.jaggr.service.cache.ICacheManager.CreateCompletionCallback;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.ICacheManager.CreateCompletionCallback;
 import com.ibm.jaggr.service.test.TestUtils;
 
 public class CacheManagerImplTest {

@@ -23,8 +23,8 @@ import java.util.logging.Logger;
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.NodeUtil;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.NodeUtil;
 
 /**
  * Custom Compiler pass for Google Closure compiler to do has trimming.  Must be called before

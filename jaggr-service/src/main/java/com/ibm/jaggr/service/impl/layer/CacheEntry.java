@@ -28,8 +28,8 @@ import java.util.logging.Level;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cache.ICacheManager;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICacheManager;
 
 /**
  * Class to encapsulate operations on layer builds.  Uses {@link ExecutorService}

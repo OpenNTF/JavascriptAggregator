@@ -39,20 +39,20 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IShutdownListener;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.config.IConfig.Location;
-import com.ibm.jaggr.service.config.IConfigListener;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.IDependenciesListener;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.options.IOptionsListener;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
-import com.ibm.jaggr.service.util.ConsoleService;
-import com.ibm.jaggr.service.util.SequenceNumberProvider;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
 

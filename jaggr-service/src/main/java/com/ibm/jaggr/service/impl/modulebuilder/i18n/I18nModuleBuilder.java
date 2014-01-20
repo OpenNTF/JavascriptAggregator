@@ -33,18 +33,18 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.I18nCacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.I18nCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.Prioritized;
+import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.Prioritized;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
  * This class extends {@link JavaScriptModuleBuilder} to add support for expanding

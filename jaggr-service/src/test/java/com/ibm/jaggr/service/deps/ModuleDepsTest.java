@@ -27,9 +27,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.util.BooleanTerm;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.util.BooleanTerm;
 
 public class ModuleDepsTest {
 

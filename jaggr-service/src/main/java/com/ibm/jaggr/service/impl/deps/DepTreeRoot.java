@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 
-import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.core.config.IConfig;
 
 @SuppressWarnings("serial")
 public class DepTreeRoot extends DepTreeNode {

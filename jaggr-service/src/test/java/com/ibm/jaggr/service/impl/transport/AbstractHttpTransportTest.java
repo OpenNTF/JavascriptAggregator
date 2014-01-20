@@ -42,13 +42,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.resource.IResource;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.Features;
 
 public class AbstractHttpTransportTest {
 

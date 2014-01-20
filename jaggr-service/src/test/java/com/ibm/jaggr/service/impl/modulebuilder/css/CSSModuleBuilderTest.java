@@ -44,17 +44,17 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.StringResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.StringResource;
 import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
 
 public class CSSModuleBuilderTest extends EasyMock {
 	
