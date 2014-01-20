@@ -34,7 +34,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
  * <p>
  * Instances of this interface are created by the eclipse extension framework
  * for Aggregator extensions that implement the
- * {@code com.ibm.jaggr.service.modulebuilder} extension point.
+ * {@code com.ibm.jaggr.core.modulebuilder} extension point.
  * Aggregator extensions may also register module builders by calling
  * {@link IExtensionRegistrar#registerExtension} when the extension's
  * {@link IExtensionInitializer#initialize} method is called (assuming the

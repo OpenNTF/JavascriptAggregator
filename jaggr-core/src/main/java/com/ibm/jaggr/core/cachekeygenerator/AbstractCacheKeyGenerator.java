@@ -32,13 +32,13 @@ public abstract class AbstractCacheKeyGenerator implements
 		ICacheKeyGenerator {
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
+	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public abstract String generateKey(HttpServletRequest request);
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator)
+	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator)
 	 */
 	@Override
 	public ICacheKeyGenerator combine(ICacheKeyGenerator other) {
@@ -46,7 +46,7 @@ public abstract class AbstractCacheKeyGenerator implements
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#getCacheKeyGenerators(javax.servlet.http.HttpServletRequest)
+	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#getCacheKeyGenerators(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request) {
@@ -54,7 +54,7 @@ public abstract class AbstractCacheKeyGenerator implements
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.ICacheKeyGenerator#isProvisional()
+	 * @see com.ibm.jaggr.core.module.ICacheKeyGenerator#isProvisional()
 	 */
 	@Override
 	public boolean isProvisional() {
@@ -62,7 +62,7 @@ public abstract class AbstractCacheKeyGenerator implements
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.ICacheKeyGenerator#toString()
+	 * @see com.ibm.jaggr.core.module.ICacheKeyGenerator#toString()
 	 */
 	public abstract String toString();
 }

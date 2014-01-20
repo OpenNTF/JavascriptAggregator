@@ -21,67 +21,65 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 
-import org.eclipse.osgi.service.urlconversion.URLConverter;
-
 /**
  * Defines the interface for AMD module resources. Implementations can provide
  * support for resources on the file system, in zip and jar files, or any other
  * type of repository that can support this interface.
  * <p>
- * Instances of <code>IResource</code> are created by an associated 
+ * Instances of <code>IResource</code> are created by an associated
  * {@link IResourceFactory} object.
  * <p>
  * Implementors of this interface also implement the
  * {@link IResourceVisitor.Resource} interface.
  */
 public interface IResource {
-	
+
 	/**
 	 * Returns the URI for this resource.  Note that there is no requirement
 	 * that the value returned be the same value that was provided to the
 	 * {@link IResourceFactory} object used to create this instance.
-	 * 
+	 *
 	 * @return The resource URI
 	 */
 	public URI getURI();
 
 	/**
 	 * Returns true if the resource exists.
-	 * 
+	 *
 	 * @return True if the resource exists
 	 */
 	public boolean exists();
-	
+
 	/**
 	 * Returns the last-modified date of the resource.
-	 * 
+	 *
 	 * @return The last-modified date
 	 */
 	public long lastModified();
-	
+
 	/**
 	 * Returns an IResource for the resource obtained by resolving the URI of
 	 * this resource with the specified relative URI. Use this method instead of
 	 * calling {@link URI#resolve(String)} on the value returned by
 	 * {@link #getURI()} to ensure that the cached resource for the URI
-	 * exists in the event that resource URIs are derived from a service such as
-	 * {@link URLConverter#toFileURL(java.net.URL)}.
+	 * exists as {@link URI#resolve(String)} can be unreliable when dealing with
+	 * bundle resources.
 	 */
 	public IResource resolve(String relative);
-	
+
 	/**
 	 * Returns a {@link Reader} object for the resource if the resource is not a
 	 *         directory/folder resource.
-	 *         
-	 * @return The resource reader        
+	 *
+	 * @return The resource reader
 	 * @throws IOException if the resource is a folder, or an I/O error occurred
 	 */
 	public Reader getReader() throws IOException;
-	
+
 	/**
 	 * Returns a {@link InputStream} object for the resource if the resource
 	 * is not a directory/folder resource.
-	 * 
+	 *
 	 * @return The resource input stream
 	 * @throws IOException if the resource is a folder, or an I/O error occurred
 	 */
@@ -89,13 +87,13 @@ public interface IResource {
 
 	/**
 	 * Walks the folder tree rooted at the current resource, calling the
-	 * {@link IResourceVisitor#visitResource(IResourceVisitor.Resource, String)} 
+	 * {@link IResourceVisitor#visitResource(IResourceVisitor.Resource, String)}
 	 * method for each resource or folder resource encountered.
 	 * <p>
 	 * If this resource is not a folder, then <code>visitor's</code>
-	 * {@link IResourceVisitor#visitResource(IResourceVisitor.Resource, String)} 
+	 * {@link IResourceVisitor#visitResource(IResourceVisitor.Resource, String)}
 	 * method is called once for this resource.
-	 * 
+	 *
 	 * @param visitor
 	 *            An instance of {@link IResourceVisitor}
 	 * @throws IOException
@@ -108,7 +106,7 @@ public interface IResource {
 	 * want to invoke a resource visitor for a resource that was obtained by
 	 * means other than {@link #walkTree(IResourceVisitor)}.  The resource
 	 * must exist.
-	 * 
+	 *
 	 * @return An {@link IResourceVisitor.Resource} for current resource
 	 * @throws IOException if the resource does not exist
 	 */
