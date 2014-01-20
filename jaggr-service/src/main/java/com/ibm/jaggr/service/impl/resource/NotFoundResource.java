@@ -21,9 +21,9 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
-import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 
 public class NotFoundResource implements IResource {
 	private final URI uri;

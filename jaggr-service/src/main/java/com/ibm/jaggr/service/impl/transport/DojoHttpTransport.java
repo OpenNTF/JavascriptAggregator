@@ -38,20 +38,20 @@ import org.eclipse.core.runtime.Status;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.config.IConfig.Location;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.AggregationResource;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.Activator;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.resource.AggregationResource;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceFactory;
-import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
  * Implements the functionality specific for the Dojo Http Transport (supporting

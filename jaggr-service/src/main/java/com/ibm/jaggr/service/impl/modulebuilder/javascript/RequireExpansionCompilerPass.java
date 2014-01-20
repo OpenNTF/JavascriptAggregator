@@ -29,17 +29,17 @@ import java.util.Set;
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
-import com.ibm.jaggr.service.DependencyVerificationException;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.util.BooleanTerm;
-import com.ibm.jaggr.service.util.DependencyList;
-import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.core.DependencyVerificationException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.service.util.NodeUtil;
-import com.ibm.jaggr.service.util.PathUtil;
 
 /**
  * Custom Compiler pass for Google Closure compiler to do require list explosion. 

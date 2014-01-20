@@ -25,6 +25,10 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.BooleanVar;
+import com.ibm.jaggr.core.util.Features;
+
 public class BooleanTermTest {
 
 	@Test

@@ -39,21 +39,21 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.modulebuilder.ModuleBuild;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.resource.IResource;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
 
 public class I18nModuleBuilderTest extends EasyMock {
 

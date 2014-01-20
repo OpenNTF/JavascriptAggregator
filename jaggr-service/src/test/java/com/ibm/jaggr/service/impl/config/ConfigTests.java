@@ -43,14 +43,14 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.InitParams;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.PathUtil;
 
 public class ConfigTests {
 	

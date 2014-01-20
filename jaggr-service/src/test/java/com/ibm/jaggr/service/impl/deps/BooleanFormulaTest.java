@@ -24,8 +24,9 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.jaggr.service.util.BooleanTerm;
-import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.core.util.BooleanFormula;
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.Features;
 
 
 public class BooleanFormulaTest {

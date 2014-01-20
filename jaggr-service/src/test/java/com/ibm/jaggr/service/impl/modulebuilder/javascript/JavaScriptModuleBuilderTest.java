@@ -66,29 +66,29 @@ import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.DependencyVerificationException;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.core.DependencyVerificationException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.layer.ILayerListener.EventType;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
-import com.ibm.jaggr.service.layer.ILayerListener.EventType;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.ModuleBuildReader;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.DependencyList;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.RequestUtil;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest( JavaScriptModuleBuilder.class )

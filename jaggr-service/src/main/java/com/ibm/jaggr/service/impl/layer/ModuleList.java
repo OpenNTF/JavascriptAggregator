@@ -22,8 +22,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.ModuleSpecifier;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
 
 // This class is not thread safe.  It is assumed that it does not
 // need to be.  If that assumption changes, then the implementation 

@@ -41,12 +41,12 @@ import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDeps;
-import com.ibm.jaggr.service.options.IOptions;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.util.Features;
 
 public class RequireExpansionCompilerPassTest extends EasyMock {
 	

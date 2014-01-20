@@ -45,21 +45,21 @@ import org.junit.Test;
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.Weigher;
 import com.googlecode.concurrentlinkedhashmap.Weighers;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.InitParams;
-import com.ibm.jaggr.service.NotFoundException;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
-import com.ibm.jaggr.service.layer.ILayer;
-import com.ibm.jaggr.service.layer.ILayerCache;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestCacheManager;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
 
 public class LayerCacheTest {
 	

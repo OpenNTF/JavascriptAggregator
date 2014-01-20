@@ -63,26 +63,26 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleException;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.service.BadRequestException;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.IShutdownListener;
-import com.ibm.jaggr.service.ProcessingDependenciesException;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.config.IConfigModifier;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.IDependenciesListener;
+import com.ibm.jaggr.core.BadRequestException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfigModifier;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.readers.AggregationReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.StringResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.resource.ExceptionResource;
-import com.ibm.jaggr.service.readers.AggregationReader;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceFactory;
-import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
-import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
-import com.ibm.jaggr.service.resource.StringResource;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.Features;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
  * Implements common functionality useful for all Http Transport implementation
@@ -749,7 +749,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	/**
 	 * Validate the {@link LayerContributionState} and argument type specified
 	 * in a call to
-	 * {@link #getLayerContribution(HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, Object)}
+	 * {@link #getLayerContribution(HttpServletRequest, com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType, Object)}
 	 * 
 	 * @param request
 	 *            The http request object

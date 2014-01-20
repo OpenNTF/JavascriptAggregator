@@ -36,11 +36,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.google.common.io.Files;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
-import com.ibm.jaggr.service.deps.ModuleDepInfo;
-import com.ibm.jaggr.service.deps.ModuleDeps;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
@@ -84,7 +86,7 @@ public class DependencyListTest {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"foo/test", "bar/test"}));
 		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false) {
 			@Override
-			void processDep(String name, ModuleDeps deps, ModuleDepInfo callerInfo, Set<String> recursionCheck, String dependee) {
+			public void processDep(String name, ModuleDeps deps, ModuleDepInfo callerInfo, Set<String> recursionCheck, String dependee) {
 				deps.add(name, new ModuleDepInfo(null, null, null));
 			}
 		};

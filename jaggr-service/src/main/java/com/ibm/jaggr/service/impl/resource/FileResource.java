@@ -28,9 +28,9 @@ import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceFactory;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 /**
  * An implementation of {@link IResource} for File resources

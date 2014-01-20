@@ -26,7 +26,7 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
-import com.ibm.jaggr.service.util.Features;
+import com.ibm.jaggr.core.util.Features;
 
 public class HasFilteringCompilerPassTest {
 

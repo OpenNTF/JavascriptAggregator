@@ -29,10 +29,10 @@ import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.resource.IResourceVisitor;
-import com.ibm.jaggr.service.resource.IResourceVisitor.Resource;
-import com.ibm.jaggr.service.util.PathUtil;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.util.PathUtil;
 
 public class BundleResource implements IResource {
 	final URI uri;

@@ -20,13 +20,13 @@ import java.util.Properties;
 
 import org.eclipse.core.runtime.IExtension;
 
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuilder;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuilderExtensionPoint;
-import com.ibm.jaggr.service.resource.IResourceFactory;
-import com.ibm.jaggr.service.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
 /**
  * Implementation  for {@link IAggregatorExtension} interface.

@@ -46,21 +46,21 @@ import org.mozilla.javascript.Scriptable;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.IExtensionInitializer;
-import com.ibm.jaggr.service.IShutdownListener;
-import com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.config.IConfigListener;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.CommentStrippingReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
-import com.ibm.jaggr.service.options.IOptions;
-import com.ibm.jaggr.service.readers.CommentStrippingReader;
-import com.ibm.jaggr.service.resource.IResource;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.TypeUtil;
 
 /**
  * This class optimizes CSS module resources that are loaded by the AMD

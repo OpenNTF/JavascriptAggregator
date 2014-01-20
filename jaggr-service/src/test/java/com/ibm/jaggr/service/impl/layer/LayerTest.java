@@ -65,23 +65,23 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.service.config.IConfig;
-import com.ibm.jaggr.service.deps.IDependencies;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.layer.ILayerListener;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
-import com.ibm.jaggr.service.layer.ILayerListener;
-import com.ibm.jaggr.service.module.IModule;
-import com.ibm.jaggr.service.module.IModuleCache;
-import com.ibm.jaggr.service.options.IOptions;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
-import com.ibm.jaggr.service.transport.IHttpTransport;
-import com.ibm.jaggr.service.util.CopyUtil;
-import com.ibm.jaggr.service.util.Features;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(LayerImpl.class)
@@ -204,7 +204,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.core.config.IConfig, long)}.
 	 * @throws Exception 
 	 */
 	@SuppressWarnings("unchecked")
@@ -460,7 +460,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.core.config.IConfig, long)}.
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
@@ -515,7 +515,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.service.config.IConfig)}.
+	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.core.config.IConfig)}.
 	 */
 	@Test
 	public void testGetResourceURI() {

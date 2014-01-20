@@ -33,11 +33,11 @@ import org.junit.Test;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.service.IAggregator;
-import com.ibm.jaggr.service.IAggregatorExtension;
-import com.ibm.jaggr.service.config.IConfig;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.service.test.TestUtils;
 
 public class DojoHttpTransportTest {

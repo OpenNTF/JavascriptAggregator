@@ -23,7 +23,7 @@ import junit.framework.Assert;
 import org.easymock.EasyMock;
 import org.junit.Test;
 
-import com.ibm.jaggr.service.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactory;
 
 public class FileResourceTests {
 	
