@@ -16,8 +16,6 @@
 
 package com.ibm.jaggr.core.util;
 
-import org.eclipse.osgi.util.NLS;
-
 public class Messages extends NLS {
 	private static final String BUNDLE_NAME = "com.ibm.jaggr.core.util.messages"; //$NON-NLS-1$
 	public static String DependencyList_0;
