@@ -20,8 +20,6 @@ import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
 
-import org.eclipse.core.runtime.Platform;
-
 import com.ibm.jaggr.core.IAggregator;
 
 /**
@@ -146,9 +144,8 @@ public interface IOptions {
 	
 	/**
 	 * Name of property to specify the directory to use for cache files. If not
-	 * specified, then the plugin state area for the bundle is used (i.e. the
-	 * value returned by
-	 * {@link Platform#getStateLocation(org.osgi.framework.Bundle)}).
+	 * specified, then the plugin state area for the bundle is determined by the
+	 * underlying platform.
 	 */
 	public static final String CACHE_DIRECTORY = "cacheDirectory"; //$NON-NLS-1$
 	

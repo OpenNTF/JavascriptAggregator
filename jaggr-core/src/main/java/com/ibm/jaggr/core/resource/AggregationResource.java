@@ -42,7 +42,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#getURI()
+	 * @see com.ibm.jaggr.core.resource.IResource#getURI()
 	 */
 	@Override
 	public URI getURI() {
@@ -50,7 +50,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#exists()
+	 * @see com.ibm.jaggr.core.resource.IResource#exists()
 	 */
 	@Override
 	public boolean exists() {
@@ -67,7 +67,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#lastModified()
+	 * @see com.ibm.jaggr.core.resource.IResource#lastModified()
 	 */
 	@Override
 	public long lastModified() {
@@ -81,7 +81,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#getReader()
+	 * @see com.ibm.jaggr.core.resource.IResource#getReader()
 	 */
 	@Override
 	public Reader getReader() throws IOException {
@@ -95,7 +95,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#getInputStream()
+	 * @see com.ibm.jaggr.core.resource.IResource#getInputStream()
 	 */
 	@Override
 	public InputStream getInputStream() throws IOException {
@@ -103,14 +103,14 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#walkTree(com.ibm.jaggr.service.resource.IResourceVisitor)
+	 * @see com.ibm.jaggr.core.resource.IResource#walkTree(com.ibm.jaggr.core.resource.IResourceVisitor)
 	 */
 	@Override
 	public void walkTree(IResourceVisitor visitor) throws IOException {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#asVisitorResource()
+	 * @see com.ibm.jaggr.core.resource.IResource#asVisitorResource()
 	 */
 	@Override
 	public IResourceVisitor.Resource asVisitorResource() throws IOException {
@@ -118,7 +118,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#isFolder()
+	 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#isFolder()
 	 */
 	@Override
 	public boolean isFolder() {
@@ -126,7 +126,7 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.lang.String)
+	 * @see com.ibm.jaggr.core.resource.IResource#resolve(java.lang.String)
 	 */
 	@Override
 	public IResource resolve(String relative) {

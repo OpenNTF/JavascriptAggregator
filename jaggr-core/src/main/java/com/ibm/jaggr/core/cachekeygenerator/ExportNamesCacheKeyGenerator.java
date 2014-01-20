@@ -32,7 +32,7 @@ public final class ExportNamesCacheKeyGenerator extends
 	private static final String eyecatcher = "expn"; //$NON-NLS-1$
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.AbstractCacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
+	 * @see com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public String generateKey(HttpServletRequest request) {

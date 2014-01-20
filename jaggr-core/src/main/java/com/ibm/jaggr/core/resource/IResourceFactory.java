@@ -30,7 +30,7 @@ import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
  * <p>
  * Instances of this interface are created by the eclipse extension framework
  * for Aggregator extensions that implement the
- * {@code com.ibm.jaggr.service.resourcefactory} extension point.
+ * {@code com.ibm.jaggr.core.resourcefactory} extension point.
  * Aggregator extensions may also register resource factories by calling
  * {@link IExtensionRegistrar#registerExtension(Object, Properties, String, String, IAggregatorExtension)}
  * when the extension's

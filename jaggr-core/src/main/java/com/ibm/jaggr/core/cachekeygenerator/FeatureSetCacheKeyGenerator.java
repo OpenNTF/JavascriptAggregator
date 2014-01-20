@@ -74,7 +74,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 	
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
+	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public String generateKey(HttpServletRequest request) {
@@ -124,7 +124,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator)
+	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator)
 	 */
 	@Override
 	public FeatureSetCacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
@@ -152,7 +152,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.cachekeygenerator.ICacheKeyGenerator#isProvisional()
+	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#isProvisional()
 	 */
 	@Override
 	public boolean isProvisional() {
