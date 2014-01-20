@@ -356,7 +356,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
      * @return The map containing the has-condition/value pairs.
      * @throws  
      */
-    public static Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
+    protected static Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
 		Features features = new Features();
 		String has  = getHasConditionsFromRequest(request);
 		if (has != null) {
@@ -384,7 +384,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return The has conditions from the request.
 	 * @throws UnsupportedEncodingException 
 	 */
-	public static String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
+	protected static String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
 		String ret = null;
 		if (request.getParameter(FEATUREMAPHASH_REQPARAM) != null) {
 			// The cookie called 'has' contains the has conditions
