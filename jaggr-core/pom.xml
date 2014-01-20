@@ -43,6 +43,13 @@
           <include>NOTICE</include>
         </includes>
       </resource>
+      <resource>
+        <directory>${basedir}/src/main/java</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*.properties</include>
+        </includes>
+      </resource>
       <!-- TODO: Add more resources as the project is filled out -->
     </resources>
     <pluginManagement>
