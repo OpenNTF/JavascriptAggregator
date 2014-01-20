@@ -38,8 +38,8 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.NodeUtil;
 import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.service.util.NodeUtil;
 
 /**
  * Custom Compiler pass for Google Closure compiler to do require list explosion. 

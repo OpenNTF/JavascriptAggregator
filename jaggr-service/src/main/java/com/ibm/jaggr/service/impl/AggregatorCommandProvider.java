@@ -40,11 +40,11 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.util.CIConsoleWriter;
 import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.StringBufferWriter;
+import com.ibm.jaggr.service.util.CIConsoleWriter;
 
 public class AggregatorCommandProvider implements
 		org.eclipse.osgi.framework.console.CommandProvider {

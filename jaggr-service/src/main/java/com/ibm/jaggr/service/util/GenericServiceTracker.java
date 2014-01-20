@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.core.util;
+package com.ibm.jaggr.service.util;
 
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.Filter;

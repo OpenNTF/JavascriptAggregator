@@ -33,8 +33,8 @@ import com.google.javascript.rhino.Token;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
-import com.ibm.jaggr.core.util.NodeUtil;
 import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.service.util.NodeUtil;
 
 /**
  * Collection of utility classes used for processing Dependency trees

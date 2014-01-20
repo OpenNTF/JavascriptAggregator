@@ -27,8 +27,8 @@ import org.apache.wink.json4j.JSONException;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 
-import com.ibm.jaggr.core.util.CSConsoleWriter;
 import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.service.util.CSConsoleWriter;
 
 public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	

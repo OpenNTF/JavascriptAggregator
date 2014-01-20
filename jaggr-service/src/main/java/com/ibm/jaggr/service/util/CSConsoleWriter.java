@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ibm.jaggr.core.util;
+package com.ibm.jaggr.service.util;
 
 import org.apache.felix.service.command.CommandSession;
 

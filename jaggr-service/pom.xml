@@ -131,6 +131,19 @@
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
               ${project.groupId}.core;version="${project.version}",
+              ${project.groupId}.core.cache;version="${project.version}",
+              ${project.groupId}.core.cachekeygenerator;version="${project.version}",
+              ${project.groupId}.core.config;version="${project.version}",
+              ${project.groupId}.core.deps;version="${project.version}",
+              ${project.groupId}.core.executors;version="${project.version}",
+              ${project.groupId}.core.layer;version="${project.version}",
+              ${project.groupId}.core.module;version="${project.version}",
+              ${project.groupId}.core.modulebuilder;version="${project.version}",
+              ${project.groupId}.core.options;version="${project.version}",
+              ${project.groupId}.core.readers;version="${project.version}",
+              ${project.groupId}.core.resource;version="${project.version}",
+              ${project.groupId}.core.transport;version="${project.version}",
+              ${project.groupId}.core.util;version="${project.version}",
               javax.servlet;version="[2,4)",
               javax.servlet.http;version="[2,4)",
               org.apache.felix.service.command;resolution:=optional,
@@ -190,8 +203,6 @@
           <artifactId>apache-rat-plugin</artifactId>
           <configuration>
             <excludes>
-              <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Term.java</exclude>
-              <exclude>src/main/java/com/ibm/jaggr/service/impl/deps/Formula.java</exclude>
               <exclude>src/test/resources/specRunner.htmltemplate</exclude>
             </excludes>
           </configuration>

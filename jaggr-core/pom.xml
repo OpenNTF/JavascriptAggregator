@@ -85,6 +85,7 @@
             <Export-Package>
               ${project.groupId}.core;version="${project.version}",
               ${project.groupId}.core.*;version="${project.version}"
+              
             </Export-Package>          
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
@@ -93,7 +94,7 @@
               org.apache.felix.service.command;resolution:=optional,
               !*
             </Import-Package>
-            <Embed-Dependency></Embed-Dependency>
+            <Embed-Dependency>commons-io,commons-lang</Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
@@ -141,8 +142,8 @@
           <artifactId>apache-rat-plugin</artifactId>
           <configuration>
             <excludes>
-              <exclude>src/main/java/com/ibm/jaggr/core/impl/deps/Term.java</exclude>
-              <exclude>src/main/java/com/ibm/jaggr/core/impl/deps/Formula.java</exclude>
+              <exclude>src/main/java/com/ibm/jaggr/core/util/Term.java</exclude>
+              <exclude>src/main/java/com/ibm/jaggr/core/util/Formula.java</exclude>
               <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
               <exclude>src/test/resources/specRunner.htmltemplate</exclude>
             </excludes>
