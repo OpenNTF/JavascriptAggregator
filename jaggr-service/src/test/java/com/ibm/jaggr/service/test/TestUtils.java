@@ -64,7 +64,7 @@ public class TestUtils {
 	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
 	public static String b = "define([\"./c\"], function(a) {\nalert(\"hello from b.js\");\nreturn null;\n});";
 	public static String c = "define([\"./a\", \"./b\", \"./noexist\"], function(a, b, d) {\nalert(\"hello from c.js\");\nreturn null;\n});";
-	public static String foo = "define([\"p1/a\", \"p2/p1/b\", \"p2/p1/p1/c\", \"p2/noexist\"], function(a, b, c, noexist) {\n"
+	public static String foo = "define([\"p1/a\", \"p2/p1/b\", \"p2/p1/p1/c\", \"p2/noexist\", \"p1/a\"], function(a, b, c, noexist) {\n"
 			+ "	if (has(\"conditionTrue\")) { \n"
 			+ "		require([\"p2/a\"], function(a) {\n"
 			+ "			alert(\"condition_True\");\n"
