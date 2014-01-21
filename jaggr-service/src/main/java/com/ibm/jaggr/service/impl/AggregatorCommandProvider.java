@@ -16,6 +16,23 @@
 
 package com.ibm.jaggr.service.impl;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.Messages;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.StringBufferWriter;
+import com.ibm.jaggr.service.util.CIConsoleWriter;
+
+import org.apache.wink.json4j.JSONException;
+import org.eclipse.osgi.framework.console.CommandInterpreter;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -30,25 +47,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
-import org.apache.wink.json4j.JSONException;
-import org.eclipse.osgi.framework.console.CommandInterpreter;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.ProcessingDependenciesException;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.core.util.DependencyList;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.StringBufferWriter;
-import com.ibm.jaggr.service.util.CIConsoleWriter;
-
 public class AggregatorCommandProvider implements
 		org.eclipse.osgi.framework.console.CommandProvider {
-	
+
 	static final String LOG_DIR = "log"; //$NON-NLS-1$
 	static final String LOGFILE_PREFIX = "cacheDump"; //$NON-NLS-1$
 	static final String LOGFILE_SUFFIX = ".log"; //$NON-NLS-1$
@@ -68,7 +69,7 @@ public class AggregatorCommandProvider implements
 	static final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
 	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
-	
+
 	static final String[] COMMANDS = new String[] {
 	  CMD_HELP,
 	  CMD_LIST,
@@ -82,59 +83,59 @@ public class AggregatorCommandProvider implements
 	  CMD_SHOWCONFIG,
 	  CMD_GETDEPSWITHHASBRANCHING
 	};
-	
+
 	private final BundleContext context;
-	
+
 	public AggregatorCommandProvider(BundleContext context) {
 		this.context = context;
 	}
-	
+
 	protected BundleContext getBundleContext() {
 		return context;
 	}
-	
+
 	@Override
 	public String getHelp() {
 		return getHelp(" "); //$NON-NLS-1$
 	}
-	
+
 	protected String getHelp(String scopeSep) {
 		String newline = System.getProperty("line.separator"); //$NON-NLS-1$
 		StringBuffer sb = new StringBuffer(Messages.CommandProvider_0).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_1, 
+				Messages.CommandProvider_1,
 				new Object[]{EYECATCHER, scopeSep, CMD_HELP})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_2, 
+				Messages.CommandProvider_2,
 				new Object[]{EYECATCHER, scopeSep, CMD_LIST})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_3, 
+				Messages.CommandProvider_3,
 				new Object[]{EYECATCHER, scopeSep, CMD_RELOADCONFIG})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_4, 
+				Messages.CommandProvider_4,
 				new Object[]{EYECATCHER, scopeSep, CMD_VALIDATEDEPS, PARAM_CLEAN})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_5, 
+				Messages.CommandProvider_5,
 				new Object[]{EYECATCHER, scopeSep, CMD_GETDEPS})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_16, 
+				Messages.CommandProvider_16,
 				new Object[]{EYECATCHER, scopeSep, CMD_GETDEPSWITHHASBRANCHING, CMD_GETDEPS})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_6, 
+				Messages.CommandProvider_6,
 				new Object[]{EYECATCHER, scopeSep, CMD_CLEARCACHE})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_7, 
+				Messages.CommandProvider_7,
 				new Object[]{EYECATCHER, scopeSep, CMD_DUMPCACHE, PARAM_CONSOLE, PARAM_FILE})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_8, 
+				Messages.CommandProvider_8,
 				new Object[]{EYECATCHER, scopeSep, CMD_GETOPTIONS})).append(newline)
 		  .append(MessageFormat.format(
-				Messages.CommandProvider_9, 
+				Messages.CommandProvider_9,
 				new Object[]{EYECATCHER, scopeSep, CMD_SETOPTION})).append(newline)
 		  .append(MessageFormat.format(
 				Messages.CommandProvider_17,
 				new Object[]{EYECATCHER, scopeSep, CMD_SHOWCONFIG})).append(newline);
-		
+
 		return sb.toString();
 	}
 
@@ -182,7 +183,7 @@ public class AggregatorCommandProvider implements
 			cs.close();
 		}
 	}
-	
+
 	protected String list() throws InvalidSyntaxException {
 		// list the registered servlets
 		BundleContext context = getBundleContext();
@@ -205,7 +206,7 @@ public class AggregatorCommandProvider implements
 		}
 		return sb.toString();
 	}
-	
+
 	protected String reloadconfig(String[] args) throws IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
 	  StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
@@ -214,28 +215,28 @@ public class AggregatorCommandProvider implements
 			try {
 				aggregator.reloadConfig();
 				sb.append(Messages.CommandProvider_20);
-				// Call getDeclaredDependencies().  It will block and not return till the 
-				// dependencies have been loaded/validated.  We do this so that the 
+				// Call getDeclaredDependencies().  It will block and not return till the
+				// dependencies have been loaded/validated.  We do this so that the
 				// command interpreter will remain valid so that console output will be
 				// displayed.  If in development mode, we'll get a ProcessingDependenciesException.
 				IDependencies deps = aggregator.getDependencies();
 				while (true) {
 					try {
-						deps.getDelcaredDependencies(""); //$NON-NLS-1$ 
+						deps.getDelcaredDependencies(""); //$NON-NLS-1$
 					} catch (ProcessingDependenciesException ignore) {
 						Thread.sleep(1000L);
 						continue;
 					}
 					break;
 				}
-				
+
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
 		}
 		return sb.toString();
 	}
-	
+
 	protected String validatedeps(String[] args) throws MalformedURLException, IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
 		StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
@@ -245,8 +246,8 @@ public class AggregatorCommandProvider implements
 			try {
 				IDependencies deps = aggregator.getDependencies();
 				deps.validateDeps(clean);
-				// Call getDeclaredDependencies().  It will block and not return till the 
-				// dependencies have been loaded/validated.  We do this so that the 
+				// Call getDeclaredDependencies().  It will block and not return till the
+				// dependencies have been loaded/validated.  We do this so that the
 				// command interpreter will remain valid so that console output will be
 				// displayed.  If in development mode, we'll get a ProcessingDependenciesException.
 				while (true) {
@@ -264,7 +265,7 @@ public class AggregatorCommandProvider implements
 		}
     return sb.toString();
 	}
-	
+
 	protected String getdeps(String[] args) throws InvalidSyntaxException, IOException {
 		DependencyList moduleDeps = null;
 		StringBuffer sb = new StringBuffer();
@@ -277,7 +278,7 @@ public class AggregatorCommandProvider implements
 			if (moduleName == null) {
 				return Messages.CommandProvider_22;
 			}
-			
+
 			// subsequent parameters are optional feature list
 			Features features = new Features();
 			String feature;
@@ -289,7 +290,7 @@ public class AggregatorCommandProvider implements
 					value = false;
 				}
 				features.put(feature, value);
-			}			
+			}
 			sb.append(MessageFormat.format(
 					Messages.CommandProvider_23,
 					new Object[]{features.toString()})).append(NEWLINE);
@@ -324,7 +325,7 @@ public class AggregatorCommandProvider implements
 				aggregator.getCacheManager().clearCache();
 				return
 						MessageFormat.format(
-								Messages.CommandProvider_26, 
+								Messages.CommandProvider_26,
 								new Object[]{aggregator.getName()}
 						);
 			} finally {
@@ -334,7 +335,7 @@ public class AggregatorCommandProvider implements
 		  return sb.toString();
 		}
 	}
-	
+
 	protected String dumpcache(String[] args) throws InvalidSyntaxException, IOException {
 		StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
@@ -374,7 +375,7 @@ public class AggregatorCommandProvider implements
 				if (outputFile != null) {
 					sb.append(
 						MessageFormat.format(
-							Messages.CommandProvider_13, 
+							Messages.CommandProvider_13,
 							new Object[]{
 								aggregator.getName(),
 								outputFile.getCanonicalPath()
@@ -402,7 +403,7 @@ public class AggregatorCommandProvider implements
 		}
 		return sb.toString();
 	}
-	
+
 	protected String setoption(String args[]) throws IOException, InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
@@ -414,8 +415,8 @@ public class AggregatorCommandProvider implements
 				aggregator.getOptions().setOption(name, value);
 				sb.append(
 					MessageFormat.format(
-						value == null ? 
-								Messages.CommandProvider_15 : 
+						value == null ?
+								Messages.CommandProvider_15 :
 								Messages.CommandProvider_14,
 						new Object[]{name, value}
 					)
@@ -426,7 +427,7 @@ public class AggregatorCommandProvider implements
 		}
 		return sb.toString();
 	}
-	
+
 	protected String showconfig(String[] args) throws InvalidSyntaxException, JSONException {
 		StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
@@ -440,7 +441,7 @@ public class AggregatorCommandProvider implements
 		}
 		return sb.toString();
 	}
-	
+
 	protected ServiceReference getServiceRef(String[] args, StringBuffer sb) throws InvalidSyntaxException {
 		if (args.length == 0) {
 			throw new InvalidSyntaxException("servlet name not specified", null); //$NON-NLS-1$
@@ -448,14 +449,14 @@ public class AggregatorCommandProvider implements
 		String servletName = args[0];
 		BundleContext context = getBundleContext();
 		ServiceReference[] refs = context.getServiceReferences(
-				IAggregator.class.getName(), 
+				IAggregator.class.getName(),
 				"(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
 		);
 		ServiceReference result = refs != null && refs.length > 0 ? refs[0] : null;
 		if (result == null) {
 			sb.append(
 					MessageFormat.format(
-							Messages.CommandProvider_11, 
+							Messages.CommandProvider_11,
 							new Object[]{servletName}
 					)
 			).append(NEWLINE);
@@ -465,5 +466,5 @@ public class AggregatorCommandProvider implements
 		}
 		return result;
 	}
-	
+
 }
