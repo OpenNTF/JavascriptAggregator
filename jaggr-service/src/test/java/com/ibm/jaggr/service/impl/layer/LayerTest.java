@@ -58,14 +58,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -73,6 +72,7 @@ import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
@@ -96,8 +96,7 @@ public class LayerTest extends EasyMock {
 		}
 	};
 
-	IAggregator mockAggregator;
-	BundleContext mockBundleContext;
+	IAggregator mockAggregator;	
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	Map<String, String[]> requestParameters = new HashMap<String, String[]>();
@@ -107,6 +106,7 @@ public class LayerTest extends EasyMock {
 	HttpServletResponse mockResponse = TestUtils.createMockResponse(responseAttributes);
 	IDependencies mockDependencies = createNiceMock(IDependencies.class);
 	Map<String, String[]> testDepMap;
+	IPlatformServices mockPlatformServices;
 	
 
 	@BeforeClass
@@ -128,7 +128,8 @@ public class LayerTest extends EasyMock {
 
 	@Before
 	public void setup() throws Exception {
-		mockBundleContext = null;
+		//mockBundleContext = null;
+		mockPlatformServices = null;	
 		testDepMap = TestUtils.createTestDepMap();
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, requestHeaders);
@@ -136,14 +137,7 @@ public class LayerTest extends EasyMock {
 			public IDependencies answer() throws Throwable {
 				return mockDependencies;
 			}
-		}).anyTimes();
-		
-		expect(mockAggregator.getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
-			@Override
-			public BundleContext answer() throws Throwable {
-				return mockBundleContext;
-			}
-		}).anyTimes();
+		}).anyTimes();		
 		
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
 		expect(mockDependencies.getDelcaredDependencies(isA(String.class))).andAnswer(new IAnswer<List<String>>() {
@@ -159,12 +153,7 @@ public class LayerTest extends EasyMock {
 		URI p2Path = new File(tmpdir, "p2").toURI();
 		final Map<String, URI> map = new HashMap<String, URI>();
 		map.put("p1", p1Path);
-		map.put("p2", p2Path);
-
-		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
-		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
-		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		map.put("p2", p2Path);	
 
 /*
  	    Enable this code to display FINEST level logging for these tests in the
@@ -212,16 +201,28 @@ public class LayerTest extends EasyMock {
 	public void testGetInputStream() throws Exception {
 		
 		final AggregatorLayerListener layerListener = new AggregatorLayerListener(mockAggregator);
-		mockBundleContext = createNiceMock(BundleContext.class);
-		ServiceReference mockServiceReference = createMock(ServiceReference.class);
-		final ServiceReference[] serviceReferences = new ServiceReference[]{mockServiceReference};
-		expect(mockBundleContext.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<ServiceReference[]>() {
-			@Override public ServiceReference[] answer() throws Throwable {
+		mockPlatformServices = createMock(IPlatformServices.class);	
+		Object mockServiceReference = createMock(Object.class);
+		final Object[] serviceReferences = new Object[]{mockServiceReference};
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<Object[]>() {
+			@Override public Object[] answer() throws Throwable {
 				return serviceReferences;
 			}
 		}).anyTimes();
-		expect(mockBundleContext.getService(mockServiceReference)).andReturn(layerListener).anyTimes();
-		replay(mockBundleContext, mockServiceReference);
+		expect(mockPlatformServices.getServiceReferences(IOptionsListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<Object[]>() {
+			@Override public Object[] answer() throws Throwable {
+				return null;
+			}
+		}).anyTimes();
+		expect(mockPlatformServices.getService(mockServiceReference)).andReturn(layerListener).anyTimes();
+		expect(mockPlatformServices.ungetService(mockServiceReference)).andReturn(true).anyTimes();
+		expect(mockPlatformServices.getHeaders()).andReturn(null).anyTimes();
+		expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
+
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies,mockPlatformServices, mockServiceReference);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson, true));		
 		
 		// Request a single module
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
@@ -464,6 +465,12 @@ public class LayerTest extends EasyMock {
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
+		
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));		
+		
 		new File(tmpdir, "p1/a.js").setLastModified(new Date().getTime());
 		Long lastMod = Math.max(new File(tmpdir, "p1/a.js").lastModified(), 
 				                new File(tmpdir, "p1/b.js").lastModified());
@@ -503,6 +510,11 @@ public class LayerTest extends EasyMock {
 	 */
 	@Test
 	public void testToString() throws Exception {
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
@@ -518,7 +530,12 @@ public class LayerTest extends EasyMock {
 	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.core.config.IConfig)}.
 	 */
 	@Test
-	public void testGetResourceURI() {
+	public void testGetResourceURI() throws IOException {
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		
 		TestLayerImpl impl = new TestLayerImpl(""); 		
 		URI uri = new File(tmpdir, "p1/a.js").toURI();
 		assertEquals(uri, impl.newModule(mockRequest, "p1/a").getURI());
@@ -532,12 +549,16 @@ public class LayerTest extends EasyMock {
 	
 	@Test
 	public void featureSetUpdatingTests() throws Exception {
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		long totalSize = 0;
 		testDepMap.put("p1/a", (String[])ArrayUtils.add(testDepMap.get("p2/a"), "p1/aliased/d"));
 		List<String> layerCacheInfo = new LinkedList<String>();
-		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
+		configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		
 		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
@@ -642,8 +663,11 @@ public class LayerTest extends EasyMock {
 	
 	@Test
 	public void gzipTests() throws Exception {
-		testDepMap.put("p1/a", (String[])ArrayUtils.add(testDepMap.get("p2/a"), "p1/aliased/d"));
-		String configJson = "{paths:{p1:'p1',p2:'p2'}}";
+		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
+		configJson = "{paths:{p1:'p1',p2:'p2'}}";
 		List<String> layerCacheInfo = new LinkedList<String>();
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
