@@ -21,11 +21,11 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -35,16 +35,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.options.IOptions;
@@ -58,10 +54,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
     
-    private ServiceRegistration configUpdateListener;
-    private ServiceRegistration optionsUpdateListener;
-	private ServiceRegistration shutdownListener;
-	private BundleContext bundleContext;
+    private Object configUpdateListener;
+    private Object optionsUpdateListener;
+	private Object shutdownListener;
 	private String servletName;
 	private long depsLastModified = -1;
 	private long initStamp;
@@ -77,40 +72,23 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 	
 	public DependenciesImpl(IAggregator aggregator, long stamp) {
+		Hashtable<String, String> dict; 		
 		this.aggregator = aggregator;
 		this.initStamp = stamp;
-		Properties dict;
-		bundleContext = aggregator.getBundleContext();
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
-
-		if (bundleContext != null) {
-			// register shutdown listener
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			shutdownListener = bundleContext.registerService(
-					IShutdownListener.class.getName(), 
-					this, 
-					dict
-			);
-	
-			// register the config change listener service.
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			configUpdateListener = bundleContext.registerService(
-					IConfigListener.class.getName(), 
-					this, 
-					dict
-			);
-			
-			// register the config change listener service.
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			optionsUpdateListener = bundleContext.registerService(
-					IOptionsListener.class.getName(), 
-					this, 
-					dict
-			);
+		
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		shutdownListener = aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);	
+		
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		configUpdateListener= aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+		
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		optionsUpdateListener= aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 
 			if (aggregator.getConfig() != null) {
 				configLoaded(aggregator.getConfig(), 1);
@@ -120,6 +98,13 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 				optionsUpdated(aggregator.getOptions(), 1);
 			}
 		}
+	@Override
+	public void shutdown(IAggregator aggregator) {
+		this.aggregator = null;
+		aggregator.getPlatformServices().unRegisterService(configUpdateListener);
+		aggregator.getPlatformServices().unRegisterService(optionsUpdateListener);
+		aggregator.getPlatformServices().unRegisterService(shutdownListener);
+		
 	}
 
 	protected IAggregator getAggregator() {
@@ -165,16 +150,6 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IShutdownListener#shutdown(com.ibm.jaggr.service.IAggregator)
-	 */
-	@Override
-	public void shutdown(IAggregator aggregator) {
-		this.aggregator = null;
-		shutdownListener.unregister();
-		configUpdateListener.unregister();
-		optionsUpdateListener.unregister();
-	}
 	
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.deps.IDependencies#getLastModified()
@@ -294,15 +269,13 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 							break;
 						}						
 						// Notify listeners that dependencies have been updated
-						ServiceReference[] refs = null;
-						refs = bundleContext
-								.getServiceReferences(IDependenciesListener.class.getName(),
-								              "(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
-						);
+						Object[] refs = null;
+						
+						refs = aggregator.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
+						
 						if (refs != null) {
-							for (ServiceReference ref : refs) {
-								IDependenciesListener listener = 
-									(IDependenciesListener)bundleContext.getService(ref);
+							for (Object ref : refs) {								
+								IDependenciesListener listener = (IDependenciesListener)(aggregator.getPlatformServices().getService(ref));
 								if (listener != null) {
 									try {
 										listener.dependenciesLoaded(DependenciesImpl.this, sequence);
@@ -311,7 +284,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 											log.log(Level.SEVERE, e.getMessage(), e);
 										}
 									} finally {
-										bundleContext.ungetService(ref);
+										aggregator.getPlatformServices().ungetService(ref);
 									}
 								}
 							}
