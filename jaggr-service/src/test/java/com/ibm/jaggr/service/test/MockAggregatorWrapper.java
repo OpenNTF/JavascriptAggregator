@@ -28,6 +28,7 @@ import org.osgi.framework.BundleContext;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cache.ICacheManager;
@@ -182,6 +183,11 @@ public class MockAggregatorWrapper implements IAggregator {
 	public String substituteProps(String str,
 			SubstitutionTransformer transformer) {
 		return mock.substituteProps(str, transformer);
+	}
+	
+	@Override
+	public IPlatformServices getPlatformServices() {
+		return mock.getPlatformServices();
 	}
 
 }

@@ -30,6 +30,8 @@ import java.io.Reader;
 import java.io.Serializable;
 import java.io.Writer;
 import java.text.MessageFormat;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
@@ -40,8 +42,6 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang.StringUtils;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
@@ -78,13 +78,13 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     
     private IAggregator _aggregator;
     
-    private ServiceRegistration _shutdownListener = null;
+    private Object _shutdownListener = null;
     
-    private ServiceRegistration _configUpdateListener = null;
+    private Object _configUpdateListener = null;
     
-    private ServiceRegistration _depsUpdateListener = null;
+    private Object _depsUpdateListener = null;
     
-    private ServiceRegistration _optionsUpdateListener = null;
+    private Object _optionsUpdateListener = null;
     
     private long updateSequenceNumber = 0;
     
@@ -188,45 +188,31 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         	}
         }, 10, 10, TimeUnit.MINUTES);
         
-		Properties dict;
-		BundleContext bundleContext = aggregator.getBundleContext();
-		if (bundleContext != null) {
-	        // Register listeners
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_shutdownListener = bundleContext.registerService(
-					IShutdownListener.class.getName(), 
-					this, 
-					dict
-			);
-	
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_configUpdateListener = bundleContext.registerService(
-					IConfigListener.class.getName(), 
-					this, 
-					dict
-			);
+		Dictionary<String,String> dict;
+		
+		
+		if(_aggregator.getPlatformServices() != null){
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			_shutdownListener =  _aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
 			
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_depsUpdateListener = bundleContext.registerService(
-					IDependenciesListener.class.getName(), 
-					this, 
-					dict
-			);
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			_configUpdateListener =  _aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
 			
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_optionsUpdateListener = bundleContext.registerService(
-					IOptionsListener.class.getName(), 
-					this, 
-					dict
-			);
-			optionsUpdated(aggregator.getOptions(), 1);
-	        configLoaded(aggregator.getConfig(), 1);
-	        dependenciesLoaded(aggregator.getDependencies(), 1);
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			_depsUpdateListener =  _aggregator.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
+			
+			dict = new Hashtable<String, String>();	
+		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			_optionsUpdateListener =  _aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 		}
+		
+		optionsUpdated(aggregator.getOptions(), 1);
+        configLoaded(aggregator.getConfig(), 1);
+        dependenciesLoaded(aggregator.getDependencies(), 1);
+		
 		
 		// Now invoke the listeners for objects that have already been initialized
 		IOptions options = _aggregator.getOptions();
@@ -267,17 +253,17 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
      */
     @Override
 	public void shutdown(IAggregator aggregator) {
-    	if (_shutdownListener != null) {
-    		_shutdownListener.unregister();
+    	if (_shutdownListener != null) {    		
+    		 _aggregator.getPlatformServices().unRegisterService(_shutdownListener);
     	}
-		if (_configUpdateListener != null) {
-			_configUpdateListener.unregister();
+		if (_configUpdateListener != null) {			
+			 _aggregator.getPlatformServices().unRegisterService(_configUpdateListener);
 		}
-		if (_depsUpdateListener != null) {
-			_depsUpdateListener.unregister();
+		if (_depsUpdateListener != null) {			
+			 _aggregator.getPlatformServices().unRegisterService(_depsUpdateListener);
 		}
-		if (_optionsUpdateListener != null) {
-			_optionsUpdateListener.unregister();
+		if (_optionsUpdateListener != null) {			
+			 _aggregator.getPlatformServices().unRegisterService(_optionsUpdateListener);
 		}
     	
 		// Serialize the cache metadata one last time

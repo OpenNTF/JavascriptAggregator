@@ -70,6 +70,7 @@ import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IRequestListener;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.IVariableResolver;
@@ -100,6 +101,7 @@ import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
+import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
@@ -157,6 +159,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
     private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
     private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
     private IAggregatorExtension httpTransportExtension = null;
+    protected IPlatformServices platformServices;
 
     enum RequestNotifierAction {
     	start,
@@ -489,8 +492,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 					);
 			}
 		}
-        try {
+        try {        	
     		BundleContext bundleContext = contributingBundle.getBundleContext();
+    		platformServices = new PlatformServicesImpl(bundleContext); 
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);
@@ -1310,6 +1314,11 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 */
 	protected ICacheManager newCacheManager(long stamp) throws IOException {
 		return new CacheManagerImpl(this, stamp);
+	}
+	
+	@Override
+	public IPlatformServices getPlatformServices() {
+		return platformServices;
 	}
 
 	/**
