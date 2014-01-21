@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -224,6 +225,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 					int idx = moduleName.lastIndexOf("/"); //$NON-NLS-1$
 					String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
 					List<String> normalized = Arrays.asList(PathUtil.normalizePaths(ref, deps.toArray(new String[deps.size()])));
+
+					// Run the list through a linked hash set to remove duplicate entries, yet keep list ordering
+					Set<String> temp = new LinkedHashSet<String>(normalized);
+					normalized = Arrays.asList(temp.toArray(new String[temp.size()]));
+					
 					List<String> processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
 					if (processedDeps != null && !processedDeps.equals(normalized)) {
 						// The dependency list for this module has changed since the dependencies

@@ -400,7 +400,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 		return new ModuleBuild(
 				expandedDepsList == null || expandedDepsList.size() == 0 ? 
-						output : new JavaScriptBuildRenderer(output, expandedDepsList, isReqExpLogging),
+						output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging),
 				createNewKeyGen ? 
 						getCacheKeyGenerators(discoveredHasConditionals) : 
 						keyGens,
