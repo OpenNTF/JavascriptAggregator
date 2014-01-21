@@ -494,6 +494,39 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 	}
 
 	@Test
+	public void testDependencyVerificationException() throws Exception {
+		Features features = new Features();
+		Set<String> dependentFeatures = new TreeSet<String>();
+		features.put("feature1", true);
+		features.put("feature2", true);
+		List<ModuleDeps> expanded = new ArrayList<ModuleDeps>();
+		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
+				mockAggregator,
+				features,
+				dependentFeatures,
+				expanded,
+				null, false);
+		
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		mockAggregator.getOptions().setOption(IOptions.VERIFY_DEPS, true);
+		String code, output;
+		moduleName = "x/y";
+		code = "define([\"x/y/z\", \"foo\", \"dep3\"], function(z, foo, dep3) {});";
+		try {
+			output = runPass(pass, code);
+			Assert.fail();
+		} catch (RuntimeDependencyVerificationException ex) {
+		}
+		
+		// Ensure that duplicate dependencies in define statement doesn't 
+		//  throw DependencyVerificationException
+		code = "define([\"x/y/z\", \"foo\", \"x/y/z\"], function(z, foo) {});";
+		output = runPass(pass, code);
+		System.out.println(output);
+		
+	}
+	
+	@Test
 	public void testLogging() throws Exception {
 		
 		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
