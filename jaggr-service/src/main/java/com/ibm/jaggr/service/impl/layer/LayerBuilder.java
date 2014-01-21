@@ -29,14 +29,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -60,6 +59,7 @@ import com.ibm.jaggr.core.util.TypeUtil;
  * {@link ModuleBuildFuture}s into the {@link BuildListReader} for the response
  */
 public class LayerBuilder {
+	private static final Logger log = Logger.getLogger(LayerBuilder.class.getName());
 	final HttpServletRequest request;
 	final List<ICacheKeyGenerator> keyGens;
 	final IAggregator aggr;
@@ -350,21 +350,19 @@ public class LayerBuilder {
 	protected String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {
 		StringBuffer sb = new StringBuffer();
 		// notify any listeners that the config has been updated
-		ServiceReference[] refs = null;
-		IAggregator aggr = (IAggregator) request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		BundleContext context = aggr.getBundleContext();
-		if (context == null) return null;
 		
-		try {
-			refs = context.getServiceReferences(ILayerListener.class.getName(),
-							              "(name="+aggr.getName()+")" //$NON-NLS-1$ //$NON-NLS-2$
-					);
-		} catch (InvalidSyntaxException e) {
-			throw new IOException(e);
+		Object[] refs = null;		
+		if(aggr.getPlatformServices() != null){
+			try {
+				refs = aggr.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
 		}
 		if (refs != null) {
-			for (ServiceReference ref : refs) {
-				ILayerListener listener = (ILayerListener)context.getService(ref);
+				for (Object ref : refs) {
+					ILayerListener listener = (ILayerListener)aggr.getPlatformServices().getService(ref);
 				try {
 					Set<String> dependentFeatures = new HashSet<String>();
 					String str = listener.layerBeginEndNotifier(type, request, 
@@ -378,7 +376,8 @@ public class LayerBuilder {
 						sb.append(str);
 					}
 				} finally {
-					context.ungetService(ref);
+						aggr.getPlatformServices().ungetService(ref);
+					}
 				}
 			}
 		}

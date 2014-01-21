@@ -332,6 +332,15 @@ public interface IAggregator {
 	public String substituteProps(String str, SubstitutionTransformer transformer);
 	
 	/**
+	 * Get the <code>IPlatformServices</code> implementation for this aggregator. 
+	 * 
+	 * @return An implementation of <code>IPlatformServices</code>
+	 */
+	
+	public IPlatformServices getPlatformServices();
+	
+	
+	/**
 	 * Transformer interface used by 
 	 * {@link IAggregator#substituteProps(String, SubstitutionTransformer)}. 
 	 */

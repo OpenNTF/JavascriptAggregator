@@ -53,14 +53,11 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.options.IOptions;
@@ -97,7 +94,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
 	
-	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
+	protected List<Object> serviceRegs = new LinkedList<Object>();
 	
 	private static class ConfigContextFactory extends ContextFactory {
 		@Override
@@ -175,9 +172,60 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 	}
 	
+	/**
+	 * 
+	 * This constructor is just for testing purpose. It should not be used for production.
+	 */
+	protected ConfigImpl(IAggregator aggregator, boolean forTest) throws URISyntaxException, FileNotFoundException {
+		this.aggregator = aggregator;
+		rawConfig = null;
+		lastModified = 0;
+		configUri = loadConfigUri();		
+	}
+	
+	/**
+	 * 
+	 * This constructor is just for testing purpose. It should not be used for production.
+	 */
+	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript, boolean forTest) throws IOException {
+		Context.enter();
+		try {
+			lastModified = configUri != null ? configUri.toURL().openConnection().getLastModified() : -1;
+			this.configUri = configUri;
+			this.aggregator = aggregator;
+			this.rawConfig = loadConfig(configScript);
+			initForTest();
+		} finally {
+			Context.exit();
+		}
+	}
+	
 	protected void init() throws IOException {
 		try { 
 			registerServices();
+			strConfig = Context.toString(rawConfig);
+			base = loadBaseURI(rawConfig);
+			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
+			paths = Collections.unmodifiableMap(loadPaths(rawConfig));
+			aliases = Collections.unmodifiableList(loadAliases(rawConfig));
+			deps = Collections.unmodifiableList(loadDeps(rawConfig));
+			depsIncludeBaseUrl = loadDepsIncludeBaseUrl(rawConfig);
+			coerceUndefinedToFalse = loadCoerceUndefinedToFalse(rawConfig);
+			expires = loadExpires(rawConfig);
+			notice = loadNotice(rawConfig);
+			cacheBust = loadCacheBust(rawConfig);
+			textPluginDelegators = loadTextPluginDelegators(rawConfig);
+			jsPluginDelegators = loadJsPluginDelegators(rawConfig);
+		} catch (URISyntaxException e) {
+			throw new IOException(e);
+		}
+	}
+	/**
+	 * 
+	 * This method is for test purposes and should not be used for production. 
+	 */
+	protected void initForTest() throws IOException {
+		try { 			
 			strConfig = Context.toString(rawConfig);
 			base = loadBaseURI(rawConfig);
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
@@ -676,10 +724,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		String configName = configNames.iterator().next();
 		configUri = new URI(configName);
 		if (!configUri.isAbsolute()) {
-			configUri = new URI("namedbundleresource://" +  //$NON-NLS-1$
-					getAggregator().getBundleContext().getBundle().getSymbolicName()  +
-					(configName.startsWith("/") ? "" : "/") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ 
-					configName);
+			configUri = aggregator.getPlatformServices().getAppContextURI().resolve(configName);
 			if (!getAggregator().newResource(configUri).exists()) {
 				throw new FileNotFoundException(configName);
 			}
@@ -716,12 +761,24 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		return loadConfig(writer.toString());
 	}
 	/**
+	 * Add any processing logic to the config file like replacing any place holders from a 
+	 * properties file.
+	 * 
+	 * @return the processed config script
+	 */
+	
+	protected String processConfig(String configScript){
+		return configScript;
+	}
+	
+	/**
 	 * Loads the config JavaScript and returns the parsed config in a Map
 	 * 
 	 * @return the parsed config in a properties map
 	 * @throws IOException
 	 */
 	protected Scriptable loadConfig(String configScript) throws IOException {
+		configScript = processConfig(configScript);
 		Context cx = Context.enter();
 		Scriptable config;
 		try {
@@ -746,9 +803,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 
 			// set up bundle manifest headers property
-			if (aggregator.getBundleContext() != null) {
-				@SuppressWarnings("unchecked")
-				Dictionary<String, String> headers = (Dictionary<String, String>)aggregator.getBundleContext().getBundle().getHeaders();
+			if ( aggregator.getPlatformServices() != null) {
+				if( aggregator.getPlatformServices().getHeaders() != null){				
+					Dictionary<String, String> headers = (Dictionary<String, String>)( aggregator.getPlatformServices().getHeaders());
 			    Scriptable jsHeaders = cx.newObject(sharedScope);
 				Enumeration<String> keys = headers.keys();
 				while (keys.hasMoreElements()) {
@@ -757,6 +814,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				    ScriptableObject.putProperty(jsHeaders, key, value);
 				}
 				ScriptableObject.putProperty(sharedScope, "headers", jsHeaders); //$NON-NLS-1$
+				}
 			}
 			
 			// set up console object
@@ -1098,32 +1156,30 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            are represented as {@code Map<String, Object>}.
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
-		ServiceReference[] refs = null;
-		BundleContext bundleContext = getAggregator().getBundleContext();
-		if (bundleContext == null) return;
-		try {
-			refs = bundleContext
-					.getServiceReferences(IConfigModifier.class.getName(),
-							              "(name="+getAggregator().getName()+")" //$NON-NLS-1$ //$NON-NLS-2$
-					);
-		} catch (InvalidSyntaxException e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
+		if( aggregator.getPlatformServices() != null){
+			Object[] refs = null;		
+			try {
+				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
 			}
-		}
-		if (refs != null) {
-			for (ServiceReference ref : refs) {
-				IConfigModifier modifier = 
-					(IConfigModifier)bundleContext.getService(ref);
-				if (modifier != null) {
-					try {
-						modifier.modifyConfig(getAggregator(), rawConfig);
-					} catch (Exception e) {
-						if (log.isLoggable(Level.SEVERE)) {
-							log.log(Level.SEVERE, e.getMessage(), e);
+			
+			if (refs != null) {
+				for (Object ref : refs) {
+					IConfigModifier modifier = 
+						(IConfigModifier) aggregator.getPlatformServices().getService(ref);
+					if (modifier != null) {
+						try {
+							modifier.modifyConfig(getAggregator(), rawConfig);
+						} catch (Exception e) {
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, e.getMessage(), e);
+							}
+						} finally {
+							 aggregator.getPlatformServices().ungetService(ref);
 						}
-					} finally {
-						bundleContext.ungetService(ref);
 					}
 				}
 			}
@@ -1162,30 +1218,23 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : serviceRegs) {
-			reg.unregister();
+		for (Object reg : serviceRegs) {
+			if( aggregator.getPlatformServices() != null){
+				 aggregator.getPlatformServices().unRegisterService(reg);
+			}
 		}
 	}
 	
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {
-		BundleContext bundleContext = aggregator.getBundleContext();
-		if (bundleContext != null) {
 	        // Register listeners
+		if(aggregator.getPlatformServices() != null){
 			Dictionary dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			serviceRegs.add(bundleContext.registerService(
-					IShutdownListener.class.getName(), 
-					this, 
-					dict
-			));
+			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
+			serviceRegs.add( aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			serviceRegs.add(bundleContext.registerService(
-					IOptionsListener.class.getName(), 
-					this, 
-					dict
-			));
+			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
+			serviceRegs.add( aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));	
 		}
 	}
 

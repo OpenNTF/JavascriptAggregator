@@ -39,11 +39,10 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mozilla.javascript.Context;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
 
 import com.google.common.io.Files;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.options.IOptions;
@@ -199,33 +198,23 @@ public class ConfigTests {
 		initParams.add(new InitParams.InitParam("param1", "param1Value1"));
 		initParams.add(new InitParams.InitParam("param1", "param1Value2"));
 		initParams.add(new InitParams.InitParam("param2", "param2Value"));
-		final Bundle mockBundle = EasyMock.createNiceMock(Bundle.class);
+		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
+		
+		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);		
 		final Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("foo", "foobar");
-		EasyMock.expect(mockBundle.getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
+		EasyMock.expect(mockPlatformServices.getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
 			public Dictionary<String, String> answer() throws Throwable {
 				return dict;
 			}
 		}).anyTimes();
-		EasyMock.replay(mockBundle);
-		final BundleContext mockBundleContext = EasyMock.createNiceMock(BundleContext.class);
-		EasyMock.expect(mockBundleContext.getBundle()).andAnswer(new IAnswer<Bundle>() {
-			public Bundle answer() throws Throwable {
-				return mockBundle;
-			}
-		}).anyTimes();
-		EasyMock.replay(mockBundleContext);
-		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
-		EasyMock.expect(mockAggregator.getBundleContext()).andAnswer(new IAnswer<BundleContext>() {
-			public BundleContext answer() throws Throwable {
-				return mockBundleContext;
-			}
-		}).anyTimes();
+		EasyMock.replay(mockPlatformServices);		
+		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();	
 		EasyMock.replay(mockAggregator);
 		mockAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
 		final TestConsoleLogger logger = new TestConsoleLogger();
-		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config) {
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config, true) {
 			@Override
 			protected ConfigImpl.Console newConsole() {
 				return logger;
@@ -754,14 +743,14 @@ public class ConfigTests {
 		
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, "config.js"));
-		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
-		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
-		Bundle mockBundle = EasyMock.createMock(Bundle.class);
-		EasyMock.expect(mockAggregator.getBundleContext()).andReturn(mockContext);
-		EasyMock.expect(mockContext.getBundle()).andReturn(mockBundle);
-		EasyMock.expect(mockBundle.getSymbolicName()).andReturn("org.mock.name");
-		EasyMock.replay(mockAggregator, mockContext, mockBundle);
-		ConfigImpl cfg = new ConfigImpl(mockAggregator);
+		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);		
+		
+		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);	
+		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/")).anyTimes();;
+		EasyMock.replay(mockPlatformServices);		
+		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();		
+		EasyMock.replay(mockAggregator);
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);		
 		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());
 	}
 
