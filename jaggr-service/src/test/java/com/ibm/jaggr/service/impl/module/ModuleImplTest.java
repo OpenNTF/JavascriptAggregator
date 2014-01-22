@@ -226,14 +226,15 @@ public class ModuleImplTest {
 	@Test
 	public void testBuildRendererDependentFeatures() throws Exception {
 		
-		PowerMock.expectNew(JavaScriptBuildRenderer.class, EasyMock.isA(String.class), EasyMock.isA(List.class), EasyMock.eq(false)).andAnswer(new IAnswer<JavaScriptBuildRenderer>() {
+		PowerMock.expectNew(JavaScriptBuildRenderer.class, EasyMock.isA(String.class), EasyMock.isA(String.class), EasyMock.isA(List.class), EasyMock.eq(false)).andAnswer(new IAnswer<JavaScriptBuildRenderer>() {
 			@SuppressWarnings("serial")
 			@Override
 			public JavaScriptBuildRenderer answer() throws Throwable {
-				String content = (String)EasyMock.getCurrentArguments()[0];
-				List<ModuleDeps> depList = (List<ModuleDeps>)EasyMock.getCurrentArguments()[1];
-				Boolean isLogging = (Boolean)EasyMock.getCurrentArguments()[2];
-				return new JavaScriptBuildRenderer(content, depList, isLogging) {
+				String mid = (String)EasyMock.getCurrentArguments()[0];
+				String content = (String)EasyMock.getCurrentArguments()[1];
+				List<ModuleDeps> depList = (List<ModuleDeps>)EasyMock.getCurrentArguments()[2];
+				Boolean isLogging = (Boolean)EasyMock.getCurrentArguments()[3];
+				return new JavaScriptBuildRenderer(mid, content, depList, isLogging) {
 					@Override
 					public String renderBuild(HttpServletRequest request, Set<String> dependentFeatures) {
 						dependentFeatures.add("feature1");

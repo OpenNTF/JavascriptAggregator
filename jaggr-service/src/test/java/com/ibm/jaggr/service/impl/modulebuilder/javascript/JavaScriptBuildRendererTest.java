@@ -34,7 +34,7 @@ import com.ibm.jaggr.service.test.TestUtils;
 public class JavaScriptBuildRendererTest {
 	static final String content = "define([],function() {require(\"foo\",\"" + 
 			String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, 0) +
-			"\");require(\"bar\",\"" +
+			"\");require(\"bar\", \"" +
 			String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, 1) +
 			"\")});";
 
@@ -46,7 +46,7 @@ public class JavaScriptBuildRendererTest {
 		deps1.add("foodep2", new ModuleDepInfo());
 		deps2.add("bardep", new ModuleDepInfo());
 		List<ModuleDeps> depsList = Arrays.asList(new ModuleDeps[]{deps1, deps2});
-		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer(content, depsList, false);
+		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer("test", content, depsList, false);
 		
 		// validate the rendered output
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
@@ -78,7 +78,7 @@ public class JavaScriptBuildRendererTest {
 		deps1.add("foodep2", new ModuleDepInfo());
 		deps2.add("bardep", new ModuleDepInfo());
 		List<ModuleDeps> depsList = Arrays.asList(new ModuleDeps[]{deps1, deps2, deps1, deps2});
-		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer(contentWithComments, depsList, true);
+		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer("test", contentWithComments, depsList, true);
 		
 		// validate the rendered output
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
