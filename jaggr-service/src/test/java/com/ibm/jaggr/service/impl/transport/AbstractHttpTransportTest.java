@@ -70,7 +70,7 @@ public class AbstractHttpTransportTest {
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getHasReaturesFromRequest(javax.servlet.http.HttpServletRequest)}.
-	 * @throws ServletException 
+	 * @throws ServletException
 	 */
 	@Test
 	public void testGetFeaturesFromRequest() throws Exception {
@@ -81,7 +81,7 @@ public class AbstractHttpTransportTest {
 		HttpServletRequest request = TestUtils.createMockRequest(null, requestAttributes, requestParameters, cookies, null);
 		EasyMock.replay(request);
 		assertNull(transport.getHasConditionsFromRequest(request));
-		
+
 		String hasConditions = "foo;!bar";
 		requestParameters.put("has", new String[]{hasConditions});
 		Features features = transport.getFeaturesFromRequest(request);
@@ -89,7 +89,7 @@ public class AbstractHttpTransportTest {
 		Assert.assertTrue(features.featureNames().contains("foo") && features.featureNames().contains("bar"));
 		Assert.assertTrue(features.isFeature("foo"));
 		Assert.assertFalse(features.isFeature("bar"));
-		
+
 		// Now try specifying the has conditions in the cookie
 		requestParameters.clear();
 		requestParameters.put("hashash", new String[]{"xxxx"}); // value not checked by server
@@ -99,7 +99,7 @@ public class AbstractHttpTransportTest {
 		Assert.assertTrue(features.featureNames().contains("foo") && features.featureNames().contains("bar"));
 		Assert.assertTrue(features.isFeature("foo"));
 		Assert.assertFalse(features.isFeature("bar"));
-		
+
 		// Make sure we handle null cookie values without throwing
 		requestParameters.put("hashash", new String[]{"xxxx"}); // value not checked by server
 		cookies[0] = new Cookie("has", null);
@@ -111,7 +111,7 @@ public class AbstractHttpTransportTest {
 		features = transport.getFeaturesFromRequest(request);
 		assertEquals(0, features.featureNames().size());
 	}
-	
+
 	@Test
 	public void testUnfoldModules() throws Exception {
 		AbstractHttpTransport transport = new TestHttpTransport();
@@ -119,33 +119,33 @@ public class AbstractHttpTransportTest {
 		JSONObject obj = new JSONObject("{foo:{bar:'0', baz:{xxx:'2', yyy:'1'}}, dir:'3'}");
 		String[] paths = transport.unfoldModules(obj, 4);
 		Assert.assertArrayEquals(new String[] {"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir" }, paths);
-		
+
 		// folded paths with plugin prefixes
 		obj = new JSONObject("{'"+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"':{'combo/text':'0', abc:'1'},foo:{bar:'0', baz:{xxx.txt:'1-0', yyy.txt:'2-1'}}}");
 		paths = transport.unfoldModules(obj, 3);
 		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
-		
+
 		// make sure legacy format for specifying plugin prefixes works
 		obj = new JSONObject("{foo:{bar:'0', baz:{xxx.txt:'1-combo/text', yyy.txt:'2-abc'}}}");
 		paths = transport.unfoldModules(obj, 3);
-		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);	
+		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
 	}
-	
+
 	@Test
 	public void testDecodeMopdules() throws Exception {
 		AbstractHttpTransport transport = new TestHttpTransport();
 		JSONObject decoded = transport.decodeModules("(foo!(bar!0*baz!(<|xxx>!2*yyy!1))*dir!3)");
 		Assert.assertEquals(new JSONObject("{foo:{bar:'0',baz:{'(!xxx)':'2',yyy:'1'}},dir:'3'}"), decoded);
-	
+
 		decoded = transport.decodeModules("("+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"!(combo/text!0*abc!1)*foo!(bar!0*baz!(xxx.txt!1-0*yyy.txt!2-1)))");
 		Assert.assertEquals(new JSONObject("{'"+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"':{'combo/text':'0', abc:'1'},foo:{bar:'0', baz:{xxx.txt:'1-0', yyy.txt:'2-1'}}}"), decoded);
-	
+
 	}
-	
+
 	@Test
 	public void testGetHasConditionsEncodedFromRequest() throws Exception{
 		CountDownLatch latch = new CountDownLatch(0);
-		AbstractHttpTransport transport = new TestHttpTransport(latch, featureList, 0L); 
+		AbstractHttpTransport transport = new TestHttpTransport(latch, featureList, 0L);
 		Map<String, String[]> requestParams = new HashMap<String, String[]>();
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(null, new HashMap<String, Object>(), requestParams, new Cookie[0], new HashMap<String, String>());
 		EasyMock.replay(mockRequest);
@@ -161,12 +161,12 @@ public class AbstractHttpTransportTest {
 		Features result = transport.getFeaturesFromRequestEncoded(mockRequest);
 		System.out.println(result);
 		Assert.assertEquals(features, result);
-		
+
 		features = new Features();
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
 		result = transport.getFeaturesFromRequestEncoded(mockRequest);
 		Assert.assertEquals(features, result);
-		
+
 		features = new Features();
 		for (String name : featureList) {features.put(name, true); }
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
@@ -174,7 +174,7 @@ public class AbstractHttpTransportTest {
 		System.out.println(result);
 		Assert.assertEquals(features, result);
 	}
-	
+
 	@Test
 	public void testFeatureListResourceFactory_newResource() throws IOException {
 		URI uri = URI.create("namedbundleresource://com.ibm.jaggr-service/combo/featureList.js");
@@ -183,12 +183,12 @@ public class AbstractHttpTransportTest {
 			expected.append(i == 0 ? "" : ",").append("\"").append(featureList.get(i)).append("\"");
 		}
 		expected.append("]" + AbstractHttpTransport.FEATURE_LIST_PROLOGUE);
-		
+
 		final IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
 		IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
 		EasyMock.expect(mockDependencies.getLastModified()).andReturn(10L).anyTimes();
 		EasyMock.expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
-		
+
 		EasyMock.replay(mockAggregator, mockDependencies);
 		AbstractHttpTransport transport = new TestHttpTransport(new CountDownLatch(0), featureList, 10L) {
 			@Override
@@ -200,7 +200,7 @@ public class AbstractHttpTransportTest {
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(resourceOut.getReader(), writer);
 		Assert.assertEquals(expected.toString(), writer.toString());
-		
+
 		resourceOut = factory.newResource(URI.create("namedbundleresource://com.ibm.jaggr-service/combo/foo.js"));
 		writer = new StringWriter();
 		try {
@@ -209,8 +209,8 @@ public class AbstractHttpTransportTest {
 		} catch (IOException e) {
 		}
 	}
-	
-	
+
+
 	class TestHttpTransport extends AbstractHttpTransport {
 		TestHttpTransport() {}
 		TestHttpTransport(CountDownLatch latch, List<String> dependentFeatures, long lastMod) {super(latch, dependentFeatures, lastMod);}
@@ -218,9 +218,10 @@ public class AbstractHttpTransportTest {
 		@Override public String getLayerContribution(HttpServletRequest request, LayerContributionType type, Object arg) { return null; }
 		@Override public boolean isServerExpandable(HttpServletRequest request, String mid) { return false; }
 		@Override public List<ICacheKeyGenerator> getCacheKeyGenerators() { return null; }
-		@Override protected String getPluginUniqueId() { return null; }
+		@Override protected String getTransportId() { return null; }
+		@Override protected String getResourcePathId() { return "combo"; }
 	};
-	
+
 	static List<String> featureList = Arrays.asList(new String[]{
 		 "0",  "1",  "2",  "3",  "4",  "5",  "6",  "7",  "8",  "9",
 		"10", "11", "12", "13", "14", "15", "16", "17", "18", "19",
@@ -233,11 +234,11 @@ public class AbstractHttpTransportTest {
 		"80", "81", "82", "83", "84", "85", "86", "87", "88", "89",
 		"90", "91", "92", "93", "94", "95", "96", "97", "98", "99"
 	});
-	
+
 	/**
 	 * Method to encode a feature string the same way that the JavaScript code
 	 * in featureMap.js does it.
-	 * 
+	 *
 	 * @param featureString
 	 *            the '*' delimited list of features. Null features are
 	 *            preceeded by the '!' character.
