@@ -16,6 +16,70 @@
 
 package com.ibm.jaggr.service.impl;
 
+import com.ibm.jaggr.core.BadRequestException;
+import com.ibm.jaggr.core.DependencyVerificationException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
+import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.IRequestListener;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.IVariableResolver;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
+import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.Messages;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.layer.ILayerListener;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.SequenceNumberProvider;
+import com.ibm.jaggr.core.util.StringUtil;
+import com.ibm.jaggr.service.PlatformServicesImpl;
+import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
+import com.ibm.jaggr.service.impl.layer.LayerImpl;
+import com.ibm.jaggr.service.impl.module.ModuleImpl;
+import com.ibm.jaggr.service.impl.options.OptionsImpl;
+
+import org.apache.commons.io.FileUtils;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExecutableExtension;
+import org.eclipse.core.runtime.IExtension;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.BundleListener;
+import org.osgi.framework.Constants;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.framework.ServiceRegistration;
+import org.osgi.util.tracker.ServiceTracker;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -45,69 +109,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.io.FileUtils;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
-import org.eclipse.core.runtime.IExtension;
-import org.eclipse.core.runtime.IExtensionRegistry;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.BundleListener;
-import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.util.tracker.ServiceTracker;
-
-import com.ibm.jaggr.core.BadRequestException;
-import com.ibm.jaggr.core.DependencyVerificationException;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IAggregatorExtension;
-import com.ibm.jaggr.core.IExtensionInitializer;
-import com.ibm.jaggr.core.IPlatformServices;
-import com.ibm.jaggr.core.IRequestListener;
-import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.IVariableResolver;
-import com.ibm.jaggr.core.InitParams;
-import com.ibm.jaggr.core.NotFoundException;
-import com.ibm.jaggr.core.ProcessingDependenciesException;
-import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
-import com.ibm.jaggr.core.InitParams.InitParam;
-import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.executors.IExecutors;
-import com.ibm.jaggr.core.layer.ILayer;
-import com.ibm.jaggr.core.layer.ILayerCache;
-import com.ibm.jaggr.core.layer.ILayerListener;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.module.IModuleCache;
-import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
-import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceFactory;
-import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.SequenceNumberProvider;
-import com.ibm.jaggr.core.util.StringUtil;
-import com.ibm.jaggr.service.PlatformServicesImpl;
-import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
-import com.ibm.jaggr.service.impl.layer.LayerImpl;
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
-import com.ibm.jaggr.service.impl.options.OptionsImpl;
 
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
@@ -267,7 +268,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				URI configUri = getConfig().getConfigUri();
 				if (configUri != null) {
 					try {
-						// try to get platform URI from IResource in case uri specifies 
+						// try to get platform URI from IResource in case uri specifies
 						// aggregator specific scheme like namedbundleresource
 						configUri = newResource(configUri).getURI();
 					} catch (UnsupportedOperationException e) {
@@ -492,9 +493,9 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 					);
 			}
 		}
-        try {        	
+        try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
-    		platformServices = new PlatformServicesImpl(bundleContext); 
+    		platformServices = new PlatformServicesImpl(bundleContext);
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);
@@ -694,7 +695,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 		}
 
 	}
-	
+
 	/**
 	 * Returns the name for the bundle containing the servlet code.  This is used
 	 * to look up services like IOptions and IExecutors that are registered by the
@@ -1315,7 +1316,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	protected ICacheManager newCacheManager(long stamp) throws IOException {
 		return new CacheManagerImpl(this, stamp);
 	}
-	
+
 	@Override
 	public IPlatformServices getPlatformServices() {
 		return platformServices;
@@ -1371,7 +1372,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 			}
 		}
 	}
-	
+
 	/**
 	 * Registers the layer listener
 	 */
