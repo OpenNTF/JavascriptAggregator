@@ -30,10 +30,8 @@ import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
@@ -66,19 +64,28 @@ public class OptionsImpl  implements IOptions {
 	 */
 	private Map<String, String> shadowMap;
 	
-	private BundleContext bundleContext = null;
-	
 	private String registrationName = null;
 	
+	private IAggregator aggregator = null;
 	private boolean updating = false;
 	
-	public OptionsImpl(BundleContext bundleContext, String registrationName) {
-		this(bundleContext, registrationName, true);
+	public OptionsImpl(String registrationName, IAggregator aggregator) {
+		this(registrationName, true, aggregator);
 	}
 	
-	public OptionsImpl(BundleContext bundleContext, String registrationName, boolean loadFromPropertiesFile) {
-		this.bundleContext = bundleContext;
+	public OptionsImpl(String registrationName, boolean loadFromPropertiesFile, IAggregator aggregator) {	
+		this.aggregator = aggregator;
 		this.registrationName = registrationName;
+		Properties defaultOptions = new Properties(getDefaultOptions());
+		if (loadFromPropertiesFile) {
+			setProps(loadProps(defaultOptions));
+		} else {
+			setProps(defaultOptions);
+		}
+	}
+	
+	public OptionsImpl(boolean loadFromPropertiesFile, IAggregator aggregator) {
+		this.aggregator = aggregator;
 		Properties defaultOptions = new Properties(getDefaultOptions());
 		if (loadFromPropertiesFile) {
 			setProps(loadProps(defaultOptions));
@@ -241,11 +248,13 @@ public class OptionsImpl  implements IOptions {
 		    	if (file.exists()) {
 		    		in = new FileInputStream(file);
 		    	}
-		    	if (in == null && bundleContext != null) {
-		    		// Try to load it from the bundle
-		   			URL url = bundleContext.getBundle().getResource(getPropsFilename());
-		    		if (url != null) { 
-		    			in = url.openStream();
+		    	if (in == null) {
+		    		// Try to load it from the bundle	
+		    		if(aggregator != null){
+			   			URL url = aggregator.getPlatformServices().getResource(getPropsFilename());
+			    		if (url != null) { 
+			    			in = url.openStream();
+			    		}
 		    		}
 		    	}
 	    		if (in == null) {
@@ -291,29 +300,27 @@ public class OptionsImpl  implements IOptions {
 	 * 
 	 * @param sequence The change sequence number.
 	 */
-	protected void updateNotify(long sequence) {
-		if (bundleContext == null) {
-			return;
-		}
-		ServiceReference[] refs = null;
-		try {
-			refs = bundleContext
-					.getServiceReferences(IOptionsListener.class.getName(), "(name=" + registrationName + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+	protected void updateNotify (long sequence) {
 		
-			if (refs != null) {
-				for (ServiceReference ref : refs) {
-					IOptionsListener listener = (IOptionsListener)bundleContext.getService(ref);
-					if (listener != null) {
-						try {
-							listener.optionsUpdated(this, sequence);
-						} catch (Throwable ignore) {
-						} finally {
-							bundleContext.ungetService(ref);
+		Object[] refs = null;
+		try {
+			if(aggregator != null && aggregator.getPlatformServices() != null){
+				refs = aggregator.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");	//$NON-NLS-1$ //$NON-NLS-2$ 		
+				if (refs != null) {
+					for (Object ref : refs) {
+						IOptionsListener listener = (IOptionsListener)aggregator.getPlatformServices().getService(ref);
+						if (listener != null) {
+							try {
+								listener.optionsUpdated(this, sequence);
+							} catch (Throwable ignore) {
+							} finally {
+								aggregator.getPlatformServices().ungetService(ref);
+							}
 						}
 					}
 				}
 			}
-		} catch (InvalidSyntaxException e) {
+		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
