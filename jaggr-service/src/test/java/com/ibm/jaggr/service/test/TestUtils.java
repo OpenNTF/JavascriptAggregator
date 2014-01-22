@@ -211,7 +211,7 @@ public class TestUtils {
 			IHttpTransport transport) throws Exception {
 
 		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
-		IOptions options = new OptionsImpl(null, "test", false);
+		IOptions options = new OptionsImpl("test", false, null);
 		options.setOption(IOptions.DELETE_DELAY, "0");
 		if (initParams == null) {
 			initParams = new LinkedList<InitParam>();

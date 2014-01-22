@@ -1028,7 +1028,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
    			final File file = new File(substituteProps(value));
    			if (file.exists()) {
    				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
-   				localOptions = new OptionsImpl(getBundleContext(), registrationName, true) {
+   				localOptions = new OptionsImpl(registrationName, true, this) {
    					@Override public File getPropsFile() { return file; }
    				};
    				if (log.isLoggable(Level.INFO)) {

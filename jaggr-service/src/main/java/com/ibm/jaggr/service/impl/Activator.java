@@ -116,7 +116,7 @@ public class Activator extends Plugin implements BundleActivator {
 	}
 
 	protected IOptions newOptions() {
-		return new OptionsImpl(getBundleContext(), Activator.BUNDLE_NAME);
+		return new OptionsImpl(Activator.BUNDLE_NAME, null);
 	}
 
 	protected IExecutors newExecutors(IOptions options) {
