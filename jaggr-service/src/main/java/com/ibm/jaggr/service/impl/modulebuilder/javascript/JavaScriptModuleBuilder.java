@@ -22,20 +22,18 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Dictionary;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 
 import com.google.common.collect.HashMultimap;
 import com.google.javascript.jscomp.CheckLevel;
@@ -101,7 +99,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
 
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<Object> registrations = new LinkedList<Object>();
 	
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
         CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
@@ -123,13 +121,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		BundleContext context = aggregator.getBundleContext();
-		Properties props = new Properties();
+		Dictionary<String,String> props;
+		props = new Hashtable<String,String>();
+		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		registrations.add(aggregator.getPlatformServices().registerService(ILayerListener.class.getName(), this, props));
+		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(ILayerListener.class.getName(), this, props));
-		props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 	}
 
 	@Override
@@ -209,8 +207,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
-			reg.unregister();
+		for (Object reg : registrations) {
+			aggregator.getPlatformServices().unRegisterService(reg);			
 		}
 	}
 

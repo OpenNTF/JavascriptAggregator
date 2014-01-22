@@ -29,9 +29,9 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -43,8 +43,6 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
 import org.mozilla.javascript.Scriptable;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
@@ -201,7 +199,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
 	}
 	
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	//private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<Object> registrations = new LinkedList<Object>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
@@ -650,8 +649,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
-			reg.unregister();
+		for (Object reg : registrations) {
+			aggregator.getPlatformServices().unRegisterService(reg);
 		}
 	}
 
@@ -661,13 +660,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		BundleContext context = aggregator.getBundleContext();
-		Properties props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IConfigListener.class.getName(), this, props));
-		props = new Properties();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$
-		registrations.add(context.registerService(IShutdownListener.class.getName(), this, props));
+		
+		Hashtable<String, String> props;
+		props = new Hashtable<String, String>();		
+		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		registrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
+		props = new Hashtable<String, String>();
+		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
 			configLoaded(config, 1);
