@@ -35,7 +35,7 @@ public class ExceptionResource implements IResource, IResourceVisitor.Resource {
 		this.lastModified = lastModified;
 		this.ex = ex;
 	}
-	
+
 	@Override
 	public URI getURI() {
 		return uri;
@@ -55,7 +55,7 @@ public class ExceptionResource implements IResource, IResourceVisitor.Resource {
 	public Reader getReader() throws IOException {
 		throw ex;
 	}
-	
+
 	public InputStream getInputStream() throws IOException {
 		throw ex;
 	}

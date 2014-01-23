@@ -37,40 +37,42 @@ import javax.servlet.http.HttpServletRequest;
 public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneable, Serializable {
 
 	private final URI uri;
-	
+
 	public NotFoundModule(String mid, URI uri) {
 		super(mid);
 		this.uri = uri;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.domino.servlets.aggrsvc.modules.Module#get(com.ibm.domino.servlets.aggrsvc.modules.CacheManager, com.ibm.domino.servlets.aggrsvc.Options, java.util.Map)
 	 */
 	@Override
 	public Future<ModuleBuildReader> getBuild(HttpServletRequest request) {
-		return 
+		return
 			new CompletedFuture<ModuleBuildReader>(
-					new ModuleBuildReader(
-							new ErrorModuleReader(
-									ErrorModuleReader.ConsoleMethod.warn,
-									MessageFormat.format(
-										Messages.NotFoundModule_0,
-										new Object[]{StringUtil.escapeForJavaScript(uri.toString())}
-									),
-									getModuleName(),
-									request
-							), null, true
-					)
+				new ModuleBuildReader(
+					new ErrorModuleReader(
+						ErrorModuleReader.ConsoleMethod.warn,
+						MessageFormat.format(
+								Messages.NotFoundModule_0,
+								new Object[]{StringUtil.escapeForJavaScript(uri.toString())}
+								),
+								getModuleName(),
+								request
+					),
+					null,
+					true
+				)
 			);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.domino.servlets.aggrsvc.modules.Module#deleteCached(com.ibm.domino.servlets.aggrsvc.modules.CacheManager, int)
 	 */
 	@Override
 	public void clearCached(ICacheManager mgr) {
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#clone()
 	 */
@@ -83,7 +85,7 @@ public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneab
 	public URI getURI() {
 		return uri;
 	}
-	
+
 	@Override
 	public IResource getResource(IAggregator aggregator) {
 		throw new UnsupportedOperationException();

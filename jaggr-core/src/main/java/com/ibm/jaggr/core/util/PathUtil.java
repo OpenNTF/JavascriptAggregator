@@ -43,11 +43,11 @@ public class PathUtil {
 	 * or contain any ".." path segments. When called, relative paths that start
 	 * with "." or ".." are relative to <code>ref</code>. In the returned array,
 	 * the strings in the <code>paths</code> array have been replaced with the
-	 * normalized path. Any paths that do not resolve relative to <code>ref</code> 
+	 * normalized path. Any paths that do not resolve relative to <code>ref</code>
 	 * (for example, paths that begin with '/' or try to navigate out of the
 	 * top level path component specified by <code>ref</code> using '../' path
 	 * components) will result in an {@link IllegalArgumentException}.
-	 * 
+	 *
 	 * @param ref
 	 *            The reference location for relative paths. May be a file or
 	 *            directory.
@@ -60,7 +60,7 @@ public class PathUtil {
 	public static String[] normalizePaths(String ref, String[] paths) throws IllegalArgumentException {
 		List<String> result = new ArrayList<String>();
 		List<String> refParts = (ref == null) ? new ArrayList<String>() : Arrays.asList(ref.split("/")); //$NON-NLS-1$
-		
+
 		for (String path : paths) {
 			String plugin = ""; //$NON-NLS-1$
 			int idx = path.indexOf('!');
@@ -69,9 +69,9 @@ public class PathUtil {
 				path = path.substring(idx+1);
 			}
 			try {
-				path = (hasPattern.matcher(plugin).find()) ? 
-					new HasNode(path).normalize(ref).toString() :
-					PathUtil.normalize(refParts, path);
+				path = (hasPattern.matcher(plugin).find()) ?
+						new HasNode(path).normalize(ref).toString() :
+							PathUtil.normalize(refParts, path);
 			} catch(IllegalArgumentException e) {
 				throw new IllegalArgumentException(path);
 			}
@@ -82,12 +82,12 @@ public class PathUtil {
 
 	private static String normalize(List<String> refParts, String path) throws IllegalArgumentException {
 		List<String> normalized = null;
-		
+
 		if (path.contains("!")) { //$NON-NLS-1$
 			int index = path.indexOf("!"); //$NON-NLS-1$
 			return new StringBuffer(normalize(refParts, path.substring(0, index))).append('!').append(normalize(refParts, path.substring(index+1))).toString();
 		}
-		
+
 		if (path.startsWith(".")) { //$NON-NLS-1$
 			normalized = new ArrayList<String>(refParts);
 		} else {
@@ -97,13 +97,13 @@ public class PathUtil {
 			}
 		}
 		String[] pathParts = path.split("/"); //$NON-NLS-1$
-		
+
 		for (String part : pathParts) {
 			if (part.equals(".") || part.equals("")) { //$NON-NLS-1$ //$NON-NLS-2$
 				continue;
 			} else if (part.equals("..")) { //$NON-NLS-1$
 				if (normalized.size() < 1 || normalized.size() == 1 && normalized.get(0).equals("")) { //$NON-NLS-1$
-					// Illegal relative path. 
+					// Illegal relative path.
 					throw new IllegalArgumentException(path);
 				}
 				// back up one directory
@@ -114,12 +114,12 @@ public class PathUtil {
 		}
 		return StringUtils.join(normalized.toArray(), "/"); //$NON-NLS-1$
 	}
-	
+
 	/**
 	 * Returns the module name for the specified URI. This is the name part of
 	 * the URI with path information removed, and with the .js extension removed
 	 * if present.
-	 * 
+	 *
 	 * @param uri
 	 *            the uri to return the name for
 	 * @return the module name
@@ -138,47 +138,47 @@ public class PathUtil {
 		}
 		return name;
 	}
-	
+
 	/**
 	 * Convenience method to convert a URL to a URI that doesn't throw a
-	 * URISyntaxException if the path component for the URL contains 
+	 * URISyntaxException if the path component for the URL contains
 	 * spaces (like {@link URL#toURI()} does).
-	 * 
+	 *
 	 * @param url The input URL
 	 * @return The URI
 	 * @throws URISyntaxException
 	 */
 	public static URI url2uri(URL url) throws URISyntaxException {
 		return new URI(
-			url.getProtocol(),
-			url.getAuthority(), 
-			url.getPath(), 
-			url.getQuery(), 
-			url.getRef());
+				url.getProtocol(),
+				url.getAuthority(),
+				url.getPath(),
+				url.getQuery(),
+				url.getRef());
 	}
-	
+
 	public static URI stripJsExtension(URI value) throws URISyntaxException {
 		if (value == null) {
 			return null;
 		}
 		return value.getPath().endsWith(".js") ?  //$NON-NLS-1$
-			new URI(
-				value.getScheme(),
-				value.getAuthority(), 
-				value.getPath().substring(0, value.getPath().length()-3), 
-				value.getQuery(), 
-				value.getFragment()
-			) : value;
+				new URI(
+						value.getScheme(),
+						value.getAuthority(),
+						value.getPath().substring(0, value.getPath().length()-3),
+						value.getQuery(),
+						value.getFragment()
+						) : value;
 	}
-	
+
 	public static URI appendToPath(URI uri, String append) throws URISyntaxException {
-		return 
-			new URI(
-				uri.getScheme(),
-				uri.getAuthority(), 
-				uri.getPath() + append, 
-				uri.getQuery(), 
-				uri.getFragment()
-			);
+		return
+				new URI(
+						uri.getScheme(),
+						uri.getAuthority(),
+						uri.getPath() + append,
+						uri.getQuery(),
+						uri.getFragment()
+						);
 	}
 }

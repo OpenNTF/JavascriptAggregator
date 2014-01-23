@@ -45,12 +45,12 @@ public class AggregationReader extends Reader {
 
 	/**
 	 * Default constructor.  Subclasses using this constructor must
-	 * provide an implementation for {@link #getNextInputReader()}.  
+	 * provide an implementation for {@link #getNextInputReader()}.
 	 */
 	protected AggregationReader() {
 		iter = null;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public AggregationReader(Object ... objects) {
 		if (objects.length == 1 && objects[0] instanceof Iterable) {
@@ -65,7 +65,7 @@ public class AggregationReader extends Reader {
 	 */
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.io.Reader#read(char[], int, int)
 	 */
 	@Override
@@ -111,7 +111,7 @@ public class AggregationReader extends Reader {
 	 */
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.io.Reader#close()
 	 */
 	@Override
@@ -128,9 +128,9 @@ public class AggregationReader extends Reader {
 
 	/**
 	 * Returns the next reader in the iteration.  If the object is not
-	 * a Reader or an InputStream, then returns a StringReader for the 
+	 * a Reader or an InputStream, then returns a StringReader for the
 	 * object's toString() result.
-	 * 
+	 *
 	 * @return The next reader in the iteration
 	 * @throws IOException
 	 */

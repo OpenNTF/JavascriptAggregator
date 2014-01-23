@@ -26,11 +26,11 @@ import java.util.List;
 import java.util.Set;
 
 // This class is not thread safe.  It is assumed that it does not
-// need to be.  If that assumption changes, then the implementation 
+// need to be.  If that assumption changes, then the implementation
 // will need to be reworked.
 class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -5874021341817546757L;
-	
+
 	static class ModuleListEntry {
 		final IModule module;
 		final ModuleSpecifier source;
@@ -47,36 +47,36 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	}
 	private Set<String> dependentFeatures = null;
 	private Set<String> requiredModules = null;
-	
+
 	ModuleList() {
 	}
-	
+
 	ModuleList(List<ModuleListEntry> other) {
 		super(other);
 	}
-	
+
 	void setDependenentFeatures(Set<String> dependentFeatures) {
 		this.dependentFeatures = dependentFeatures;
 	}
-	
+
 	void setRequiredModules(Set<String> requiredModules) {
 		this.requiredModules = requiredModules;
 	}
-	
+
 	Set<String> getRequiredModules() {
 		if (requiredModules == null) {
 			requiredModules = new HashSet<String>();
 		}
 		return requiredModules;
 	}
-	
+
 	Set<String> getDependentFeatures() {
 		if (dependentFeatures == null) {
 			dependentFeatures = new HashSet<String>();
 		}
 		return dependentFeatures;
 	}
-	
+
 	List<IModule> getModules() {
 		List<IModule> result = new ArrayList<IModule>(size());
 		for (ModuleListEntry entry : this) {

@@ -21,8 +21,6 @@ import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
 
-import junit.framework.Assert;
-
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -31,12 +29,14 @@ import org.junit.Test;
 
 import java.util.HashSet;
 
+import junit.framework.Assert;
+
 public class HasNodeTests extends EasyMock {
 	Capture<String> containsFeature = new Capture<String>();
 	Capture<String> isFeature = new Capture<String>();
 	Features chooser = createMock(Features.class);
 	HashSet<String> depFeatures;
-	
+
 	@Before
 	public void setUp() {
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
@@ -44,81 +44,81 @@ public class HasNodeTests extends EasyMock {
 		replay(chooser);
 		depFeatures = new HashSet<String>();
 	}
-	
-	@Test 
+
+	@Test
 	public void noCondition() {
 		reset(chooser); // Remove expectations.
 		replay(chooser);
 		Assert.assertEquals("foo", new HasNode("foo").evaluate(chooser, depFeatures));
 		Assert.assertEquals("foo", new HasNode("foo").toString());
 	}
-	
-	@Test 
+
+	@Test
 	public void conditionAndTrue() {
 		String str = "foo?bar";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "bar", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False feature.", "", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("Not contained in feature map.", null, new HasNode(str).evaluate(chooser, depFeatures));
 	}
-	
-	@Test 
+
+	@Test
 	public void conditionAndFalse() {
 		String str = "foo?:car";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False feature.", "car", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("Not contained in feature map.", null, new HasNode(str).evaluate(chooser, depFeatures));
 	}
-	
-	@Test 
+
+	@Test
 	public void conditionAndBoth() {
 		String str = "foo?bar:car";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "bar", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False feature.", "car", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("Not contained in feature map.", null, new HasNode(str).evaluate(chooser, depFeatures));
 	}
-	
-	@Test 
+
+	@Test
 	public void conditionAndCompoundTrue() {
 		String str = "foo?foo2?bar:car";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "bar", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False all features.", "", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andStubAnswer(new IAnswer<Boolean>() {
@@ -128,25 +128,25 @@ public class HasNodeTests extends EasyMock {
 		});
 		replay(chooser);
 		Assert.assertEquals("False 2nd feature.", "car", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("Not contained in feature map.", null, new HasNode(str).evaluate(chooser, depFeatures));
 	}
-	
-	@Test 
+
+	@Test
 	public void conditionAndCompoundFalse() {
 		String str = "foo?:foo2?bar:car";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False all features.", "car", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andStubAnswer(new IAnswer<Boolean>() {
@@ -156,25 +156,25 @@ public class HasNodeTests extends EasyMock {
 		});
 		replay(chooser);
 		Assert.assertEquals("False 1st feature.", "bar", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("Not contained in feature map.", null, new HasNode(str).evaluate(chooser, depFeatures));
 	}
 
-	@Test 
+	@Test
 	public void conditionAndCompoundBoth() {
 		String str = "foo?foo2?bar:car:foo3?far:par";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "bar", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False all features.", "par", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andStubAnswer(new IAnswer<Boolean>() {
@@ -184,7 +184,7 @@ public class HasNodeTests extends EasyMock {
 		});
 		replay(chooser);
 		Assert.assertEquals("True 1st feature, false 2nd", "car", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(true).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andStubAnswer(new IAnswer<Boolean>() {
@@ -194,27 +194,27 @@ public class HasNodeTests extends EasyMock {
 		});
 		replay(chooser);
 		Assert.assertEquals("False 1st feature.", "far", new HasNode(str).evaluate(chooser, depFeatures));
-		
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("Not contained in feature map.", null, new HasNode(str).evaluate(chooser, depFeatures));
 	}
-	
-	@Test 
+
+	@Test
 	public void coerceUndefinedToFalse() {
 		String str = "foo?bar:car";
 		Assert.assertEquals("toString()", str, new HasNode(str).toString());
 		Assert.assertEquals("True feature.", "bar", new HasNode(str).evaluate(chooser, depFeatures, true));
-		
-		
+
+
 		reset(chooser); // Remove expectations.
 		expect(chooser.contains(capture(containsFeature))).andReturn(false).anyTimes();
 		expect(chooser.isFeature(capture(isFeature))).andReturn(false).anyTimes();
 		replay(chooser);
 		Assert.assertEquals("False feature.", "car", new HasNode(str).evaluate(chooser, depFeatures, true));
 	}
-	
+
 	@Test
 	public void testEvaluateAll() throws Exception {
 		HashSet<String> discovered = new HashSet<String>();
@@ -222,7 +222,7 @@ public class HasNodeTests extends EasyMock {
 		ModuleDeps deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(1, deps.size());
 		Assert.assertTrue(deps.containsDep("bar", new BooleanTerm("foo")));
-		
+
 		node = new HasNode("foo?:car");
 		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(1, deps.size());
@@ -233,20 +233,20 @@ public class HasNodeTests extends EasyMock {
 		Assert.assertEquals(2, deps.size());
 		Assert.assertTrue(deps.containsDep("bar", new BooleanTerm("foo")));
 		Assert.assertTrue(deps.containsDep("car", new BooleanTerm("!foo")));
-		
+
 		node = new HasNode("foo?bar?foobar:foonotbar");
 		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(2, deps.size());
 		Assert.assertTrue(deps.containsDep("foobar", new BooleanTerm("foo*bar")));
 		Assert.assertTrue(deps.containsDep("foonotbar", new BooleanTerm("foo*!bar")));
-		
-		
+
+
 		node = new HasNode("foo?:bar?notfoobar:notfoonotbar");
 		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 		Assert.assertEquals(2, deps.size());
 		Assert.assertTrue(deps.containsDep("notfoobar", new BooleanTerm("!foo*bar")));
 		Assert.assertTrue(deps.containsDep("notfoonotbar", new BooleanTerm("!foo*!bar")));
-		
+
 		node = new HasNode("foo?:bar?notfoobar:notfoonotbar");
 		deps = node.evaluateAll("has", Features.emptyFeatures, discovered, BooleanTerm.TRUE, null);
 

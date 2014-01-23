@@ -16,7 +16,6 @@
 
 package com.ibm.jaggr.core.util;
 
-
 public class ConsoleService {
 
 	private static ThreadLocal<ConsoleWriter> console_threadLocal = new ThreadLocal<ConsoleWriter>();
@@ -26,17 +25,17 @@ public class ConsoleService {
 	public ConsoleService() {
 		console = console_threadLocal.get();
 	}
-	
+
 	public ConsoleService(ConsoleWriter console) {
 		this.console = console;
 		console_threadLocal.set(console);
 	}
-	
+
 	public ConsoleService(ConsoleService other) {
 		this.console = other.console;
 		console_threadLocal.set(other.console);
 	}
-	
+
 	public void println(String msg) {
 		if (console != null) {
 			console.println(msg);
@@ -48,17 +47,17 @@ public class ConsoleService {
 			console.print(msg);
 		}
 	}
-	
+
 	public void close() {
 		console = null;
 		console_threadLocal.set(null);
 	}
-	
+
 	static public interface ConsoleWriter {
-		
+
 		public void println(String msg);
-		
+
 		public void print(String msg);
-		
+
 	}
 }

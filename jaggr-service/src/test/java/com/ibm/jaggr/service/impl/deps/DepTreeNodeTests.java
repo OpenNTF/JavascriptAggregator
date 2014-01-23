@@ -23,12 +23,12 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.test.TestUtils;
+
+import com.google.common.io.Files;
 
 import org.easymock.EasyMock;
 import org.junit.After;
@@ -43,7 +43,7 @@ public class DepTreeNodeTests extends EasyMock {
 	File tmpdir = null;
 	TestUtils.Ref<IConfig> configRef = new TestUtils.Ref<IConfig>(null);
 	IAggregator mockAggregator;
-	
+
 	@Before
 	public void setup() throws Exception {
 		tmpdir = Files.createTempDir();
@@ -53,9 +53,9 @@ public class DepTreeNodeTests extends EasyMock {
 				mockAggregator,
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
 				"{}"
-		));
+				));
 	}
-	
+
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
@@ -79,10 +79,10 @@ public class DepTreeNodeTests extends EasyMock {
 		} catch (NullPointerException e) {
 		}
 	}
-	
-	@Before 
+
+	@Before
 	public void testSetup() {
-		
+
 	}
 
 	@Test
@@ -334,7 +334,7 @@ public class DepTreeNodeTests extends EasyMock {
 
 	@Test
 	public void testResolveDependencyRefs() {
-		// This method can only tested in conjunction with getExpandedDependencies, 
+		// This method can only tested in conjunction with getExpandedDependencies,
 		// so that test case is used to test both methods.
 	}
 }

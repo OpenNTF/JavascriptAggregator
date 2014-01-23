@@ -58,7 +58,7 @@ public class HasNode {
 
 	/**
 	 * Evaluate the has plugin for the given set of features.
-	 * 
+	 *
 	 * @param features
 	 *            The features passed to the aggregator.
 	 * @param discovered
@@ -72,7 +72,7 @@ public class HasNode {
 	 * @return The evaluated resource based on provided features. If a lack of
 	 *         features prevents us from being able to determine the resource,
 	 *         then null is returned.  If the required features are provided
-	 *         but the evaluation results in no module name, then the empty 
+	 *         but the evaluation results in no module name, then the empty
 	 *         string is returned.
 	 */
 	public String evaluate(Features features, Set<String> discovered, boolean coerceUndefinedToFalse) {
@@ -91,23 +91,23 @@ public class HasNode {
 			}
 		}
 	}
-	
+
 	public String evaluate(Features features, Set<String> discovered) {
 		return evaluate(features, discovered, false);
 	}
-	
+
 	public ModuleDeps evaluateAll(String pluginName, Features features, Set<String> discovered, BooleanTerm term, String comment) {
 		ModuleDeps results = new ModuleDeps();
 		evaluateAll(pluginName, features, discovered, term, results, comment);
 		return results;
 	}
-	
+
 	public ModuleDeps evaluateAll(String pluginName, Features features, Set<String> discovered, ModuleDepInfo terms, String comment) {
 		ModuleDeps results = new ModuleDeps();
 		evaluateAll(pluginName, features, discovered, BooleanTerm.TRUE, results, comment);
 		return results.andWith(terms);
 	}
-	
+
 	private void evaluateAll(String pluginName, Features features, Set<String> discovered, BooleanTerm term, ModuleDeps results, String comment) {
 		if (feature != null && discovered != null) {
 			discovered.add(feature);
@@ -129,11 +129,11 @@ public class HasNode {
 			}
 		}
 	}
-	
+
 	/**
 	 * Normalizes the current node relative to the path specified in
 	 * <code>ref</code> and recursively normalizes child nodes.
-	 * 
+	 *
 	 * @param ref
 	 *            The reference path to which relative paths are normalized
 	 * @return This object, to allow chaining of toString() as in
@@ -148,7 +148,7 @@ public class HasNode {
 		}
 		return this;
 	}
-	
+
 	/**
 	 * Returns the string representation of this node. This is the same as the
 	 * string used to construct the node, unless the node has been normalized,
@@ -162,7 +162,7 @@ public class HasNode {
 			return nodeName;
 		}
 		String trueName = trueNode.toString(),
-		       falseName = falseNode.toString();
+				falseName = falseNode.toString();
 		if (trueName.length() == 0 && falseName.length() == 0) {
 			return ""; //$NON-NLS-1$
 		}
@@ -171,9 +171,9 @@ public class HasNode {
 		if (falseName.length() > 0) {
 			sb.append(":").append(falseName); //$NON-NLS-1$
 		}
-		return sb.toString();	
+		return sb.toString();
 	}
-	
+
 	public String getFeature() {
 		return feature;
 	}

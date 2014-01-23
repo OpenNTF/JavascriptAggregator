@@ -30,5 +30,4 @@ public class DependencyVerificationException extends IOException {
 	public DependencyVerificationException(String message) {
 		super(message);
 	}
-	
 }

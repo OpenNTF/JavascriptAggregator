@@ -17,10 +17,6 @@
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
 
-import com.google.javascript.jscomp.CompilerPass;
-import com.google.javascript.rhino.Node;
-import com.google.javascript.rhino.Token;
-
 import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
@@ -33,6 +29,10 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.service.util.NodeUtil;
 
+import com.google.javascript.jscomp.CompilerPass;
+import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Token;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -44,24 +44,24 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Custom Compiler pass for Google Closure compiler to do require list explosion. 
- * Scans the AST for require calls and explodes any require lists it finds to 
+ * Custom Compiler pass for Google Closure compiler to do require list explosion.
+ * Scans the AST for require calls and explodes any require lists it finds to
  * include nested dependencies.  Nested dependencies for modules specified in
  * the require list are obtained from the {@link IDepTreeNode} object passed
  * in the constructor.
  */
 public class RequireExpansionCompilerPass implements CompilerPass {
-	 
+
 	/**
-	 * The {link IAggregator} object 
+	 * The {link IAggregator} object
 	 */
 	private IAggregator aggregator;
-	
+
 	/**
 	 * The features specified in the request
 	 */
 	private Features hasFeatures;
-	
+
 	/**
 	 * Collection of features that this compiled build depends on.
 	 * Use for generating cache keys for cached builds
@@ -70,32 +70,32 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 
 	/**
 	 * The list of {@link ModuleDeps} which specify the expanded dependencies.
-	 * There is one entry in the list for each require call in the module.  
+	 * There is one entry in the list for each require call in the module.
 	 * The position in the list corresponds to index value specified in the
 	 * place holder element in the require list.
 	 */
 	private List<ModuleDeps> expandedDepsList;
-	
+
 	/**
 	 * Output for browser console
 	 */
 	private List<List<String>> consoleDebugOutput;
-	
+
 	/**
-	 * The name of the config var on the client.  This is used to 
+	 * The name of the config var on the client.  This is used to
 	 * locate the deps property.
 	 */
 	private String configVarName;
-	
+
 	/**
 	 * True if console logging is enabled
 	 */
 	private boolean logDebug;
-	
+
 	/**
 	 * Constructs a instance of this class for a specific module that is being compiled.
-	 * 
-	 * @param moduleName The name of the module 
+	 *
+	 * @param moduleName The name of the module
 	 * @param deps
 	 * @param config
 	 * @param features The set of features for the request
@@ -110,7 +110,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			List<ModuleDeps> expandedDepsList,
 			String configVarName,
 			boolean logDebug) {
-		
+
 		this.aggregator = aggregator;
 		this.hasFeatures = features;
 		this.dependentFeatures = dependentFeatures;
@@ -118,7 +118,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		this.configVarName = configVarName;
 		this.consoleDebugOutput = logDebug ? new LinkedList<List<String>>() : null;
 		this.logDebug = logDebug;
-		
+
 		if (configVarName == null || configVarName.length() == 0) {
 			this.configVarName = "require"; //$NON-NLS-1$
 		}
@@ -151,12 +151,12 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			if (node.getType() == Token.SCRIPT) {
 				Node firstNode = node.getFirstChild();
 				for (List<String> entry : consoleDebugOutput) {
-					Node call = new Node(Token.CALL, 
-							  new Node(Token.GETPROP, 
-									   Node.newString(Token.NAME, "console"),  //$NON-NLS-1$
-									   Node.newString(Token.STRING, "log") //$NON-NLS-1$
-							  )
-					);
+					Node call = new Node(Token.CALL,
+							new Node(Token.GETPROP,
+									Node.newString(Token.NAME, "console"),  //$NON-NLS-1$
+									Node.newString(Token.STRING, "log") //$NON-NLS-1$
+									)
+							);
 					for (String str : entry) {
 						call.addChildToBack(Node.newString(str));
 					}
@@ -165,7 +165,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			}
 		}
 	}
-	
+
 	/**
 	 * Recursively called to process AST nodes looking for require calls. If a
 	 * require call is found, then the dependency list is expanded to include
@@ -173,42 +173,42 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 * config object and is trimmed so as not to include enclosing dependencies
 	 * (dependencies specified in the enclosing define or any enclosing require
 	 * calls.
-	 * 
+	 *
 	 * @param node
 	 *            The node being processed
 	 * @param enclosingDependencies
 	 *            The set of dependencies specified by enclosing define or
 	 *            require calls.
 	 */
-	public void processChildren(Node node, List<DependencyList> enclosingDependencies) 
-	throws IOException
-	{
+	public void processChildren(Node node, List<DependencyList> enclosingDependencies)
+			throws IOException
+			{
 		for (Node cursor = node.getFirstChild(); cursor != null; cursor = cursor.getNext()) {
 			Node dependencies = null;
 			if ((dependencies = NodeUtil.moduleDepsFromRequire(cursor)) != null) {
 				enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
 				expandRequireList(
-						dependencies, 
-						enclosingDependencies, 
+						dependencies,
+						enclosingDependencies,
 						logDebug ? MessageFormat.format(
 								Messages.RequireExpansionCompilerPass_0,
 								new Object[]{cursor.getLineno()})
-							: null);
+								: null);
 			} else if ((dependencies = NodeUtil.moduleDepsFromConfigDeps(cursor, configVarName)) != null) {
 				expandRequireList(
-						dependencies, 
-						new LinkedList<DependencyList>(), 
-						logDebug ? 
-							MessageFormat.format(
-								Messages.RequireExpansionCompilerPass_2,
-								new Object[]{cursor.getLineno()}
-							) : null);
+						dependencies,
+						new LinkedList<DependencyList>(),
+						logDebug ?
+								MessageFormat.format(
+										Messages.RequireExpansionCompilerPass_2,
+										new Object[]{cursor.getLineno()}
+										) : null);
 			} else if ((dependencies = NodeUtil.moduleDepsFromDefine(cursor)) != null) {
 				String moduleName = cursor.getFirstChild().getProp(Node.SOURCENAME_PROP).toString();
 
 				if (aggregator.getOptions().isDevelopmentMode() &&
 						aggregator.getOptions().isVerifyDeps()) {
-					// Validate dependencies for this module by comparing the 
+					// Validate dependencies for this module by comparing the
 					// declared dependencies against the dependencies that were
 					// used to calculate the dependency graph.
 					Node strNode = dependencies.getFirstChild();
@@ -230,7 +230,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 					// Run the list through a linked hash set to remove duplicate entries, yet keep list ordering
 					Set<String> temp = new LinkedHashSet<String>(normalized);
 					normalized = Arrays.asList(temp.toArray(new String[temp.size()]));
-					
+
 					List<String> processedDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
 					if (processedDeps != null && !processedDeps.equals(normalized)) {
 						// The dependency list for this module has changed since the dependencies
@@ -238,21 +238,21 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 						throw new DependencyVerificationException(moduleName);
 					}
 				}
-				// Add the expanded dependencies to the set of enclosing dependencies for 
+				// Add the expanded dependencies to the set of enclosing dependencies for
 				// the module.
 				List<String> moduleDeps = aggregator.getDependencies().getDelcaredDependencies(moduleName);
 				if (moduleDeps != null) {
 					enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
 					DependencyList depList = new DependencyList(
-							moduleDeps, 
-							aggregator, 
-							hasFeatures, 
+							moduleDeps,
+							aggregator,
+							hasFeatures,
 							true,	// resolveAliases
 							logDebug);
 					depList.setLabel(MessageFormat.format(
-						Messages.RequireExpansionCompilerPass_1,
-						new Object[] {cursor.getLineno()}
-					));
+							Messages.RequireExpansionCompilerPass_1,
+							new Object[] {cursor.getLineno()}
+							));
 					enclosingDependencies.add(depList);
 				}
 			}
@@ -260,10 +260,10 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			if (cursor.hasChildren())
 				processChildren(cursor, enclosingDependencies);
 		}
-	}
-	
-	private void expandRequireList(Node array, List<DependencyList> enclosingDependencies, String detail) 
-	throws IOException {
+			}
+
+	private void expandRequireList(Node array, List<DependencyList> enclosingDependencies, String detail)
+			throws IOException {
 
 		Node strNode = array.getFirstChild();
 		List<String> names = new LinkedList<String>();
@@ -280,9 +280,9 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		String moduleName = array.getParent().getProp(Node.SOURCENAME_PROP).toString();
 		if (logDebug) {
 			msg.add("%c" + MessageFormat.format( //$NON-NLS-1$
-				Messages.RequireExpansionCompilerPass_6,
-				new Object[]{detail, moduleName}
-			));
+					Messages.RequireExpansionCompilerPass_6,
+					new Object[]{detail, moduleName}
+					));
 			msg.add("color:blue;background-color:yellow"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
 		}
@@ -292,8 +292,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
 		String[] normalizedNames = PathUtil.normalizePaths(ref, names.toArray(new String[names.size()]));
 		DependencyList depList = new DependencyList(
-				Arrays.asList(normalizedNames), 
-				aggregator, 
+				Arrays.asList(normalizedNames),
+				aggregator,
 				hasFeatures,
 				true,	// resolveAliases
 				logDebug);
@@ -312,7 +312,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("%c" + sb.toString()); //$NON-NLS-1$
 			msg.add("font-size:x-small"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
-		}		
+		}
 		ModuleDeps filter = new ModuleDeps(depList.getExplicitDeps());
 		for (String exclude : IDependencies.excludes) {
 			filter.add(exclude, new ModuleDepInfo(null, (BooleanTerm)null, null));
@@ -322,11 +322,11 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			if (logDebug) {
 				msg = new LinkedList<String>();
 				msg.add("%c" + MessageFormat.format( //$NON-NLS-1$
-						(i++ == 0) ? 
-							Messages.RequireExpansionCompilerPass_8 : 
-							Messages.RequireExpansionCompilerPass_9,
-					new Object[] {encDep.getLabel()}
-				));
+						(i++ == 0) ?
+								Messages.RequireExpansionCompilerPass_8 :
+									Messages.RequireExpansionCompilerPass_9,
+									new Object[] {encDep.getLabel()}
+						));
 				msg.add("color:blue"); //$NON-NLS-1$
 				consoleDebugOutput.add(msg);
 				ModuleDeps depMap = new ModuleDeps(encDep.getExplicitDeps());
@@ -347,9 +347,9 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				dependentFeatures.addAll(encDep.getDependentFeatures());
 			}
 		}
-		
+
 		ModuleDeps expandedDeps = new ModuleDeps(depList.getExpandedDeps());
-		
+
 		if (logDebug) {
 			msg = new LinkedList<String>();
 			msg.add("%c" + Messages.RequireExpansionCompilerPass_10); //$NON-NLS-1$
@@ -363,20 +363,20 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			msg.add("%c" + sb.toString()); //$NON-NLS-1$
 			msg.add("font-size:x-small"); //$NON-NLS-1$
 			consoleDebugOutput.add(msg);
-		}		
-		// The list of dependencies to add to the require list is the items in 
+		}
+		// The list of dependencies to add to the require list is the items in
 		// expanded deps that are not included in enclosingDependencies.
 		if (dependentFeatures != null) {
 			dependentFeatures.addAll(depList.getDependentFeatures());
 		}
-		
+
 		/*
 		 * Use LinkedHashMap to maintain ordering of expanded dependencies
 		 * as some types of modules (i.e. css) are sensitive to the order
 		 * that modules are required relative to one another.
 		 */
 		expandedDeps.subtractAll(filter);
-		
+
 		expandedDepsList.add(expandedDeps);
 		if (expandedDeps.getModuleIds().size() > 0) {
 			int listIndex = expandedDepsList.size()-1;

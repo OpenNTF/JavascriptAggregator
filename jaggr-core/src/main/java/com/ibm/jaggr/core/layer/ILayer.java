@@ -46,14 +46,14 @@ import javax.servlet.http.HttpServletResponse;
  * Instances of ILayer are cloneable and serializable.
  */
 public interface ILayer extends Serializable {
-	
+
 	/**
 	 * Name of request attribute indicating that the response should not be
-	 * cached on the browser.  Used in development mode when error modules contain 
+	 * cached on the browser.  Used in development mode when error modules contain
 	 * JavaScript code to invoke the console logger on the browser.
 	 */
 	public static final String NOCACHE_RESPONSE_REQATTRNAME = ILayer.class.getName() + ".nocache"; //$NON-NLS-1$
-	
+
 	/**
 	 * Name of the request attribute containing the queue of module build
 	 * futures. This queue is used to add additional modules specified by
@@ -62,7 +62,7 @@ public interface ILayer extends Serializable {
 	 * {@link IHttpTransport#NOADDMODULES_REQATTRNAME} is true);
 	 */
 	public static final String BUILDFUTURESQUEUE_REQATTRNAME = ILayer.class.getName() + ".buildQueue"; //$NON-NLS-1$
-	
+
 	/**
 	 * Object of type {@link Set}&lt;{@link String}&gt; specifying the set of dependent features.
 	 * Note that the set is not thread save, and should not be modified by asynchronous threads
@@ -77,7 +77,7 @@ public interface ILayer extends Serializable {
 	 * <p>
 	 * Has the side effect of setting the appropriate Content-Length,
 	 * Content-Type and Content-Encoding headers in the response.
-	 * 
+	 *
 	 * @param request
 	 *            The request object
 	 * @param response
@@ -100,7 +100,7 @@ public interface ILayer extends Serializable {
 	 * is accessed after a server restart. In development mode, we determine the
 	 * last modified time of the layer from the last modified times of the
 	 * component source files on every request.
-	 * 
+	 *
 	 * @param request
 	 *            The http request object
 	 * @throws IOException
@@ -111,7 +111,7 @@ public interface ILayer extends Serializable {
 	/**
 	 * Returns the cache key that this layer is associated with in the
 	 * layer cache.
-	 * 
+	 *
 	 * @return this layer's cache key
 	 */
 	public String getKey();

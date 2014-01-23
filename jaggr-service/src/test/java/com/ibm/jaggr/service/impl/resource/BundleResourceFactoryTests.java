@@ -17,8 +17,6 @@ package com.ibm.jaggr.service.impl.resource;
 
 import static org.junit.Assert.assertEquals;
 
-import junit.framework.Assert;
-
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
@@ -37,11 +35,13 @@ import java.net.URLStreamHandler;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
+
 public class BundleResourceFactoryTests {
 
 	static private Map<String, Bundle> bundleNameMap = new HashMap<String, Bundle>();
 	/**
-	 * Dummy URL stream handler for creating bundleresource URLs on 
+	 * Dummy URL stream handler for creating bundleresource URLs on
 	 * non-OSGi platforms (e.g. when unit testing).
 	 *
 	 */
@@ -57,11 +57,11 @@ public class BundleResourceFactoryTests {
 	}
 
 	private BundleResourceFactory factory = new TestBundleResourceFactory();
-	
+
 	static class TestBundleResourceFactory extends BundleResourceFactory {
 		/**
-		 * Override the default toURL method in BundleResourceFactory 
-		 * so that we can convert URI's to URL's when OSGi isn't 
+		 * Override the default toURL method in BundleResourceFactory
+		 * so that we can convert URI's to URL's when OSGi isn't
 		 * available.
 		 */
 		@Override
@@ -73,55 +73,55 @@ public class BundleResourceFactoryTests {
 			return bundleNameMap.get(bundleName);
 		}
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRBundleName() {
 		URI uri = URI.create("namedbundleresource:///bundle/file");
 		assertEquals("Bundle matches.", "bundle", factory.getNBRBundleName(uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRBundleNameUnderscore() {
 		URI uri = URI.create("namedbundleresource:///bundle_name/file");
 		assertEquals("Bundle matches.", "bundle_name", factory.getNBRBundleName(uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRBundleNameBackCompat() {
 		URI uri = URI.create("namedbundleresource://bundle/file");
 		assertEquals("Bundle matches.", "bundle", factory.getNBRBundleName(uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRBundleNameBackCompatUnderscore() {
 		URI uri = URI.create("namedbundleresource://bundle_name/file");
 		assertEquals("Bundle matches.", "bundle_name", factory.getNBRBundleName(uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRPath() {
 		URI uri = URI.create("namedbundleresource:///bundle/file");
 		assertEquals("Bundle matches.", "/file", factory.getNBRPath(factory.getNBRBundleName(uri), uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRPathUnderscore() {
 		URI uri = URI.create("namedbundleresource:///bundle_name/file");
 		assertEquals("Bundle matches.", "/file", factory.getNBRPath(factory.getNBRBundleName(uri), uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRPathBackCompat() {
 		URI uri = URI.create("namedbundleresource://bundle/file");
 		assertEquals("Bundle matches.", "/file", factory.getNBRPath(factory.getNBRBundleName(uri), uri));
 	}
-	
-	@Test 
+
+	@Test
 	public void getNBRPathBackCompatUnderscore() {
 		URI uri = URI.create("namedbundleresource://bundle_name/file");
 		assertEquals("Bundle matches.", "/file", factory.getNBRPath(factory.getNBRBundleName(uri), uri));
 	}
-	
+
 	@Test
 	public void testNewInstance() throws Exception {
 		URL fileUrl = new URL("file:///temp/path/name.ext");
@@ -129,7 +129,7 @@ public class BundleResourceFactoryTests {
 		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
 		ServiceReference mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
 		URLConverter mockUrlConverter = EasyMock.createMock(URLConverter.class);
-		
+
 		/*
 		 * Test when URLConverter.toFileUrl returns a value
 		 */
@@ -144,7 +144,7 @@ public class BundleResourceFactoryTests {
 		Assert.assertTrue(factory == res.getFactory());
 		Assert.assertEquals(bundleUrl.toURI(), res.getRefUri());
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
-		
+
 		/*
 		 * Test when URLConverter.toFileUrl throws FileNotFoundException
 		 */
@@ -157,7 +157,7 @@ public class BundleResourceFactoryTests {
 		BundleResource bres = (BundleResource)factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
 		Assert.assertEquals(bundleUrl.toURI(), bres.getURI());
-		
+
 		/*
 		 * Test namedbundleresource scheme
 		 */
@@ -182,7 +182,7 @@ public class BundleResourceFactoryTests {
 		Assert.assertTrue(factory == res.getFactory());
 		Assert.assertEquals(bundleUrl.toURI(), res.getRefUri());
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
-		
+
 		/*
 		 * Test namedbundleresource with not found path
 		 */
@@ -191,14 +191,14 @@ public class BundleResourceFactoryTests {
 		EasyMock.replay(mockBundle);
 		NotFoundResource nfr = (NotFoundResource)factory.newResource(namedBundleUrl.toURI());
 		EasyMock.verify(mockBundle);
-		
+
 		/*
 		 * Test namedbundleresource with not found bundle
 		 */
 		bundleNameMap.clear();
 		nfr = (NotFoundResource)factory.newResource(namedBundleUrl.toURI());
 		assertEquals(namedBundleUrl.toURI(), nfr.getURI());
-		
+
 		/*
 		 * Test unrecognized scheme
 		 */

@@ -28,15 +28,14 @@ import javax.servlet.http.HttpServletRequest;
  * don't need provisional cache key generators and don't need combine logic.
  */
 @SuppressWarnings("serial")
-public abstract class AbstractCacheKeyGenerator implements
-		ICacheKeyGenerator {
+public abstract class AbstractCacheKeyGenerator implements ICacheKeyGenerator {
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public abstract String generateKey(HttpServletRequest request);
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator)
 	 */
@@ -44,7 +43,7 @@ public abstract class AbstractCacheKeyGenerator implements
 	public ICacheKeyGenerator combine(ICacheKeyGenerator other) {
 		return this;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#getCacheKeyGenerators(javax.servlet.http.HttpServletRequest)
 	 */
@@ -60,7 +59,7 @@ public abstract class AbstractCacheKeyGenerator implements
 	public boolean isProvisional() {
 		return false;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.module.ICacheKeyGenerator#toString()
 	 */

@@ -36,26 +36,26 @@ public class Features {
 	public Features() {
 		features = new HashMap<String, Boolean>();
 	}
-	
+
 	public Features(Features features) {
 		this.features = new HashMap<String, Boolean>(features.features);
 	}
-	
+
 	private Features(Map<String, Boolean> features) {
 		this();
 		this.features.putAll(features);
 	}
-	
+
 	public void put(String name, boolean value) {
 		features.put(name, Boolean.valueOf(value));
 	}
-	
+
 	public Set<String> featureNames() {
 		return features.keySet();
 	}
 	/**
 	 * Check to see if a feature is present.
-	 * 
+	 *
 	 * @param feature
 	 *            The featuer name to check.
 	 * @return If the feature was specified.
@@ -67,12 +67,12 @@ public class Features {
 	public void remove(String feature) {
 		features.remove(feature);
 	}
-	
+
 	/**
 	 * Checks the value of the specified feature. Will return false for features
 	 * that have not been specified. Implementations should rely on
 	 * {@link #contains(String)} in addition to this method.
-	 * 
+	 *
 	 * @param feature
 	 *            The feature to check
 	 * @return If the feature is true.
@@ -81,16 +81,16 @@ public class Features {
 		Boolean result = features.get(feature);
 		return (result != null) ? result : false;
 	}
-	
+
 	public Features unmodifiableFeatures() {
 		return new Features(Collections.unmodifiableMap(features));
 	}
-	
-	@Override 
+
+	@Override
 	public String toString() {
 		return features.toString();
 	}
-	
+
 	@Override
 	public boolean equals(Object other) {
 		if (other != null && other.getClass().equals(Features.class)) {
@@ -98,7 +98,7 @@ public class Features {
 		}
 		return false;
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return features.hashCode();

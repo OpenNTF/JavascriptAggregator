@@ -22,19 +22,19 @@ import java.util.concurrent.atomic.AtomicLong;
  * Simple class to provide an ever increasing sequence number.
  */
 public class SequenceNumberProvider {
-	
+
 	static private final long START = 2L;
-	
+
 	static private final AtomicLong sequenceNumber = new AtomicLong(START);
-	
+
 	/**
 	 * Don't allow this class to be instantiated.
 	 */
 	private SequenceNumberProvider() {}
-	
+
 	/**
 	 * Returns an ever increasing value each time it's called
-	 * 
+	 *
 	 * @return the new value
 	 */
 	static public long incrementAndGetSequenceNumber() {

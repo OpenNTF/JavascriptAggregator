@@ -33,7 +33,7 @@ import java.util.concurrent.TimeoutException;
  * {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME} request attribute.
  */
 public class ModuleBuildFuture implements Future<ModuleBuildReader> {
-	
+
 	private final Future<ModuleBuildReader> future;
 	private final ModuleSpecifier moduleSpecifier;
 	private final IModule module;
@@ -43,7 +43,7 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 		this.future = future;
 		this.moduleSpecifier = moduleSpecifier;
 	}
-	
+
 	@Override
 	public boolean cancel(boolean mayInterruptIfRunning) {
 		return future.cancel(mayInterruptIfRunning);
@@ -61,7 +61,7 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 
 	@Override
 	public ModuleBuildReader get() throws InterruptedException,
-			ExecutionException {
+	ExecutionException {
 		return future.get();
 	}
 
@@ -70,11 +70,11 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 			throws InterruptedException, ExecutionException, TimeoutException {
 		return future.get(timeout, unit);
 	}
-	
+
 	public ModuleSpecifier getModuleSpecifier() {
 		return moduleSpecifier;
 	}
-	
+
 	public IModule getModule() {
 		return module;
 	}

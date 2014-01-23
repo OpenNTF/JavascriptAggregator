@@ -23,26 +23,26 @@ import java.util.TreeSet;
 
 /**
  * A collection of BooleanVar objects which are logically anded together.
- * Implements an unmodifiable set of BooleanVar objects. 
+ * Implements an unmodifiable set of BooleanVar objects.
  */
 public class BooleanTerm extends HashSet<BooleanVar> {
-	
+
 	private static final long serialVersionUID = 3749929877967465829L;
 
 	private boolean initialized = false;	// true except when the object is being constructed
-	
+
 	public static final BooleanTerm TRUE = new BooleanTerm();
-	
+
 	public static final BooleanTerm FALSE = new BooleanTerm();
-	
+
 	/*
-	 * This is private because only the static singletons TRUE and FALSE can have 
-	 * an empty term list. 
+	 * This is private because only the static singletons TRUE and FALSE can have
+	 * an empty term list.
 	 */
 	private BooleanTerm() {
 		initialized = true;
 	}
-	
+
 	public BooleanTerm(BooleanVar var) {
 		super();
 		if (var == null) {
@@ -52,7 +52,7 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 		initialized = true;
 	}
 
-	public BooleanTerm(Set<BooleanVar> term) { 
+	public BooleanTerm(Set<BooleanVar> term) {
 		super(term);
 		if (term.isEmpty()) {
 			throw new UnsupportedOperationException();
@@ -63,16 +63,16 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	public boolean isTrue() {
 		return this == TRUE;
 	}
-	
+
 	public boolean isFalse() {
 		return this == FALSE;
 	}
-	
+
 	/**
 	 * Constructs an object from a string of the form "A*B*!C" where
-	 * A, B and C are variable names and names preceeded by ! are 
+	 * A, B and C are variable names and names preceeded by ! are
 	 * negated.
-	 * 
+	 *
 	 * @param str the boolean term in string form.
 	 */
 	public BooleanTerm(String str) {
@@ -102,10 +102,10 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	 * Applies the feature values specified in <code>features</code> to the term
 	 * and returns a new term with the resolved result. A result of null
 	 * indicates the term is false. An empty term indicates the the term is true
-	 * 
+	 *
 	 * @param features
 	 *            the varialbe names and values to resolve with
-	 * 
+	 *
 	 * @return the result
 	 */
 	public BooleanTerm resolveWith(Features features) {
@@ -127,11 +127,11 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 		}
 		return term.isEmpty() ? BooleanTerm.TRUE : new BooleanTerm(term);
 	}
-	
+
 	/**
-	 * Returns the logical AND of this term with the specified 
+	 * Returns the logical AND of this term with the specified
 	 * term.
-	 * 
+	 *
 	 * @param other the term to and this term with.
 	 * @return
 	 */
@@ -159,7 +159,7 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 		}
 		return new BooleanTerm(result);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
@@ -234,7 +234,7 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	public boolean retainAll(Collection<?> collection) {
 		throw new UnsupportedOperationException();
 	}
-	
+
 	@Override
 	public int hashCode() {
 		if (this == FALSE) {
@@ -244,11 +244,11 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 		}
 		return super.hashCode();
 	}
-	
+
 	@Override
 	public boolean equals(Object other) {
 		if (this == FALSE && other == TRUE ||
-			this == TRUE && other == FALSE) {
+				this == TRUE && other == FALSE) {
 			return false;
 		}
 		return super.equals(other);

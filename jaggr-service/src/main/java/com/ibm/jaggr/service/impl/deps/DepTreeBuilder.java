@@ -40,27 +40,27 @@ import java.util.logging.Logger;
 final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 
 	static final Logger log = Logger.getLogger(DepTreeBuilder.class.getName());
-	
+
 	private final IAggregator aggregator;
 	/**
 	 * The {@link CompletionService} used to lauch parser threads
 	 */
 	private final CompletionService<URI> parserCs;
-	
+
 	/**
 	 * URI to the folder resource containing the javascript modules
 	 * to be parsed for dependencies.  Corresponds to {@link #root}.
 	 */
 	private final URI uri;
-	
+
 	/**
 	 * The root node corresponding to {@link #uri}.  Any existing child
 	 * nodes will be validated based on the last modified time stamps.
 	 */
 	private final DepTreeNode root;
-	
+
 	private final DepTreeNode cached;
-	
+
 	/**
 	 * Counter to keep track of the number of parser threads started
 	 */
@@ -81,9 +81,9 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 
 	/**
 	 * Object constructor
-	 * 
+	 *
 	 * @param aggregator
-	 *            The aggregator instance 
+	 *            The aggregator instance
 	 * @param parserCs
 	 *            The {@link CompletionService} to use to start parser threads
 	 * @param path
@@ -151,7 +151,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				return true;
 			}
 		};
-		
+
 		/*
 		 * Process the path. The treeWalker method will queue files
 		 * to the parser completion service to parse javascript
@@ -177,7 +177,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				name = name.substring(idx + 1);
 			}
 			name += ".js"; //$NON-NLS-1$
-			
+
 			resource = aggregator.newResource(
 					uri.resolve((uri.getPath().endsWith("/") ? "../" : "./") + name)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			if (resource.exists()) {
@@ -186,7 +186,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 		}
 		// Record the count of files queue
 		int totalCount = parserCount.get();
-		
+
 		// Pull the completed parser tasks from the completion queue
 		// until all files have been parsed
 		while (parserCount.decrementAndGet() >= 0) {

@@ -16,9 +16,6 @@
 
 package com.ibm.jaggr.service.impl.layer;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.EvictionListener;
-import com.googlecode.concurrentlinkedhashmap.Weigher;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -26,6 +23,10 @@ import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+import com.googlecode.concurrentlinkedhashmap.EvictionListener;
+import com.googlecode.concurrentlinkedhashmap.Weigher;
 
 import java.io.IOException;
 import java.io.InvalidObjectException;
@@ -56,12 +57,12 @@ import javax.servlet.http.HttpServletRequest;
  * number of cached entries with eviction notification of LRU entries. It also
  * adds methods for cloning and dumping the cache contents.
  * <p>
- * The cache actually consists of two maps.  The layerMap is a map of 
- * {@link ILayer} objects associated with keys that identify the layer 
+ * The cache actually consists of two maps.  The layerMap is a map of
+ * {@link ILayer} objects associated with keys that identify the layer
  * according to the modules contained in the layer.  The layerBuildMap
- * is a map of {@link CacheEntry} objects associated with keys that 
- * identify the layer as well as build specific identifiers.  There is 
- * a one-to-many association of layerMap entries to layerBuildMap 
+ * is a map of {@link CacheEntry} objects associated with keys that
+ * identify the layer as well as build specific identifiers.  There is
+ * a one-to-many association of layerMap entries to layerBuildMap
  * entries.  Each {@link CacheEntry} object identifies the filename(s)
  * of the files that contain the built content for the layer build.
  * <p>
@@ -69,34 +70,34 @@ import javax.servlet.http.HttpServletRequest;
  * LRU entries will be evicted by calling the eviction listener specified
  * when the map was created.  The eviction listener removes the association
  * between the evicted entry and the ILayer object.  When a ILayer object
- * no longer has any CacheEntry objects in the layerBuildMap, it is 
+ * no longer has any CacheEntry objects in the layerBuildMap, it is
  * removed from the layerMap.
  */
 public class LayerCacheImpl implements ILayerCache, Serializable {
 	private static final long serialVersionUID = -3231549218609175774L;
 
 	static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
-	
+
 	private ConcurrentMap<String, LayerImpl> layerMap;
-	
+
 	private ConcurrentLinkedHashMap<String, CacheEntry> layerBuildMap;
-	
+
 	private IAggregator aggregator;
-	
+
 	private AtomicInteger newLayerId = new AtomicInteger(0);
-	
+
 	private int maxCapacity = DEFAULT_MAXLAYERCACHECAPACITY_MB;
-	
+
 	private AtomicInteger numEvictions = new AtomicInteger(0);
-	
+
 	private ReadWriteLock cloneLock = new ReentrantReadWriteLock();
-	
+
 	// Used by Serialization proxy
 	protected LayerCacheImpl() {}
-	
+
 	/**
 	 * Copy constructor.  Used by sub-classes that need to override writeReplace
-	 *  
+	 *
 	 * @param layerCache
 	 */
 	protected LayerCacheImpl(LayerCacheImpl layerCache) {
@@ -108,7 +109,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		numEvictions = layerCache.numEvictions;
 		cloneLock = layerCache.cloneLock;
 	}
-	
+
 	public LayerCacheImpl(IAggregator aggregator) {
 		maxCapacity = getMaxCapacity(aggregator);
 		layerMap = new ConcurrentHashMap<String, LayerImpl>();
@@ -117,7 +118,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 				.listener(newEvictionListener())
 				.weigher(newWeigher()).build();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.util.concurrent.ConcurrentHashMap#clear()
 	 */
@@ -137,18 +138,18 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	 */
 	@Override
 	public void dump(Writer writer, Pattern filter) throws IOException {
-    	String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
-    	for (Map.Entry<String, LayerImpl> entry : layerMap.entrySet()) {
-    		if (filter != null) {
-    			Matcher m = filter.matcher(entry.getKey());
-    			if (!m.find())
-    				continue;
-    		}
-    		writer.append("ILayer key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
-    		writer.append(entry.getValue().toString()).append(linesep).append(linesep);
-    	}
-    	writer.append("Number of layer cache entires = ").append(Integer.toString(layerMap.size())).append(linesep); //$NON-NLS-1$
-    	writer.append("Number of layer cache evictions = ").append(Integer.toString(numEvictions.get())).append(linesep); //$NON-NLS-1$
+		String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
+		for (Map.Entry<String, LayerImpl> entry : layerMap.entrySet()) {
+			if (filter != null) {
+				Matcher m = filter.matcher(entry.getKey());
+				if (!m.find())
+					continue;
+			}
+			writer.append("ILayer key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
+			writer.append(entry.getValue().toString()).append(linesep).append(linesep);
+		}
+		writer.append("Number of layer cache entires = ").append(Integer.toString(layerMap.size())).append(linesep); //$NON-NLS-1$
+		writer.append("Number of layer cache evictions = ").append(Integer.toString(numEvictions.get())).append(linesep); //$NON-NLS-1$
 	}
 
 	@Override
@@ -156,9 +157,9 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		cloneLock.readLock().lock();
 		try {
 			String key = request
-	        		.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME)
-	        		.toString(); 
-	        
+					.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME)
+					.toString();
+
 			Object requiredModules = request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
 			if (requiredModules != null) {
 				key += requiredModules.toString();
@@ -209,7 +210,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			cloneLock.readLock().unlock();
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayerCache#getKeys()
 	 */
@@ -225,23 +226,23 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	public int size() {
 		return layerMap.size();
 	}
-	
+
 	Map<String, CacheEntry> getLayerBuildMap() {
 		return layerBuildMap;
 	}
-	
+
 	Collection<String> getLayerBuildKeys() {
 		return layerBuildMap.ascendingKeySet();
 	}
-	
+
 	int getNumEvictions() {
 		return numEvictions.get();
 	}
-	
+
 	int getMaxCapacity() {
 		return maxCapacity;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayerCache#setAggregator(com.ibm.jaggr.service.IAggregator)
 	 */
@@ -251,14 +252,14 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			throw new IllegalStateException();
 		}
 		this.aggregator = aggregator;
-		
+
 		// See if the max cache entries init-param has changed and
 		int newMaxCapacity = getMaxCapacity(aggregator);
 
 		// If the maximum size has changed, then create a new layerBuildMap with the new
 		// max size and copy the entries from the existing map to the new map
 		ConcurrentLinkedHashMap<String, CacheEntry> oldLayerBuildMap = null;
-															// have no layer builds in the layerBuildMap
+		// have no layer builds in the layerBuildMap
 		if (maxCapacity != newMaxCapacity) {
 			maxCapacity = newMaxCapacity;
 			oldLayerBuildMap = layerBuildMap;
@@ -276,10 +277,10 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			setLayerBuildAccessors(layerBuildMap.keySet());
 		}
 	}
-	
+
 	/**
 	 * Calls setLayerBuildAccessor for each layer in <code>layerMap</code>.
-	 * 
+	 *
 	 * @param buildKeys
 	 *            Set of keys in the build map. This is not necessarily the
 	 *            same as <code>layerBuildMap.keySet()</code> because we may be
@@ -289,7 +290,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	private void setLayerBuildAccessors(Set<String> buildKeys) {
 		NavigableSet<String> sorted = new TreeSet<String>(buildKeys);
 		Set<String> evictionKeys = new HashSet<String>();	// list of layer keys to remove because they
-															// have no layer builds in the layerBuildMap
+		// have no layer builds in the layerBuildMap
 		for (Map.Entry<String, LayerImpl> entry : layerMap.entrySet()) {
 			LayerImpl layer = entry.getValue();
 			LayerBuildsAccessor accessor = new LayerBuildsAccessor(layer.getId(), layerBuildMap, aggregator.getCacheManager(),  cloneLock, sorted, this);
@@ -306,7 +307,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	}
 
 	protected EvictionListener<String, CacheEntry> newEvictionListener() {
-		return new EvictionListener<String, CacheEntry>() { 
+		return new EvictionListener<String, CacheEntry>() {
 			@Override
 			public void onEviction(String layerKey, CacheEntry cacheEntry) {
 				LayerImpl layer = layerMap.get(cacheEntry.layerKey);
@@ -321,7 +322,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			}
 		};
 	}
-	
+
 	protected Weigher<CacheEntry> newWeigher() {
 		return new Weigher<CacheEntry>() {
 			@Override
@@ -331,7 +332,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			}
 		};
 	}
-	
+
 	protected int getMaxCapacity(IAggregator aggregator) {
 		InitParams initParams =  aggregator.getInitParams();
 		int result = DEFAULT_MAXLAYERCACHECAPACITY_MB * 1024 * 1024;
@@ -341,27 +342,27 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		}
 		return result;
 	}
-	
+
 	/* ---------------- Serialization Support -------------- */
 	/*
 	 *  ConcurrentLinkedHashMap serialization doesn't maintain LRU ordering of entries,
-	 *  so use a serialization proxy that will allow us to work around that problem. 
-	 *  We also clone the LayerImpl objects in the serialization proxy constructor 
-	 *  (while owning the write-lock on the cache) so that we can maintain the 
+	 *  so use a serialization proxy that will allow us to work around that problem.
+	 *  We also clone the LayerImpl objects in the serialization proxy constructor
+	 *  (while owning the write-lock on the cache) so that we can maintain the
 	 *  integrity of the serialized version of the cache without needing to own
-	 *  the write-lock while doing disk-io. 
+	 *  the write-lock while doing disk-io.
 	 */
 	protected Object writeReplace() throws ObjectStreamException {
 		return new SerializationProxy(this);
 	}
 
 	private void readObject(ObjectInputStream stream) throws InvalidObjectException {
-	    throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
+		throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
 	}
 
 	protected static class SerializationProxy implements Serializable {
 		private static final long serialVersionUID = 1956233862324653291L;
-		
+
 		private final int newLayerId;
 		private final int maxCapacity;
 		private final int numEvictions;
@@ -380,32 +381,32 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 				for (Map.Entry<String, LayerImpl> entry : cache.layerMap.entrySet()) {
 					layerMap.put(entry.getKey(), (LayerImpl)entry.getValue().cloneForSerialization());
 				}
-				
+
 				layerBuildMap = cache.layerBuildMap.ascendingMap();
 			} finally {
 				cache.cloneLock.writeLock().unlock();
 			}
-	    }
+		}
 
-	    protected Object readResolve() {
-	    	LayerCacheImpl cache;
+		protected Object readResolve() {
+			LayerCacheImpl cache;
 			try {
 				cache = (LayerCacheImpl)clazz.newInstance();
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-	    	cache.layerMap = layerMap;
-	    	cache.newLayerId = new AtomicInteger(newLayerId);
-	    	cache.maxCapacity = maxCapacity;
-	    	cache.numEvictions = new AtomicInteger(numEvictions);
-	    	cache.cloneLock = new ReentrantReadWriteLock();
+			cache.layerMap = layerMap;
+			cache.newLayerId = new AtomicInteger(newLayerId);
+			cache.maxCapacity = maxCapacity;
+			cache.numEvictions = new AtomicInteger(numEvictions);
+			cache.cloneLock = new ReentrantReadWriteLock();
 			cache.layerBuildMap = new ConcurrentLinkedHashMap.Builder<String, CacheEntry>()
 					.maximumWeightedCapacity(maxCapacity)
 					.listener(cache.newEvictionListener())
 					.weigher(cache.newWeigher())
 					.build();
 			cache.layerBuildMap.putAll(layerBuildMap);
-	    	return cache;
-	    }
+			return cache;
+		}
 	}
 }

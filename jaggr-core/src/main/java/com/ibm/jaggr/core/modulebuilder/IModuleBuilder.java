@@ -127,8 +127,8 @@ public interface IModuleBuilder {
 	 * specifying the name of the aggregator as the {@code name} property of the
 	 * service, and then set the value of the
 	 * {@link IHttpTransport#EXPORTMODULENAMES_REQATTRNAME} request attribute to
-	 * false in the 
-	 * {@link ILayerListener#layerBeginEndNotifier(ILayerListener.EventType, HttpServletRequest, List, Set)} 
+	 * false in the
+	 * {@link ILayerListener#layerBeginEndNotifier(ILayerListener.EventType, HttpServletRequest, List, Set)}
 	 * method.
 	 * <p>
 	 * This method may choose to return a build containing multiple named
@@ -151,10 +151,10 @@ public interface IModuleBuilder {
 	 * object specified by <code>keyGens</code> in the {@link ModuleBuild}
 	 * , then no updates of the cached key generators are performed. Most module
 	 * builders will have no need to update a cached key generator list once it
-	 * has been created and should just return 
-	 * <code>keyGens</code> in the {@link ModuleBuild} object, however, if 
+	 * has been created and should just return
+	 * <code>keyGens</code> in the {@link ModuleBuild} object, however, if
 	 * <code>keyGens</code> is null,
-	 * then a new cache key generator list containing only non-provisional 
+	 * then a new cache key generator list containing only non-provisional
 	 * cache key generators MUST be provided in the returned {@link ModuleBuild}.
 	 * <p>
 	 * A module builder should always return the same sized cache key generator
@@ -169,7 +169,7 @@ public interface IModuleBuilder {
 	 * own cache key generators. Subclasses are responsible for detecting that
 	 * the superclass has updated the list in the result and then adding their
 	 * own cache key generators to the new result.
-	 * 
+	 *
 	 * @param mid
 	 *            The module id
 	 * @param resource
@@ -179,18 +179,18 @@ public interface IModuleBuilder {
 	 * @param keyGens
 	 *            List of cache key generators for this module that was
 	 *            obtained by a previous call to this method or
-	 *            {@link #getCacheKeyGenerators(IAggregator)}. If null, 
+	 *            {@link #getCacheKeyGenerators(IAggregator)}. If null,
 	 *            then the {@code ModuleBuild} returned by this method must
-	 *            specify a new list of non-provisional cache key generators, 
-	 *            otherwise, this method may return a {@code ModuleBuild} object 
+	 *            specify a new list of non-provisional cache key generators,
+	 *            otherwise, this method may return a {@code ModuleBuild} object
 	 *            that specifies {@code keyGen} for the cache key generator.
-	 * 
+	 *
 	 * @return The processed (built) content as a {@link ModuleBuild} object
 	 * @throws Exception
 	 */
 	public ModuleBuild build(String mid, IResource resource,
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens)
-			throws Exception;
+					throws Exception;
 
 	/**
 	 * This method may be called, before
@@ -205,13 +205,13 @@ public interface IModuleBuilder {
 	 * If this method returns a provisional cache key generator, then
 	 * {@link #build(String, IResource, HttpServletRequest, List)}
 	 * will be called with a null cache key generator list and that method
-	 * MUST return a 
-	 * {@link ModuleBuild} object with a new immutable list of non-provisional cache key 
+	 * MUST return a
+	 * {@link ModuleBuild} object with a new immutable list of non-provisional cache key
 	 * generators when subsequently called for the same request.
-	 * 
+	 *
 	 * @param aggregator
 	 *            The aggregator instance
-	 * 
+	 *
 	 * @return The list of cache key generators for this builder.  One or more of the
 	 *         cache key generators may be provisional.
 	 */

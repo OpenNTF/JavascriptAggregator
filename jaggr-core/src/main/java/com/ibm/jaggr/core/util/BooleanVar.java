@@ -27,7 +27,7 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 
 	public final String name;
 	public final boolean state;
-	
+
 	public BooleanVar(String name, boolean state) {
 		if (name == null) {
 			// null names not allowed
@@ -39,14 +39,14 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 		this.name = name;
 		this.state = state;		// false if negated, otherwise true
 	}
-	
+
 	/**
 	 * @return the logical negation of this BooleanVar
 	 */
 	public BooleanVar negate() {
 		return new BooleanVar(name, !state);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
@@ -58,7 +58,7 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 		}
 		return false;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
@@ -66,7 +66,7 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 	public int hashCode() {
 		return name.hashCode() + Boolean.valueOf(state).hashCode();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
@@ -79,7 +79,7 @@ public class BooleanVar implements Comparable<BooleanVar>, Serializable {
 	public int compareTo(BooleanVar o) {
 		int result = name.compareTo(o.name);
 		if (result == 0 && state != o.state) {
-			result = (state ? 1 : -1); 
+			result = (state ? 1 : -1);
 		}
 		return result;
 	}

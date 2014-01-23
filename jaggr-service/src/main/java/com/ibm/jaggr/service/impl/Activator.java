@@ -129,7 +129,7 @@ public class Activator extends Plugin implements BundleActivator {
 		// If CommandProcessor service is available, then register the felix command processor
 		// Note: must avoid references to felix classes in this module
 		ServiceReference commandProcessorSR =
-		    context.getServiceReference("org.apache.felix.service.command.CommandProcessor"); //$NON-NLS-1$
+				context.getServiceReference("org.apache.felix.service.command.CommandProcessor"); //$NON-NLS-1$
 		if (commandProcessorSR != null) {
 			// See if a command provider is already registered
 			ServiceReference[] refs = context.getServiceReferences(
@@ -140,9 +140,9 @@ public class Activator extends Plugin implements BundleActivator {
 				dict.put("osgi.command.scope", "aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
 				dict.put("osgi.command.function", AggregatorCommandProvider.COMMANDS); //$NON-NLS-1$
 				result = context.registerService(
-				    AggregatorCommandProviderGogo.class.getName(),
-				    new AggregatorCommandProviderGogo(context),
-				    dict);
+						AggregatorCommandProviderGogo.class.getName(),
+						new AggregatorCommandProviderGogo(context),
+						dict);
 			}
 		} else {
 			// See if a command provider is already registered

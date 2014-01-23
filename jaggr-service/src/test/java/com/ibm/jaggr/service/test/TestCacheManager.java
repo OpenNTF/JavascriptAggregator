@@ -23,23 +23,23 @@ import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import java.io.IOException;
 
 public class TestCacheManager extends CacheManagerImpl {
-	
+
 	private ICache cache = null;
 
 	public TestCacheManager(IAggregator aggregator, long stamp) throws IOException {
 		super(aggregator, stamp);
 	}
-	
+
 	@Override
 	public void serializeCache() {
 		super.serializeCache();
 	}
-	
+
 	public void setCache(ICache cache) {
 		this.cache = cache;
 	}
-	
-	@Override 
+
+	@Override
 	public ICache getCache() {
 		return cache == null ? super.getCache() : cache;
 	}

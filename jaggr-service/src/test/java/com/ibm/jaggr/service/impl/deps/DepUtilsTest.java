@@ -40,25 +40,25 @@ import java.util.Set;
 public class DepUtilsTest {
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#removeRedundantPaths(java.util.Collection)}.
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException
 	 */
 	@Test
 	public void testRemoveRedundantPaths() throws URISyntaxException {
 		URI[] names = new URI[] {
-			new URI("/a/a/a"),
-			new URI("/a/b"),
-			new URI("/a/c"),
-			new URI("/a/c/a"),
-			new URI("/b/a/a"),
-			new URI("/b/a/a/a"),
-			new URI("/a/a/b")
+				new URI("/a/a/a"),
+				new URI("/a/b"),
+				new URI("/a/c"),
+				new URI("/a/c/a"),
+				new URI("/b/a/a"),
+				new URI("/b/a/a/a"),
+				new URI("/a/a/b")
 		};
 		URI[] expected = new URI[] {
-			new URI("/a/a/a"),
-			new URI("/a/b"),
-			new URI("/a/c"),
-			new URI("/b/a/a"),
-			new URI("/a/a/b")
+				new URI("/a/a/a"),
+				new URI("/a/b"),
+				new URI("/a/c"),
+				new URI("/b/a/a"),
+				new URI("/a/a/b")
 		};
 		Collection<URI> list = new ArrayList<URI>(Arrays.asList(names));
 		list = DepUtils.removeRedundantPaths(list);
@@ -68,14 +68,14 @@ public class DepUtilsTest {
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#getNodeForResource(java.lang.String, java.util.Map)}.
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException
 	 */
 	@Test
 	public void testGetNodeForFilepath() throws URISyntaxException {
 		URI[] paths = new URI[] {
-			new URI("/a/a/x"),
-			new URI("/a/y"),
-			new URI("/b/a/z"),
+				new URI("/a/a/x"),
+				new URI("/a/y"),
+				new URI("/b/a/z"),
 		};
 		DepTreeNode x = new DepTreeNode("");
 		DepTreeNode y = new DepTreeNode("");
@@ -87,7 +87,7 @@ public class DepUtilsTest {
 		map.put(paths[0], x);
 		map.put(paths[1], y);
 		map.put(paths[2], z);
-		
+
 		DepTreeNode node = DepUtils.getNodeForResource(new URI(paths[0].getPath()+"/1"), map);
 		assertEquals(node.getName(), "1");
 		node = DepUtils.getNodeForResource(new URI(paths[0].getPath()+"/1/1"), map);
@@ -118,8 +118,8 @@ public class DepUtilsTest {
 		String js5 = "define(deps, function() {\nalert(\"hello\");\nreturn null;\n});";
 		String js6 = "function foo() {\nalert(\"hello\");\nreturn null;\n};";
 		String js7 = "define(['dep1', 'dojo/has!hasTest1?hasTest2?dep1:dep2'], function() { require(['has!hasTest3?:dep3'], function(dep3) { if (has('fooTest')) {return true;} else {return false;} }); if (has('barTest')) return bar;});";
-		
-		
+
+
 		Compiler compiler = new Compiler();
 		Node node = compiler.parse(JSSourceFile.fromCode("js1", js1));
 		Collection<String> deps = DepUtils.parseDependencies(node, new HashSet<String>());

@@ -83,13 +83,13 @@ public class DepTree implements Serializable {
 	 * by the {@code basedir} constructor argument.
 	 */
 	protected ConcurrentMap<URI, DepTreeNode> depMap = null;
-	
+
 	protected Object rawConfig;
-	
+
 	protected long stamp;
-	
+
 	protected String cacheBust;
-	
+
 	protected boolean fromCache = false;
 
 	private static final String DEPCACHE_DIRNAME = "deps"; //$NON-NLS-1$
@@ -98,7 +98,7 @@ public class DepTree implements Serializable {
 
 	/** provided for subclasses */
 	protected DepTree() {}
-	
+
 	/**
 	 * Object constructor. Attempts to de-serialize the cached dependency lists
 	 * from disk and then validates the dependency lists based on last-modified
@@ -106,15 +106,15 @@ public class DepTree implements Serializable {
 	 * list data cannot be de-serialized, new lists are constructed. Once the
 	 * dependency lists have been validated, the list data is serialized back
 	 * out to disk.
-	 * 
+	 *
 	 * @param paths
 	 *            Collection of URIs which specify the target resources
 	 *            to be scanned for javascript files.
 	 * @param aggregator
 	 *            The servlet instance for this object
 	 * @param stamp
-	 *            timestamp associated with external override/customization 
-	 *            resources that are check on every server restart                     
+	 *            timestamp associated with external override/customization
+	 *            resources that are check on every server restart
 	 * @param clean
 	 *            If true, then the dependency lists are generated from scratch
 	 *            rather than by de-serializing and then validating the cached
@@ -124,8 +124,8 @@ public class DepTree implements Serializable {
 	 *            file last-modified times.
 	 * @throws IOException
 	 */
-	public DepTree(Collection<URI> paths, IAggregator aggregator, long stamp, boolean clean, boolean validateDeps) 
-	throws IOException {
+	public DepTree(Collection<URI> paths, IAggregator aggregator, long stamp, boolean clean, boolean validateDeps)
+			throws IOException {
 		this.stamp = stamp;
 		IConfig config = aggregator.getConfig();
 		rawConfig = config.toString();
@@ -164,7 +164,7 @@ public class DepTree implements Serializable {
 					log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-		
+
 		// If the cacheBust config param has changed, then do a clean build
 		// of the dependencies.
 		if (cached != null) {
@@ -189,7 +189,7 @@ public class DepTree implements Serializable {
 		 * If we de-serialized a previously saved dependency map, then go with
 		 * that.
 		 */
-		if (cached != null && 
+		if (cached != null &&
 				rawConfig.equals(cached.rawConfig) &&
 				!validateDeps && !clean) {
 			depMap = cached.depMap;
@@ -199,13 +199,13 @@ public class DepTree implements Serializable {
 
 		// Initialize the dependency map
 		depMap = new ConcurrentHashMap<URI, DepTreeNode>();
-		
+
 
 		// This can take a while, so print something to the console
 		String msg = MessageFormat.format(
 				Messages.DepTree_3,
 				new Object[]{aggregator.getName()});
-		
+
 		ConsoleService cs = new ConsoleService();
 		cs.println(msg);
 
@@ -223,34 +223,34 @@ public class DepTree implements Serializable {
 		 * caused by all the threads in the pool being consumed by tree builders
 		 * and leaving none available to service the parsers.
 		 */
-		final ThreadGroup 
-			treeBuilderTG = new ThreadGroup(TREEBUILDER_TGNAME),
-			parserTG = new ThreadGroup(JSPARSER_TGNAME);
-		ExecutorService 
-			treeBuilderExc = Executors.newFixedThreadPool(10, new ThreadFactory() {
-				public Thread newThread(Runnable r) {
-					return new Thread(treeBuilderTG, r,
+		final ThreadGroup
+		treeBuilderTG = new ThreadGroup(TREEBUILDER_TGNAME),
+		parserTG = new ThreadGroup(JSPARSER_TGNAME);
+		ExecutorService
+		treeBuilderExc = Executors.newFixedThreadPool(10, new ThreadFactory() {
+			public Thread newThread(Runnable r) {
+				return new Thread(treeBuilderTG, r,
 						MessageFormat.format(THREADNAME,
-							new Object[]{
-									treeBuilderTG.getName(),
-									treeBuilderTG.activeCount()
-							}
-						)
-					);
-				}
-			}), 
-			parserExc = Executors.newFixedThreadPool(20, new ThreadFactory() {
-				public Thread newThread(Runnable r) {
-					return new Thread(parserTG, r,
+								new Object[]{
+								treeBuilderTG.getName(),
+								treeBuilderTG.activeCount()
+						}
+								)
+						);
+			}
+		}),
+		parserExc = Executors.newFixedThreadPool(20, new ThreadFactory() {
+			public Thread newThread(Runnable r) {
+				return new Thread(parserTG, r,
 						MessageFormat.format(THREADNAME,
-							new Object[]{
-									parserTG.getName(),
-									parserTG.activeCount()
-							}
-						)
-					);
-				}
-			});
+								new Object[]{
+								parserTG.getName(),
+								parserTG.activeCount()
+						}
+								)
+						);
+			}
+		});
 
 		// Counter to keep track of number of tree builder threads started
 		AtomicInteger treeBuilderCount = new AtomicInteger(0);
@@ -273,20 +273,20 @@ public class DepTree implements Serializable {
 				cachedNode = cached.depMap.get(path);
 				if (log.isLoggable(Level.INFO)) {
 					log.info(
-						MessageFormat.format(
-							Messages.DepTree_4,
-							new Object[]{path}
-						)
-					);
+							MessageFormat.format(
+									Messages.DepTree_4,
+									new Object[]{path}
+									)
+							);
 				}
 			} else {
 				if (log.isLoggable(Level.INFO)) {
 					log.info(
-						MessageFormat.format(
-							Messages.DepTree_5,
-							new Object[]{path}
-						)
-					);
+							MessageFormat.format(
+									Messages.DepTree_5,
+									new Object[]{path}
+									)
+							);
 				}
 			}
 			depMap.put(path, root);
@@ -297,7 +297,7 @@ public class DepTree implements Serializable {
 
 		// List of parser exceptions
 		LinkedList<Exception> parserExceptions = new LinkedList<Exception>();
-		
+
 		/*
 		 * Pull the completed tree builder tasks from the completion queue until
 		 * all the paths have been processed
@@ -307,14 +307,14 @@ public class DepTree implements Serializable {
 				DepTreeBuilder.Result result = treeBuilderCs.take().get();
 				if (log.isLoggable(Level.INFO)) {
 					log.info(
-						MessageFormat.format(
-							Messages.DepTree_6,
-							new Object[] {
-								result.parseCount,
-								result.dirName
-							}
-						)
-					);
+							MessageFormat.format(
+									Messages.DepTree_6,
+									new Object[] {
+											result.parseCount,
+											result.dirName
+									}
+									)
+							);
 				}
 			} catch (Exception e) {
 				if (log.isLoggable(Level.SEVERE))
@@ -326,8 +326,8 @@ public class DepTree implements Serializable {
 		// shutdown the thread pools now that we're done with them
 		parserExc.shutdown();
 		treeBuilderExc.shutdown();
-		
-		// If parser exceptions occurred, then rethrow the first one 
+
+		// If parser exceptions occurred, then rethrow the first one
 		if (parserExceptions.size() > 0) {
 			throw new RuntimeException(parserExceptions.get(0));
 		}
@@ -344,15 +344,15 @@ public class DepTree implements Serializable {
 		if (!cacheDir.exists())
 			if (!cacheDir.mkdirs()) {
 				throw new IOException(MessageFormat.format(
-					Messages.DepTree_0,
-					new Object[]{cacheDir.getAbsolutePath()}
-				));
+						Messages.DepTree_0,
+						new Object[]{cacheDir.getAbsolutePath()}
+						));
 			}
 
 		// Serialize the map to the cache directory
 		ObjectOutputStream os;
 		os = new ObjectOutputStream(new FileOutputStream(cacheFile));
-		try { 
+		try {
 			os.writeObject(this);
 		} finally {
 			try { os.close(); } catch (Exception ignore) {}
@@ -360,7 +360,7 @@ public class DepTree implements Serializable {
 		msg = MessageFormat.format(
 				Messages.DepTree_7,
 				new Object[]{aggregator.getName()}
-		);
+				);
 
 		// Output that we're done.
 		cs.println(msg);
@@ -368,25 +368,25 @@ public class DepTree implements Serializable {
 			log.info(msg);
 		}
 	}
-	
+
 	/**
 	 * @return true if the dependencies were loaded from cache
 	 */
 	public boolean isFromCache() {
 		return fromCache;
 	}
-	
+
 	/**
 	 * Returns a new tree with an unnamed {@link DepTreeNode} object at the root
 	 * of the tree. Each of the keys specified in the map are children of the
-	 * returned node and those node's children are the children of the nodes 
+	 * returned node and those node's children are the children of the nodes
 	 * corresponding to the resource URIs specified by the map values.
 	 * The map values must be the same as, or a subset of, the paths that
 	 * were used to create this instance.
-	 * 
+	 *
 	 * @param map
 	 *            A map of module names to resource URIs
-	 * 
+	 *
 	 * @return The root {@link DepTreeNode} for the new tree
 	 */
 	public DepTreeRoot mapDependencies(DepTreeRoot root, Map<String, URI> map) {
@@ -396,31 +396,31 @@ public class DepTree implements Serializable {
 			// make sure name is valid
 			if (name.startsWith("/")) { //$NON-NLS-1$
 				log.severe(
-					MessageFormat.format(
-						Messages.DepTree_8,
-						new Object[]{name}
-					)
-				);
+						MessageFormat.format(
+								Messages.DepTree_8,
+								new Object[]{name}
+								)
+						);
 				throw new IllegalArgumentException(name);
 			}
-			
+
 			// make sure no relative path components (./ ore ../).
 			for (String part : name.split("/")) { //$NON-NLS-1$
 				if (part.startsWith(".")) { //$NON-NLS-1$
 					log.severe(
-						MessageFormat.format(
-							Messages.DepTree_9,
-							new Object[]{name}
-						)
-					);
+							MessageFormat.format(
+									Messages.DepTree_9,
+									new Object[]{name}
+									)
+							);
 					throw new IllegalArgumentException(name);
 				}
 			}
-			
+
 			// Create the child node for this entry's package/path name
 			DepTreeNode target = root.createOrGet(name);
 			URI filePath = configPathEntry.getValue();
-			
+
 			/*
 			 * Get the root node corresponding to the entry's file path from the
 			 * map. This node does not have any resolved references and the
@@ -431,7 +431,7 @@ public class DepTree implements Serializable {
 			DepTreeNode source = DepUtils.getNodeForResource(filePath, depMap);
 			if (source != null) {
 				/*
-				 * Clone the tree and copy the cloned node's children to the 
+				 * Clone the tree and copy the cloned node's children to the
 				 * target node.
 				 */
 				DepTreeNode temp = null;

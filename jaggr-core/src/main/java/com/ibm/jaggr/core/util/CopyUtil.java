@@ -34,13 +34,13 @@ import java.io.Writer;
 public class CopyUtil {
 
 	public static int copy(InputStream in, OutputStream out) throws IOException {
-        try {
-        	return IOUtils.copy(in, out);
-        } finally {
-        	try { out.close(); } catch (Exception ignore){};
-        	try { in.close(); } catch (Exception ignore){};
-        }
-    }
+		try {
+			return IOUtils.copy(in, out);
+		} finally {
+			try { out.close(); } catch (Exception ignore){};
+			try { in.close(); } catch (Exception ignore){};
+		}
+	}
 
 	public static int copy(Reader reader, Writer writer) throws IOException {
 		try {
@@ -50,7 +50,7 @@ public class CopyUtil {
 			try { writer.close(); } catch (Exception ignore) {}
 		}
 	}
-	
+
 	public static void copy(Reader reader, OutputStream out) throws IOException {
 		InputStream in = new ReaderInputStream(reader, "UTF-8"); //$NON-NLS-1$
 		try {
@@ -70,7 +70,7 @@ public class CopyUtil {
 			try { writer.close(); } catch (Exception ignore) {}
 		}
 	}
-	
+
 	public static void copy(String str, Writer writer) throws IOException {
 		Reader reader = new StringReader(str);
 		try {

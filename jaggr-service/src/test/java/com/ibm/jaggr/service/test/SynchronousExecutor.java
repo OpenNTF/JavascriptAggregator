@@ -21,7 +21,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class SynchronousExecutor extends ThreadPoolExecutor {
-	
+
 	public SynchronousExecutor() {
 		super(0, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 	}

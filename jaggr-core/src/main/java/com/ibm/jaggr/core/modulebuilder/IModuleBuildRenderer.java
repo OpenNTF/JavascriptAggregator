@@ -54,10 +54,10 @@ import javax.servlet.http.HttpServletRequest;
  * construction of the cache key for the layer.
  */
 public interface IModuleBuildRenderer {
-	
+
 	/**
 	 * Called to render the build for the specified request.
-	 * 
+	 *
 	 * @param request
 	 *            the request object
 	 * @param dependent

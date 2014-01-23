@@ -29,7 +29,7 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 	final String content;
 	final URI uri;
 	final long lastModified;
-	
+
 	public StringResource(String content, URI uri) {
 		this.content = content;
 		this.uri = uri;
@@ -85,5 +85,5 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 	public IResource resolve(String relative) {
 		return new StringResource("", uri.resolve(relative)); //$NON-NLS-1$
 	}
-	
+
 }

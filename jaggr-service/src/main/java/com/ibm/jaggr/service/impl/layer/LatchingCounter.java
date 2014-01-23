@@ -18,11 +18,10 @@ package com.ibm.jaggr.service.impl.layer;
 
 import java.io.Serializable;
 
-
 /**
  * Thread safe implementation of a latching counter that will
  * set a latch whenever the counter is decremented to zero
- * or a negative value.  
+ * or a negative value.
  */
 public class LatchingCounter implements Serializable {
 	private static final long serialVersionUID = 3248231124104936653L;
@@ -36,37 +35,37 @@ public class LatchingCounter implements Serializable {
 		}
 		counter = initialCount;
 	}
-	
+
 	public LatchingCounter(LatchingCounter other) {
 		synchronized (other) {
 			latched = other.latched;
 			counter = other.counter;
 		}
 	}
-	
+
 	public synchronized boolean decrement() {
 		if (--counter <= 0) {
 			latched = true;
 		}
 		return latched;
 	}
-	
+
 	public synchronized boolean increment() {
 		counter++;
 		return latched;
 	}
-	
+
 	public synchronized boolean latchIfZero() {
 		if (counter == 0) {
 			latched = true;
 		}
 		return latched;
 	}
-	
+
 	public boolean isLatched() {
 		return latched;
 	}
-	
+
 	public int getCount() {
 		return counter;
 	}

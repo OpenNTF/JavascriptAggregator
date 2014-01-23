@@ -73,7 +73,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	/** regular expression for detecting if a plugin name is the has! plugin */
 	static final Pattern HAS_PATTERN = Pattern.compile("(^|\\/)has$"); //$NON-NLS-1$
-	
+
 	private final IAggregator aggregator;
 	private final Scriptable rawConfig;
 	private String strConfig;
@@ -93,9 +93,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Set<String> textPluginDelegators;
 	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
-	
+
 	protected List<Object> serviceRegs = new LinkedList<Object>();
-	
+
 	private static class ConfigContextFactory extends ContextFactory {
 		@Override
 		protected boolean hasFeature(Context context, int feature) {
@@ -105,16 +105,16 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			return super.hasFeature(context, feature);
 		}
 	}
-	
+
 	static {
 		ContextFactory.initGlobal(new ConfigContextFactory());
 	}
-	
+
 	public ConfigImpl(IAggregator aggregator) throws IOException {
 		this.aggregator = aggregator;
 		Context.enter();
-	
-		try { 
+
+		try {
 			configUri = loadConfigUri();
 			// Try to convert to an IResource in case the URI specifies
 			//  an IResource supported scheme like 'namedbundleresource'.
@@ -129,15 +129,15 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			lastModified = connection.getLastModified();
 
 			rawConfig = loadConfig(connection.getInputStream());
-			
+
 			// Call config modifiers to allow them to update the config
 			// before we parse it.
 			callConfigModifiers(rawConfig);
-			
+
 			// Seal the config object and the shared scope to prevent changes
 			((ScriptableObject)rawConfig).sealObject();
 			((ScriptableObject)sharedScope).sealObject();
-			
+
 			init();
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
@@ -158,7 +158,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Context.exit();
 		}
 	}
-	
+
 	public ConfigImpl(IAggregator aggregator, URI configUri, Scriptable rawConfig) throws IOException {
 		Context.enter();
 		try {
@@ -171,20 +171,20 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Context.exit();
 		}
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * This constructor is just for testing purpose. It should not be used for production.
 	 */
 	protected ConfigImpl(IAggregator aggregator, boolean forTest) throws URISyntaxException, FileNotFoundException {
 		this.aggregator = aggregator;
 		rawConfig = null;
 		lastModified = 0;
-		configUri = loadConfigUri();		
+		configUri = loadConfigUri();
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * This constructor is just for testing purpose. It should not be used for production.
 	 */
 	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript, boolean forTest) throws IOException {
@@ -199,9 +199,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Context.exit();
 		}
 	}
-	
+
 	protected void init() throws IOException {
-		try { 
+		try {
 			registerServices();
 			strConfig = Context.toString(rawConfig);
 			base = loadBaseURI(rawConfig);
@@ -221,11 +221,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 	}
 	/**
-	 * 
-	 * This method is for test purposes and should not be used for production. 
+	 *
+	 * This method is for test purposes and should not be used for production.
 	 */
 	protected void initForTest() throws IOException {
-		try { 			
+		try {
 			strConfig = Context.toString(rawConfig);
 			base = loadBaseURI(rawConfig);
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
@@ -250,7 +250,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public long lastModified() {
 		return lastModified;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getConfigUri()
 	 */
@@ -258,11 +258,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public URI getConfigUri() {
 		return configUri;
 	}
-	
+
 	protected IAggregator getAggregator() {
 		return aggregator;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getBase()
 	 */
@@ -270,7 +270,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public Location getBase() {
 		return base;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getPackages()
 	 */
@@ -302,7 +302,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public boolean isDepsIncludeBaseUrl() {
 		return depsIncludeBaseUrl;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getExpires()
 	 */
@@ -310,7 +310,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public int getExpires() {
 		return expires;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getDeps()
 	 */
@@ -318,7 +318,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public List<String> getDeps() {
 		return deps;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#isCoerceUndefinedToFalse()
 	 */
@@ -342,7 +342,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public String getCacheBust() {
 		return cacheBust;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getTextPluginDelegators()
 	 */
@@ -350,7 +350,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public Set<String> getTextPluginDelegators() {
 		return textPluginDelegators;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getJsPluginDelegators()
 	 */
@@ -358,7 +358,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public Set<String> getJsPluginDelegators() {
 		return jsPluginDelegators;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getRawConfig()
 	 */
@@ -366,7 +366,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public Scriptable getRawConfig() {
 		return rawConfig;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getPackageURIs()
 	 */
@@ -379,16 +379,16 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 	}
-	
-	
+
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#locateModuleResource(java.lang.String)
 	 */
 	@Override
-	public URI locateModuleResource(String mid) { 
+	public URI locateModuleResource(String mid) {
 		Location location = null;
 		String remainder = null;
-		
+
 		// Now see if mid matches exactly a path
 		if (getPaths().containsKey(mid)) {
 			location = getPaths().get(mid);
@@ -396,7 +396,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		// If the module is a package name, then resolve to the packag main id
 		if (location == null && getPackages().containsKey(mid)) {
 			mid = getPackages().get(mid).getMain();
-		} 
+		}
 		if (location == null) {
 			// Still no match.  Iterate through the paths and packages looking
 			// for an entry that matches part of the module id
@@ -424,27 +424,27 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 					remainder = remainder.substring(1);
 				}
 				// Check for illegal relative path. Throws exception if an
-				// attempt is made to use relitive path components to go 
+				// attempt is made to use relitive path components to go
 				// outside the path defined by the entry.
 				PathUtil.normalizePaths(prefix, new String[]{remainder});
 			} else {
 				// Check for illegal relative path. Throws exception if an
-				// attempt is made to use relitive path components to go 
+				// attempt is made to use relitive path components to go
 				// outside the path defined by the base url.
 				PathUtil.normalizePaths("", new String[]{mid});  //$NON-NLS-1$
 				// not match.  Return a URI relative to the config base URI
 				Location base = getBase();
 				location = new Location(
-					base.getPrimary().resolve(mid),
-					base.getOverride() == null ? null : base.getOverride().resolve(mid)
-				);
+						base.getPrimary().resolve(mid),
+						base.getOverride() == null ? null : base.getOverride().resolve(mid)
+						);
 			}
 		}
 		URI result = null;
 		try {
 			URI override = toResourceUri(location.getOverride(), remainder);
 			result = (override != null && aggregator.newResource(override).exists()) ?
-				override : toResourceUri(location.getPrimary(), remainder);
+					override : toResourceUri(location.getPrimary(), remainder);
 		} catch (URISyntaxException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
@@ -452,7 +452,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 	}
-	
+
 	protected URI toResourceUri(URI uri, String remainder) throws URISyntaxException {
 		if (uri == null) {
 			return null;
@@ -461,21 +461,21 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			// Resolve the URI location and remainder parts
 			if (!uri.getPath().endsWith("/")) { //$NON-NLS-1$
 				uri = new URI(uri.getScheme(), uri.getAuthority(),
-						           uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
+						uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
 			}
 			uri = uri.resolve(remainder);
 		}
-		
+
 		// add .js extension if resource uri has no extension
 		String path = uri.getPath();
 		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 		String fname = (idx != -1) ? path.substring(idx+1) : path;
 		if (!fname.contains(".")) { //$NON-NLS-1$
-			uri = new URI(uri.getScheme(), uri.getAuthority(), 
+			uri = new URI(uri.getScheme(), uri.getAuthority(),
 					path + ".js", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
 		}
 		return uri;
-		
+
 	}
 
 	/* (non-Javadoc)
@@ -483,34 +483,34 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public String resolve(
-			String mid, 
-			Features features, 
+			String mid,
+			Features features,
 			Set<String> dependentFeatures,
 			StringBuffer sb,
 			boolean resolveAliases) {
 		return resolve(mid, features, dependentFeatures, sb, resolveAliases, true);
-	}	
-	
+	}
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#resolve(java.lang.String, com.ibm.jaggr.service.util.Features, java.util.Set, java.lang.StringBuffer, boolean, boolean)
 	 */
 	@Override
 	public String resolve(
-			String mid, 
-			Features features, 
+			String mid,
+			Features features,
 			Set<String> dependentFeatures,
 			StringBuffer sb,
 			boolean resolveAliases,
 			boolean resolveHasPlugin) {
-		
+
 		// Resolve has plugin first.  Note that we call <code>resolveHasPlugin</code>
 		// method unconditionally, passing an empty feature set if the flag is false,
-		// so that the features specified by the plugin will be added to the 
+		// so that the features specified by the plugin will be added to the
 		// dependent features.
-		mid = resolveHasPlugin(mid, 
-				resolveHasPlugin ? features : Features.emptyFeatures, 
-				dependentFeatures, sb);
-		
+		mid = resolveHasPlugin(mid,
+				resolveHasPlugin ? features : Features.emptyFeatures,
+						dependentFeatures, sb);
+
 		if (resolveAliases) {
 			String aliased = null;
 			try {
@@ -525,14 +525,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 					sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
 							Messages.ConfigImpl_6,
 							new Object[]{mid}
-					));
+							));
 				}
 				// If alias resolution introduced a has plugin, then try to resolve it
 				int idx = mid.indexOf("!"); //$NON-NLS-1$
 				if (idx == -1 || !HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
-					mid = resolveHasPlugin(aliased, 
-							resolveHasPlugin ? features : Features.emptyFeatures, 
-							dependentFeatures, sb);
+					mid = resolveHasPlugin(aliased,
+							resolveHasPlugin ? features : Features.emptyFeatures,
+									dependentFeatures, sb);
 				} else {
 					mid = aliased;
 				}
@@ -548,7 +548,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	/**
 	 * Resolves has! loader plugin based on the specified feature set
-	 * 
+	 *
 	 * @param mid
 	 *            The module id to resolve.  May specify plugins
 	 * @param features
@@ -557,29 +557,29 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            Output - Set of feature names that the returned value is
 	 *            conditioned on. Used for cache management.
 	 * @param sb
-	 *            If not null, then a reference to a string buffer that can 
-	 *            be used by the resolver to indicate debug/diagnostic information 
+	 *            If not null, then a reference to a string buffer that can
+	 *            be used by the resolver to indicate debug/diagnostic information
 	 *            about the alias resolution.  For example, the resolver may
 	 *            indicate that alias resolution was not performed due to
 	 *            a missing required feature.
-	 * 
-	 * @return The module id with has! loader plugin resolved, or {@code mid} if the 
+	 *
+	 * @return The module id with has! loader plugin resolved, or {@code mid} if the
 	 *         features specified by the loader plugin are not defined.
 	 */
 	protected String resolveHasPlugin(
-		String mid, 
-		Features features, 
-		Set<String> dependentFeatures,
-		StringBuffer sb) {
+			String mid,
+			Features features,
+			Set<String> dependentFeatures,
+			StringBuffer sb) {
 		int idx = mid.indexOf("!"); //$NON-NLS-1$
 		if (idx != -1 && HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
 			Set<String> depFeatures = new HashSet<String>();
-			HasNode hasNode = new HasNode(mid.substring(idx+1)); 
+			HasNode hasNode = new HasNode(mid.substring(idx+1));
 			String name = hasNode.evaluate(
-					features, 
-					depFeatures, 
+					features,
+					depFeatures,
 					isCoerceUndefinedToFalse()
-			);
+					);
 			dependentFeatures.addAll(depFeatures);
 			if (name != null) {
 				if (name.length() > 0) {
@@ -591,7 +591,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
 								Messages.ConfigImpl_2,
 								new Object[]{name + featureMap.toString()}
-						));
+								));
 					}
 				}
 				mid = name;
@@ -603,7 +603,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 					sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
 							Messages.ConfigImpl_4,
 							new Object[]{depFeatures.toString()}
-					));
+							));
 				}
 			}
 		}
@@ -612,10 +612,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	private static final Pattern plugins1 = Pattern.compile("[!?:]"); //$NON-NLS-1$
 	private static final Pattern plugins2 = Pattern.compile("[^!?:]*"); //$NON-NLS-1$
-	
+
 	/**
 	 * Applies alias mappings to the specified name and returns the result
-	 * 
+	 *
 	 * @param name
 	 *            The module name to map.  May specify plugins
 	 * @param features
@@ -624,30 +624,30 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *            Output - Set of feature names that the returned value is
 	 *            conditioned on. Used for cache management.
 	 * @param sb
-	 *            If not null, then a reference to a string buffer that can 
-	 *            be used by the resolver to indicate debug/diagnostic information 
+	 *            If not null, then a reference to a string buffer that can
+	 *            be used by the resolver to indicate debug/diagnostic information
 	 *            about the alias resolution.  For example, the resolver may
 	 *            indicate that alias resolution was not performed due to
 	 *            a missing required feature.
-	 * 
+	 *
 	 * @return The module name with alias mappings applied, or {@code name} if there is
 	 *         not mapping for this module name.
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 * @throws ClassNotFoundException
-	 * 
+	 *
 	 * @see IAliasResolver
 	 */
 	protected String resolveAliases(
-			String name, 
-			Features features, 
+			String name,
+			Features features,
 			Set<String> dependentFeatures,
 			StringBuffer sb) throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
 
 		if (name == null || name.length() == 0) {
 			return name;
 		}
-		
+
 		String result = name;
 		if (getAliases() != null) {
 			if (plugins1.matcher(name).find()) {
@@ -676,13 +676,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						if (replacement instanceof String) {
 							result = m.replaceAll((String)replacement);
 						} else if (replacement instanceof Function){
-							// replacement is a javascript function.  
+							// replacement is a javascript function.
 							Context cx = Context.enter();
 							try {
-							    Scriptable threadScope = cx.newObject(sharedScope);
-							    threadScope.setPrototype(sharedScope);
-							    threadScope.setParentScope(null);
-							    HasFunction hasFn = newHasFunction(threadScope, features);
+								Scriptable threadScope = cx.newObject(sharedScope);
+								threadScope.setPrototype(sharedScope);
+								threadScope.setParentScope(null);
+								HasFunction hasFn = newHasFunction(threadScope, features);
 								ScriptableObject.putProperty(threadScope, "has", hasFn); //$NON-NLS-1$
 								StringBuffer sbResult = new StringBuffer();
 								while (m.find()) {
@@ -707,10 +707,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Initializes and returns the URI to the server-side config JavaScript
-	 * 
+	 *
 	 * @return The config URI
 	 * @throws URISyntaxException
 	 * @throws FileNotFoundException
@@ -731,11 +731,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return configUri;
 	}
-	
+
 	/**
 	 * Initializes and returns the base URI specified by the "baseUrl" property
 	 * in the server-side config JavaScript
-	 * 
+	 *
 	 * @param cfg
 	 *            the parsed config JavaScript
 	 * @return the base URI
@@ -753,7 +753,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 	}
-	
+
 	protected Scriptable loadConfig(InputStream in) throws MalformedURLException, IOException {
 		Reader reader = new InputStreamReader(in);
 		StringWriter writer = new StringWriter();
@@ -761,19 +761,19 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		return loadConfig(writer.toString());
 	}
 	/**
-	 * Add any processing logic to the config file like replacing any place holders from a 
+	 * Add any processing logic to the config file like replacing any place holders from a
 	 * properties file.
-	 * 
+	 *
 	 * @return the processed config script
 	 */
-	
+
 	protected String processConfig(String configScript){
 		return configScript;
 	}
-	
+
 	/**
 	 * Loads the config JavaScript and returns the parsed config in a Map
-	 * 
+	 *
 	 * @return the parsed config in a properties map
 	 * @throws IOException
 	 */
@@ -792,44 +792,44 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			// set up init params object
 			InitParams initParams = aggregator.getInitParams();
 			if (initParams != null) {
-			    Scriptable jsInitParams = cx.newObject(sharedScope);
-			    Collection<String> names = initParams.getNames();
-			    for (String name : names) {
-			    	Collection<String> values = initParams.getValues(name);
-			    	Object value = Context.javaToJS(values.toArray(new String[values.size()]), sharedScope);
-				    ScriptableObject.putProperty(jsInitParams, name, value);
-			    }
+				Scriptable jsInitParams = cx.newObject(sharedScope);
+				Collection<String> names = initParams.getNames();
+				for (String name : names) {
+					Collection<String> values = initParams.getValues(name);
+					Object value = Context.javaToJS(values.toArray(new String[values.size()]), sharedScope);
+					ScriptableObject.putProperty(jsInitParams, name, value);
+				}
 				ScriptableObject.putProperty(sharedScope, "initParams", jsInitParams); //$NON-NLS-1$
 			}
 
 			// set up bundle manifest headers property
 			if ( aggregator.getPlatformServices() != null) {
-				if( aggregator.getPlatformServices().getHeaders() != null){				
+				if( aggregator.getPlatformServices().getHeaders() != null){
 					Dictionary<String, String> headers = (Dictionary<String, String>)( aggregator.getPlatformServices().getHeaders());
-			    Scriptable jsHeaders = cx.newObject(sharedScope);
-				Enumeration<String> keys = headers.keys();
-				while (keys.hasMoreElements()) {
-					String key = keys.nextElement();
-			    	Object value = Context.javaToJS(headers.get(key), sharedScope);
-				    ScriptableObject.putProperty(jsHeaders, key, value);
-				}
-				ScriptableObject.putProperty(sharedScope, "headers", jsHeaders); //$NON-NLS-1$
+					Scriptable jsHeaders = cx.newObject(sharedScope);
+					Enumeration<String> keys = headers.keys();
+					while (keys.hasMoreElements()) {
+						String key = keys.nextElement();
+						Object value = Context.javaToJS(headers.get(key), sharedScope);
+						ScriptableObject.putProperty(jsHeaders, key, value);
+					}
+					ScriptableObject.putProperty(sharedScope, "headers", jsHeaders); //$NON-NLS-1$
 				}
 			}
-			
+
 			// set up console object
 			Console console = newConsole();
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
-			
+
 			cx.evaluateString(sharedScope, "var config = " +  //$NON-NLS-1$
-				aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
-					@Override
-					public String transform(String name, String value) {
-						// escape forward slashes for javascript literals
-						return value.replace("\\", "\\\\"); //$NON-NLS-1$ //$NON-NLS-2$
-					}
-				}), getConfigUri().toString(), 1, null);
+					aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
+						@Override
+						public String transform(String name, String value) {
+							// escape forward slashes for javascript literals
+							return value.replace("\\", "\\\\"); //$NON-NLS-1$ //$NON-NLS-2$
+						}
+					}), getConfigUri().toString(), 1, null);
 			config = (Scriptable)sharedScope.get("config", sharedScope); //$NON-NLS-1$
 			if (config == Scriptable.NOT_FOUND) {
 				throw new IllegalStateException("config is not defined."); //$NON-NLS-1$
@@ -839,11 +839,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return config;
 	}
-	
+
 	/**
 	 * Initializes and returns the map of packages based on the information in
 	 * the server-side config JavaScript
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the package map
@@ -857,7 +857,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				if (id instanceof Number) {
 					Number i = (Number)id;
 					Object pkg = ((Scriptable)obj).get((Integer)i, (Scriptable)obj);
-					IPackage p = newPackage(pkg); 
+					IPackage p = newPackage(pkg);
 					if (!packages.containsKey(p.getName())) {
 						packages.put(p.getName(), p);
 					}
@@ -866,11 +866,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return packages;
 	}
-	
+
 	/**
 	 * Initializes and returns the map of paths based on the information in the
 	 * server-side config JavaScript
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the map of path-name/path-URI pairs
@@ -882,7 +882,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		if (pathlocs instanceof Scriptable) {
 			for (Object key : ((Scriptable)pathlocs).getIds()) {
 				String name = Context.toString(key);
-				
+
 				if (!paths.containsKey(name) && key instanceof String) {
 					Location location = loadLocation(((Scriptable)pathlocs).get(name, (Scriptable)pathlocs), false);
 					paths.put(name, getBase().resolve(location));
@@ -891,15 +891,15 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return paths;
 	}
-	
+
 	/**
 	 * Initializes and returns the list of aliases defined in the server-side
 	 * config JavaScript
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the list of aliases
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	protected List<IAlias> loadAliases(Scriptable cfg) throws IOException {
 		Object aliasList = cfg.get(ALIASES_CONFIGPARAM, cfg);
@@ -938,11 +938,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return aliases;
 	}
-	
+
 	/**
 	 * Initializes and returns the list of module dependencies specified in the
 	 * server-side config JavaScript.
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the list of module dependencies
@@ -965,7 +965,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/**
 	 * Initializes and returns the expires time from the server-side
 	 * config JavaScript
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the expires time
@@ -987,7 +987,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * Initializes and returns the flag indicating if files and directories
 	 * located under the base directory should be scanned for javascript files
 	 * when building the module dependency mappings.  The default is false.
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return true if files and folder under the base directory should be
@@ -1004,9 +1004,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	/**
 	 * Initializes and returns the flag indicating if features not specified
-	 * in the feature set from the request should be treated as false when 
+	 * in the feature set from the request should be treated as false when
 	 * evaluating has conditionals in javascript code.  The default is false.
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return True if un-specified features should be treated as false.
@@ -1019,15 +1019,15 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Initializes and returns the notice string specified by the {@code notice}
 	 * property in the server-side config JavaScript.
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the {@code notice} property value
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException
 	 */
 	protected String loadNotice(Scriptable cfg) throws IOException, URISyntaxException {
 		String notice = null;
@@ -1052,7 +1052,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return notice;
 	}
-	
+
 	/**
 	 * Common routine to load text or js plugin delegators
 	 */
@@ -1074,11 +1074,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 	}
-	
+
 	protected Set<String> loadTextPluginDelegators(Scriptable cfg) {
 		return loadPluginDelegators(cfg, TEXTPLUGINDELEGATORS_CONFIGPARAM);
 	}
-	
+
 	protected Set<String> loadJsPluginDelegators(Scriptable cfg) {
 		return loadPluginDelegators(cfg, JSPLUGINDELEGATORS_CONFIGPARAM);
 	}
@@ -1113,7 +1113,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						log.warning(MessageFormat.format(
 								Messages.ConfigImpl_5,
 								new Object[]{str, e.getMessage()}
-						));
+								));
 					}
 				}
 			}
@@ -1130,7 +1130,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/**
 	 * Initializes and returns the string specified by the {@code cacheBust}
 	 * property in the server-side config JavaScript.
-	 * 
+	 *
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the {@code cacheBust} property value
@@ -1142,13 +1142,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			result = Context.toString(value);
 		}
 		return result;
-		
+
 	}
-	
+
 	/**
 	 * Calls the registered config modifiers to give them an opportunity to
 	 * modify the raw config before config properties are evaluated.
-	 * 
+	 *
 	 * @param rawConfig
 	 *            A map of the top level properties in the config JavaScript. Lower
 	 *            level javascript arrays are represented as
@@ -1157,7 +1157,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
 		if( aggregator.getPlatformServices() != null){
-			Object[] refs = null;		
+			Object[] refs = null;
 			try {
 				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
 			} catch (PlatformServicesException e) {
@@ -1165,11 +1165,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 					log.log(Level.SEVERE, e.getMessage(), e);
 				}
 			}
-			
+
 			if (refs != null) {
 				for (Object ref : refs) {
-					IConfigModifier modifier = 
-						(IConfigModifier) aggregator.getPlatformServices().getService(ref);
+					IConfigModifier modifier =
+							(IConfigModifier) aggregator.getPlatformServices().getService(ref);
 					if (modifier != null) {
 						try {
 							modifier.modifyConfig(getAggregator(), rawConfig);
@@ -1178,7 +1178,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 								log.log(Level.SEVERE, e.getMessage(), e);
 							}
 						} finally {
-							 aggregator.getPlatformServices().ungetService(ref);
+							aggregator.getPlatformServices().ungetService(ref);
 						}
 					}
 				}
@@ -1193,7 +1193,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public String toString() {
 		return strConfig;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.options.IOptionsListener#optionsUpdated(com.ibm.jaggr.service.options.IOptions, long)
 	 */
@@ -1201,12 +1201,12 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public void optionsUpdated(IOptions options, long sequence) {
 		Context cx = Context.enter();
 		try {
-		    Scriptable jsOptions = cx.newObject(sharedScope);
-		    Map<String, String> optionsMap = options.getOptionsMap();
-		    for (Map.Entry<String, String> entry : optionsMap.entrySet()) {
-		    	Object value = Context.javaToJS(entry.getValue(), sharedScope);
-			    ScriptableObject.putProperty(jsOptions, entry.getKey(), value);
-		    }
+			Scriptable jsOptions = cx.newObject(sharedScope);
+			Map<String, String> optionsMap = options.getOptionsMap();
+			for (Map.Entry<String, String> entry : optionsMap.entrySet()) {
+				Object value = Context.javaToJS(entry.getValue(), sharedScope);
+				ScriptableObject.putProperty(jsOptions, entry.getKey(), value);
+			}
 			ScriptableObject.putProperty(sharedScope, "options", jsOptions); //$NON-NLS-1$
 		} finally {
 			Context.exit();
@@ -1220,28 +1220,28 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : serviceRegs) {
 			if( aggregator.getPlatformServices() != null){
-				 aggregator.getPlatformServices().unRegisterService(reg);
+				aggregator.getPlatformServices().unRegisterService(reg);
 			}
 		}
 	}
-	
+
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {
-	        // Register listeners
+		// Register listeners
 		if(aggregator.getPlatformServices() != null){
 			Dictionary dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
+			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			serviceRegs.add( aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$			
-			serviceRegs.add( aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));	
+			dict.put("name", aggregator.getName()); //$NON-NLS-1$
+			serviceRegs.add( aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));
 		}
 	}
 
 	protected HasFunction newHasFunction(Scriptable scriptable, Features features) {
 		return new HasFunction(scriptable, features);
 	}
-	
+
 	protected Console newConsole() {
 		return new Console();
 	}
@@ -1249,11 +1249,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	protected IPackage newPackage(Object obj) throws URISyntaxException {
 		return new Package(obj);
 	}
-	
+
 	protected IAlias newAlias(/* String | Pattern */Object pattern, /* String | Scriptable */Object replacement) {
 		return new Alias(pattern, replacement);
 	}
-	
+
 	protected class Package implements IPackage {
 
 		private final String name;
@@ -1278,7 +1278,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			} else {
 				throw new IllegalArgumentException(obj.toString());
 			}
-			
+
 			if (main == null) {
 				main = PKGMAIN_DEFAULT;
 			}
@@ -1290,9 +1290,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				throw new IllegalArgumentException(main);
 			}
 			this.main = PathUtil.normalizePaths(name, new String[]{main})[0];
-			
+
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.config.IConfig.IPackage#getName()
 		 */
@@ -1317,12 +1317,12 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			return main;
 		}
 	}
-	
+
 	protected static class Alias implements IAlias {
 
 		private final Object pattern;
 		private final Object replacement;
-		
+
 		public Alias(/* String | Pattern */Object pattern, /* String | Function */Object replacement) {
 			// validate arguments
 			if (!(pattern instanceof String) && !(pattern instanceof Pattern)) {
@@ -1339,7 +1339,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			this.replacement = replacement;
 		}
 
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.config.IConfig.IAlias#getPattern()
 		 */
@@ -1347,7 +1347,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		public Object getPattern() {
 			return pattern;
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.config.IConfig.IAlias#getReplacement()
 		 */
@@ -1355,10 +1355,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		public Object getReplacement() {
 			return replacement;
 		}
-		
+
 	}
-	
-	
+
+
 	/**
 	 * This class implements the JavaScript has function object used by the Rhino interpreter when
 	 * evaluating regular expressions in config aliases.
@@ -1370,9 +1370,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		private static final long serialVersionUID = -399399681025813075L;
 		private final Features features;
 		private final Set<String> dependentFeatures;
-		
+
 		static Method hasMethod;
-		
+
 		static {
 			try {
 				hasMethod = HasFunction.class.getMethod("has", Context.class, Scriptable.class, Object[].class, Function.class); //$NON-NLS-1$
@@ -1382,7 +1382,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-		
+
 		HasFunction(Scriptable scope, Features features) {
 			super("has", hasMethod, scope); //$NON-NLS-1$
 			this.features = features;
@@ -1399,7 +1399,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 			return result;
 		}
-		
+
 		public Set<String> getDependentFeatures() {
 			return dependentFeatures;
 		}

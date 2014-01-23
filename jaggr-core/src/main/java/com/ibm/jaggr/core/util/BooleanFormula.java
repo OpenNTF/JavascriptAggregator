@@ -42,7 +42,7 @@ import java.util.TreeMap;
  * this object.
  */
 public class BooleanFormula implements Set<BooleanTerm>, Serializable {
-	
+
 	private static final long serialVersionUID = 1202056345279875004L;
 
 	/**
@@ -55,22 +55,22 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * A null set means that the expression evaluates to true;
 	 */
 	private Set<BooleanTerm> booleanTerms;
-	
+
 	/**
 	 * True if the formula has been simplified.
 	 */
 	private boolean isSimplified = false;
-	
+
 	/**
 	 * Default constructor.  Constructs a formula that evaluates to false.
 	 */
 	public BooleanFormula() {
 		this(false);
 	}
-	
+
 	/**
 	 * Constructs a formula that evaluates to the specified boolean state.
-	 * 
+	 *
 	 * @param state
 	 *            The initial state of the formula
 	 */
@@ -78,11 +78,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		booleanTerms = state ? null : new HashSet<BooleanTerm>();
 		isSimplified = true;
 	}
-	
+
 	/**
 	 * Copy constructor. Constructs a formula which has the same state as the
 	 * specified formula.
-	 * 
+	 *
 	 * @param other
 	 *            The formula who's state this formula should copy.
 	 */
@@ -90,13 +90,13 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		this.booleanTerms = other.booleanTerms != null ? new HashSet<BooleanTerm>(other.booleanTerms) : null;
 		this.isSimplified = other.isSimplified;
 	}
-	
+
 	/**
 	 * Constructs a formula who's state is given by the specified string.
 	 * The string takes the form of (A*B)|(A*!C)
-	 * 
+	 *
 	 * Used mostly by unit test cases.
-	 * 
+	 *
 	 * @param str The string representation of the formula
 	 */
 	public BooleanFormula(String str) {
@@ -109,7 +109,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			throw new IllegalArgumentException(str);
 		}
 	}
-	
+
 	/**
 	 * Returns an instance of this class which is the simplified representation
 	 * of the formula represented by this object. May return this object if the
@@ -117,7 +117,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * <p>
 	 * This method uses the Quine-McCluskey algorithm and code described at
 	 * http://en.literateprograms.org/Quine-McCluskey_algorithm_%28Java%29
-	 * 
+	 *
 	 * @return The simplified representation of this formula, or this object, if
 	 *         already simplified.
 	 */
@@ -129,7 +129,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			isSimplified = true;
 			return this;
 		}
-		
+
 		// Remove true and false terms.  False terms are discarded.  True terms
 		// make the entire formula evaluate to true.
 		Set<BooleanTerm> trimmed = new HashSet<BooleanTerm>();
@@ -147,7 +147,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		if (trimmed.size() != booleanTerms.size()) {
 			booleanTerms = trimmed;
 		}
-		
+
 		// Determine number of unique variable names in the formula
 		Map<String, Integer> names = new TreeMap<String, Integer>();
 		for (Set<BooleanVar> term : booleanTerms) {
@@ -186,13 +186,13 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		if (terms.size() == 0) {
 			return new BooleanFormula(false);
 		}
-		
+
 		terms = expandDontCares(count, terms);
-		
+
 		Formula formula = new Formula(terms);
 		formula.reduceToPrimeImplicants();
 		formula.reducePrimeImplicantsToSubset();
-		
+
 		// now convert back to featureExpression form
 		List<Term> termList = formula.getTermList();
 		if (termList.size() == 0) {
@@ -220,12 +220,12 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		newFormula.isSimplified = true;
 		return newFormula;
 	}
-	
+
 	/**
 	 * Resolves the formula using the boolean values specified in
 	 * <code>features</code>. If there are no more un-resolved variables in the
 	 * forumula, the resulting formula will be either TRUE or FALSE.
-	 * 
+	 *
 	 * @param features
 	 *            the values to assign to variables in the formula
 	 * @return this object
@@ -252,10 +252,10 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		isSimplified = formula.isSimplified;
 		return this;
 	}
-	
+
 	/**
 	 * Adds the terms from the specified formula to this formula
-	 * 
+	 *
 	 * @param other
 	 *            The formula who's terms are to be added
 	 * @return True if the formula was modified.
@@ -263,11 +263,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	public boolean addAll(BooleanFormula other) {
 		return addAll(other.booleanTerms);
 	}
-	
+
 	/**
-	 * Logically ands the provided terms with the terms in the formula, 
+	 * Logically ands the provided terms with the terms in the formula,
 	 * replacing this formula with the result
-	 * 
+	 *
 	 * @param terms
 	 *            the terms to and with this formula
 	 * @return this object.
@@ -302,11 +302,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		isSimplified = newTerms.isSimplified;
 		return this;
 	}
-	
+
 	/**
 	 * Removes the specified terms from the formula
-	 * 
-	 * @param toRemove The set of terms to remove 
+	 *
+	 * @param toRemove The set of terms to remove
 	 * @return True if the formula was modified
 	 */
 	public boolean removeTerms(Set<BooleanTerm> toRemove) {
@@ -318,7 +318,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			modified = removeAll(toRemove);
 		}
 		return modified;
-	}				
+	}
 
 	/**
 	 * Returns true if the formula is known to evaluate to true. Note that the
@@ -326,34 +326,34 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * recognized by this method. To determine if the formula logically
 	 * evaluates to true, call this method on the value returned by
 	 * {@link #simplify()}.
-	 * 
+	 *
 	 * @return True if the formula is known to evaluate to true
 	 */
 	public boolean isTrue() {
 		return booleanTerms == null;
 	}
-	
+
 	/**
 	 * Returns true if the formula is known to evaluate to false. Note that the
 	 * formula may contain terms that logically evaluate to false but will not be
 	 * recognized by this method. To determine if the formula logically
 	 * evaluates to false, call this method on the value returned by
 	 * {@link #simplify()}.
-	 * 
+	 *
 	 * @return True if the formula is known to evaluate to false
 	 */
 	public boolean isFalse() {
 		return booleanTerms != null && booleanTerms.size() == 0;
 	}
-	
+
 	/**
 	 * Adds the term to the formula.  Note that if the formula has
-	 * previously been simplified and determined to evaluate to 
+	 * previously been simplified and determined to evaluate to
 	 * true, then adding any term will have no effect.
 	 * <p>
 	 * A null term represents an expression of true and sets
 	 * the formula to true (null).
-	 * 
+	 *
 	 * @return true if the formula was modified
 	 */
 	@Override
@@ -382,10 +382,10 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		}
 		return modified;
 	}
-	
+
 	/**
 	 * Adds the terms to the formula.  Note that if the formula has
-	 * previously been simplified and determined to evaluate to 
+	 * previously been simplified and determined to evaluate to
 	 * true, then adding any terms will have no effect.
 	 */
 	@Override
@@ -403,7 +403,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		}
 		return modified;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.util.Set#clear()
 	 */
@@ -513,12 +513,12 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	public <T> T[] toArray(T[] array) {
 		return (T[])(booleanTerms == null ? new BooleanTerm[0] : booleanTerms.toArray(new BooleanTerm[booleanTerms.size()]));
 	}
-	
+
 	/**
 	 * Returns true if the set of terms encapsulated by this object is equal
 	 * to the set of terms of the other object.  Note that this is not the same
 	 * as the formulas being logically the same.  If you want to determine if two instances
-	 * of this class represent the same logical expression, then call {@link #simplify()} 
+	 * of this class represent the same logical expression, then call {@link #simplify()}
 	 * on both objects before comparing the returned objects for equality.
 	 */
 	@Override
@@ -532,7 +532,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		}
 		return false;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */
@@ -566,7 +566,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * For example, the array [1, 1, X], [0, X, 0] with don't cares represented
 	 * by X is expanded out to the new array [1, 1, 0], [1, 1, 1], [0, 1 0], [0,
 	 * 0, 0]. Redundant terms are eliminated in the expansion
-	 * 
+	 *
 	 * @param ord
 	 *            The term size
 	 * @param in
@@ -589,20 +589,20 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		}
 		return result;
 	}
-	
+
 
 	/**
-	 * Utility method to expand a term and add it to the list of results when the 
-	 * expansion is complete.  The result terms are represented using a list of 
+	 * Utility method to expand a term and add it to the list of results when the
+	 * expansion is complete.  The result terms are represented using a list of
 	 * integer bit-fields, with each integer representing a term in bit-field form.
 	 * This usage imposes a size limit of  {@link Integer#SIZE} on the terms that
 	 * can be handled by this method.
-	 * 
+	 *
 	 * @param i Shift value used in recursion.  Specify 0 in initial call.
 	 * @param ord Term size
 	 * @param byteValue Used in recursion.  Specify 0 in initial call.
 	 * @param termValue The term being expanded
-	 * @param terms The expanded terms represented as a set of bit-field ints 
+	 * @param terms The expanded terms represented as a set of bit-field ints
 	 */
 	private static void addExpandTerm(int i, int ord, int byteValue, Term termValue, Set<Integer> terms) {
 		if (i < ord) {

@@ -113,44 +113,44 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
-    public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
+	public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
 
-    static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
-    public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
-    public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
+	static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
+	public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
+	public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
 
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
-    private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
+	private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
 
-    private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
-    private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
+	private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
+	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
-    private List<Object> serviceRegistrations = new ArrayList<Object>();
-    private IAggregator aggregator = null;
-    private List<String> extensionContributions = new LinkedList<String>();
+	private List<Object> serviceRegistrations = new ArrayList<Object>();
+	private IAggregator aggregator = null;
+	private List<String> extensionContributions = new LinkedList<String>();
 
-    private List<String> dependentFeatures = null;
-    private IResource depFeatureListResource = null;
+	private List<String> dependentFeatures = null;
+	private IResource depFeatureListResource = null;
 
-    private CountDownLatch depsInitialized = null;
+	private CountDownLatch depsInitialized = null;
 
-    /** default constructor */
-    public AbstractHttpTransport() {}
+	/** default constructor */
+	public AbstractHttpTransport() {}
 
-    /** For unit tests */
-    AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures, long depsLastMod) {
-    	this.depsInitialized = depsInitialized;
-    	this.dependentFeatures = dependentFeatures;
-    	this.depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), depsLastMod);
-    }
+	/** For unit tests */
+	AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures, long depsLastMod) {
+		this.depsInitialized = depsInitialized;
+		this.dependentFeatures = dependentFeatures;
+		this.depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), depsLastMod);
+	}
 
-    /**
-     * Returns the URI to the folder containing the javascript resources
-     * for this transport.
-     *
-     * @return the combo resource URI
-     */
-    protected abstract URI getComboUri();
+	/**
+	 * Returns the URI to the folder containing the javascript resources
+	 * for this transport.
+	 *
+	 * @return the combo resource URI
+	 */
+	protected abstract URI getComboUri();
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#decorateRequest(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.IAggregator)
@@ -171,21 +171,21 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			request.setAttribute(EXPANDREQLOGGING_REQATTRNAME, Boolean.TRUE);
 			request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
 		} else {
-	   		request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, TypeUtil.asBoolean(value));
+			request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, TypeUtil.asBoolean(value));
 		}
-   		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, EXPORTMODULENAMES_REQPARAMS), true));
+		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, EXPORTMODULENAMES_REQPARAMS), true));
 
-   		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
+		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
 
-   		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));
+		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));
 
-   		request.setAttribute(HASPLUGINBRANCHING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, HASPLUGINBRANCHING_REQPARAMS), true));
+		request.setAttribute(HASPLUGINBRANCHING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, HASPLUGINBRANCHING_REQPARAMS), true));
 
-   		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
+		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
 
-   		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
-   			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));
-   		}
+		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
+			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));
+		}
 	}
 
 	/**
@@ -198,45 +198,45 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 */
 	protected Collection<String> getModuleListFromRequest(HttpServletRequest request) throws IOException {
 		List<String> moduleList = new LinkedList<String>();
-        String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
-        String countParam = request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM);
-        int count = 0;
-        if (countParam != null) {
-        	count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
-        }
+		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
+		String countParam = request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM);
+		int count = 0;
+		if (countParam != null) {
+			count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
+		}
 
-        if (moduleQueryArg == null) {
-        	return Collections.emptySet();
-        }
+		if (moduleQueryArg == null) {
+			return Collections.emptySet();
+		}
 
-        try {
+		try {
 			moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
 		} catch (UnsupportedEncodingException e) {
 			throw new BadRequestException(e.getMessage());
 		}
 
 		if (count > 0) {
-	        if (_encJsonMap.containsKey(moduleQueryArg))
-	            moduleList.addAll(_encJsonMap.get(moduleQueryArg));
-	        else {
-	        	try {
-	        		moduleList.addAll(Arrays.asList(unfoldModules(decodeModules(moduleQueryArg), count)));
-	        	} catch (JSONException e) {
-	        		throw new IOException(e);
-	        	}
+			if (_encJsonMap.containsKey(moduleQueryArg))
+				moduleList.addAll(_encJsonMap.get(moduleQueryArg));
+			else {
+				try {
+					moduleList.addAll(Arrays.asList(unfoldModules(decodeModules(moduleQueryArg), count)));
+				} catch (JSONException e) {
+					throw new IOException(e);
+				}
 
-	            // Save buildReader so we don't have to do this again.
-	            _encJsonMap.put(moduleQueryArg, moduleList);
-	        }
-    	} else {
-        	// Hand crafted URL; get module names from one or more module query args
-    		moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
-    		String required = request.getParameter(REQUIRED_REQPARAM);
-    		if (required != null) {
-    			Set<String> requiredSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*"))); //$NON-NLS-1$
-    			request.setAttribute(REQUIRED_REQATTRNAME, Collections.unmodifiableSet(requiredSet));
-    		}
-    	}
+				// Save buildReader so we don't have to do this again.
+				_encJsonMap.put(moduleQueryArg, moduleList);
+			}
+		} else {
+			// Hand crafted URL; get module names from one or more module query args
+			moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
+			String required = request.getParameter(REQUIRED_REQPARAM);
+			if (required != null) {
+				Set<String> requiredSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*"))); //$NON-NLS-1$
+				request.setAttribute(REQUIRED_REQATTRNAME, Collections.unmodifiableSet(requiredSet));
+			}
+		}
 		return Collections.unmodifiableCollection(new ModuleList(moduleList, moduleQueryArg));
 	}
 
@@ -258,44 +258,44 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	}
 
-    /**
-     *  Decode JSON object encoded for url transport.
-     *  Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
-     *  Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
-     *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
-     */
-    protected  JSONObject decodeModules(String encstr) throws IOException {
-        StringBuffer json = new StringBuffer(encstr.length() * 2);
-        Matcher m = DECODE_JSON.matcher(encstr);
-        while (m.find()) {
-            String match = m.group(1);
-            if (match.equals("!")) //$NON-NLS-1$
-                m.appendReplacement(json, ":");     //$NON-NLS-1$
-            else if (match.equals("("))     //$NON-NLS-1$
-                m.appendReplacement(json, "{"); //$NON-NLS-1$
-            else if (match.equals(")"))     //$NON-NLS-1$
-                m.appendReplacement(json, "}"); //$NON-NLS-1$
-            else if (match.equals("|"))     //$NON-NLS-1$
-                m.appendReplacement(json, "!"); //$NON-NLS-1$
-            else if (match.equals("*"))     //$NON-NLS-1$
-                m.appendReplacement(json, ","); //$NON-NLS-1$
-            else if (match.equals("<"))     //$NON-NLS-1$
-                m.appendReplacement(json, "("); //$NON-NLS-1$
-            else if (match.equals(">"))     //$NON-NLS-1$
-                m.appendReplacement(json, ")"); //$NON-NLS-1$
-        }
-        m.appendTail(json);
-        JSONObject decoded = null;
-        String jsonstr = json.toString();
-        jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all keys //$NON-NLS-1$
-        jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all values //$NON-NLS-1$
-        try {
-        	decoded = new JSONObject(jsonstr);
-        } catch (JSONException e) {
-        	throw new BadRequestException(e);
+	/**
+	 *  Decode JSON object encoded for url transport.
+	 *  Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
+	 *  Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
+	 *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
+	 */
+	protected  JSONObject decodeModules(String encstr) throws IOException {
+		StringBuffer json = new StringBuffer(encstr.length() * 2);
+		Matcher m = DECODE_JSON.matcher(encstr);
+		while (m.find()) {
+			String match = m.group(1);
+			if (match.equals("!")) //$NON-NLS-1$
+				m.appendReplacement(json, ":");     //$NON-NLS-1$
+			else if (match.equals("("))     //$NON-NLS-1$
+				m.appendReplacement(json, "{"); //$NON-NLS-1$
+			else if (match.equals(")"))     //$NON-NLS-1$
+				m.appendReplacement(json, "}"); //$NON-NLS-1$
+			else if (match.equals("|"))     //$NON-NLS-1$
+				m.appendReplacement(json, "!"); //$NON-NLS-1$
+			else if (match.equals("*"))     //$NON-NLS-1$
+				m.appendReplacement(json, ","); //$NON-NLS-1$
+			else if (match.equals("<"))     //$NON-NLS-1$
+				m.appendReplacement(json, "("); //$NON-NLS-1$
+			else if (match.equals(">"))     //$NON-NLS-1$
+				m.appendReplacement(json, ")"); //$NON-NLS-1$
 		}
-        return decoded;
-    }
+		m.appendTail(json);
+		JSONObject decoded = null;
+		String jsonstr = json.toString();
+		jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all keys //$NON-NLS-1$
+		jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all values //$NON-NLS-1$
+		try {
+			decoded = new JSONObject(jsonstr);
+		} catch (JSONException e) {
+			throw new BadRequestException(e);
+		}
+		return decoded;
+	}
 
 	/**
 	 * Regular expression for a non-path property (i.e. auxiliary information or processing
@@ -345,48 +345,48 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		return ret;
 	}
 
-    /**
-     * Helper routine to unfold folded module names
-     *
-     * @param obj
-     * @param path
-     * @param modules
-     */
-    protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, String[] modules) throws IOException, JSONException {
-        if (obj instanceof JSONObject) {
-            JSONObject jsonobj = (JSONObject)obj;
-            Iterator<?> it = jsonobj.keySet().iterator();
-            while (it.hasNext()) {
-                String key = (String)it.next();
-                String newpath = path + "/" + key;  //$NON-NLS-1$
-                unfoldModulesHelper(jsonobj.get(key), newpath, aPrefixes, modules);
-            }
-        }
-        else if (obj instanceof String){
-            String[] values = ((String)obj).split("-"); //$NON-NLS-1$
-            try {
-                modules[Integer.parseInt(values[0])] = values.length > 1 ?
-                	((aPrefixes != null ?
-                			aPrefixes[Integer.parseInt(values[1])] : values[1])
-                		+ "!" + path) : //$NON-NLS-1$
-                	path;
-            } catch (Exception e) {
-            	if (log.isLoggable(Level.SEVERE))
-            		log.log(Level.SEVERE, e.getMessage(), e);
-            }
-        } else {
-        	throw new BadRequestException();
-        }
-    }
+	/**
+	 * Helper routine to unfold folded module names
+	 *
+	 * @param obj
+	 * @param path
+	 * @param modules
+	 */
+	protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, String[] modules) throws IOException, JSONException {
+		if (obj instanceof JSONObject) {
+			JSONObject jsonobj = (JSONObject)obj;
+			Iterator<?> it = jsonobj.keySet().iterator();
+			while (it.hasNext()) {
+				String key = (String)it.next();
+				String newpath = path + "/" + key;  //$NON-NLS-1$
+				unfoldModulesHelper(jsonobj.get(key), newpath, aPrefixes, modules);
+			}
+		}
+		else if (obj instanceof String){
+			String[] values = ((String)obj).split("-"); //$NON-NLS-1$
+			try {
+				modules[Integer.parseInt(values[0])] = values.length > 1 ?
+						((aPrefixes != null ?
+								aPrefixes[Integer.parseInt(values[1])] : values[1])
+								+ "!" + path) : //$NON-NLS-1$
+									path;
+			} catch (Exception e) {
+				if (log.isLoggable(Level.SEVERE))
+					log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		} else {
+			throw new BadRequestException();
+		}
+	}
 
-    /**
-     * Returns a map containing the has-condition/value pairs specified in the request
-     *
-     * @param request The http request object
-     * @return The map containing the has-condition/value pairs.
-     * @throws
-     */
-    protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
+	/**
+	 * Returns a map containing the has-condition/value pairs specified in the request
+	 *
+	 * @param request The http request object
+	 * @return The map containing the has-condition/value pairs.
+	 * @throws
+	 */
+	protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
 		Features features = getFeaturesFromRequestEncoded(request);
 		if (features != null) {
 			return features;
@@ -397,19 +397,19 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			if (log.isLoggable(Level.FINEST))
 				log.finest("Adding has parameters from request: " + has); //$NON-NLS-1$
 
-  			for (String s : has.split("[;*]")) { //$NON-NLS-1$
-  				boolean value = true;
-  				if (s.startsWith("!")) { //$NON-NLS-1$
-  					s = s.substring(1);
-  					value = false;
-  				}
-  				features.put(s, value);
-  			}
-  			if (log.isLoggable(Level.FINEST))
+			for (String s : has.split("[;*]")) { //$NON-NLS-1$
+				boolean value = true;
+				if (s.startsWith("!")) { //$NON-NLS-1$
+					s = s.substring(1);
+					value = false;
+				}
+				features.put(s, value);
+			}
+			if (log.isLoggable(Level.FINEST))
 				log.finest("features = " + features.toString()); //$NON-NLS-1$
 		}
 		return features.unmodifiableFeatures();
-    }
+	}
 
 	/**
 	 * This method checks the request for the has conditions which may either be contained in URL
@@ -483,18 +483,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return the optimization level specified in the request
 	 */
 	protected OptimizationLevel getOptimizationLevelFromRequest(HttpServletRequest request) {
-        // Get the optimization level specified in the request and set the ComilationLevel
-        String optimize = getParameter(request, OPTIMIZATIONLEVEL_REQPARAMS);
-        OptimizationLevel level = OptimizationLevel.SIMPLE;
-        if (optimize != null && !optimize.equals("")) { //$NON-NLS-1$
-            if (optimize.equalsIgnoreCase("whitespace")) //$NON-NLS-1$
-                level = OptimizationLevel.WHITESPACE;
-            else if (optimize.equalsIgnoreCase("advanced")) //$NON-NLS-1$
-                level = OptimizationLevel.ADVANCED;
-            else if (optimize.equalsIgnoreCase("none")) //$NON-NLS-1$
-                level = OptimizationLevel.NONE;
-        }
-        return level;
+		// Get the optimization level specified in the request and set the ComilationLevel
+		String optimize = getParameter(request, OPTIMIZATIONLEVEL_REQPARAMS);
+		OptimizationLevel level = OptimizationLevel.SIMPLE;
+		if (optimize != null && !optimize.equals("")) { //$NON-NLS-1$
+			if (optimize.equalsIgnoreCase("whitespace")) //$NON-NLS-1$
+				level = OptimizationLevel.WHITESPACE;
+			else if (optimize.equalsIgnoreCase("advanced")) //$NON-NLS-1$
+				level = OptimizationLevel.ADVANCED;
+			else if (optimize.equalsIgnoreCase("none")) //$NON-NLS-1$
+				level = OptimizationLevel.NONE;
+		}
+		return level;
 	}
 
 	/**
@@ -557,25 +557,25 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		String name = aggregator.getName();
 		Properties dict = new Properties();
 		dict.put("name", name); //$NON-NLS-1$
-    	serviceRegistrations.add(aggregator.getBundleContext().registerService(
+		serviceRegistrations.add(aggregator.getBundleContext().registerService(
 				IConfigModifier.class.getName(), this, dict
-		));
+				));
 		dict = new Properties();
 		dict.put("name", name); //$NON-NLS-1$
-    	serviceRegistrations.add(aggregator.getBundleContext().registerService(
+		serviceRegistrations.add(aggregator.getBundleContext().registerService(
 				IShutdownListener.class.getName(), this, dict
-		));
+				));
 
 		if (featureListResourceUri != null) {
-		    depsInitialized = new CountDownLatch(1);
+			depsInitialized = new CountDownLatch(1);
 
 			// Get first resource factory extension so we can add to beginning of list
-	    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
-	    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
+			Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+			IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
 
-	    	// Register the featureMap resource factory
-	    	dict = new Properties();
-	    	dict.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+			// Register the featureMap resource factory
+			dict = new Properties();
+			dict.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
 			reg.registerExtension(
 					newFeatureListResourceFactory(featureListResourceUri),
 					dict,
@@ -697,7 +697,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		if (cacheBust != null && cacheBust.length() > 0) {
 			sb.append("if (!combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
-				.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
+			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
 		return sb.toString();
 	}
@@ -715,86 +715,86 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @param arg
 	 *            The argument value
 	 */
-    protected void validateLayerContributionState(HttpServletRequest request,
-    		LayerContributionType type, Object arg) {
+	protected void validateLayerContributionState(HttpServletRequest request,
+			LayerContributionType type, Object arg) {
 
-    	LayerContributionType previousType = (LayerContributionType)request.getAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME);
-    	switch (type) {
-    	case BEGIN_RESPONSE:
-    		if (previousType != null) {
-   				throw new IllegalStateException();
-    		}
-    		break;
-    	case BEGIN_MODULES:
-    		if (previousType != LayerContributionType.BEGIN_RESPONSE) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case BEFORE_FIRST_MODULE:
-    		if (previousType != LayerContributionType.BEGIN_MODULES ||
-    			!(arg instanceof String)) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case BEFORE_SUBSEQUENT_MODULE:
-    		if (previousType != LayerContributionType.AFTER_MODULE ||
-    			!(arg instanceof String)) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case AFTER_MODULE:
-    		if (previousType != LayerContributionType.BEFORE_FIRST_MODULE &&
-				previousType != LayerContributionType.BEFORE_SUBSEQUENT_MODULE ||
-				!(arg instanceof String)) {
+		LayerContributionType previousType = (LayerContributionType)request.getAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME);
+		switch (type) {
+		case BEGIN_RESPONSE:
+			if (previousType != null) {
 				throw new IllegalStateException();
 			}
 			break;
-    	case END_MODULES:
-    		if (previousType != LayerContributionType.AFTER_MODULE) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case BEGIN_REQUIRED_MODULES:
-    		if (previousType != LayerContributionType.BEGIN_RESPONSE &&
-    			previousType != LayerContributionType.END_MODULES ||
-    			!(arg instanceof Set)) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case BEFORE_FIRST_REQUIRED_MODULE:
-    		if (previousType != LayerContributionType.BEGIN_REQUIRED_MODULES ||
-    			!(arg instanceof String)) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
-    		if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
-    			!(arg instanceof String)) {
-   			    throw new IllegalStateException();
-    		}
-    		break;
-    	case AFTER_REQUIRED_MODULE:
-    		if (previousType != LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE &&
-    			previousType != LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE ||
-    			!(arg instanceof String)) {
+		case BEGIN_MODULES:
+			if (previousType != LayerContributionType.BEGIN_RESPONSE) {
 				throw new IllegalStateException();
 			}
 			break;
-    	case END_REQUIRED_MODULES:
-    		if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
-    			!(arg instanceof Set)) {
-    			throw new IllegalStateException();
-    		}
-    		break;
-    	case END_RESPONSE:
-    		if (previousType != LayerContributionType.END_MODULES &&
-   			    previousType != LayerContributionType.END_REQUIRED_MODULES) {
-   			    throw new IllegalStateException();
-    		}
-    		break;
-    	}
-    	request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
-    }
+		case BEFORE_FIRST_MODULE:
+			if (previousType != LayerContributionType.BEGIN_MODULES ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case BEFORE_SUBSEQUENT_MODULE:
+			if (previousType != LayerContributionType.AFTER_MODULE ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case AFTER_MODULE:
+			if (previousType != LayerContributionType.BEFORE_FIRST_MODULE &&
+			previousType != LayerContributionType.BEFORE_SUBSEQUENT_MODULE ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case END_MODULES:
+			if (previousType != LayerContributionType.AFTER_MODULE) {
+				throw new IllegalStateException();
+			}
+			break;
+		case BEGIN_REQUIRED_MODULES:
+			if (previousType != LayerContributionType.BEGIN_RESPONSE &&
+			previousType != LayerContributionType.END_MODULES ||
+			!(arg instanceof Set)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case BEFORE_FIRST_REQUIRED_MODULE:
+			if (previousType != LayerContributionType.BEGIN_REQUIRED_MODULES ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
+			if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case AFTER_REQUIRED_MODULE:
+			if (previousType != LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE &&
+			previousType != LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case END_REQUIRED_MODULES:
+			if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
+			!(arg instanceof Set)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case END_RESPONSE:
+			if (previousType != LayerContributionType.END_MODULES &&
+			previousType != LayerContributionType.END_REQUIRED_MODULES) {
+				throw new IllegalStateException();
+			}
+			break;
+		}
+		request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
+	}
 
 	/**
 	 * Returns the has conditions specified in the request as a base64 encoded
@@ -922,8 +922,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 			boolean result = false;
 			if (StringUtils.equals(uri.getPath(), resourceUri.getPath()) &&
-				StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) &&
-				StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
+					StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) &&
+					StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
 				result = true;
 			}
 			if (traceLogging) {
@@ -944,8 +944,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 			// validate the URI
 			if (!StringUtils.equals(uri.getPath(), resourceUri.getPath()) ||
-				!StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) ||
-				!StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
+					!StringUtils.equals(uri.getScheme(), resourceUri.getScheme()) ||
+					!StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
 				return new ExceptionResource(uri, 0, new IOException(new UnsupportedOperationException()));
 			}
 			// wait for dependencies to be initialized

@@ -32,8 +32,8 @@ import java.util.concurrent.Future;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * Objects of this class are returned in a {@link Future} from 
- * {@link IModule#getBuild(HttpServletRequest)}.  This class is merely 
+ * Objects of this class are returned in a {@link Future} from
+ * {@link IModule#getBuild(HttpServletRequest)}.  This class is merely
  * a wrapper for the items that, taken together, represent a module build.
  */
 public class ModuleBuildReader extends Reader {
@@ -42,11 +42,11 @@ public class ModuleBuildReader extends Reader {
 	private List<ModuleBuildFuture> after;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private boolean error;
-	
+
 	/**
 	 * Constructor for a Build object specifying a reader, key generator
 	 * and error flag.
-	 * 
+	 *
 	 * @param reader A {@link Reader} to the build content
 	 * @param keyGens The {@link ICacheKeyGenerator} list for this IModule
 	 * @param error True if this module build contains an error response
@@ -60,41 +60,41 @@ public class ModuleBuildReader extends Reader {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	/**
 	 * Consturctor for a reader with no cache key generator and no error
-	 * 
+	 *
 	 * @param reader A {@link Reader} to the build content
 	 */
 	public ModuleBuildReader(Reader reader) {
 		this(reader, null, false);
 	}
-	
+
 	/**
 	 * Constructor for a build reader from a string
-	 * 
+	 *
 	 * @param str the string
 	 */
 	public ModuleBuildReader(String str) {
 		this(new StringReader(str));
 	}
-		
+
 	/**
 	 * Returns the cache key generator for this module
-	 * 
+	 *
 	 * @return The cache key generator
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators() {
 		return keyGenerators;
 	}
-	
+
 	/**
 	 * Returns the error flag for this build. If true, an error occurred
 	 * while generating the build. Responses containing build errors are not
 	 * cached by the layer cache manager, and HTTP responses for layers that
 	 * include build errors include cache control headers to prevent the
 	 * response from being cached by the browser or proxy caches.
-	 * 
+	 *
 	 * @return The error flag for the build
 	 */
 	public boolean isError() {
@@ -116,12 +116,12 @@ public class ModuleBuildReader extends Reader {
 	public void close() throws IOException {
 		reader.close();
 	}
-	
+
 	/**
 	 * Adds the specified future to the list of before futures.
 	 * <p>
 	 * Before futures are processed ahead of this future.
-	 * 
+	 *
 	 * @param future The future to add to the before list
 	 */
 	public void addBefore(ModuleBuildFuture future) {
@@ -130,12 +130,12 @@ public class ModuleBuildReader extends Reader {
 		}
 		before.add(future);
 	}
-	
+
 	/**
 	 * Adds the specified future to the list of after futures.
 	 * <p>
 	 * After futures are processed following this future.
-	 * 
+	 *
 	 * @param future The future to add to the before after
 	 */
 	public void addAfter(ModuleBuildFuture future) {
@@ -144,21 +144,21 @@ public class ModuleBuildReader extends Reader {
 		}
 		after.add(future);
 	}
-	
+
 	/**
-	 * Returns the list of additional futures that should be processed ahead 
+	 * Returns the list of additional futures that should be processed ahead
 	 * of this future
-	 * 
+	 *
 	 * @return The list of before futures.
 	 */
 	public List<ModuleBuildFuture> getBefore() {
 		return before == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(before);
 	}
-	
+
 	/**
-	 * Returns the list of additional futures that should be processed following 
+	 * Returns the list of additional futures that should be processed following
 	 * this future
-	 * 
+	 *
 	 * @return The list of after futures.
 	 */
 	public List<ModuleBuildFuture> getAfter() {

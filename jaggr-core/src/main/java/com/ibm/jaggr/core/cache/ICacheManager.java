@@ -28,7 +28,7 @@ import java.util.regex.Pattern;
 /**
  *
  * The cache manager for the aggregator service.
- * <ul>  
+ * <ul>
  * <li>Implements functionality used by console commands for dumping and clearing the cache</li>
  * <li>Provides a thread executor service for the module builders</li>
  * <li>Provides utility methods for asynchronously creating and deleting cache files</li>
@@ -36,37 +36,37 @@ import java.util.regex.Pattern;
  * </ul>
  */
 public interface ICacheManager {
-    
-    /**
-     * Clears the cache
-     */
-    public void clearCache();
-    
+
 	/**
-	 * Outputs the string representation of the cache to the specified 
+	 * Clears the cache
+	 */
+	public void clearCache();
+
+	/**
+	 * Outputs the string representation of the cache to the specified
 	 * writer, filtered using the specified regular expression pattern
-	 * 
+	 *
 	 * @param writer
 	 *            The writer object to output to
 	 * @param filter
 	 *            The regular expression filter, or null
 	 * @throws IOException
 	 */
-    public void dumpCache(Writer writer, Pattern filter) throws IOException;
-    
+	public void dumpCache(Writer writer, Pattern filter) throws IOException;
+
 	/**
 	 * Returns the current cache object
-	 * 
+	 *
 	 * @return The cache object
 	 */
 	public ICache getCache();
-	
+
 	/**
 	 * Utility method to create a cache file on an asynchronous thread.
-	 * 
+	 *
 	 * @param fileName
 	 *            The filename of the cache file.  The cache file with the
-	 *            specified name will be created in the cache directory.  The 
+	 *            specified name will be created in the cache directory.  The
 	 *            filename may not include a path component
 	 * @param content
 	 *            The {@link InputStream} to read the file contents from
@@ -74,10 +74,10 @@ public interface ICacheManager {
 	 *            The completion callback
 	 */
 	public void createNamedCacheFileAsync(String fileName, InputStream content, CreateCompletionCallback callback);
-	
+
 	/**
 	 * Utility method to create a cache file on an asynchronous thread.
-	 * 
+	 *
 	 * @param fileNamePrefix
 	 *            The prefix to use for the generated file name
 	 * @param content
@@ -86,13 +86,13 @@ public interface ICacheManager {
 	 *            The completion callback
 	 */
 	public void createCacheFileAsync(String fileNamePrefix, InputStream content, CreateCompletionCallback callback);
-	
+
 	/**
 	 * Utility method to create a cache file on an asynchronous thread.
-	 * 
+	 *
 	 * @param filename
 	 *            The filename of the cache file.  The cache file with the
-	 *            specified name will be created in the cache directory.  The 
+	 *            specified name will be created in the cache directory.  The
 	 *            filename may not include a path component
 	 * @param content
 	 *            The {@link Reader} to read the file contents from
@@ -103,7 +103,7 @@ public interface ICacheManager {
 
 	/**
 	 * Utility method to create a cache file on an asynchronous thread.
-	 * 
+	 *
 	 * @param fileNamePrefix
 	 *            The prefix to use for the generated file name
 	 * @param content
@@ -115,7 +115,7 @@ public interface ICacheManager {
 
 	/**
 	 * Utility method to externalize an object on an asynchronous thread.
-	 * 
+	 *
 	 * @param filename
 	 *            The prefix to use for the generated file name
 	 * @param object
@@ -124,23 +124,23 @@ public interface ICacheManager {
 	 *            The completion callback
 	 */
 	public void externalizeCacheObjectAsync(String filename, Object object, CreateCompletionCallback callback);
-	
+
 	/**
-	 * Utility method to asynchronously delete cache files after a delay 
+	 * Utility method to asynchronously delete cache files after a delay
 	 * period specified by {@link IOptions#getDeleteDelay()}.  The idea is
-	 * to delay deleting the cache file long enough so that any threads 
+	 * to delay deleting the cache file long enough so that any threads
 	 * which may be using the file at the time this method is called have
 	 * finished with it and no longer need it.  Note that the file may be
-	 * deleted before the delay time has expired if the aggregator is 
+	 * deleted before the delay time has expired if the aggregator is
 	 * shutdown before the delay time has expired
-	 * 
+	 *
 	 * @param filename The name of the cache file to delete.
 	 */
 	public void deleteFileDelayed(String filename);
 
 	/**
 	 * Returns the {@link File} object for the cache directory.
-	 * 
+	 *
 	 * @return The cache directory
 	 */
 	public File getCacheDir();
@@ -157,7 +157,7 @@ public interface ICacheManager {
 		/**
 		 * This method is called when a cache file has been created or an
 		 * exception occurred while trying to creat it.
-		 * 
+		 *
 		 * @param filename
 		 *            The file name of the cache file, not including path
 		 *            information, or null if an exception occurred. The file is
@@ -170,5 +170,4 @@ public interface ICacheManager {
 		 */
 		void completed(String filename, Exception e);
 	}
-	
 }

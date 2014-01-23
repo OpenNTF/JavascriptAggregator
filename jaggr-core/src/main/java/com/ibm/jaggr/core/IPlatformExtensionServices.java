@@ -30,7 +30,7 @@ public interface IPlatformExtensionServices {
 	 * implementations. This is useful for environments which do not support
 	 * eclipse extension point and their schemas and it helps in getting the
 	 * attributes of the extensions.
-	 * 
+	 *
 	 * @return A Properties object for the associated extension point
 	 *         implementation.
 	 */
@@ -39,11 +39,9 @@ public interface IPlatformExtensionServices {
 	/**
 	 * This method is called during the initialization of eclipse extension
 	 * point. This is useful for non-osgi environments which do not support
-	 * eclipse extension point and this method replaces the 
+	 * eclipse extension point and this method replaces the
 	 * <code>setInitializationData()</code> callback performed by the OSGi
 	 * framework .
-	 * 
 	 */
 	public void setInitializationData();
-
 }

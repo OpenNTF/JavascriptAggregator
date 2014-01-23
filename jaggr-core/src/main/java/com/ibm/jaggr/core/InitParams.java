@@ -37,7 +37,7 @@ public class InitParams implements Iterable<InitParam>{
 	/**
 	 * Name of the servlet init-param that specifies the name of the
 	 * httptransport plugin extension used by this servlet.
-	 * 
+	 *
 	 * @see com.ibm.jaggr.core.transport.IHttpTransport
 	 */
 	public static final String TRANSPORT_INITPARAM = "httptransport"; //$NON-NLS-1$
@@ -61,25 +61,25 @@ public class InitParams implements Iterable<InitParam>{
 	public static final String CONFIG_INITPARAM = "config"; //$NON-NLS-1$
 	/**
 	 * Name of the servlet init-param that specifies the filename of the java properties
-	 * file containing the aggregator options (see {@link IOptions}).  If not 
+	 * file containing the aggregator options (see {@link IOptions}).  If not
 	 * specified, then the aggregator will look for options properties in the file
-	 * aggregator.properties in the home directory of the user that started the 
+	 * aggregator.properties in the home directory of the user that started the
 	 * aggregator.
 	 */
 	public static final String OPTIONS_INITPARAM = "options"; //$NON-NLS-1$
 
 	/**
-	 * Name of the servlet init-param that specifies the maximum capacity of 
+	 * Name of the servlet init-param that specifies the maximum capacity of
 	 * the layer cache in megabytes.
 	 */
-	public static final String MAXLAYERCACHECAPACITY_MB_INITPARAM = "maxlayercachecapacity_mb"; //$NON-NLS-1$ 
-	
+	public static final String MAXLAYERCACHECAPACITY_MB_INITPARAM = "maxlayercachecapacity_mb"; //$NON-NLS-1$
+
 	/**
-	 * The init-params 
+	 * The init-params
 	 */
 	private List<InitParam> initParams;
 	/**
-	 * Init params are name/value pairs 
+	 * Init params are name/value pairs
 	 */
 	public static class InitParam {
 		private final String name;
@@ -95,21 +95,21 @@ public class InitParams implements Iterable<InitParam>{
 		public String getName() { return name; }
 		public String getValue() { return value; }
 	}
-	
+
 	/**
 	 * Constructor from a {@code List}
-	 * 
+	 *
 	 * @param initParams
 	 */
 	public InitParams(List<InitParam> initParams) {
 		this.initParams = initParams;
 	}
-	
+
 	/**
 	 * Returns a list of the values for the init-param(s) with the
 	 * specified name, or an empty collection if there are no init-params with
 	 * the specified name.
-	 * 
+	 *
 	 * @param name
 	 *            the init-param name
 	 * @return the collection of values for the init-params with the specified
@@ -124,11 +124,11 @@ public class InitParams implements Iterable<InitParam>{
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Returns a collection of the init-param names, or an empty collection
 	 * if there are no init-params
-	 * 
+	 *
 	 * @return The collection of init-param names
 	 */
 	public Collection<String> getNames() {
@@ -138,7 +138,7 @@ public class InitParams implements Iterable<InitParam>{
 		}
 		return names;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Iterable#iterator()
 	 */

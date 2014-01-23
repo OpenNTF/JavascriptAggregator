@@ -37,13 +37,13 @@ import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 
 /**
- * This class specializes JavaScriptModuleBuilder for text modules.  Text modules are returned as 
+ * This class specializes JavaScriptModuleBuilder for text modules.  Text modules are returned as
  * javascript modules wrapped in a define() statement.
  */
 public class TextModuleBuilder implements IModuleBuilder {
-	
-	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators = 
-		Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()}));
+
+	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators =
+			Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()}));
 
 	/**
 	 * Returns the compiler input source for the text module as the text stream
@@ -53,13 +53,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 	 * @see com.ibm.domino.servlets.aggrsvc.modules.JsModule#getSourceFile()
 	 */
 	@Override
-	public ModuleBuild build(
-			String mid, 
-			IResource resource, 
-			HttpServletRequest request,
-			List<ICacheKeyGenerator> keyGens
-			) 
-	throws Exception {
+	public ModuleBuild build(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {
 		StringBuffer sb = new StringBuffer();
 		Boolean exportMid = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
 		Boolean noTextAdorn = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
@@ -74,23 +68,18 @@ public class TextModuleBuilder implements IModuleBuilder {
 		CopyUtil.copy(
 				new JavaScriptEscapingReader(
 						getContentReader(mid, resource, request, keyGens)
-				), 
-				writer
-		);
+						),
+						writer
+				);
 		sb.append(writer.toString());
 		sb.append(noTextAdorn ? "'" : "');"); //$NON-NLS-1$ //$NON-NLS-2$
 		return new ModuleBuild(sb.toString(), keyGens, false);
 	}
-	
-	protected Reader getContentReader(
-			String mid,
-			IResource resource, 
-			HttpServletRequest request,
-			List<ICacheKeyGenerator> keyGens) 
-	throws IOException {
+
+	protected Reader getContentReader(String mid,	IResource resource,	HttpServletRequest request,	List<ICacheKeyGenerator> keyGens)	throws IOException {
 		return resource.getReader();
 	}
-	
+
 	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		return s_cacheKeyGenerators;

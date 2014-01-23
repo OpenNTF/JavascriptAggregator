@@ -25,10 +25,9 @@ import javax.servlet.http.HttpServletRequest;
  * Simple cache key generator for export names option. Used by multiple
  * builders.
  */
-public final class ExportNamesCacheKeyGenerator extends
-		AbstractCacheKeyGenerator {
+public final class ExportNamesCacheKeyGenerator extends AbstractCacheKeyGenerator {
 	private static final long serialVersionUID = -1888066677992730471L;
-	
+
 	private static final String eyecatcher = "expn"; //$NON-NLS-1$
 
 	/* (non-Javadoc)
@@ -40,17 +39,17 @@ public final class ExportNamesCacheKeyGenerator extends
 				.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
 		return eyecatcher + ":" + (exportNames ? "1" : "0"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
-	
-	@Override 
+
+	@Override
 	public String toString() {
 		return eyecatcher;
 	}
-	
+
 	@Override
 	public boolean equals(Object other) {
 		return other != null && this.getClass().equals(other.getClass());
 	}
-	
+
 	@Override
 	public int hashCode() {
 		return this.getClass().hashCode();

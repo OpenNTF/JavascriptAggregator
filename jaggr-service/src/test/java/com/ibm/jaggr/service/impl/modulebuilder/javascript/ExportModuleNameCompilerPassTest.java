@@ -21,12 +21,12 @@ import com.google.javascript.jscomp.Compiler.CodeBuilder;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
-import junit.framework.Assert;
-
 import org.junit.Test;
 
+import junit.framework.Assert;
+
 public class ExportModuleNameCompilerPassTest {
-	
+
 	private ExportModuleNameCompilerPass pass = new ExportModuleNameCompilerPass();
 
 	@Test
@@ -36,7 +36,7 @@ public class ExportModuleNameCompilerPassTest {
 		output = runPass("test", code);
 		System.out.println(output);
 		Assert.assertTrue(output.contains("define(\"test\",["));
-		
+
 		code = "(function(){define(['a', 'b'], function(a, b) {})})();";
 		output = runPass("test", code);
 		System.out.println(output);
@@ -46,23 +46,23 @@ public class ExportModuleNameCompilerPassTest {
 		output = runPass("test", code);
 		System.out.println(output);
 		Assert.assertTrue(output.contains("define(\"test\",["));
-		
+
 		code = "define({color:'black', size:'unisize'});";
 		output = runPass("test", code);
 		System.out.println(output);
 		Assert.assertTrue(output.contains("define(\"test\",{"));
-		
+
 		code = "define(function(){return {color:'black', size:'unisize'}});";
 		output = runPass("test", code);
 		System.out.println(output);
 		Assert.assertTrue(output.contains("define(\"test\",function"));
-		
+
 		code = "define('named', ['a', 'b'], function(a, b) {});";
 		output = runPass("test", code);
 		System.out.println(output);
 		Assert.assertFalse(output.contains("test"));
-		
-}
+
+	}
 
 	private String runPass(String moduleName, String code) {
 		Compiler compiler = new Compiler();
@@ -72,5 +72,5 @@ public class ExportModuleNameCompilerPassTest {
 		compiler.toSource(cb, 0, root);
 		return cb.toString();
 	}
-	
+
 }

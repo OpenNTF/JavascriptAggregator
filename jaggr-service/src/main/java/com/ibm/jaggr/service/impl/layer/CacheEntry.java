@@ -35,10 +35,10 @@ import javax.servlet.http.HttpServletRequest;
  * Class to encapsulate operations on layer builds.  Uses {@link ExecutorService}
  * objects to asynchronously create and delete cache files.  Cache files are deleted
  * using a {@link ScheduledExecutorService} with a delay to allow sufficient time
- * for any threads that may still be using the file to be done with them. 
+ * for any threads that may still be using the file to be done with them.
  * <p>
  * This class avoids synchronization by declaring the instance variables volatile and being
- * careful about the order in which variables are assigned and read.  See comments in the 
+ * careful about the order in which variables are assigned and read.  See comments in the
  * various methods for details.
  */
 class CacheEntry implements Serializable {
@@ -51,7 +51,7 @@ class CacheEntry implements Serializable {
 	final int layerId;
 	final String layerKey;
 	final long lastModified;
-	
+
 	/* Copy constructor */
 	CacheEntry(CacheEntry other) {
 		layerId = other.layerId;
@@ -62,17 +62,17 @@ class CacheEntry implements Serializable {
 		size = other.size;
 		delete = other.delete;
 	}
-	
+
 	CacheEntry(int layerId, String layerKey, long lastModified) {
 		this.layerId = layerId;
 		this.layerKey = layerKey;
 		this.lastModified = lastModified;
 	}
 	/**
-	 * Return an input stream to the layer.  Has side effect of setting the 
+	 * Return an input stream to the layer.  Has side effect of setting the
 	 * appropriate Content-Type, Content-Length and Content-Encoding headers
 	 * in the response.
-	 * 
+	 *
 	 * @return The InputStream for the built layer
 	 * @throws IOException
 	 */
@@ -90,12 +90,12 @@ class CacheEntry implements Serializable {
 		}
 		return in;
 	}
-	
+
 	/**
 	 * Can fail by returning null, but won't throw an exception.  Will also return null
 	 * if no data is available after waiting for 10 seconds.
-	 * 
-	 * @return The LayerInputStream, or null if data is not available 
+	 *
+	 * @return The LayerInputStream, or null if data is not available
 	 */
 	public InputStream tryGetInputStream(HttpServletRequest request) throws IOException {
 		InputStream in = null;
@@ -112,7 +112,7 @@ class CacheEntry implements Serializable {
 		}
 		return in;
 	}
-	
+
 	/**
 	 * @param bytes
 	 */
@@ -120,10 +120,10 @@ class CacheEntry implements Serializable {
 		this.size = bytes.length;
 		this.bytes = bytes;
 	}
-	
+
 	/**
 	 * Delete the cached build after the specified delay in minues
-	 * 
+	 *
 	 * @param mgr
 	 *            The cache manager. May be null if persist hasn't yet been
 	 *            called, in which case, persist will have no effect when it
@@ -133,34 +133,34 @@ class CacheEntry implements Serializable {
 		delete = true;
 		if (filename != null) {
 			mgr.deleteFileDelayed(filename);
-		} 
+		}
 	}
-	
+
 	/**
 	 * @return True if the file for this entry has been deleted.
 	 */
 	public boolean isDeleted() {
 		return delete;
 	}
-	
+
 	/**
 	 * @return The name of the cache file for this entry
 	 */
 	public String getFilename() {
 		return filename;
 	}
-	
+
 	/**
 	 * @return The size of the data for this cache entry
 	 */
 	public int getSize() {
 		return size;
 	}
-	
+
 	/**
-	 * Asynchronously write the layer build content to disk and set filename to the 
+	 * Asynchronously write the layer build content to disk and set filename to the
 	 * name of the cache files when done.
-	 * 
+	 *
 	 * @param mgr The cache manager
 	 */
 	public void persist(final ICacheManager mgr) throws IOException {
@@ -174,15 +174,15 @@ class CacheEntry implements Serializable {
 					synchronized (this) {
 						if (!delete) {
 							if (e == null) {
-				                // Set filename before clearing bytes 
-				                filename = fname;
-				                // Free up the memory for the content now that we've written out to disk
-				                // TODO:  Determine a size threshold where we may want to keep the contents
-				                // of small files in memory to reduce disk i/o.
-				                bytes = null;
+								// Set filename before clearing bytes
+								filename = fname;
+								// Free up the memory for the content now that we've written out to disk
+								// TODO:  Determine a size threshold where we may want to keep the contents
+								// of small files in memory to reduce disk i/o.
+								bytes = null;
 							}
 						} else {
-			    			mgr.deleteFileDelayed(fname);
+							mgr.deleteFileDelayed(fname);
 						}
 					}
 				}

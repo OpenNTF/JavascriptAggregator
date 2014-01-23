@@ -35,13 +35,13 @@ import java.text.MessageFormat;
  */
 public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
 
-    static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/"; //$NON-NLS-1$ //$NON-NLS-2$
+	static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/"; //$NON-NLS-1$ //$NON-NLS-2$
 
-    private String resourcePathId = null;
+	private String resourcePathId = null;
 
-    private URI comboUri = null;
+	private URI comboUri = null;
 
-    private String pluginUniqueId = null;
+	private String pluginUniqueId = null;
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
@@ -59,7 +59,7 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 				throw new CoreException(
 						new Status(Status.ERROR, config.getNamespaceIdentifier(),
 								e.getMessage(), e)
-					);
+						);
 			}
 		}
 
@@ -69,12 +69,12 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 		if (resourcePathId == null) {
 			throw new CoreException(
 					new Status(Status.ERROR, config.getNamespaceIdentifier(),
-						MessageFormat.format(
-							Messages.AbstractHttpTransport_1,
-							new Object[]{config.getDeclaringExtension().getUniqueIdentifier()}
-						)
-					)
-				);
+							MessageFormat.format(
+									Messages.AbstractHttpTransport_1,
+									new Object[]{config.getDeclaringExtension().getUniqueIdentifier()}
+									)
+							)
+					);
 		}
 		// Save this extension's pluginUniqueId
 		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
@@ -86,7 +86,7 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 			throw new CoreException(
 					new Status(Status.ERROR, config.getNamespaceIdentifier(),
 							e.getMessage(), e)
-				);
+					);
 		}
 	}
 

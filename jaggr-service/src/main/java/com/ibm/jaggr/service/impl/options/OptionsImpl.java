@@ -222,9 +222,9 @@ public class OptionsImpl  implements IOptions {
 	 * @return The properties file.
 	 */
 	public File getPropsFile() {
-    	String homedir = System.getProperty("user.home"); //$NON-NLS-1$
-    	String filename = getPropsFilename();
-    	return filename != null ? new File(homedir, filename) : null;
+		String homedir = System.getProperty("user.home"); //$NON-NLS-1$
+		String filename = getPropsFilename();
+		return filename != null ? new File(homedir, filename) : null;
 	}
 
 	/**
@@ -239,39 +239,39 @@ public class OptionsImpl  implements IOptions {
 	 */
 	protected Properties loadProps(Properties props) {
 
-    	// try to load the properties file first from the user's home directory
-    	File file = getPropsFile();
-    	if (file != null) {
-	    	InputStream in = null;
-	    	try {
-	    		// Try to load the file from the user's home directory
-		    	if (file.exists()) {
-		    		in = new FileInputStream(file);
-		    	}
-		    	if (in == null) {
-		    		// Try to load it from the bundle
-		    		if(aggregator != null){
-			   			URL url = aggregator.getPlatformServices().getResource(getPropsFilename());
-			    		if (url != null) {
-			    			in = url.openStream();
-			    		}
-		    		}
-		    	}
-	    		if (in == null) {
-	    			// try using the class loader
-	   				in = this.getClass().getClassLoader().getResourceAsStream(getPropsFilename());
-	    		}
-		    	if (in != null) {
-			        props.load(in);
-			        in.close();
-		    	}
-	    	} catch (IOException e) {
-	    		if (log.isLoggable(Level.WARNING)) {
-	    			log.log(Level.SEVERE, e.getMessage(), e);
-	    		}
-	    	}
-    	}
-    	return props;
+		// try to load the properties file first from the user's home directory
+		File file = getPropsFile();
+		if (file != null) {
+			InputStream in = null;
+			try {
+				// Try to load the file from the user's home directory
+				if (file.exists()) {
+					in = new FileInputStream(file);
+				}
+				if (in == null) {
+					// Try to load it from the bundle
+					if(aggregator != null){
+						URL url = aggregator.getPlatformServices().getResource(getPropsFilename());
+						if (url != null) {
+							in = url.openStream();
+						}
+					}
+				}
+				if (in == null) {
+					// try using the class loader
+					in = this.getClass().getClassLoader().getResourceAsStream(getPropsFilename());
+				}
+				if (in != null) {
+					props.load(in);
+					in.close();
+				}
+			} catch (IOException e) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
+		}
+		return props;
 	}
 
 	/**

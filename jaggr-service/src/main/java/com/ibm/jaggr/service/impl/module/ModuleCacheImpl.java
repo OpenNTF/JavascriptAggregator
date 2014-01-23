@@ -54,18 +54,18 @@ public class ModuleCacheImpl implements IModuleCache, Serializable {
 	 */
 	@Override
 	public void dump(Writer writer, Pattern filter) throws IOException {
-    	String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
-    	for (Map.Entry<String, IModule> entry : cacheMap.entrySet()) {
-    		if (filter != null) {
-    			Matcher m = filter.matcher(entry.getKey());
-    			if (!m.find())
-    				continue;
-    		}
-    		writer.append("IModule key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
-    		writer.append(entry.getValue().toString()).append(linesep).append(linesep);
-    	}
+		String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
+		for (Map.Entry<String, IModule> entry : cacheMap.entrySet()) {
+			if (filter != null) {
+				Matcher m = filter.matcher(entry.getKey());
+				if (!m.find())
+					continue;
+			}
+			writer.append("IModule key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
+			writer.append(entry.getValue().toString()).append(linesep).append(linesep);
+		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleCache#getBuild(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.module.IModule)
 	 */
@@ -87,26 +87,26 @@ public class ModuleCacheImpl implements IModuleCache, Serializable {
 				// an exceptions instead of letting the cache grow unbounded
 				throw new NotFoundException(resource.getURI().toString());
 			}
-			// NotFound modules are not cached.  If the module is in the cache (because a 
+			// NotFound modules are not cached.  If the module is in the cache (because a
 			// source file has been deleted), then remove the cached module.
-    		cachedModule = cacheMap.remove(cacheKey);
-    		if (cachedModule != null) {
-	        	if (moduleCacheInfo != null) {
-	        		moduleCacheInfo.put(cacheKey, "remove"); //$NON-NLS-1$
-	        	}
-	        	cachedModule.clearCached(aggr.getCacheManager());
-    		}
+			cachedModule = cacheMap.remove(cacheKey);
+			if (cachedModule != null) {
+				if (moduleCacheInfo != null) {
+					moduleCacheInfo.put(cacheKey, "remove"); //$NON-NLS-1$
+				}
+				cachedModule.clearCached(aggr.getCacheManager());
+			}
 			// create a new NotFoundModule
 			module = new NotFoundModule(module.getModuleId(), module.getURI());
-	    	request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+			request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
 		} else {
 			// add it to the module cache if not already there
 			if (!RequestUtil.isIgnoreCached(request)) {
 				cachedModule = cacheMap.putIfAbsent(cacheKey, module);
 			}
-        	if (moduleCacheInfo != null) {
+			if (moduleCacheInfo != null) {
 				moduleCacheInfo.put(cacheKey, (cachedModule != null) ? "hit" : "add"); //$NON-NLS-1$ //$NON-NLS-2$
-        	}
+			}
 			module = cachedModule != null ? cachedModule : module;
 		}
 		return module.getBuild(request);
@@ -127,7 +127,7 @@ public class ModuleCacheImpl implements IModuleCache, Serializable {
 	public int size() {
 		return cacheMap.size();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleCache#contains(java.lang.String)
 	 */
@@ -147,7 +147,7 @@ public class ModuleCacheImpl implements IModuleCache, Serializable {
 	@Override
 	public void clear() {
 		cacheMap.clear();
-		
+
 	}
 
 	@Override

@@ -55,24 +55,24 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 
 	/**
 	 * Element constructor.
-	 * 
+	 *
 	 * @param dependentFeatures
 	 *            Set of feature names that this cache key generator depends on.
 	 *            The key output by this key generator will contain only those
 	 *            features from the request that are included in
 	 *            {@code dependentFeatures}.  If the value is null, then all
-	 *            the features specified in the request are included in the 
+	 *            the features specified in the request are included in the
 	 *            generated cache key.
 	 * @param provisional
 	 *            True if this is a provisional cache key generator.
 	 */
 	public FeatureSetCacheKeyGenerator(Set<String> dependentFeatures,
 			boolean provisional) {
-		depFeatures = dependentFeatures == null ? null : 
-				Collections.unmodifiableSet(new HashSet<String>(dependentFeatures));
+		depFeatures = dependentFeatures == null ? null :
+			Collections.unmodifiableSet(new HashSet<String>(dependentFeatures));
 		this.provisional = provisional;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
 	 */
@@ -105,8 +105,8 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 					}
 				}
 			}
-			
-			// Remove from the map all the features that this generator doesn't 
+
+			// Remove from the map all the features that this generator doesn't
 			// depend on.
 			map.keySet().retainAll(depFeatures);
 		}
@@ -120,7 +120,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 			sb.append(entry.getKey());
 		}
 		sb.insert(0, eyecatcher + "{").append("}").toString(); //$NON-NLS-1$ //$NON-NLS-2$
-		return sb.toString(); 
+		return sb.toString();
 	}
 
 	/* (non-Javadoc)
@@ -144,7 +144,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 		Set<String> combined = new HashSet<String>();
 		if (depFeatures != null) {
 			combined.addAll(depFeatures);
-		} 
+		}
 		if (other.depFeatures != null) {
 			combined.addAll(other.depFeatures);
 		}
@@ -180,22 +180,22 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 		// results are not request dependent.
 		return null;
 	}
-	
+
 	public Collection<String> getFeatureSet() {
 		return depFeatures;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other != null && getClass().equals(other.getClass()) && 
+		return other != null && getClass().equals(other.getClass()) &&
 				provisional == ((FeatureSetCacheKeyGenerator)other).provisional &&
 				(
-					depFeatures != null && depFeatures.equals(((FeatureSetCacheKeyGenerator)other).depFeatures) ||
-					depFeatures == null && ((FeatureSetCacheKeyGenerator)other).depFeatures == null
-				);
-		
+						depFeatures != null && depFeatures.equals(((FeatureSetCacheKeyGenerator)other).depFeatures) ||
+						depFeatures == null && ((FeatureSetCacheKeyGenerator)other).depFeatures == null
+						);
+
 	}
-	
+
 	@Override
 	public int hashCode() {
 		int result = getClass().hashCode();

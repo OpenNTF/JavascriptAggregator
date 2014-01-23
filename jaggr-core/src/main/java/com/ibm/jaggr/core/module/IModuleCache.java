@@ -32,19 +32,18 @@ import javax.servlet.http.HttpServletRequest;
  * Interface for module cache object
  */
 public interface IModuleCache extends Serializable {
-	
+
 	public static final String MODULECACHEINFO_PROPNAME = IModuleCache.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
 
-	
 	/**
-	 * Returns the module with the specified key, or null if the 
+	 * Returns the module with the specified key, or null if the
 	 * module with the specified key is not in the cache
-	 * 
+	 *
 	 * @param key the module key
 	 * @return the requested module or null
 	 */
 	IModule get(String key);
-	
+
 	/**
 	 * Returns a future to the build reader for requested module.  If the build
 	 * already exists in the cache, then a completed future for the reader to the
@@ -52,51 +51,51 @@ public interface IModuleCache extends Serializable {
 	 * that will complete when the build has finished is returned.
 	 */
 	Future<ModuleBuildReader> getBuild(HttpServletRequest request, IModule module) throws IOException;
-	
+
 	/**
-	 * Returns true if the module with the specified key is in the 
+	 * Returns true if the module with the specified key is in the
 	 * cache
-	 * 
+	 *
 	 * @param key the module key
 	 * @return true if the specified module is in the cache
 	 */
 	boolean contains(String key);
 
 	/**
-	 * Remove all modules in the cache 
+	 * Remove all modules in the cache
 	 */
 	public void clear();
-	
+
 	/**
 	 * Returns the number of entries in the layer cache
-	 * 
+	 *
 	 * @return the number of entries
 	 */
 	public int size();
-	
+
 	/**
 	 * Returns the set of keys associated with entries in the cache
-	 * 
+	 *
 	 * @return the key set
 	 */
 	public Set<String> getKeys();
-	
-    /**
-     * Output the cache info to the specified Writer
-     * 
-     * @param writer the target Writer
-     * @param filter Optional filter argument
-     * @throws IOException
-     */
+
+	/**
+	 * Output the cache info to the specified Writer
+	 *
+	 * @param writer the target Writer
+	 * @param filter Optional filter argument
+	 * @throws IOException
+	 */
 	public void dump(Writer writer, Pattern filter) throws IOException;
 
 	/**
-	 * Called for newly created (or de-serialized) caches to set the 
-	 * aggregator instance for this cache.  Note that the aggregator may not be fully 
-     * initialized at the time that this method is called and some aggregator
-     * methods (like {@link IAggregator#getConfig()} may return null if called
-     * from within this method.
-	 * 
+	 * Called for newly created (or de-serialized) caches to set the
+	 * aggregator instance for this cache.  Note that the aggregator may not be fully
+	 * initialized at the time that this method is called and some aggregator
+	 * methods (like {@link IAggregator#getConfig()} may return null if called
+	 * from within this method.
+	 *
 	 * @param aggregator The aggregator instance for the cache
 	 */
 	public void setAggregator(IAggregator aggregator);
