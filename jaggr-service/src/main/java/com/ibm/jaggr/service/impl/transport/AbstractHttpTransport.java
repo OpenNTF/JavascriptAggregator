@@ -19,6 +19,7 @@ package com.ibm.jaggr.service.impl.transport;
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -43,16 +44,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.wink.json4j.JSONArray;
 import org.apache.wink.json4j.JSONException;
 import org.apache.wink.json4j.JSONObject;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.ServiceRegistration;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -88,12 +81,12 @@ import javax.servlet.http.HttpServletRequest;
  * Implements common functionality useful for all Http Transport implementation
  * and defines abstract methods that subclasses need to implement
  */
-public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener, IDependenciesListener {
+public abstract class AbstractHttpTransport implements IHttpTransport, IConfigModifier, IShutdownListener, IDependenciesListener {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
 	public static final String PATH_ATTRNAME = "path"; //$NON-NLS-1$
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
-	
+
 	public static final String REQUESTEDMODULES_REQPARAM = "modules"; //$NON-NLS-1$
 	public static final String REQUESTEDMODULESCOUNT_REQPARAM = "count"; //$NON-NLS-1$
 	public static final String REQUIRED_REQPARAM = "required"; //$NON-NLS-1$
@@ -114,66 +107,65 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	public static final String[] NOCACHE_REQPARAMS = {"noCache", "nc"}; //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final String[] REQUESTEDLOCALES_REQPARAMS = {"locales", "locs"}; //$NON-NLS-1$ //$NON-NLS-2$
-	
-	public static final String[] HASPLUGINBRANCHING_REQPARAMS = {"hasBranching", "hb"}; //$NON-NLS-1$ //$NON-NLS-2$ 
-	
+
+	public static final String[] HASPLUGINBRANCHING_REQPARAMS = {"hasBranching", "hb"}; //$NON-NLS-1$ //$NON-NLS-2$
+
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
-	
+
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
     public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
-    
+
     static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
     public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
     public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
 
 	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
     private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
-    
+
     private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
     private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
-    private String resourcePathId;
-    private List<ServiceRegistration> serviceRegistrations = new ArrayList<ServiceRegistration>();
+    private List<Object> serviceRegistrations = new ArrayList<Object>();
     private IAggregator aggregator = null;
     private List<String> extensionContributions = new LinkedList<String>();
 
     private List<String> dependentFeatures = null;
     private IResource depFeatureListResource = null;
-    
+
     private CountDownLatch depsInitialized = null;
-    
+
     /** default constructor */
     public AbstractHttpTransport() {}
-    	
+
     /** For unit tests */
     AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures, long depsLastMod) {
     	this.depsInitialized = depsInitialized;
     	this.dependentFeatures = dependentFeatures;
     	this.depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), depsLastMod);
     }
-    
+
     /**
      * Returns the URI to the folder containing the javascript resources
      * for this transport.
-     * 
+     *
      * @return the combo resource URI
      */
     protected abstract URI getComboUri();
-    
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#decorateRequest(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.IAggregator)
 	 */
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
-		
+
 		// Get module list from request
 		request.setAttribute(REQUESTEDMODULES_REQATTRNAME, getModuleListFromRequest(request));
-		
+
 		// Get the feature list, if any
 		request.setAttribute(FEATUREMAP_REQATTRNAME, getFeaturesFromRequest(request));
-		
+
 		request.setAttribute(OPTIMIZATIONLEVEL_REQATTRNAME, getOptimizationLevelFromRequest(request));
-		
+
 		String value = getParameter(request, EXPANDREQUIRELISTS_REQPARAMS);
 		if ("log".equals(value)) { //$NON-NLS-1$
 			request.setAttribute(EXPANDREQLOGGING_REQATTRNAME, Boolean.TRUE);
@@ -182,24 +174,24 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	   		request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, TypeUtil.asBoolean(value));
 		}
    		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, EXPORTMODULENAMES_REQPARAMS), true));
-   		
+
    		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
-   		
+
    		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));
-   		
+
    		request.setAttribute(HASPLUGINBRANCHING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, HASPLUGINBRANCHING_REQPARAMS), true));
-   		
+
    		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
 
    		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
    			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));
    		}
 	}
-	
+
 	/**
 	 * Unfolds the folded module list in the request into a {@code Collection<String>}
 	 * of module names.
-	 * 
+	 *
 	 * @param request the request object
 	 * @return the Collection of module names
 	 * @throws IOException
@@ -212,11 +204,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
         if (countParam != null) {
         	count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
         }
-        
+
         if (moduleQueryArg == null) {
         	return Collections.emptySet();
         }
-        
+
         try {
 			moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
 		} catch (UnsupportedEncodingException e) {
@@ -232,11 +224,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	        	} catch (JSONException e) {
 	        		throw new IOException(e);
 	        	}
-	            
+
 	            // Save buildReader so we don't have to do this again.
 	            _encJsonMap.put(moduleQueryArg, moduleList);
 	        }
-    	} else {  
+    	} else {
         	// Hand crafted URL; get module names from one or more module query args
     		moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
     		String required = request.getParameter(REQUIRED_REQPARAM);
@@ -247,12 +239,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     	}
 		return Collections.unmodifiableCollection(new ModuleList(moduleList, moduleQueryArg));
 	}
-	
+
 	/**
 	 * Returns the requested locales as a collection of locale strings
-	 * 
+	 *
 	 * @param request the request object
-	 * @return the locale strings 
+	 * @return the locale strings
 	 */
 	protected Collection<String> getRequestedLocales(HttpServletRequest request) {
 		String[] locales;
@@ -263,14 +255,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			locales = new String[0];
 		}
 		return Collections.unmodifiableCollection(Arrays.asList(locales));
-		
+
 	}
-	
+
     /**
      *  Decode JSON object encoded for url transport.
      *  Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
      *  Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
-     *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.  
+     *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
      */
     protected  JSONObject decodeModules(String encstr) throws IOException {
         StringBuffer json = new StringBuffer(encstr.length() * 2);
@@ -304,13 +296,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
         return decoded;
     }
-    
+
 	/**
 	 * Regular expression for a non-path property (i.e. auxiliary information or processing
 	 * instruction) of a folded path json object.
 	 */
 	static public Pattern NON_PATH_PROP_PATTERN = Pattern.compile("^/[^/]+/$"); //$NON-NLS-1$
-	
+
 	/**
 	 * Name of folded path json property used to identify the names of loader
 	 * plugin prefixes and their ordinals used in the folded path.  This must
@@ -318,14 +310,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * slashes (/) ensure that the name won't collide with a real path name.
 	 */
 	static public String PLUGIN_PREFIXES_PROP_NAME = "/pre/"; //$NON-NLS-1$
-	
+
 	/**
 	 * Unfolds a folded module name list into a String array of unfolded names
 	 * <p>
 	 * The returned list must be sorted the same way it was requested ordering
 	 * modules in the same way as in the companion js extension to amd loader
 	 * order provided in the folded module leaf
-	 * 
+	 *
 	 * @param modules
 	 *            The folded module name list
 	 * @param count
@@ -352,10 +344,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
 		return ret;
 	}
-    
+
     /**
-     * Helper routine to unfold folded module names 
-     * 
+     * Helper routine to unfold folded module names
+     *
      * @param obj
      * @param path
      * @param modules
@@ -373,9 +365,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
         else if (obj instanceof String){
             String[] values = ((String)obj).split("-"); //$NON-NLS-1$
             try {
-                modules[Integer.parseInt(values[0])] = values.length > 1 ? 
-                	((aPrefixes != null ? 
-                			aPrefixes[Integer.parseInt(values[1])] : values[1]) 
+                modules[Integer.parseInt(values[0])] = values.length > 1 ?
+                	((aPrefixes != null ?
+                			aPrefixes[Integer.parseInt(values[1])] : values[1])
                 		+ "!" + path) : //$NON-NLS-1$
                 	path;
             } catch (Exception e) {
@@ -386,13 +378,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
         	throw new BadRequestException();
         }
     }
-    
+
     /**
      * Returns a map containing the has-condition/value pairs specified in the request
-     * 
+     *
      * @param request The http request object
      * @return The map containing the has-condition/value pairs.
-     * @throws  
+     * @throws
      */
     protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
 		Features features = getFeaturesFromRequestEncoded(request);
@@ -420,11 +412,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     }
 
 	/**
-	 * This method checks the request for the has conditions which may either be contained in URL 
+	 * This method checks the request for the has conditions which may either be contained in URL
 	 * query arguments or in a cookie sent from the client.
-	 * 
+	 *
 	 * @return The has conditions from the request.
-	 * @throws UnsupportedEncodingException 
+	 * @throws UnsupportedEncodingException
 	 */
 	protected String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
 
@@ -455,13 +447,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
 		else
 			ret = request.getParameter(FEATUREMAP_REQPARAM);
-		
+
 		return ret;
 	}
-    
+
 	/**
 	 * Returns the value of the requested parameter from the request, or null
-	 * 
+	 *
 	 * @param request
 	 *            the request object
 	 * @param aliases
@@ -486,7 +478,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 
 	/**
 	 * Returns the requested optimization level from the request.
-	 * 
+	 *
 	 * @param request the request object
 	 * @return the optimization level specified in the request
 	 */
@@ -504,10 +496,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
         }
         return level;
 	}
-    
+
 	/**
 	 * Extends the default implementation of {@link LinkedList} to override
-	 * the {@code toString) method (used in generating layer cache keys) so 
+	 * the {@code toString) method (used in generating layer cache keys) so
 	 * that we can return the folded module name list (allowing for more
 	 * compact cache keys).
 	 */
@@ -520,7 +512,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			super(source);
 			this.stringized = stringized;
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see java.util.AbstractCollection#toString()
 		 */
@@ -531,47 +523,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	}
 
 	/* (non-Javadoc)
-	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
-	 */
-	@Override
-	public void setInitializationData(IConfigurationElement config, String propertyName,
-			Object data) throws CoreException {
-		
-		// Make sure the contributing bundle is started
-		Bundle contributingBundle = Platform.getBundle(config.getNamespaceIdentifier());
-		if (contributingBundle.getState() != Bundle.ACTIVE) {
-			try {
-				contributingBundle.start();
-			} catch (BundleException e) {
-				throw new CoreException(
-						new Status(Status.ERROR, config.getNamespaceIdentifier(), 
-								e.getMessage(), e)
-					);
-			}
-		}
-		
-		// Get the resource (combo) path name from the this extension's 
-		// path attribute
-		resourcePathId = config.getAttribute(PATH_ATTRNAME);
-		if (resourcePathId == null) {
-			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(),
-						MessageFormat.format(
-							Messages.AbstractHttpTransport_1, 
-							new Object[]{config.getDeclaringExtension().getUniqueIdentifier()}
-						)
-					)
-				);
-		}
-	}
-	
-	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
 	@Override
 	public void modifyConfig(IAggregator aggregator, Scriptable config) {
-		// The server-side AMD config has been updated.  Add an entry to the 
-		// {@code paths} property to map the resource (combo) path to the 
+		// The server-side AMD config has been updated.  Add an entry to the
+		// {@code paths} property to map the resource (combo) path to the
 		// location of the combo resources on the server.
 		Context context = Context.enter();
 		try {
@@ -586,7 +543,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			Context.exit();
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IExtensionInitializer#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
 	 */
@@ -595,7 +552,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		this.aggregator = aggregator;
 
 		URI featureListResourceUri = getFeatureListResourceUri();
-		// register a config listener so that we get notified of changes to 
+		// register a config listener so that we get notified of changes to
 		// the server-side AMD config file.
 		String name = aggregator.getName();
 		Properties dict = new Properties();
@@ -610,20 +567,20 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		));
 
 		if (featureListResourceUri != null) {
-		    depsInitialized = new CountDownLatch(1); 
+		    depsInitialized = new CountDownLatch(1);
 
 			// Get first resource factory extension so we can add to beginning of list
 	    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
 	    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
-	
+
 	    	// Register the featureMap resource factory
 	    	dict = new Properties();
 	    	dict.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
 			reg.registerExtension(
-					newFeatureListResourceFactory(featureListResourceUri), 
+					newFeatureListResourceFactory(featureListResourceUri),
 					dict,
 					IResourceFactoryExtensionPoint.ID,
-					getPluginUniqueId(),
+					getTransportId(),
 					first);
 
 			// Register the dependencies listener
@@ -631,7 +588,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			serviceRegistrations.add(aggregator.getBundleContext().registerService(
 					IDependenciesListener.class.getName(), this, dict));
-		}	
+		}
 	}
 
 	/* (non-Javadoc)
@@ -640,27 +597,28 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		// unregister the service registrations
-		for (ServiceRegistration reg : serviceRegistrations) {
+		IPlatformServices platformServices = aggregator.getPlatformServices();
+		for (Object reg : serviceRegistrations) {
 			if (reg != null) {
-				reg.unregister();
+				platformServices.unRegisterService(reg);
 			}
 		}
 		serviceRegistrations.clear();
 	}
-	
+
 	/**
-	 * Returns the unique id for the implementing plugin.  Must
+	 * Returns the unique id for the transport.  Must
 	 * be implemented by subclasses.
-	 * 
+	 *
 	 * @return the plugin unique id.
 	 */
-	abstract protected String getPluginUniqueId();
+	abstract protected String getTransportId();
 
 	/**
 	 * Default implementation that returns null URI. Subclasses should
 	 * implement this method to return the loader specific URI to the resource
 	 * that implements the featureMap JavaScript code.
-	 * 
+	 *
 	 * @return null
 	 */
 	protected URI getFeatureListResourceUri() {
@@ -669,23 +627,21 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 
 	/**
 	 * Returns the aggregator instance that created this transport
-	 * 
+	 *
 	 * @return the aggregator
 	 */
 	protected IAggregator getAggregator() {
 		return aggregator;
 	}
-	
+
 	/**
 	 * Returns the resource (combo) path id specified by the transport's
 	 * plugin extension {@code path} attribute
-	 * 
+	 *
 	 * @return the resource path id
 	 */
-	protected String getResourcePathId() {
-		return resourcePathId;
-	}
-	
+	abstract protected String getResourcePathId();
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#contributeLoaderExtensionJavaScript(java.lang.String)
 	 */
@@ -711,21 +667,21 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 */
 	@Override
 	public abstract List<ICacheKeyGenerator> getCacheKeyGenerators();
-	
+
 	/**
 	 * Returns the extension contributions that have been registered with this
 	 * transport
-	 * 
+	 *
 	 * @return the extension contributions
 	 */
 	protected List<String> getExtensionContributions() {
 		return extensionContributions;
 	}
-	
+
 	/**
 	 * Returns the dynamic portion of the loader extension javascript for this
 	 * transport.  This includes all registered extension contributions.
-	 * 
+	 *
 	 * @return the dynamic portion of the loader extension javascript
 	 */
 	protected String getDynamicLoaderExtensionJavaScript() {
@@ -736,7 +692,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		String cacheBust = aggregator.getConfig().getCacheBust();
 		String optionsCb = aggregator.getOptions().getCacheBust();
 		if (optionsCb != null && optionsCb.length() > 0) {
-			cacheBust = (cacheBust != null && cacheBust.length() > 0) ? 
+			cacheBust = (cacheBust != null && cacheBust.length() > 0) ?
 					(cacheBust + "-" + optionsCb) : optionsCb; //$NON-NLS-1$
 		}
 		if (cacheBust != null && cacheBust.length() > 0) {
@@ -745,12 +701,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
 		return sb.toString();
 	}
-	
+
 	/**
 	 * Validate the {@link LayerContributionState} and argument type specified
 	 * in a call to
 	 * {@link #getLayerContribution(HttpServletRequest, com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType, Object)}
-	 * 
+	 *
 	 * @param request
 	 *            The http request object
 	 * @param type
@@ -759,7 +715,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * @param arg
 	 *            The argument value
 	 */
-    protected void validateLayerContributionState(HttpServletRequest request, 
+    protected void validateLayerContributionState(HttpServletRequest request,
     		LayerContributionType type, Object arg) {
 
     	LayerContributionType previousType = (LayerContributionType)request.getAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME);
@@ -775,13 +731,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     		}
     		break;
     	case BEFORE_FIRST_MODULE:
-    		if (previousType != LayerContributionType.BEGIN_MODULES || 
+    		if (previousType != LayerContributionType.BEGIN_MODULES ||
     			!(arg instanceof String)) {
     			throw new IllegalStateException();
     		}
     		break;
     	case BEFORE_SUBSEQUENT_MODULE:
-    		if (previousType != LayerContributionType.AFTER_MODULE || 
+    		if (previousType != LayerContributionType.AFTER_MODULE ||
     			!(arg instanceof String)) {
     			throw new IllegalStateException();
     		}
@@ -806,20 +762,20 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     		}
     		break;
     	case BEFORE_FIRST_REQUIRED_MODULE:
-    		if (previousType != LayerContributionType.BEGIN_REQUIRED_MODULES || 
+    		if (previousType != LayerContributionType.BEGIN_REQUIRED_MODULES ||
     			!(arg instanceof String)) {
     			throw new IllegalStateException();
     		}
     		break;
     	case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
-    		if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE || 
+    		if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
     			!(arg instanceof String)) {
    			    throw new IllegalStateException();
     		}
     		break;
     	case AFTER_REQUIRED_MODULE:
     		if (previousType != LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE &&
-    			previousType != LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE || 
+    			previousType != LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE ||
     			!(arg instanceof String)) {
 				throw new IllegalStateException();
 			}
@@ -839,7 +795,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
     	}
     	request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
     }
-    
+
 	/**
 	 * Returns the has conditions specified in the request as a base64 encoded
 	 * trit map of feature values where each trit (three state value - 0, 1 and
@@ -850,7 +806,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 	 * <p>
 	 * Each byte from the base64 decoded byte array encodes 5 trits (3**5 = 243
 	 * states out of the 256 possible states).
-	 * 
+	 *
 	 * @param request
 	 *            The http request object
 	 * @return the decoded feature list as a string, or null
@@ -918,10 +874,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Returns an instance of a FeatureMapJSResourceFactory.
-	 * 
+	 *
 	 * @param resourcePath
 	 *            the resource path
 	 * @return a new factory object
@@ -938,18 +894,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
 		return factory;
 	}
-	
+
 	/**
 	 * Resource factory for serving the featureMap JavaScript resource containing the
-	 * dynamically generated list of dependent features.  This list is used by the 
-	 * client to encode the states of the features as a trit map of values over 
-	 * the list, where each trit in the encoded data is the value of a feature 
-	 * in the list. 
+	 * dynamically generated list of dependent features.  This list is used by the
+	 * client to encode the states of the features as a trit map of values over
+	 * the list, where each trit in the encoded data is the value of a feature
+	 * in the list.
 	 */
 	protected class FeatureListResourceFactory implements IResourceFactory {
-		
+
 		private final URI resourceUri;
-		
+
 		public FeatureListResourceFactory(URI resourceUri) {
 			this.resourceUri = resourceUri;
 		}
@@ -998,18 +954,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			} catch (InterruptedException e) {
 				return new ExceptionResource(uri, 0L, new IOException(e));
 			}
-			IResource result = depFeatureListResource; 
+			IResource result = depFeatureListResource;
 			if (traceLogging) {
 				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, depFeatureListResource);
 			}
 			return result;
 		}
 	}
-	
+
 	/**
 	 * Creates an {@link IResource} object for the dependent feature list AMD
 	 * module
-	 * 
+	 *
 	 * @param list
 	 *            the dependent features list
 	 * @param uri
@@ -1027,7 +983,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		}
 		StringBuffer sb = new StringBuffer();
 		sb.append(FEATURE_LIST_PRELUDE).append(json).append(FEATURE_LIST_PROLOGUE);
-		IResource result = new StringResource(sb.toString(), uri, lastmod); 
+		IResource result = new StringResource(sb.toString(), uri, lastmod);
 		return result;
 	}
 
@@ -1057,26 +1013,26 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, t.getMessage(), t);
 			}
-			// Clear the latch to allow the waiting thread to wake up.  If 
+			// Clear the latch to allow the waiting thread to wake up.  If
 			// dependencies have never been initialized, then NullPointerExceptions
-			// will be thrown for any threads trying to access the uninitialized 
+			// will be thrown for any threads trying to access the uninitialized
 			// dependencies.
 			depsInitialized.countDown();
-			
+
 		}
-	}	
+	}
 	/**
-	 * Implementation of an {@link IResource} that aggregates the various 
-	 * sources (dynamic and static content) of the loader extension 
+	 * Implementation of an {@link IResource} that aggregates the various
+	 * sources (dynamic and static content) of the loader extension
 	 * javascript for this transport
 	 */
 	protected class LoaderExtensionResource implements IResource, IResourceVisitor.Resource {
 		IResource res;
-		
+
 		public LoaderExtensionResource(IResource res) {
 			this.res = res;
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResource#getURI()
 		 */
@@ -1108,13 +1064,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IExecutab
 		public InputStream getInputStream() throws IOException {
 			return new ReaderInputStream(getReader(), "UTF-8"); //$NON-NLS-1$
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResource#getReader()
 		 */
 		@Override
 		public Reader getReader() throws IOException {
-			
+
 			// Return an aggregation reader for the loader extension javascript
 			return new AggregationReader(
 					"(function(){", //$NON-NLS-1$
