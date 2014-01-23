@@ -40,7 +40,7 @@ import java.util.List;
 
 import junit.framework.Assert;
 
-public class DojoHttpTransportTest {
+public class AbstractDojoHttpTransportTest {
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {

@@ -18,7 +18,7 @@ package com.ibm.jaggr.service;
 
 import com.ibm.jaggr.service.deps.ModuleDepInfoTest;
 import com.ibm.jaggr.service.deps.ModuleDepsTest;
-import com.ibm.jaggr.service.impl.AggregatorImplTest;
+import com.ibm.jaggr.service.impl.AbstractAggregatorImplTest;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImplTest;
 import com.ibm.jaggr.service.impl.config.ConfigTests;
 import com.ibm.jaggr.service.impl.deps.BooleanFormulaTest;
@@ -40,7 +40,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.text.TxtModuleContentProviderTes
 import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
 import com.ibm.jaggr.service.impl.resource.FileResourceTests;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
-import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
+import com.ibm.jaggr.service.impl.transport.AbstractDojoHttpTransportTest;
 import com.ibm.jaggr.service.util.BooleanTermTest;
 import com.ibm.jaggr.service.util.DependencyListTest;
 import com.ibm.jaggr.service.util.DependencyListTest_processDep;
@@ -70,8 +70,8 @@ import org.junit.runners.Suite;
 	TxtModuleContentProviderTest.class,
 	RequireExpansionCompilerPassTest.class,
 	AbstractHttpTransportTest.class,
-	DojoHttpTransportTest.class,
-	AggregatorImplTest.class,
+	AbstractDojoHttpTransportTest.class,
+	AbstractAggregatorImplTest.class,
 	BundleResourceFactoryTests.class,
 	FileResourceTests.class,
 	CacheManagerImplTest.class,
