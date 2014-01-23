@@ -16,28 +16,6 @@
 
 package com.ibm.jaggr.service.impl.transport;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import javax.servlet.http.HttpServletRequest;
-
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
-import org.eclipse.core.runtime.Status;
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.Scriptable;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
@@ -52,6 +30,28 @@ import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.service.impl.Activator;
+
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExecutableExtension;
+import org.eclipse.core.runtime.Status;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Implements the functionality specific for the Dojo Http Transport (supporting

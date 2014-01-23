@@ -16,6 +16,19 @@
 
 package com.ibm.jaggr.service.impl.cache;
 
+import com.google.common.io.Files;
+
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.ICacheManager.CreateCompletionCallback;
+import com.ibm.jaggr.service.test.TestUtils;
+
+import junit.framework.Assert;
+
+import org.easymock.EasyMock;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,18 +37,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.regex.Pattern;
-
-import junit.framework.Assert;
-
-import org.easymock.EasyMock;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.cache.ICacheManager.CreateCompletionCallback;
-import com.ibm.jaggr.service.test.TestUtils;
 
 public class CacheManagerImplTest {
 	

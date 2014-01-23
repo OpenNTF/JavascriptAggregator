@@ -16,6 +16,13 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.PathUtil;
+
+import org.apache.commons.lang.StringUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -40,13 +47,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.apache.commons.lang.StringUtils;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.core.util.PathUtil;
 
 /**
  * This class provides the service for creating dependency maps from a set of

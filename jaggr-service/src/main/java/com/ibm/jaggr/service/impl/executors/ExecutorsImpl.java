@@ -16,6 +16,10 @@
 
 package com.ibm.jaggr.service.impl.executors;
 
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.options.IOptions;
+
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -28,10 +32,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.executors.IExecutors;
-import com.ibm.jaggr.core.options.IOptions;
 
 public class ExecutorsImpl implements IExecutors {
 

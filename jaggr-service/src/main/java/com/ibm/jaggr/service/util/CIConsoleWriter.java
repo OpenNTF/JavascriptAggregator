@@ -15,9 +15,9 @@
  */
 package com.ibm.jaggr.service.util;
 
-import org.eclipse.osgi.framework.console.CommandInterpreter;
-
 import com.ibm.jaggr.core.util.ConsoleService.ConsoleWriter;
+
+import org.eclipse.osgi.framework.console.CommandInterpreter;
 
 public class CIConsoleWriter implements ConsoleWriter {
 

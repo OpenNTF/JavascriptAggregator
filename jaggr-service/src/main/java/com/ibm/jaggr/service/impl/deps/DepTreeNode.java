@@ -16,6 +16,9 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.util.PathUtil;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
@@ -32,9 +35,6 @@ import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.util.PathUtil;
 
 /**
  * This class is the node object for a module dependency. Nodes are organized in

@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.ibm.jaggr.core.config.IConfig;
+
 import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
-
-import com.ibm.jaggr.core.config.IConfig;
 
 @SuppressWarnings("serial")
 public class DepTreeRoot extends DepTreeNode {

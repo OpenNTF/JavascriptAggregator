@@ -23,20 +23,21 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.Map;
+import com.google.common.io.Files;
+
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.test.TestUtils;
 
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.test.TestUtils;
+import java.io.File;
+import java.util.Arrays;
+import java.util.Map;
 
 public class DepTreeNodeTests extends EasyMock {
 	File tmpdir = null;

@@ -22,6 +22,45 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.io.Files;
+
+import com.ibm.jaggr.core.DependencyVerificationException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.layer.ILayerListener.EventType;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.impl.module.ModuleImpl;
+import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.TestUtils.Ref;
+
+import junit.framework.Assert;
+
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.api.easymock.PowerMock;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -51,44 +90,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
-
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.easymock.PowerMock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.DependencyVerificationException;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.layer.ILayerListener.EventType;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.readers.ModuleBuildReader;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.DependencyList;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.RequestUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest( JavaScriptModuleBuilder.class )

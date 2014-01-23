@@ -16,13 +16,13 @@
 
 package com.ibm.jaggr.core.resource;
 
-import java.net.URI;
-import java.util.Properties;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
+
+import java.net.URI;
+import java.util.Properties;
 
 /**
  * This interface is implemented by resource factories which create instances of

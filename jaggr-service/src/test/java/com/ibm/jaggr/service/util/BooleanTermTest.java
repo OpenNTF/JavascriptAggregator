@@ -20,14 +20,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.junit.Test;
-
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.BooleanVar;
 import com.ibm.jaggr.core.util.Features;
+
+import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class BooleanTermTest {
 

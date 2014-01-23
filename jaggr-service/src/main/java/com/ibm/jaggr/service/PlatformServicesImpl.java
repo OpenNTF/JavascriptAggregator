@@ -16,10 +16,8 @@
 
 package com.ibm.jaggr.service;
 
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.Dictionary;
+import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.PlatformServicesException;
 
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -27,8 +25,10 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
-import com.ibm.jaggr.core.IPlatformServices;
-import com.ibm.jaggr.core.PlatformServicesException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.Dictionary;
 
 /**
  * This class provides the OSGi implementation of the

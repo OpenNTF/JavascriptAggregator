@@ -16,9 +16,6 @@
 
 package com.ibm.jaggr.service;
 
-import org.junit.runner.RunWith;
-import org.junit.runners.Suite;
-
 import com.ibm.jaggr.service.deps.ModuleDepInfoTest;
 import com.ibm.jaggr.service.deps.ModuleDepsTest;
 import com.ibm.jaggr.service.impl.AggregatorImplTest;
@@ -47,6 +44,9 @@ import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
 import com.ibm.jaggr.service.util.BooleanTermTest;
 import com.ibm.jaggr.service.util.DependencyListTest;
 import com.ibm.jaggr.service.util.DependencyListTest_processDep;
+
+import org.junit.runner.RunWith;
+import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
 @Suite.SuiteClasses(value = { 

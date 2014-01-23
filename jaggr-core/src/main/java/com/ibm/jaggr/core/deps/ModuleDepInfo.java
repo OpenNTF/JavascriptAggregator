@@ -16,17 +16,17 @@
 
 package com.ibm.jaggr.core.deps;
 
+import com.ibm.jaggr.core.util.BooleanFormula;
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.BooleanVar;
+import com.ibm.jaggr.core.util.Features;
+
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.TreeSet;
-
-import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.BooleanVar;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.BooleanFormula;
 
 
 /**

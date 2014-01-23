@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.core.layer;
 
+import com.ibm.jaggr.core.IAggregator;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
@@ -23,8 +25,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
 
 
 /**

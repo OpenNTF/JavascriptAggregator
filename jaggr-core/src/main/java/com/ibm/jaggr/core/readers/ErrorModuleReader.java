@@ -16,12 +16,12 @@
 
 package com.ibm.jaggr.core.readers;
 
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.TypeUtil;
+
 import java.io.StringReader;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 public class ErrorModuleReader extends AggregationReader {
 	private static final String prologueFmt = "(function(msg){console.%s(msg);(typeof define==='function')&&define('%s',[],function(){throw new Error(msg)})})(\""; //$NON-NLS-1$

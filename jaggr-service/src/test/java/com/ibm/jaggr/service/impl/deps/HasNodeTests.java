@@ -16,7 +16,10 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
-import java.util.HashSet;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.HasNode;
 
 import junit.framework.Assert;
 
@@ -26,10 +29,7 @@ import org.easymock.IAnswer;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.HasNode;
+import java.util.HashSet;
 
 public class HasNodeTests extends EasyMock {
 	Capture<String> containsFeature = new Capture<String>();

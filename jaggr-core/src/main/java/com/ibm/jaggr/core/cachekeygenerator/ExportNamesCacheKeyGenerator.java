@@ -16,10 +16,10 @@
 
 package com.ibm.jaggr.core.cachekeygenerator;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.TypeUtil;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Simple cache key generator for export names option. Used by multiple

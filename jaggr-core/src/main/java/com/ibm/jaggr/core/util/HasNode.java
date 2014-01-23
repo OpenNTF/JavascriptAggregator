@@ -16,12 +16,12 @@
 
 package com.ibm.jaggr.core.util;
 
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
-import com.ibm.jaggr.core.deps.ModuleDeps;
 
 /**
  * Recursive has condition checking. Performs full ternary expression parsing

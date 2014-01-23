@@ -16,6 +16,17 @@
 
 package com.ibm.jaggr.service.impl.module;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.module.ModuleIdentifier;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.util.RequestUtil;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
@@ -28,17 +39,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.NotFoundException;
-import com.ibm.jaggr.core.layer.ILayer;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.module.IModuleCache;
-import com.ibm.jaggr.core.module.ModuleIdentifier;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.readers.ModuleBuildReader;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.util.RequestUtil;
 
 /**
  * This class implements the {@link IModuleCache} interface by extending {@link ConcurrentHashMap}

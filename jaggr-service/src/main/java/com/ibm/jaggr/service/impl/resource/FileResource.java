@@ -16,6 +16,10 @@
 
 package com.ibm.jaggr.service.impl.resource;
 
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -27,10 +31,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceFactory;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 /**
  * An implementation of {@link IResource} for File resources

@@ -16,6 +16,19 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.i18n;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.I18nCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.Prioritized;
+import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -32,19 +45,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cachekeygenerator.I18nCacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.Prioritized;
-import com.ibm.jaggr.core.util.TypeUtil;
-import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 
 /**
  * This class extends {@link JavaScriptModuleBuilder} to add support for expanding

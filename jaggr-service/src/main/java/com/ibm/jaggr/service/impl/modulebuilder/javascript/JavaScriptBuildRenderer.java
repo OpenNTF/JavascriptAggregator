@@ -16,6 +16,9 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -26,9 +29,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
 
 public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRenderer {
 

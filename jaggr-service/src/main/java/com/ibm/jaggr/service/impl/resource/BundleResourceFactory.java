@@ -16,13 +16,12 @@
 
 package com.ibm.jaggr.service.impl.resource;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.util.PathUtil;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -33,12 +32,13 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IAggregatorExtension;
-import com.ibm.jaggr.core.IExtensionInitializer;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceFactory;
-import com.ibm.jaggr.core.util.PathUtil;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class BundleResourceFactory implements IResourceFactory, IExecutableExtension, IExtensionInitializer {
 	static final Logger log = Logger.getLogger(BundleResourceFactory.class.getName());

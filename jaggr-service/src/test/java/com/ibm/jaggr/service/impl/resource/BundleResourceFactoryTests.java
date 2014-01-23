@@ -17,16 +17,6 @@ package com.ibm.jaggr.service.impl.resource;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.URLStreamHandler;
-import java.util.HashMap;
-import java.util.Map;
-
 import junit.framework.Assert;
 
 import org.easymock.EasyMock;
@@ -36,6 +26,16 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
+import java.util.HashMap;
+import java.util.Map;
 
 public class BundleResourceFactoryTests {
 

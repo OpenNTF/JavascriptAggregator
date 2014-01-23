@@ -27,9 +27,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-import com.ibm.jaggr.core.util.Formula;
-import com.ibm.jaggr.core.util.Term;
-
 /**
  * Object that represents a boolean expression in <a
  * href="http://en.wikipedia.org/wiki/Disjunctive_normal_form">Disjunctive

@@ -18,6 +18,24 @@ package com.ibm.jaggr.service.impl.transport;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.service.test.TestUtils;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.wink.json4j.JSONObject;
+import org.easymock.EasyMock;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
@@ -31,24 +49,6 @@ import java.util.concurrent.CountDownLatch;
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.wink.json4j.JSONObject;
-import org.easymock.EasyMock;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.service.test.TestUtils;
 
 public class AbstractHttpTransportTest {
 

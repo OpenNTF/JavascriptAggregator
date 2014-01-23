@@ -20,6 +20,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.rhino.Node;
+
+import org.junit.Test;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -29,12 +35,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
-import org.junit.Test;
-
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.JSSourceFile;
-import com.google.javascript.rhino.Node;
 
 
 public class DepUtilsTest {

@@ -16,6 +16,26 @@
 
 package com.ibm.jaggr.service.impl.config;
 
+import com.google.common.io.Files;
+
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.service.test.MockAggregatorWrapper;
+import com.ibm.jaggr.service.test.TestUtils;
+
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.junit.After;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.mozilla.javascript.Context;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -31,25 +51,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mozilla.javascript.Context;
-
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IPlatformServices;
-import com.ibm.jaggr.core.InitParams;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.PathUtil;
-import com.ibm.jaggr.service.test.MockAggregatorWrapper;
-import com.ibm.jaggr.service.test.TestUtils;
 
 public class ConfigTests {
 	

@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.core;
 
+import com.ibm.jaggr.core.InitParams.InitParam;
+import com.ibm.jaggr.core.options.IOptions;
+
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
-import com.ibm.jaggr.core.InitParams.InitParam;
-import com.ibm.jaggr.core.options.IOptions;
 
 /**
  * Wrapper class for aggregator init-params.

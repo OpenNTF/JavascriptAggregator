@@ -16,24 +16,6 @@
 
 package com.ibm.jaggr.service.impl.layer;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -53,6 +35,24 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+
+import java.io.IOException;
+import java.io.StringWriter;
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Layer builder class used to aggregate the output from the list of

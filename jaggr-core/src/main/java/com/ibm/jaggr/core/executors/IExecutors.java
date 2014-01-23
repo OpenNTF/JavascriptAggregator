@@ -16,10 +16,10 @@
 
 package com.ibm.jaggr.core.executors;
 
+import com.ibm.jaggr.core.options.IOptions;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
-
-import com.ibm.jaggr.core.options.IOptions;
 
 /**
  * Interface for thread executor providers

@@ -16,11 +16,6 @@
 
 package com.ibm.jaggr.core.transport;
 
-import java.io.IOException;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -28,6 +23,11 @@ import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
+
+import java.io.IOException;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Instances of IHttpTransport are responsible for parsing the HTTP request to

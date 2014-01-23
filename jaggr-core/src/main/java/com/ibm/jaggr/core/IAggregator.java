@@ -16,15 +16,6 @@
 
 package com.ibm.jaggr.core;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.concurrent.ConcurrentMap;
-
-import javax.servlet.http.HttpServlet;
-
-import org.osgi.framework.BundleContext;
-
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
@@ -39,6 +30,15 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import org.osgi.framework.BundleContext;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.concurrent.ConcurrentMap;
+
+import javax.servlet.http.HttpServlet;
 
 /**
  * Interface for the AMD Aggregator. Provides accessors to other aggregator

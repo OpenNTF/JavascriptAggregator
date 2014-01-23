@@ -15,15 +15,15 @@
  */
 package com.ibm.jaggr.service.impl.resource;
 
-import java.io.File;
-import java.net.URI;
+import com.ibm.jaggr.core.resource.IResourceFactory;
 
 import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.junit.Test;
 
-import com.ibm.jaggr.core.resource.IResourceFactory;
+import java.io.File;
+import java.net.URI;
 
 public class FileResourceTests {
 	
