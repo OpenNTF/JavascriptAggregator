@@ -42,6 +42,7 @@
   <body>
     <menu name="Maven Resources">
       <item name="Publishing the Site" href="committers/publish-site.html" />
+      <item name="New branch from tag" href="committers/branching.html" />
     </menu>
     <menu ref="modules" inherit="top"/>
 	  <menu ref="reports" inherit="top"/>
