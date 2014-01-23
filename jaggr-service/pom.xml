@@ -137,6 +137,7 @@
               ${project.groupId}.core.deps;version="${project.version}",
               ${project.groupId}.core.executors;version="${project.version}",
               ${project.groupId}.core.impl;version="${project.version}",
+              ${project.groupId}.core.impl.cache;version="${project.version}",
               ${project.groupId}.core.layer;version="${project.version}",
               ${project.groupId}.core.module;version="${project.version}",
               ${project.groupId}.core.modulebuilder;version="${project.version}",
