@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.transport;
+package com.ibm.jaggr.core.impl.transport;
 
-import org.eclipse.osgi.util.NLS;
+import com.ibm.jaggr.core.util.NLS;
 
 public class Messages extends NLS {
-	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.transport.messages"; //$NON-NLS-1$
+	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
 	public static String AbstractHttpTransport_0;
 	public static String AbstractHttpTransport_1;
 	public static String DojoHttpTransport_0;

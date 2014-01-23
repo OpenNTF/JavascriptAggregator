@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.impl.transport.Messages;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.AggregationResource;
 import com.ibm.jaggr.core.resource.IResource;
