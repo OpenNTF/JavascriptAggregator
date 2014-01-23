@@ -121,7 +121,7 @@ import javax.servlet.http.HttpServletResponse;
  * attempts will be made to serialize instances of this class.
  */
 @SuppressWarnings({ "serial", "deprecation" })
-public class AggregatorImpl extends HttpServlet implements IExecutableExtension, IOptionsListener, BundleListener, IAggregator {
+public class AbstractAggregatorImpl extends HttpServlet implements IExecutableExtension, IOptionsListener, BundleListener, IAggregator {
 
 	/**
 	 * Default value for resourcefactories init-param
@@ -141,7 +141,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	protected static final String DEFAULT_HTTPTRANSPORT =
 		"com.ibm.jaggr.service.dojo.httptransport"; //$NON-NLS-1$
 
-	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
+	private static final Logger log = Logger.getLogger(AbstractAggregatorImpl.class.getName());
 
 	private File workdir = null;
     private ICacheManager cacheMgr = null;
@@ -1201,7 +1201,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
 	 * override this method to initialize the aggregator using a different
-	 * name.  Use the public {@link AggregatorImpl#getName()} method
+	 * name.  Use the public {@link AbstractAggregatorImpl#getName()} method
 	 * to get the name of an initialized aggregator.
 	 *
 	 * @param configElem
@@ -1223,7 +1223,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
 	 * override this method to initialize the aggregator using different
-	 * init params.  Use the public {@link AggregatorImpl#getInitParams()} method
+	 * init params.  Use the public {@link AbstractAggregatorImpl#getInitParams()} method
 	 * to get the init params for an initialized aggregator.
 	 *
 	 * @param configElem
@@ -1368,7 +1368,7 @@ public class AggregatorImpl extends HttpServlet implements IExecutableExtension,
 				throw new UnsupportedOperationException(impl.getClass().getName());
 			}
 			if (impl instanceof IExtensionInitializer) {
-				((IExtensionInitializer)impl).initialize(AggregatorImpl.this, extension, this);
+				((IExtensionInitializer)impl).initialize(AbstractAggregatorImpl.this, extension, this);
 			}
 		}
 	}

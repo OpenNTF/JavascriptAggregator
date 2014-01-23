@@ -58,7 +58,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuild
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.impl.transport.DojoHttpTransport;
+import com.ibm.jaggr.service.impl.transport.AbstractDojoHttpTransport;
 
 public class TestUtils {
 	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
@@ -222,7 +222,7 @@ public class TestUtils {
 			workingDirectory = new File(System.getProperty("java.io.tmpdir"));
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
-		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new DojoHttpTransport() : transport);
+		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new AbstractDojoHttpTransport() : transport);
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
 				new SynchronousExecutor(), 
 				null, 

@@ -89,7 +89,7 @@ import com.ibm.jaggr.service.impl.resource.ExceptionResource;
  * and defines abstract methods that subclasses need to implement
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IConfigModifier, IShutdownListener, IDependenciesListener {
-	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
+	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
 	public static final String PATH_ATTRNAME = "path"; //$NON-NLS-1$
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
