@@ -14,19 +14,19 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.config;
+package com.ibm.jaggr.core.impl.transport;
 
-import org.eclipse.osgi.util.NLS;
+import com.ibm.jaggr.core.util.NLS;
 
 public class Messages extends NLS {
-	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.config.messages"; //$NON-NLS-1$
-	public static String ConfigImpl_1;
-	public static String ConfigImpl_2;
-	public static String ConfigImpl_3;
-	public static String ConfigImpl_4;
-	public static String ConfigImpl_5;
-	public static String ConfigImpl_6;
-	public static String ConfigImpl_7;
+	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
+	public static String AbstractHttpTransport_0;
+	public static String AbstractHttpTransport_1;
+	public static String DojoHttpTransport_0;
+	public static String DojoHttpTransport_1;
+	public static String DojoHttpTransport_2;
+	public static String DojoHttpTransport_3;
+	public static String DojoHttpTransport_4;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

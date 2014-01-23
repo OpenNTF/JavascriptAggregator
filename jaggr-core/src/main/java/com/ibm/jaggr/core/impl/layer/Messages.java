@@ -14,13 +14,18 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.executors;
+package com.ibm.jaggr.core.impl.layer;
 
-import org.eclipse.osgi.util.NLS;
+import com.ibm.jaggr.core.util.NLS;
 
 public class Messages extends NLS {
-	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.executors.messages"; //$NON-NLS-1$
-	public static String ExecutorsImpl_0;
+	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
+	public static String LayerImpl_1;
+	public static String LayerImpl_2;
+	public static String LayerImpl_3;
+	public static String LayerImpl_4;
+	public static String LayerImpl_5;
+	public static String LayerImpl_6;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
