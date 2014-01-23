@@ -54,8 +54,8 @@ public class AggregatorLayerListener implements ILayerListener {
 			if (options.isDevelopmentMode() || options.isDebugMode()) {
 				sb.append("/* ") //$NON-NLS-1$
 				.append(options.isDevelopmentMode() ?
-						com.ibm.jaggr.service.impl.layer.Messages.LayerImpl_1 :
-							com.ibm.jaggr.service.impl.layer.Messages.LayerImpl_2)
+						com.ibm.jaggr.core.impl.layer.Messages.LayerImpl_1 :
+							com.ibm.jaggr.core.impl.layer.Messages.LayerImpl_2)
 							.append(" */\r\n"); //$NON-NLS-1$
 			}
 			return sb.toString();
