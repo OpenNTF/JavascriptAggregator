@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.impl.modulebuilder.css.Messages;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.CommentStrippingReader;
 import com.ibm.jaggr.core.resource.IResource;
