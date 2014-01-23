@@ -142,6 +142,7 @@
               ${project.groupId}.core.impl.deps;version="${project.version}",
               ${project.groupId}.core.impl.executors;version="${project.version}",
               ${project.groupId}.core.impl.layer;version="${project.version}",
+              ${project.groupId}.core.impl.module;version="${project.version}",
               ${project.groupId}.core.layer;version="${project.version}",
               ${project.groupId}.core.module;version="${project.version}",
               ${project.groupId}.core.modulebuilder;version="${project.version}",
