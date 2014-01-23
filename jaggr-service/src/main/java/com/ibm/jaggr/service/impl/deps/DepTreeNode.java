@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.impl.deps;
 
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.impl.deps.Messages;
 import com.ibm.jaggr.core.util.PathUtil;
 
 import java.io.IOException;
