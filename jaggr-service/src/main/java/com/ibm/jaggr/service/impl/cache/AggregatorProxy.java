@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.service.impl.cache;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 
 /**
  * Dynamic proxy class for IAggregator that overrides getCacheManager and

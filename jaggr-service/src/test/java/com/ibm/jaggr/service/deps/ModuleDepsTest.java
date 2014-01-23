@@ -16,8 +16,9 @@
 
 package com.ibm.jaggr.service.deps;
 
-import java.util.Arrays;
-import java.util.HashSet;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.util.BooleanTerm;
 
 import junit.framework.Assert;
 
@@ -27,9 +28,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.util.BooleanTerm;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class ModuleDepsTest {
 

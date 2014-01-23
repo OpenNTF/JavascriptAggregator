@@ -16,13 +16,6 @@
 
 package com.ibm.jaggr.service.impl.module;
 
-import java.io.Serializable;
-import java.net.URI;
-import java.text.MessageFormat;
-import java.util.concurrent.Future;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.module.IModule;
@@ -32,6 +25,13 @@ import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.StringUtil;
 import com.ibm.jaggr.service.impl.layer.CompletedFuture;
+
+import java.io.Serializable;
+import java.net.URI;
+import java.text.MessageFormat;
+import java.util.concurrent.Future;
+
+import javax.servlet.http.HttpServletRequest;
 
 @SuppressWarnings("serial")
 public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneable, Serializable {

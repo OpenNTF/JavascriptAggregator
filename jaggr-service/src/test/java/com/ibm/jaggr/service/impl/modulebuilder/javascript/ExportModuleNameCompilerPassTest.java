@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import junit.framework.Assert;
-
-import org.junit.Test;
-
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
+
+import junit.framework.Assert;
+
+import org.junit.Test;
 
 public class ExportModuleNameCompilerPassTest {
 	

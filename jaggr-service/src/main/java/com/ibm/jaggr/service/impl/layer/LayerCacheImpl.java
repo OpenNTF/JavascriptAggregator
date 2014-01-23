@@ -16,6 +16,17 @@
 
 package com.ibm.jaggr.service.impl.layer;
 
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+import com.googlecode.concurrentlinkedhashmap.EvictionListener;
+import com.googlecode.concurrentlinkedhashmap.Weigher;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
+
 import java.io.IOException;
 import java.io.InvalidObjectException;
 import java.io.ObjectInputStream;
@@ -38,17 +49,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.EvictionListener;
-import com.googlecode.concurrentlinkedhashmap.Weigher;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.InitParams;
-import com.ibm.jaggr.core.layer.ILayer;
-import com.ibm.jaggr.core.layer.ILayerCache;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.RequestUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 /**
  * This class implements the {@link ILayerCache} interface by using

@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.core.cache;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.module.IModuleCache;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
 import java.util.regex.Pattern;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.layer.ILayerCache;
-import com.ibm.jaggr.core.module.IModuleCache;
 
 /**
  * The aggregator cache is the repository for cached module builds and layers.

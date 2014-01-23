@@ -16,17 +16,17 @@
 
 package com.ibm.jaggr.core.modulebuilder;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.resource.IResource;
+
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Result wrapper class for built content. Instances of this object are

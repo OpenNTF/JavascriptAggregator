@@ -16,6 +16,10 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.ibm.jaggr.core.util.BooleanFormula;
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.Features;
+
 import junit.framework.Assert;
 
 import org.junit.After;
@@ -23,10 +27,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import com.ibm.jaggr.core.util.BooleanFormula;
-import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.Features;
 
 
 public class BooleanFormulaTest {

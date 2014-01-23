@@ -18,20 +18,22 @@ package com.ibm.jaggr.service.impl.module;
 
 import static org.junit.Assert.assertTrue;
 
-import java.io.File;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.net.URI;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
+import com.google.common.io.Files;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
+import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
+import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.TestUtils.Ref;
 
 import junit.framework.Assert;
 
@@ -48,21 +50,20 @@ import org.powermock.api.easymock.PowerMock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.layer.ILayer;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
-import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
+import java.io.File;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JavaScriptModuleBuilder.class)

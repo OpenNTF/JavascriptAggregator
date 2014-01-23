@@ -16,10 +16,10 @@
 
 package com.ibm.jaggr.service.impl.resource;
 
-import java.net.URI;
-
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
+
+import java.net.URI;
 
 
 /**

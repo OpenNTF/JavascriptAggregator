@@ -16,17 +16,18 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import java.util.HashSet;
-import java.util.Set;
-
-import org.junit.Assert;
-import org.junit.Test;
-
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
+
 import com.ibm.jaggr.core.util.Features;
+
+import org.junit.Assert;
+import org.junit.Test;
+
+import java.util.HashSet;
+import java.util.Set;
 
 public class HasFilteringCompilerPassTest {
 

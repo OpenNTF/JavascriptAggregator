@@ -16,13 +16,13 @@
 
 package com.ibm.jaggr.core.util;
 
+import com.ibm.jaggr.core.readers.JavaScriptEscapingReader;
+
 import java.io.IOException;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.ibm.jaggr.core.readers.JavaScriptEscapingReader;
 
 public class StringUtil {
 

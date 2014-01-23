@@ -16,19 +16,19 @@
 
 package com.ibm.jaggr.core.module;
 
-import java.io.IOException;
-import java.io.Serializable;
-import java.net.URI;
-import java.util.concurrent.Future;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.URI;
+import java.util.concurrent.Future;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * IModule objects are responsible for creating and organizing collections of

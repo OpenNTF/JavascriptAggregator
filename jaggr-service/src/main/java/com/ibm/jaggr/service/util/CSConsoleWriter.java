@@ -15,9 +15,9 @@
  */
 package com.ibm.jaggr.service.util;
 
-import org.apache.felix.service.command.CommandSession;
-
 import com.ibm.jaggr.core.util.ConsoleService.ConsoleWriter;
+
+import org.apache.felix.service.command.CommandSession;
 
 public class CSConsoleWriter implements ConsoleWriter {
 

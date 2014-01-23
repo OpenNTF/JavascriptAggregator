@@ -16,6 +16,17 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Token;
+
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.HasNode;
+import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.service.util.NodeUtil;
+
+import org.apache.commons.lang.StringUtils;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -25,16 +36,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang.StringUtils;
-
-import com.google.javascript.rhino.Node;
-import com.google.javascript.rhino.Token;
-import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.HasNode;
-import com.ibm.jaggr.core.util.PathUtil;
-import com.ibm.jaggr.service.util.NodeUtil;
 
 /**
  * Collection of utility classes used for processing Dependency trees

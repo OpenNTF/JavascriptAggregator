@@ -16,10 +16,6 @@
 
 package com.ibm.jaggr.service.impl;
 
-import java.util.Properties;
-
-import org.eclipse.core.runtime.IExtension;
-
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
@@ -27,6 +23,10 @@ import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+
+import org.eclipse.core.runtime.IExtension;
+
+import java.util.Properties;
 
 /**
  * Implementation  for {@link IAggregatorExtension} interface.

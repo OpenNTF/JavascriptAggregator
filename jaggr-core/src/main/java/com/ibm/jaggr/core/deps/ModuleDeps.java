@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.core.deps;
 
+import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.Features;
+
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-
-import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.Features;
 
 /**
  * This class extends LinkedHashMap to provide additional methods for 

@@ -16,12 +16,12 @@
 
 package com.ibm.jaggr.core.deps;
 
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.config.IConfig;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-
-import com.ibm.jaggr.core.ProcessingDependenciesException;
-import com.ibm.jaggr.core.config.IConfig;
 
 /**
  * This class encapsulates the dependency graph of a collection of AMD modules.

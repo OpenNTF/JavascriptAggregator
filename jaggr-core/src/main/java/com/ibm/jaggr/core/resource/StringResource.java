@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.core.resource;
 
+import org.apache.commons.io.input.ReaderInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.Date;
-
-import org.apache.commons.io.input.ReaderInputStream;
 
 public class StringResource implements IResource, IResourceVisitor.Resource {
 	final String content;

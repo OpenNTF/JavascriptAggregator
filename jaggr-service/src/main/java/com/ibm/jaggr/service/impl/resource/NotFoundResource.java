@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.service.impl.resource;
 
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
-
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
-import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 
 public class NotFoundResource implements IResource {
 	private final URI uri;

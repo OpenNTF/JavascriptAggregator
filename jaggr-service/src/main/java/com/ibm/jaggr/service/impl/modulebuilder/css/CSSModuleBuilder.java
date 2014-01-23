@@ -16,6 +16,27 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.css;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.CommentStrippingReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.StringUtils;
+import org.mozilla.javascript.Scriptable;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -38,27 +59,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.ArrayUtils;
-import org.apache.commons.lang.StringUtils;
-import org.mozilla.javascript.Scriptable;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IAggregatorExtension;
-import com.ibm.jaggr.core.IExtensionInitializer;
-import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.readers.CommentStrippingReader;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
-import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 
 /**
  * This class optimizes CSS module resources that are loaded by the AMD
@@ -142,24 +142,24 @@ import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IShutdownListener, IConfigListener {
 
 	static final Logger log = Logger.getLogger(CSSModuleBuilder.class.getName());
-	
+
 	// Custom server-side AMD config param names
 	static public final String INLINEIMPORTS_CONFIGPARAM = "inlineCSSImports"; //$NON-NLS-1$
 	static public final String INCLUDELIST_CONFIGPARAM = "inlinedImageIncludeList"; //$NON-NLS-1$
 	static public final String EXCLUDELIST_CONFIGPARAM = "inlinedImageExcludeList"; //$NON-NLS-1$
 	static public final String IMAGETYPES_CONFIGPARAM = "inlineableImageTypes"; //$NON-NLS-1$
 	static public final String SIZETHRESHOLD_CONFIGPARAM = "inlinedImageSizeThreshold";  //$NON-NLS-1$
-	
+
 	// Custom server-side AMD config param default values
 	static public final boolean INLINEIMPORTS_DEFAULT_VALUE = true;
 	static public final int SIZETHRESHOLD_DEFAULT_VALUE = 0;
-	
+
 	static public final String INLINEIMPORTS_REQPARAM_NAME = "inlineImports"; //$NON-NLS-1$
 	static public final String INLINEIMAGES_REQPARAM_NAME = "inlineImages"; //$NON-NLS-1$
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\(\\s*([^\\)]+)\\s*\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
-	
+
 	static final protected Collection<String> s_inlineableImageTypes;
 	static {
 		s_inlineableImageTypes = new ArrayList<String>();
@@ -168,11 +168,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_inlineableImageTypes.add("image/jpeg"); //$NON-NLS-1$
 		s_inlineableImageTypes.add("image/tiff"); //$NON-NLS-1$
 	};
-	
+
 	@SuppressWarnings("serial")
 	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new AbstractCacheKeyGenerator() {
 		// This is a singleton, so default equals() is sufficient
-		private final String eyecatcher = "css"; //$NON-NLS-1$ 
+		private final String eyecatcher = "css"; //$NON-NLS-1$
 		@Override
 		public String generateKey(HttpServletRequest request) {
 			boolean inlineImports = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME));
@@ -191,14 +191,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	};
 
 	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators;
-	
+
 	static {
 		List<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>(TextModuleBuilder.s_cacheKeyGenerators.size());
 		keyGens.addAll(TextModuleBuilder.s_cacheKeyGenerators);
 		keyGens.add(s_cacheKeyGenerator);
 		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
 	}
-	
+
 	//private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 	private List<Object> registrations = new LinkedList<Object>();
 	public int imageSizeThreshold = 0;
@@ -212,19 +212,19 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	protected Reader getContentReader(
-			String mid, 
-			IResource resource, 
-			HttpServletRequest request, 
-			List<ICacheKeyGenerator> keyGens) 
+			String mid,
+			IResource resource,
+			HttpServletRequest request,
+			List<ICacheKeyGenerator> keyGens)
 	throws IOException {
-		
+
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
 		// whitespace
 		css = minify(css, resource);
-		
+
 		// Inline images
 		css = inlineImageUrls(request, css, resource);
-		
+
 		// in-line @imports
 		if (inlineImports) {
 			css = inlineImports(request, css, resource, ""); //$NON-NLS-1$
@@ -234,7 +234,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 	/**
 	 * Copies the contents of the specified {@link Reader} to a String.
-	 * 
+	 *
 	 * @param in The input Reader
 	 * @return The contents of the Reader as a String
 	 * @throws IOException
@@ -243,7 +243,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		StringWriter out = new StringWriter();
 		CopyUtil.copy(in, out);
 		return out.toString();
-	
+
 	}
 
 	private static final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|url\\(([^)]+)\\)"); //$NON-NLS-1$
@@ -256,23 +256,23 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private static final String QUOTED_STRING_MARKER = "__qUoTeDsTrInG"; //$NON-NLS-1$
 	private static final Pattern QUOTED_STRING_MARKER_PAT = Pattern.compile("%%" + QUOTED_STRING_MARKER + "([0-9]*)__%%"); //$NON-NLS-1$ //$NON-NLS-2$
 	/**
-	 * Minifies a CSS string by removing comments and excess white-space, as well as 
+	 * Minifies a CSS string by removing comments and excess white-space, as well as
 	 * some unneeded tokens.
-	 * 
+	 *
 	 * @param css The contents of a CSS file as a String
 	 * @param uri The URI for the CSS file
 	 * @return
 	 */
 	protected String minify(String css, IResource res) {
-		
-		// replace all quoted strings and url(...) patterns with unique ids so that 
+
+		// replace all quoted strings and url(...) patterns with unique ids so that
 		// they won't be affected by whitespace removal.
 		LinkedList<String> quotedStringReplacements = new LinkedList<String>();
 		Matcher m = quotedStringPattern.matcher(css);
 		StringBuffer sb = new StringBuffer();
 		int i = 0;
 		while (m.find()) {
-			String text = (m.group(1) != null) ? 
+			String text = (m.group(1) != null) ?
 					("url(" + StringUtils.trim(m.group(1)) + ")") :   //$NON-NLS-1$ //$NON-NLS-2$
 					m.group(0);
 			quotedStringReplacements.add(i, text);
@@ -310,14 +310,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 		return css.toString();
 	}
-	
+
 	static final Pattern importPattern = Pattern.compile("\\@import\\s+(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
 	/**
 	 * Processes the input CSS to replace &#064;import statements with the
 	 * contents of the imported CSS.  The imported CSS is minified, image
 	 * URLs in-lined, and this method recursively called to in-line nested
 	 * &#064;imports.
-	 * 
+	 *
 	 * @param css
 	 *            The current CSS containing &#064;import statements to be
 	 *            processed
@@ -326,19 +326,19 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @param path
 	 *            The path, as specified in the &#064;import statement used to
 	 *            import the current CSS, or null if this is the top level CSS.
-	 * 
+	 *
 	 * @return The input CSS with &#064;import statements replaced with the
 	 *         contents of the imported files.
-	 * 
+	 *
 	 * @throws IOException
 	 */
 	protected String inlineImports(HttpServletRequest req, String css, IResource res, String path) throws IOException {
-		
+
 		// In-lining of imports can be disabled by request parameter for debugging
 		if (!TypeUtil.asBoolean(req.getParameter(INLINEIMPORTS_REQPARAM_NAME), true)) {
 			return css;
 		}
-		
+
 		StringBuffer buf = new StringBuffer();
 		IAggregator aggregator = (IAggregator)req.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggregator.getOptions();
@@ -346,8 +346,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		 * True if we should include the name of imported CSS files in a comment at
 		 * the beginning of the file.
 		 */
-		boolean includePreamble 
-				= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME)) 
+		boolean includePreamble
+				= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
 								&& (options.isDebugMode() || options.isDevelopmentMode());
 		if (includePreamble && path != null && path.length() > 0) {
 			buf.append("/* @import "  + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -380,14 +380,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// remove quotes.
 			importNameMatch = dequote(importNameMatch);
 			importNameMatch = forwardSlashPattern.matcher(importNameMatch).replaceAll("/"); //$NON-NLS-1$
-			
+
 			// if name is not relative, then bail
 			if (importNameMatch.startsWith("/") || protocolPattern.matcher(importNameMatch).find()) { //$NON-NLS-1$
 				m.appendReplacement(buf, ""); //$NON-NLS-1$
 				buf.append(fullMatch);
 				continue;
 			}
-			
+
 			IResource importRes = res.resolve(importNameMatch);
 			String importCss = null;
 			importCss = readToString(
@@ -401,7 +401,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			importCss = minify(importCss, importRes);
 			// Inline images
 			importCss = inlineImageUrls(req, importCss, importRes);
-			
+
 			if (inlineImports) {
 				importCss = inlineImports(req, importCss, importRes, importNameMatch);
 			}
@@ -409,7 +409,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			buf.append(importCss);
 		}
 		m.appendTail(buf);
-		
+
 		css = buf.toString();
 		/*
 		 * Now re-write all relative URLs in url(...) statements to make them relative
@@ -425,7 +425,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			while (m.find()) {
 				String fullMatch = m.group(0);
 				String urlMatch = m.group(1);
-				
+
 				urlMatch = StringUtils.trim(urlMatch.replace("\\", "/")); //$NON-NLS-1$ //$NON-NLS-2$
 				String quoted = ""; //$NON-NLS-1$
 				if (urlMatch.charAt(0) == '"' && urlMatch.charAt(urlMatch.length()-1) == '"') {
@@ -435,14 +435,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					quoted = "'"; //$NON-NLS-1$
 					urlMatch = urlMatch.substring(1, urlMatch.length()-1);
 				}
-				
+
 				// Don't modify non-relative URLs
 				if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
 					m.appendReplacement(buf, ""); //$NON-NLS-1$
 					buf.append(fullMatch);
 					continue;
 				}
-				
+
 				String fixedUrl = path + ((path.endsWith("/") || path.length() == 0) ? "" : "/") + urlMatch; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				//Collapse '..' and '.'
 				String[] parts = fixedUrl.split("/"); //$NON-NLS-1$
@@ -458,7 +458,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				}
 				m.appendReplacement(buf, ""); //$NON-NLS-1$
 				buf.append("url(") //$NON-NLS-1$
-					.append(quoted)  
+					.append(quoted)
 					.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
 					.append(quoted)
 					.append(")"); //$NON-NLS-1$
@@ -468,14 +468,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 		return css;
 	}
-	
+
 	/**
 	 * Replace <code>url(&lt;<i>relative-path</i>&gt;)</code> references in the
 	 * input CSS with
 	 * <code>url(data:&lt;<i>mime-type</i>&gt;;&lt;<i>base64-encoded-data</i>&gt;</code>
 	 * ). The conversion is controlled by option settings as described in
 	 * {@link CSSModuleBuilder}.
-	 * 
+	 *
 	 * @param css
 	 *            The input CSS
 	 * @param uri
@@ -493,7 +493,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		if (!TypeUtil.asBoolean(req.getParameter(INLINEIMAGES_REQPARAM_NAME), true)) {
 			return css;
 		}
-		
+
 		StringBuffer buf = new StringBuffer();
 		Matcher m = urlPattern.matcher(css);
 		while (m.find()) {
@@ -510,10 +510,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				buf.append(fullMatch);
 				continue;
 			}
-			
+
 			URI imageUri = res.getURI().resolve(urlMatch);
 			boolean exclude = false, include = false;
-			
+
 			// Determine if this image is in the include list
 			for (Pattern regex : inlinedImageIncludeList) {
 				if (regex.matcher(imageUri.getPath()).find()) {
@@ -521,7 +521,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					break;
 				}
 			}
-			
+
 			// Determine if this image is in the exclude list
 			for (Pattern regex : inlinedImageExcludeList) {
 				if (regex.matcher(imageUri.getPath()).find()) {
@@ -536,7 +536,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				buf.append(fullMatch);
 				continue;
 			}
-			
+
 			boolean imageInlined = false;
 			InputStream in = null;
 			try {
@@ -562,7 +562,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 						MessageFormat.format(
 							Messages.CSSModuleBuilder_0,
 							new Object[]{imageUri}
-						), 
+						),
 						ex
 					);
 				}
@@ -576,15 +576,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				m.appendReplacement(buf, ""); //$NON-NLS-1$
 				buf.append(fullMatch);
 			}
-		} 
+		}
 		m.appendTail(buf);
 		return buf.toString();
 	}
-	
+
 	/**
 	 * Returns a base64 encoded string representation of the contents of the
 	 * resource associated with the {@link URLConnection}.
-	 * 
+	 *
 	 * @param connection
 	 *            The URLConnection object for the resource
 	 * @return The base64 encoded string representation of the resource
@@ -596,13 +596,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		CopyUtil.copy(in, out);
 		return new String(Base64.encodeBase64(out.toByteArray()), "UTF-8"); //$NON-NLS-1$
 	}
-	
+
 	private static final Pattern escaper = Pattern.compile("([\\\\.*?+\\[{|()^$])"); //$NON-NLS-1$
-	
+
 	/**
 	 * Returns a regular expression for a filepath that can include standard
 	 * file system wildcard characters (e.g. * and ?)
-	 * 
+	 *
 	 * @param filespec A filespec that can contain wildcards
 	 * @return A regular expression to match paths specified by <code>filespec</code>
 	 */
@@ -628,14 +628,14 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return Pattern.compile((patStr.startsWith("/") ? "" : "(^|/)") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 				patStr + "$", Pattern.CASE_INSENSITIVE); //$NON-NLS-1$
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilder#getCacheKeyGenerator(com.ibm.jaggr.service.IAggregator)
 	 */
 	@Override	public final List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		return s_cacheKeyGenerators;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilder#handles(java.lang.String, com.ibm.jaggr.service.resource.IResource)
 	 */
@@ -660,13 +660,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		
+
 		Hashtable<String, String> props;
-		props = new Hashtable<String, String>();		
-		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		props = new Hashtable<String, String>();
+		props.put("name", aggregator.getName()); //$NON-NLS-1$
 		registrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
 		props = new Hashtable<String, String>();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		props.put("name", aggregator.getName()); //$NON-NLS-1$
 		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
@@ -688,7 +688,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		obj = config.get(INLINEIMPORTS_CONFIGPARAM, config);
 		inlineImports = TypeUtil.asBoolean(obj==Scriptable.NOT_FOUND ? null : obj.toString(), INLINEIMPORTS_DEFAULT_VALUE);
 
-		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes); 
+		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
 		Object oImageTypes = config.get(IMAGETYPES_CONFIGPARAM, config);
 		if (oImageTypes != Scriptable.NOT_FOUND) {
 			String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
@@ -697,7 +697,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 		}
 		inlineableImageTypes = types;
-		
+
 		/** List of files that should be in-lined */
 		Collection<Pattern> list = Collections.emptyList();
 		Object oIncludeList = config.get(INCLUDELIST_CONFIGPARAM, config);
@@ -720,12 +720,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 		inlinedImageExcludeList = list;
 	}
-	
+
 	/**
 	 * Removes single or double quotes from a quoted string. The entire string
 	 * is expected to be quoted, with possible leading or trailing whitespace.
 	 * If the string is not quoted, then it is returned unmodified.
-	 * 
+	 *
 	 * @param in
 	 *            The possibly quoted string
 	 * @return The string with quotes removed
@@ -734,7 +734,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		String result = in.trim();
 		if (result.charAt(0) == '"' && result.charAt(result.length()-1) == '"') {
 			return result.substring(1, result.length()-1);
-		} 
+		}
 		if (result.charAt(0) == '\'' && result.charAt(result.length()-1) == '\'') {
 			return result.substring(1, result.length()-1);
 		}

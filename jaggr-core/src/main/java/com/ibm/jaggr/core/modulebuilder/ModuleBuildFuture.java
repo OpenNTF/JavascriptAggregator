@@ -16,15 +16,15 @@
 
 package com.ibm.jaggr.core.modulebuilder;
 
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
+
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * This class encapsulates a {@link Future} for a {@link ModuleBuildReader},

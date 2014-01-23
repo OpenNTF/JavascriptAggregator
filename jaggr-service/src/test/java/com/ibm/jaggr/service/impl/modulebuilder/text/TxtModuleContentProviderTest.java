@@ -18,13 +18,13 @@ package com.ibm.jaggr.service.impl.modulebuilder.text;
 
 import static org.junit.Assert.assertEquals;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.Writer;
-import java.util.List;
+import com.google.common.io.Files;
 
-import javax.servlet.http.HttpServletRequest;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.service.impl.resource.FileResource;
+import com.ibm.jaggr.service.test.TestUtils;
 
 import junit.framework.Assert;
 
@@ -34,12 +34,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.test.TestUtils;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Writer;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class TxtModuleContentProviderTest extends EasyMock {
 

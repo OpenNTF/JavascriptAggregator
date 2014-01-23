@@ -16,10 +16,10 @@
 
 package com.ibm.jaggr.core;
 
-import java.util.Properties;
-
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.resource.IResourceFactory;
+
+import java.util.Properties;
 
 /**
  * Initialization interface for aggregator extensions. Extensions implementing

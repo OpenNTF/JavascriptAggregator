@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.service.test;
 
-import java.io.IOException;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
+
+import java.io.IOException;
 
 public class TestCacheManager extends CacheManagerImpl {
 	

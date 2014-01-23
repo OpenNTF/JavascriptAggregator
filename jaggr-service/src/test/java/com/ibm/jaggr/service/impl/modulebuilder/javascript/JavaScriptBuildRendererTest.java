@@ -16,20 +16,20 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.service.test.TestUtils;
 
 import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.junit.Test;
 
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.service.test.TestUtils;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class JavaScriptBuildRendererTest {
 	static final String content = "define([],function() {require(\"foo\",\"" + 

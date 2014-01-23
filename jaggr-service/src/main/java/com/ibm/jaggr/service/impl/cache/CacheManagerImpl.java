@@ -16,6 +16,22 @@
 
 package com.ibm.jaggr.service.impl.cache;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.cache.ICache;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.CopyUtil;
+
+import org.apache.commons.io.input.ReaderInputStream;
+import org.apache.commons.lang.StringUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,28 +49,11 @@ import java.text.MessageFormat;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import org.apache.commons.io.input.ReaderInputStream;
-import org.apache.commons.lang.StringUtils;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.cache.ICache;
-import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.core.util.CopyUtil;
 
 public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConfigListener, IDependenciesListener, IOptionsListener {
     

@@ -16,6 +16,27 @@
 
 package com.ibm.jaggr.service.impl.config;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.PlatformServicesException;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigModifier;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.HasNode;
+import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
+
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.FunctionObject;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,27 +67,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.mozilla.javascript.Context;
-import org.mozilla.javascript.ContextFactory;
-import org.mozilla.javascript.Function;
-import org.mozilla.javascript.FunctionObject;
-import org.mozilla.javascript.Scriptable;
-import org.mozilla.javascript.ScriptableObject;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.InitParams;
-import com.ibm.jaggr.core.PlatformServicesException;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigModifier;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.HasNode;
-import com.ibm.jaggr.core.util.PathUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener {
 	private static final Logger log = Logger.getLogger(ConfigImpl.class.getName());

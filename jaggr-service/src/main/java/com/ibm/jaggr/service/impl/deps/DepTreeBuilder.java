@@ -16,6 +16,10 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.concurrent.Callable;
@@ -23,10 +27,6 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 /**
  * This class implements the {@link Callable} interface to build/validate a
