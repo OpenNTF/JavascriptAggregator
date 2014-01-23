@@ -58,13 +58,13 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuild
 import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 import com.ibm.jaggr.service.impl.resource.FileResource;
-import com.ibm.jaggr.service.impl.transport.DojoHttpTransport;
+import com.ibm.jaggr.service.impl.transport.AbstractDojoHttpTransport;
 
 public class TestUtils {
 	public static String a = "define([\"./b\"], function(b) {\nalert(\"hello from a.js\");\nreturn null;\n});";
 	public static String b = "define([\"./c\"], function(a) {\nalert(\"hello from b.js\");\nreturn null;\n});";
 	public static String c = "define([\"./a\", \"./b\", \"./noexist\"], function(a, b, d) {\nalert(\"hello from c.js\");\nreturn null;\n});";
-	public static String foo = "define([\"p1/a\", \"p2/p1/b\", \"p2/p1/p1/c\", \"p2/noexist\"], function(a, b, c, noexist) {\n"
+	public static String foo = "define([\"p1/a\", \"p2/p1/b\", \"p2/p1/p1/c\", \"p2/noexist\", \"p1/a\"], function(a, b, c, noexist) {\n"
 			+ "	if (has(\"conditionTrue\")) { \n"
 			+ "		require([\"p2/a\"], function(a) {\n"
 			+ "			alert(\"condition_True\");\n"
@@ -147,7 +147,7 @@ public class TestUtils {
 		createTestFile(p2p1p1, "foo", foo);
 		createTestFile(p1, "hello.txt", hello);
 	}
-	
+
 	static public long getDirListSize(File directory, FileFilter filter) {
 		File[] files = directory.listFiles(filter);
 		long result = 0;
@@ -183,24 +183,24 @@ public class TestUtils {
 	public static IAggregator createMockAggregator() throws Exception {
 		return createMockAggregator(null, null, null, null, null);
 	}
-	
+
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
-		
+
 		return createMockAggregator(configRef, workingDirectory, null, null, null);
 	}
 
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory, List<InitParam> initParams) throws Exception {
-		
+
 		return createMockAggregator(configRef, workingDirectory, initParams, null, null);
 	}
 
 	public static IAggregator createMockAggregator(
 			IHttpTransport transport) throws Exception {
-		
+
 		return createMockAggregator(null, null, null, null, transport);
 	}
 	public static IAggregator createMockAggregator(
@@ -222,14 +222,14 @@ public class TestUtils {
 			workingDirectory = new File(System.getProperty("java.io.tmpdir"));
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
-		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new DojoHttpTransport() : transport);
+		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new TestDojoHttpTransport() : transport);
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
-				new SynchronousExecutor(), 
-				null, 
-				new SynchronousScheduledExecutor(), 
+				new SynchronousExecutor(),
+				null,
+				new SynchronousScheduledExecutor(),
 				new SynchronousScheduledExecutor()));
 		final File workdir = workingDirectory;
-		
+
 		EasyMock.expect(mockAggregator.getWorkingDirectory()).andReturn(workingDirectory).anyTimes();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test").anyTimes();
 		EasyMock.expect(mockAggregator.getOptions()).andReturn(options).anyTimes();
@@ -353,19 +353,19 @@ public class TestUtils {
 		}).anyTimes();
 		return mockAggregator;
 	}
-	
+
 	public static HttpServletRequest createMockRequest(IAggregator aggregator) {
 		return createMockRequest(aggregator, new HashMap<String, Object>());
 	}
-	
+
 	public static HttpServletRequest createMockRequest(IAggregator aggregator, Map<String, Object> requestAttributes) {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, aggregator);
 		return createMockRequest(aggregator, requestAttributes, null, null, null);
 	}
-	
+
 	public static HttpServletRequest createMockRequest(
 			IAggregator aggregator,
-			final Map<String, Object> requestAttributes, 
+			final Map<String, Object> requestAttributes,
 			final Map<String, String[]> requestParameters,
 			final Cookie[] cookies,
 			final Map<String, String> headers) {
@@ -421,7 +421,7 @@ public class TestUtils {
 		}
 		return mockRequest;
 	}
-	
+
 	public static HttpServletResponse createMockResponse(final Map<String, String> responseAttributes) {
 		HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
 		mockResponse.setContentLength(EasyMock.anyInt());
@@ -434,5 +434,23 @@ public class TestUtils {
 			}
 		}).anyTimes();
 		return mockResponse;
+	}
+
+	public static class TestDojoHttpTransport extends AbstractDojoHttpTransport {
+		public TestDojoHttpTransport() {
+			super();
+		}
+		@Override
+		protected URI getComboUri() {
+			return URI.create("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent");
+		}
+		@Override
+		protected String getTransportId() {
+			return "testTransportId";
+		}
+		@Override
+		protected String getResourcePathId() {
+			return "combo";
+		}
 	}
 }

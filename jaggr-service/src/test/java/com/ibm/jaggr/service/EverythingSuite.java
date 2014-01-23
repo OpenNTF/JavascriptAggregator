@@ -43,7 +43,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.text.TxtModuleContentProviderTes
 import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
 import com.ibm.jaggr.service.impl.resource.FileResourceTests;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
-import com.ibm.jaggr.service.impl.transport.DojoHttpTransportTest;
+import com.ibm.jaggr.service.impl.transport.AbstractDojoHttpTransportTest;
 import com.ibm.jaggr.service.util.BooleanTermTest;
 import com.ibm.jaggr.service.util.DependencyListTest;
 import com.ibm.jaggr.service.util.DependencyListTest_processDep;
@@ -70,7 +70,7 @@ import com.ibm.jaggr.service.util.DependencyListTest_processDep;
 	TxtModuleContentProviderTest.class,
 	RequireExpansionCompilerPassTest.class,
 	AbstractHttpTransportTest.class,
-	DojoHttpTransportTest.class,
+	AbstractDojoHttpTransportTest.class,
 	AggregatorImplTest.class,
 	BundleResourceFactoryTests.class,
 	FileResourceTests.class,

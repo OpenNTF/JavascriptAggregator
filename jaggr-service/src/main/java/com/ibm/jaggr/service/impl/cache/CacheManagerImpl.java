@@ -16,6 +16,22 @@
 
 package com.ibm.jaggr.service.impl.cache;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.cache.ICache;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.CopyUtil;
+
+import org.apache.commons.io.input.ReaderInputStream;
+import org.apache.commons.lang.StringUtils;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -33,63 +49,46 @@ import java.text.MessageFormat;
 import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.input.ReaderInputStream;
-import org.apache.commons.lang.StringUtils;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.cache.ICache;
-import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.core.util.CopyUtil;
-
 public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConfigListener, IDependenciesListener, IOptionsListener {
-    
+
     private static final Logger log = Logger.getLogger(ICacheManager.class.getName());
-    
+
     private static final String CACHEDIR_NAME = "cache"; //$NON-NLS-1$
-    /** 
+    /**
      * Reference the cache with an atomic reference so that we don't need to synchronize
      * access to it.  The atomic reference is needed for when we swap the cache out with
      * a new empty one when processing the clearcache command.
      */
     private final AtomicReference<CacheImpl>  _cache = new AtomicReference<CacheImpl>();
-    
+
     /** The filename for the serialized cache object */
     private static final String CACHE_META_FILENAME = "metadata.cache"; //$NON-NLS-1$
-    
+
     /** The cache directory */
     private final File _directory;
-    
+
     private CacheControl _control;
-    
+
     private IAggregator _aggregator;
-    
+
     private Object _shutdownListener = null;
-    
+
     private Object _configUpdateListener = null;
-    
+
     private Object _depsUpdateListener = null;
-    
+
     private Object _optionsUpdateListener = null;
-    
+
     private long updateSequenceNumber = 0;
-    
+
     private Object cacheSerializerSyncObj = new Object();
-    
+
     private static class CacheControl implements Serializable {
 		private static final long serialVersionUID = 1276701428723406198L;
 		volatile String rawConfig = null;
@@ -97,11 +96,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     	volatile long depsLastMod = -1;
     	long initStamp = -1;
     }
-    
+
 	/**
 	 * Starts up the cache. Attempts to de-serialize a previously serialized
 	 * cache from disk and starts the periodic serializer task.
-	 * 
+	 *
 	 * @param aggregator
 	 *            the aggregator instance this cache manager belongs to
 	 * @param stamp
@@ -111,7 +110,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	 * @throws IOException
 	 */
     public CacheManagerImpl(IAggregator aggregator, long stamp) throws IOException {
-    	
+
         _directory = new File(aggregator.getWorkingDirectory(), CACHEDIR_NAME);
         _aggregator = aggregator;
         // Make sure the cache directory exists
@@ -164,7 +163,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     		_control = new CacheControl();
     		_control.initStamp = stamp;
     	}
-    	
+
         // Start up the periodic serializer task.  Serializes the cache every 10 minutes.
         // This is done so that we can recover from an unexpected shutdown
         aggregator.getExecutors().getScheduledExecutor().scheduleAtFixedRate(new Runnable() {
@@ -187,33 +186,33 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
         		}
         	}
         }, 10, 10, TimeUnit.MINUTES);
-        
+
 		Dictionary<String,String> dict;
-		
-		
+
+
 		if(_aggregator.getPlatformServices() != null){
-			dict = new Hashtable<String, String>();	
+			dict = new Hashtable<String, String>();
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_shutdownListener =  _aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
-			
-			dict = new Hashtable<String, String>();	
+
+			dict = new Hashtable<String, String>();
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_configUpdateListener =  _aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
-			
-			dict = new Hashtable<String, String>();	
+
+			dict = new Hashtable<String, String>();
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_depsUpdateListener =  _aggregator.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
-			
-			dict = new Hashtable<String, String>();	
+
+			dict = new Hashtable<String, String>();
 		    dict.put("name", aggregator.getName()); //$NON-NLS-1$
 			_optionsUpdateListener =  _aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 		}
-		
+
 		optionsUpdated(aggregator.getOptions(), 1);
         configLoaded(aggregator.getConfig(), 1);
         dependenciesLoaded(aggregator.getDependencies(), 1);
-		
-		
+
+
 		// Now invoke the listeners for objects that have already been initialized
 		IOptions options = _aggregator.getOptions();
 		if (options != null) {
@@ -223,13 +222,13 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (config != null) {
 			configLoaded(config, 1);
 		}
-		
+
 		IDependencies deps = _aggregator.getDependencies();
 		if (deps != null) {
 			dependenciesLoaded(deps, 1);
 		}
     }
-    
+
     public synchronized void clearCache() {
     	CacheImpl newCache = new CacheImpl(_aggregator.newLayerCache(), _aggregator.newModuleCache(), _control);
     	newCache.setAggregator(_aggregator);
@@ -239,7 +238,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     		oldCache.clear();
     	}
     }
-    
+
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.cache.ICacheManager#dumpCache(java.io.Writer, java.util.regex.Pattern)
      */
@@ -247,28 +246,28 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
     public void dumpCache(Writer writer, Pattern filter) throws IOException {
     	_cache.get().dump(writer, filter);
     }
-    
+
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.cache.ICacheManager#shutdown()
      */
     @Override
 	public void shutdown(IAggregator aggregator) {
-    	if (_shutdownListener != null) {    		
+    	if (_shutdownListener != null) {
     		 _aggregator.getPlatformServices().unRegisterService(_shutdownListener);
     	}
-		if (_configUpdateListener != null) {			
+		if (_configUpdateListener != null) {
 			 _aggregator.getPlatformServices().unRegisterService(_configUpdateListener);
 		}
-		if (_depsUpdateListener != null) {			
+		if (_depsUpdateListener != null) {
 			 _aggregator.getPlatformServices().unRegisterService(_depsUpdateListener);
 		}
-		if (_optionsUpdateListener != null) {			
+		if (_optionsUpdateListener != null) {
 			 _aggregator.getPlatformServices().unRegisterService(_optionsUpdateListener);
 		}
-    	
+
 		// Serialize the cache metadata one last time
 		serializeCache();
-		
+
 		// avoid memory leaks caused by circular references
 		_aggregator = null;
 		_cache.set(null);
@@ -281,11 +280,11 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	public File getCacheDir() {
 		return _directory;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.cache.ICacheManager#getCache()
 	 */
-	@Override 
+	@Override
 	public ICache getCache() {
 		return _cache.get();
 	}
@@ -295,7 +294,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
      * actually serialize a clone of the specified cache because some of the objects
      * that are serialized require synchronization and we don't want to cause service
      * threads to block while we are doing file I/O.
-     * 
+     *
      * @param cache The object to serialize
      * @param directory The target directory
      */
@@ -314,7 +313,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 				log.log(Level.SEVERE, e.getMessage(), e);
 		}
     }
-    
+
     private void clean(File directory) {
     	final File[] oldCacheFiles = directory.listFiles();
     	if (oldCacheFiles != null) {
@@ -349,14 +348,14 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			final CreateCompletionCallback callback) {
     	createCacheFileAsync(fileNamePrefix, new ReaderInputStream(reader, "UTF-8"), callback); //$NON-NLS-1$
     }
-    
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.cache.ICacheManager#createCacheFileAsync(java.lang.String, java.io.InputStream, com.ibm.jaggr.service.cache.ICacheManager.CreateCompletionCallback)
 	 */
 	@Override
 	public void createCacheFileAsync(final String fileNamePrefix, final InputStream is,
 			final CreateCompletionCallback callback) {
-		
+
 		_aggregator.getExecutors().getFileCreateExecutor().submit(new Runnable() {
 			public void run() {
 				File file = null;
@@ -378,7 +377,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			}
 		});
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.cache.ICacheManager#externalizeObjectAsync(java.lang.String, java.lang.Object, com.ibm.jaggr.service.cache.ICacheManager.CreateCompletionCallback)
 	 */
@@ -392,7 +391,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		            file = File.createTempFile(fileNamePrefix, ".cache", _directory); //$NON-NLS-1$
 					ObjectOutputStream os;
 					os = new ObjectOutputStream(new FileOutputStream(file));
-					try { 
+					try {
 						os.writeObject(object);
 					} finally {
 						try { os.close(); } catch (Exception ignore) {}
@@ -411,7 +410,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			}
 		});
 	}
-	
+
 	@Override
 	public void createNamedCacheFileAsync(final String filename, final InputStream is,
 			final CreateCompletionCallback callback) {
@@ -438,7 +437,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	}
 
 	@Override
-	public void createNamedCacheFileAsync(String fileNamePrefix, Reader reader, 
+	public void createNamedCacheFileAsync(String fileNamePrefix, Reader reader,
 			CreateCompletionCallback callback) {
     	createNamedCacheFileAsync(fileNamePrefix, new ReaderInputStream(reader, "UTF-8"), callback); //$NON-NLS-1$
 	}
@@ -465,7 +464,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 				}
 			}
 		}, _aggregator.getOptions().getDeleteDelay(), TimeUnit.SECONDS);
-		
+
 	}
 
 	@Override
