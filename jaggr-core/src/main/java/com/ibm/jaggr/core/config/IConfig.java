@@ -149,7 +149,7 @@ public interface IConfig {
 	 * config param.
 	 */
 	public static final String JSPLUGINDELEGATORS_CONFIGPARAM = "jsPluginDelegators"; //$NON-NLS-1$
-	
+
 	/**
 	 * Returns the value of the {@code baseUrl} config param. This is the base
 	 * URI to use for all relative URIs specified in this config. If baseUrl is
@@ -157,12 +157,12 @@ public interface IConfig {
 	 * defining the servlet. Note that the property name specifies Url, with a
 	 * lower-case L, instead of URI with an upper-case i, to maintain symmetry
 	 * with the client-side config.
-	 * 
+	 *
 	 * Files and folders located under the folder specified by baseUrl are not
 	 * scanned when the Aggregator builds the module dependency map used for
 	 * require list expansion unless the {@code depsIncludeBaseUrl} config param
 	 * is specified with a value of true.
-	 * 
+	 *
 	 * @return The base location
 	 */
 	public Location getBase();
@@ -171,14 +171,14 @@ public interface IConfig {
 	 * Returns the path mappings for module names to resource URIs specified by
 	 * the {@code paths} config param. The path URIs are assumed to be relative
 	 * to baseUrl, unless the URI starts with a "/" or specfies a protocol.
-	 * 
+	 *
 	 * @return The paths map
 	 */
 	public Map<String, Location> getPaths();
 
 	/**
 	 * Returns the packages specified by the {@code packages} config param.
-	 * 
+	 *
 	 * @return The packages map
 	 * @see IPackage
 	 */
@@ -187,7 +187,7 @@ public interface IConfig {
 	/**
 	 * Returns the list of aliases specified by the {@code aliases} config
 	 * param.
-	 * 
+	 *
 	 * @return The list of aliases
 	 */
 	public List<IAlias> getAliases();
@@ -199,7 +199,7 @@ public interface IConfig {
 	 * directory specified by baseUrl will be scanned when the Aggregator builds
 	 * the module dependency map used for require list expansion. The default
 	 * value is false.
-	 * 
+	 *
 	 * @return The value of the {@code depsIncludeBaseUrl} config param
 	 */
 	public boolean isDepsIncludeBaseUrl();
@@ -214,7 +214,7 @@ public interface IConfig {
 	 * true, then conditionals involving undefined features are trimmed based on
 	 * the value of the feature evaluating to false. The default value for this
 	 * option is false.
-	 * 
+	 *
 	 * @return the value of the {@code coerceUndefinedToFalse} config param
 	 */
 	public boolean isCoerceUndefinedToFalse();
@@ -226,7 +226,7 @@ public interface IConfig {
 	 * Cache-Control:max-age response header. If the value is zero (the
 	 * default), then the Cache-Control:maz-age header will not be specified in
 	 * the response.
-	 * 
+	 *
 	 * @return The value of the {@code expires} config param or zero
 	 */
 	public int getExpires();
@@ -246,7 +246,7 @@ public interface IConfig {
 	 * <p>
 	 * If the deps property is not specified in the config, then this function
 	 * returns an empty list.
-	 * 
+	 *
 	 * @return The list of module names specified in the {@code deps} config
 	 *         param
 	 */
@@ -260,7 +260,7 @@ public interface IConfig {
 	 * beginning of every Aggregator response. The notice text should be in the
 	 * form of a javascript block comment. The Aggregator does not do any
 	 * processing on the notice text.
-	 * 
+	 *
 	 * @return the notice string
 	 */
 	public String getNotice();
@@ -279,7 +279,7 @@ public interface IConfig {
 	 * The value of this string is also used for the client-side cacheBust
 	 * property in the loader extension combo config if it is not specified
 	 * by the client.
-	 * 
+	 *
 	 * @return The value of the {@code cacheBust} config param
 	 */
 	public String getCacheBust();
@@ -287,7 +287,7 @@ public interface IConfig {
 	/**
 	 * Returns the URI to the resource on the server for the specified module
 	 * id, or null if the resource cannot be located.
-	 * 
+	 *
 	 * @param mid
 	 *            The module id
 	 * @return The URI for the module.
@@ -296,8 +296,8 @@ public interface IConfig {
 
 	/**
 	 * Returns an ordered mapping of module ids to resource locations for all of the
-	 * <code>packages</code> locations defined in this config. 
-	 * 
+	 * <code>packages</code> locations defined in this config.
+	 *
 	 * @return The defined package Locations
 	 */
 	public Map<String, Location> getPackageLocations();
@@ -305,22 +305,22 @@ public interface IConfig {
 	/**
 	 * Returns the last-modified date of the config JavaScript file at the time that
 	 * it was read in order to produce this config object.
-	 * 
+	 *
 	 * @return The last-modified date
 	 */
 	public long lastModified();
 
 	/**
 	 * Returns the URI for the config JavaScript file from which this config was read.
-	 * Note that the returned URI may specify an aggregator specific scheme such as 
+	 * Note that the returned URI may specify an aggregator specific scheme such as
 	 * namedbundleresource, so you should first use {@link IAggregator#newResource(URI)}
 	 * to convert the URI into an {@link IResource} and then use {@link IResource#getURI()}
 	 * to obtain a platform URI that you can use to open the file, etc.
-	 * 
+	 *
 	 * @return The config JavaScript URI
 	 */
 	public URI getConfigUri();
-	
+
 	/**
 	 * Returns the list of plugin names specified with the
 	 * {@link #TEXTPLUGINDELEGATORS_CONFIGPARAM} config param. Loader plugins
@@ -329,12 +329,12 @@ public interface IConfig {
 	 * dependencies (see {@link IHttpTransport#REQUIRED_REQATTRNAME}, resources
 	 * specifying loader plugins included in this list will be included in the
 	 * response as a text resource.
-	 * 
+	 *
 	 * @return The list of loader plugins that delegate to the text module
 	 *         loader.
 	 */
 	public Set<String> getTextPluginDelegators();
-	
+
 	/**
 	 * Returns the list of plugin names specified with the
 	 * {@link #JSPLUGINDELEGATORS_CONFIGPARAM} config param. Loader plugins
@@ -344,11 +344,11 @@ public interface IConfig {
 	 * {@link IHttpTransport#REQUIRED_REQATTRNAME}, resources specifying loader
 	 * plugins included in this list will be included in the response as a
 	 * javascript resources.
-	 * 
+	 *
 	 * @return The list of loader plugins that delegate to the javascript module
 	 *         loader.
 	 */
-	public Set<String> getJsPluginDelegators(); 
+	public Set<String> getJsPluginDelegators();
 
 	/**
 	 * Returns the raw config data as an instance of {@link Scriptable}, after the
@@ -357,19 +357,19 @@ public interface IConfig {
 	 * with, and after any string substitutions have been performed.
 	 * <p>
 	 * The returned {@link Scriptable} is sealed, so it may not be modified.
-	 * 
+	 *
 	 * @return The raw config data for this config object
 	 * @see IConfigModifier
 	 */
 	public Scriptable getRawConfig();
-	
+
 	/**
 	 * Returns the stringized source code representation of the {@link Scriptable}
 	 * returned by {@link #getRawConfig()}.  Changes in this string may be used to
 	 * track config changes.  This method is preferable to using {@link #lastModified()}
-	 * because external factors besides the config file (such as changes in the 
+	 * because external factors besides the config file (such as changes in the
 	 * values of string substitution variables) may result in config changes.
-	 * 
+	 *
 	 * @return The stringized JavaScript source representation of the current config
 	 */
 	@Override
@@ -380,7 +380,7 @@ public interface IConfig {
 	 * order.
 	 * <ul>
 	 * <li>
-	 * If <code>resolveAliases</code> is true, then call any alias resolvers to 
+	 * If <code>resolveAliases</code> is true, then call any alias resolvers to
 	 * resolve module name aliases</li>
 	 * <li>
 	 * If the module id specifies a has plugin and the has feature(s) are
@@ -390,7 +390,7 @@ public interface IConfig {
 	 * If the module id matches a package name, then map to the package main
 	 * module id.</li>
 	 * </ul>
-	 * 
+	 *
 	 * @param name
 	 *            The module name to resolve
 	 * @param features
@@ -411,16 +411,16 @@ public interface IConfig {
 	 *            provided in <code>features</code>
 	 * @return The resolved module id.  If the module id is unchanged, then
 	 *         {@code name} should be returned.
-	 * 
+	 *
 	 */
 	public String resolve(String name, Features features,
-			Set<String> dependentFeatures, StringBuffer sb, 
+			Set<String> dependentFeatures, StringBuffer sb,
 			boolean resolveAliases, boolean resolveHasPlugin);
-	
+
 	/**
 	 * Legacy method that calls {@link #resolve(String, Features, Set, StringBuffer, boolean, boolean)}
 	 * with {@code resolveHasPlugin} equal to true.
-	 * 
+	 *
 	 * @param name
 	 *            The module name to resolve
 	 * @param features
@@ -438,7 +438,7 @@ public interface IConfig {
 	 *            If true, then module name aliases will be resolved
 	 */
 	public String resolve(String name, Features features,
-			Set<String> dependentFeatures, StringBuffer sb, 
+			Set<String> dependentFeatures, StringBuffer sb,
 			boolean resolveAliases);
 
 	/**
@@ -452,29 +452,29 @@ public interface IConfig {
 		/**
 		 * A String or an implementation specific representation of a JavaScript
 		 * regular expression.
-		 * 
+		 *
 		 * @return The pattern that is applied to the module id.
 		 */
 		public Object getPattern();
 
 		/**
 		 * A string or an implementation specific representation of a JavaScript
-		 * replacement function. 
+		 * replacement function.
 		 * <p>
 		 * For javascript replacement functions, the javascript {@code has()} function
 		 * is defined for the feature set provided in the request.  The replacement
-		 * function script may also query the {@code options} object which contains the 
+		 * function script may also query the {@code options} object which contains the
 		 * {@link IOptions} properties and the {@code initParams} object which contains
 		 * the {@link InitParams} properties.
 		 * <p>
 		 *  The replacement may be a Script only if
 		 * {@link #getPattern()} returns a Pattern.
-		 * 
+		 *
 		 * @return The replacement
 		 */
 		public Object getReplacement();
 	}
-	
+
 	/**
 	 * Class for a resource location.
 	 * <p>
@@ -490,39 +490,39 @@ public interface IConfig {
 	 * application by modifying the application bundle or jar.
 	 */
 	public class Location {
-		
+
 		final private URI primary, override;
-		
+
 		public Location(URI loc) {
 			primary = loc;
 			override = null;
 		}
-		
+
 		public Location(URI primary, URI override) {
 			this.primary = primary;
 			this.override = override;
 		}
-		
+
 		/**
 		 * Returns the primary URI for this location. The primary URI is the
 		 * value of the path or package location property if the property is
 		 * specified as a string, or the first element of the propery value if
 		 * the value is specified as an array.
-		 * 
+		 *
 		 * @return The primary URI for this location
 		 */
 		public URI getPrimary() { return primary; }
-		
+
 		/**
 		 * Returns the override URI for this location.  The override URI is the
-		 * second element of the array when the path or package location is 
+		 * second element of the array when the path or package location is
 		 * specified as an array, or null if the array has less than two element
 		 * or the value is specified as a string.
-		 * 
+		 *
 		 * @return the override URI for this location
 		 */
 		public URI getOverride() { return override; }
-		
+
 		/* (non-Javadoc)
 		 * @see java.lang.Object#equals(java.lang.Object)
 		 */
@@ -530,15 +530,15 @@ public interface IConfig {
 		public boolean equals(Object other) {
 			if (other == null || !(other instanceof Location)) return false;
 			Location otherLoc = (Location)other;
-			return primary.equals(otherLoc.primary) && 
-				   (override == null && otherLoc.override == null ||  
-				   override != null && otherLoc.override != null && override.equals(otherLoc.override)); 
+			return primary.equals(otherLoc.primary) &&
+					(override == null && otherLoc.override == null ||
+					override != null && otherLoc.override != null && override.equals(otherLoc.override));
 		}
-		
+
 		/**
 		 * Like {@link URI#resolve(String)}, but resolves both the primary and override URIs of the
 		 * location objects.
-		 *  
+		 *
 		 * @param loc
 		 * @return The resolved Location object
 		 */
@@ -554,7 +554,7 @@ public interface IConfig {
 			}
 			return new Location(resultPrimary, resultOverride);
 		}
-		
+
 		@Override
 		public String toString() {
 			if (override == null) return primary.toString();
@@ -575,7 +575,7 @@ public interface IConfig {
 
 		/**
 		 * Returns the value of the {@code name} property of the package.
-		 * 
+		 *
 		 * @return The package name
 		 */
 		public String getName();
@@ -585,11 +585,11 @@ public interface IConfig {
 		 * <p>
 		 * Locations are relative to the baseUrl configuration value, unless
 		 * they contain a protocol or start with a front slash (/).
-		 * 
+		 *
 		 * @return The package location on the server
 		 */
 		public Location getLocation();
-		
+
 
 		/**
 		 * Returns resolved value of the {@code main} propery of the package.
@@ -604,7 +604,7 @@ public interface IConfig {
 		 * package name with the value specified for the main property in the
 		 * config JavaScript if the main property is relative, or the value of the
 		 * main property if it is non-relative.
-		 * 
+		 *
 		 * @return The resolved value of the {@code main} property of the
 		 *         package, or {@code <package-name>/main} if no main property
 		 *         is specified.

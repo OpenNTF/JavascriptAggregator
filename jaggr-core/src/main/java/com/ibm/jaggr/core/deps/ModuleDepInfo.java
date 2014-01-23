@@ -35,7 +35,7 @@ import java.util.TreeSet;
  * expansion and optional trace comments.
  */
 public class ModuleDepInfo implements Serializable {
-	
+
 	private static final long serialVersionUID = 3224914379637472034L;
 
 	/**
@@ -43,18 +43,18 @@ public class ModuleDepInfo implements Serializable {
 	 * the module associated with this object.
 	 */
 	private BooleanFormula formula;
-	
+
 	/**
 	 * Map of boolean terms to comments depicting require expansion trace data.
 	 * {@link BooleanTerm#emptyTerm} is used as the map key when {@link #formula}
-	 * is null (TRUE).  
+	 * is null (TRUE).
 	 */
 	private String comment = null;
-	
+
 	int commentTermSize = 0;
-	
+
 	private String pluginName = null;
-	
+
 	/**
 	 * If true, the plugin name is declared in a has! plugin expression
 	 * referencing this module. Otherwise, the plugin name is derived though has
@@ -62,25 +62,25 @@ public class ModuleDepInfo implements Serializable {
 	 * combining instances of this class using {@link #add(ModuleDepInfo)}
 	 */
 	private boolean isPluginNameDeclared = false;
-	
+
 	public ModuleDepInfo() {
 		this(null, BooleanTerm.TRUE, null);
 	}
-	
+
 	/**
 	 * Copy constructor
-	 * 
+	 *
 	 * @param other
 	 */
 	public ModuleDepInfo(ModuleDepInfo other) {
 		this(other, null);
 	}
-	
+
 	/**
 	 * Creates an instance of this class with the same properties as the
 	 * specified instance except that the specified comment string is associated
 	 * with each of the terms in the new instance
-	 * 
+	 *
 	 * @param other
 	 *            the instance who's properties will be used to initialize this
 	 *            object
@@ -97,7 +97,7 @@ public class ModuleDepInfo implements Serializable {
 		commentTermSize = other.commentTermSize;
 		simplifyInvariant();
 	}
-	
+
 	/**
 	 * @param pluginName
 	 *            The plugin name. May be null if term is null.
@@ -112,7 +112,7 @@ public class ModuleDepInfo implements Serializable {
 	public ModuleDepInfo(String pluginName, BooleanTerm term, String comment) {
 		this(pluginName, term, comment, false);
 	}
-	
+
 	/**
 	 * @param pluginName
 	 *            The plugin name. May be null if term is null.
@@ -152,7 +152,7 @@ public class ModuleDepInfo implements Serializable {
 		}
 		simplifyInvariant();
 	}
-	
+
 	/**
 	 * A return value of null means that the associated module should be
 	 * included in the expanded dependency list unconditionally. A return value
@@ -162,9 +162,9 @@ public class ModuleDepInfo implements Serializable {
 	 * prefixes that should be used with this module. One module id per list
 	 * entry specifying the same module name should be used.
 	 * <p>
-	 * {@link TreeSet} is used to obtain predictable ordering of terms in 
+	 * {@link TreeSet} is used to obtain predictable ordering of terms in
 	 * compound has conditionals, mostly for unit tests.
-	 * 
+	 *
 	 * @return The list of has! plugin prefixes for this module.
 	 */
 	public Collection<String> getHasPluginPrefixes() {
@@ -187,15 +187,15 @@ public class ModuleDepInfo implements Serializable {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Returns true if the specified term is logically included by the formula
 	 * for this object.
 	 * <p>
 	 * Put another way, this method returns true if adding the specified term
-	 * to the formula for this object does not change the truth table for 
+	 * to the formula for this object does not change the truth table for
 	 * the formula.
-	 * 
+	 *
 	 * @param term
 	 *            The term to test for logical inclusion
 	 * @return True if the formula logically includes the specified term
@@ -203,7 +203,7 @@ public class ModuleDepInfo implements Serializable {
 	public boolean containsTerm(BooleanTerm term) {
 		if (term.isFalse() || formula.isTrue()) {
 			// If the term is false, then adding it won't change the formula
-			// Similarly if the formula is true.  No additional term added 
+			// Similarly if the formula is true.  No additional term added
 			// will make it not true.
 			return true;
 		}
@@ -219,7 +219,7 @@ public class ModuleDepInfo implements Serializable {
 				return true;
 			}
 			if (term.containsAll(termToTest)) {
-				// If a term in the formula includes all the vars that are 
+				// If a term in the formula includes all the vars that are
 				// in the term we are testing, then the term is included
 				// in the formula.
 				return true;
@@ -227,11 +227,11 @@ public class ModuleDepInfo implements Serializable {
 		}
 		return false;
 	}
-	
+
 	/**
 	 * logically ands the provided terms with the formula belonging to this
 	 * object, updating this object with the result.
-	 * 
+	 *
 	 * @param other
 	 *            the {@link ModuleDepInfo} to and with this object.
 	 * @return this object
@@ -251,11 +251,11 @@ public class ModuleDepInfo implements Serializable {
 		simplifyInvariant();
 		return this;
 	}
-	
+
 	/**
-	 * Returns the comment string associated with the term that has the 
+	 * Returns the comment string associated with the term that has the
 	 * fewest number of vars.
-	 * 
+	 *
 	 * @return The comment string
 	 */
 	public String getComment() {
@@ -264,7 +264,7 @@ public class ModuleDepInfo implements Serializable {
 
 	/**
 	 * Adds the terms and comments from the specified object to this object.
-	 * 
+	 *
 	 * @param other
 	 *            The object to add
 	 * @return True if this object was modified
@@ -288,7 +288,7 @@ public class ModuleDepInfo implements Serializable {
 		}
 		// Add the terms
 		modified = formula.addAll(other.formula);
-		
+
 		// Copy over plugin name if needed
 		if (!isPluginNameDeclared && other.isPluginNameDeclared) {
 			pluginName = other.pluginName;
@@ -303,7 +303,7 @@ public class ModuleDepInfo implements Serializable {
 		simplifyInvariant();
 		return modified;
 	}
-	
+
 	/**
 	 * Logically subtracts the boolean terms in the specified object from the
 	 * boolean formula in this object. This means that if a term from the
@@ -313,7 +313,7 @@ public class ModuleDepInfo implements Serializable {
 	 * A term logically includes another term if it evaluates to the same result
 	 * for all vars within the term. For example, the term A contains (A*B), but
 	 * not vice-versa.
-	 * 
+	 *
 	 * @param toSub
 	 *            The object to subtract from this object
 	 * @return True if this object was modified
@@ -325,14 +325,14 @@ public class ModuleDepInfo implements Serializable {
 			modified = !formula.isFalse();
 			formula = new BooleanFormula(false);
 		} else if (formula.isTrue()) {
-			// Subtracting anything from true (other than true) 
+			// Subtracting anything from true (other than true)
 			// has no effect
 			return false;
 		} else {
 			// Remove terms from this formula that contain the same vars
 			// (or a superset of the same vars) as terms in the formula
-			// being subtracted.  For example, if toSub.formula contains 
-			// the term (A*B), then the terms (A*B) and (A*B*C) would be 
+			// being subtracted.  For example, if toSub.formula contains
+			// the term (A*B), then the terms (A*B) and (A*B*C) would be
 			// removed from this formula, but the term (A) would not.
 			Set<BooleanTerm> termsToRemove = new HashSet<BooleanTerm>();
 			for (BooleanTerm t1 : formula) {
@@ -354,18 +354,18 @@ public class ModuleDepInfo implements Serializable {
 		simplifyInvariant();
 		return modified;
 	}
-	
+
 	/**
 	 * Resolves the formula using the variable values provided
 	 * in <code>features</code>
-	 * 
+	 *
 	 * @param features the variable values to resolve with
 	 */
 	public void resolveWith(Features features) {
 		formula.resolveWith(features);
 		simplifyInvariant();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
@@ -386,13 +386,13 @@ public class ModuleDepInfo implements Serializable {
 		BooleanFormula simplified = formula.simplify();
 		if  (simplified.isTrue() || simplified.isFalse() || simplified.equals(formula)) {
 			formula = simplified;
-		}		
+		}
 		if (formula.isTrue() || formula.isFalse()) {
 			pluginName = null;
 			isPluginNameDeclared = false;
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#equals(java.lang.Object)
 	 */
@@ -407,15 +407,15 @@ public class ModuleDepInfo implements Serializable {
 		}
 		if (otherObj != null && otherObj.getClass().getName().equals(ModuleDepInfo.class.getName())) {
 			ModuleDepInfo other = (ModuleDepInfo)otherObj;
-			return formula.equals(other.formula) && 
-				isPluginNameDeclared == other.isPluginNameDeclared &&
-				(pluginName == null && other.pluginName == null ||
-				 pluginName != null && pluginName.equals(other.pluginName));
-				
+			return formula.equals(other.formula) &&
+					isPluginNameDeclared == other.isPluginNameDeclared &&
+					(pluginName == null && other.pluginName == null ||
+					pluginName != null && pluginName.equals(other.pluginName));
+
 		}
 		return false;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#hashCode()
 	 */

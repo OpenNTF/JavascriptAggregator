@@ -25,5 +25,4 @@ import java.io.IOException;
  */
 public class ProcessingDependenciesException extends IOException {
 	private static final long serialVersionUID = -8334623620467466846L;
-
 }

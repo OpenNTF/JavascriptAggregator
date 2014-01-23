@@ -33,9 +33,9 @@ public class RequestUtil {
 		IOptions options = aggr.getOptions();
 		return (options.isDevelopmentMode() || options.isDebugMode()) &&
 				TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOCACHE_REQATTRNAME));
-		
+
 	}
-	
+
 	/**
 	 * @param request
 	 * @return True if the response should be gzip encoded
@@ -43,17 +43,17 @@ public class RequestUtil {
 	public static boolean isGzipEncoding(HttpServletRequest request) {
 		boolean result = false;
 		String accept = request.getHeader("Accept-Encoding"); //$NON-NLS-1$
-        if (accept != null)
-        	accept = accept.toLowerCase();
-        if (accept != null && accept.contains("gzip") && !accept.contains("gzip;q=0")) { //$NON-NLS-1$ //$NON-NLS-2$
-        	result = true;
-        }
-        return result;
+		if (accept != null)
+			accept = accept.toLowerCase();
+		if (accept != null && accept.contains("gzip") && !accept.contains("gzip;q=0")) { //$NON-NLS-1$ //$NON-NLS-2$
+			result = true;
+		}
+		return result;
 	}
 
 	/**
 	 * Static class method for determining if require list explosion should be performed.
-	 *  
+	 *
 	 * @param request The http request object
 	 * @return True if require list explosion should be performed.
 	 */
@@ -62,7 +62,7 @@ public class RequestUtil {
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
 		Boolean reqattr = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME));
-		result = (options == null || !options.isDisableRequireListExpansion()) 
+		result = (options == null || !options.isDisableRequireListExpansion())
 				&& reqattr != null && reqattr
 				&& aggr.getDependencies() != null;
 		return result;
@@ -70,7 +70,7 @@ public class RequestUtil {
 
 	/**
 	 * Static method for determining if has filtering should be performed.
-	 * 
+	 *
 	 * @param request The http request object
 	 * @return True if has filtering should be performed
 	 */

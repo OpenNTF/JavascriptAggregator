@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
-import com.google.javascript.rhino.Node;
-import com.google.javascript.rhino.Token;
-
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.service.util.NodeUtil;
+
+import com.google.javascript.rhino.Node;
+import com.google.javascript.rhino.Token;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -47,7 +47,7 @@ public class DepUtils {
 	/**
 	 * Removes URIs containing duplicate and non-orthogonal paths so that the
 	 * collection contains only unique and non-overlapping paths.
-	 * 
+	 *
 	 * @param paths
 	 *            List of URIs to be culled
 	 */
@@ -62,9 +62,9 @@ public class DepUtils {
 			for (int i = 0; i < result.size(); i++) {
 				URI testUri = result.get(i);
 				if (!StringUtils.equals(testUri.getScheme(), uri.getScheme()) ||
-				    !StringUtils.equals(testUri.getHost(), uri.getHost()) ||
-				    testUri.getPort() != uri.getPort()) {
-				    continue;
+						!StringUtils.equals(testUri.getHost(), uri.getHost()) ||
+						testUri.getPort() != uri.getPort()) {
+					continue;
 				}
 				String test = testUri.getPath();
 				if (!test.endsWith("/")) { //$NON-NLS-1$
@@ -90,7 +90,7 @@ public class DepUtils {
 	 * in <code>dependencies</code> that is an ancestor of
 	 * <code>requiestURI</code> and then looks for the {@link DepTreeNode} who's
 	 * name corresponds to descendant part of the URI path.
-	 * 
+	 *
 	 * @param requestUri
 	 *            The URI for the resource location being sought
 	 * @param dependencies
@@ -107,19 +107,19 @@ public class DepUtils {
 		for (Entry<URI, DepTreeNode> dependency : dependencies.entrySet()) {
 			URI uri = dependency.getKey();
 			if (requestUri.getScheme() == null && uri.getScheme() != null ||
-				requestUri.getScheme() != null && !requestUri.getScheme().equals(uri.getScheme()))
+					requestUri.getScheme() != null && !requestUri.getScheme().equals(uri.getScheme()))
 				continue;
-			
+
 			if (requestUri.getHost() == null && uri.getHost() != null ||
-				requestUri.getHost() != null && !requestUri.getHost().equals(uri.getHost()))
+					requestUri.getHost() != null && !requestUri.getHost().equals(uri.getHost()))
 				continue;
 
 			if (requestUri.getPath().equals(uri.getPath())
-				|| requestUri.getPath().startsWith(uri.getPath()) 
-				&& (uri.getPath().endsWith("/") || requestUri.getPath().charAt(uri.getPath().length()) == '/'))  //$NON-NLS-1$
+					|| requestUri.getPath().startsWith(uri.getPath())
+					&& (uri.getPath().endsWith("/") || requestUri.getPath().charAt(uri.getPath().length()) == '/'))  //$NON-NLS-1$
 			{
 				/*
-				 * Found the entry.  Now find the node corresponding to the 
+				 * Found the entry.  Now find the node corresponding to the
 				 * remainder of the path.
 				 */
 				if (requestUri.getPath().equals(uri.getPath())) {
@@ -144,7 +144,7 @@ public class DepUtils {
 	 * <p>
 	 * Any require list entries that are not a string literal (e.g. an object
 	 * ref) are omitted from the returned array.
-	 * 
+	 *
 	 * @param node
 	 *            A parsed AST {@link Node} for a javascript file
 	 * @return The String array of module dependencies.
@@ -158,7 +158,7 @@ public class DepUtils {
 			if ((condition = NodeUtil.conditionFromHasNode(cursor)) != null) {
 				dependentFeatures.add(condition);
 			} else if ((defineDeps = NodeUtil.moduleDepsFromDefine(cursor)) != null ||
-					   (requireDeps = NodeUtil.moduleDepsFromRequire(cursor)) != null) {
+					(requireDeps = NodeUtil.moduleDepsFromRequire(cursor)) != null) {
 				Node dependencies = defineDeps != null ? defineDeps : requireDeps;
 				// Found the array.  Now copy the string values to the buildReader.
 				result = new LinkedHashSet<String>();
@@ -168,18 +168,18 @@ public class DepUtils {
 						String mid = strNode.getString();
 						// Don't add module ids with invalid characters
 						if (!PathUtil.invalidChars.matcher(mid).find()) {
-							if (defineDeps != null) { 
+							if (defineDeps != null) {
 								result.add(mid);
 							}
-							// if the id specifies a has loader plugin, then add the 
+							// if the id specifies a has loader plugin, then add the
 							// has dependencies to the dependencies list
 							if (hasPattern.matcher(mid).find()) {
 								int idx = mid.indexOf("!"); //$NON-NLS-1$
 								HasNode hasNode = new HasNode(mid.substring(idx+1));
 								hasNode.evaluateAll(
-										mid.substring(0, idx), 
-										Features.emptyFeatures, 
-										dependentFeatures, 
+										mid.substring(0, idx),
+										Features.emptyFeatures,
+										dependentFeatures,
 										BooleanTerm.TRUE, null);
 							}
 						}

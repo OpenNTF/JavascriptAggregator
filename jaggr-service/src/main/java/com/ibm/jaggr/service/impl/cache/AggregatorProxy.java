@@ -31,34 +31,34 @@ import java.lang.reflect.Method;
  */
 public class AggregatorProxy implements java.lang.reflect.InvocationHandler {
 
-    private Object aggr;
-    private ICacheManager cacheMgr;
+	private Object aggr;
+	private ICacheManager cacheMgr;
 
-    public static IAggregator newInstance(IAggregator aggr, ICacheManager cacheMgr) {
-	return (IAggregator)java.lang.reflect.Proxy.newProxyInstance(
-	    aggr.getClass().getClassLoader(),
-	    new Class[]{IAggregator.class},
-	    new AggregatorProxy(aggr, cacheMgr));
-    }
+	public static IAggregator newInstance(IAggregator aggr, ICacheManager cacheMgr) {
+		return (IAggregator)java.lang.reflect.Proxy.newProxyInstance(
+				aggr.getClass().getClassLoader(),
+				new Class[]{IAggregator.class},
+				new AggregatorProxy(aggr, cacheMgr));
+	}
 
-    private AggregatorProxy(Object aggr, ICacheManager cacheMgr) {
-    	this.aggr = aggr;
-    	this.cacheMgr = cacheMgr;
-    }
+	private AggregatorProxy(Object aggr, ICacheManager cacheMgr) {
+		this.aggr = aggr;
+		this.cacheMgr = cacheMgr;
+	}
 
-    public Object invoke(Object proxy, Method m, Object[] args)
-	throws Throwable {
-        Object result;
+	public Object invoke(Object proxy, Method m, Object[] args)
+			throws Throwable {
+		Object result;
 		try {
-		    result = m.invoke(aggr, args);
+			result = m.invoke(aggr, args);
 			if (result == null && "getCacheManager".equals(m.getName())) { //$NON-NLS-1$
 				return cacheMgr;
 			}
-        } catch (InvocationTargetException e) {
-		    throw e.getTargetException();
-        } catch (Exception e) {
-		    throw new RuntimeException(e);
+		} catch (InvocationTargetException e) {
+			throw e.getTargetException();
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 		return result;
-    }
+	}
 }

@@ -74,7 +74,7 @@ public interface IAggregator {
 	 * Returns the name of the servlet implementing this interface. This is same
 	 * as the value of the alias attribute in the &lt;servlet&gt; element of the
 	 * plugin.xml for the bundle that defines the servlet.
-	 * 
+	 *
 	 * @return The name of the servlet.
 	 */
 	public String getName();
@@ -86,7 +86,7 @@ public interface IAggregator {
 	 * specifies the aggregator config propertes using JSON format in the same
 	 * way that the client side loader config JSON specifies the AMD
 	 * configuration for the loader on the client. \
-	 * 
+	 *
 	 * @return The config object for this aggregator
 	 */
 	public IConfig getConfig();
@@ -95,7 +95,7 @@ public interface IAggregator {
 	 * Returns the options object for this aggregator. Options are specified in
 	 * the server wide aggregator.properties file, located in the home directory
 	 * of the user that launched the server.
-	 * 
+	 *
 	 * @return The current aggregator options.
 	 */
 	public IOptions getOptions();
@@ -104,7 +104,7 @@ public interface IAggregator {
 	/**
 	 * Returns the cache manager object for this aggregator. The cache manager
 	 * provides methods for asynchronously maintaining cached resources.
-	 * 
+	 *
 	 * @return The cache manager for this aggregator
 	 */
 	public ICacheManager getCacheManager();
@@ -112,14 +112,14 @@ public interface IAggregator {
 	/**
 	 * Returns the dependencies object for this aggregator. Used for expanding
 	 * module dependencies.
-	 * 
+	 *
 	 * @return The dependencies object for this aggregator.
 	 */
 	public IDependencies getDependencies();
 
 	/**
 	 * Returns the HTTP transport in use by this object
-	 * 
+	 *
 	 * @return the HTTP transport
 	 */
 	public IHttpTransport getTransport();
@@ -128,7 +128,7 @@ public interface IAggregator {
 	 * Returns the {@link BundleContext} object for this aggregator. This is the
 	 * context of the bundle who's plugin.xml contains the &lt;servlet&gt; tag
 	 * used to define this instance of the aggregator.
-	 * 
+	 *
 	 * @return The bundle context of the instantiating bundle.
 	 */
 	public BundleContext getBundleContext();
@@ -164,11 +164,11 @@ public interface IAggregator {
 	 * <p>
 	 * If a satisfactory resource factory cannot be found, then the unchecked
 	 * {@link UnsupportedOperationException} is thrown.
-	 * 
+	 *
 	 * @param uri
 	 *            The URI for the resource
 	 * @return The newly created resource object.
-	 * 
+	 *
 	 * @throws UnsupporteOperationException
 	 *             if there is no {@link IResourceFactory} registered to handle the
 	 *             specified uri.
@@ -206,7 +206,7 @@ public interface IAggregator {
 	 * <p>
 	 * If a satisfactory module builder still cannot be found, then the
 	 * unchecked {@link UnsupportedOperationException} is thrown.
-	 * 
+	 *
 	 * @param mid
 	 *            The module id for the module to be built
 	 * @param res
@@ -219,7 +219,7 @@ public interface IAggregator {
 	 * Returns the servlet init-params for this aggregator. The servlet
 	 * init-params are defined using &lt;init-param&gt; elements within the
 	 * &lt;servlet&gt; element in the plugin.xml
-	 * 
+	 *
 	 * @return The servlet init-params
 	 */
 	public InitParams getInitParams();
@@ -228,7 +228,7 @@ public interface IAggregator {
 	 * Returns this aggregator's working directory. This is the location on the
 	 * file system where the aggregator stores cache files and serialized
 	 * objects.
-	 * 
+	 *
 	 * @return The working directory
 	 */
 	public File getWorkingDirectory();
@@ -239,7 +239,7 @@ public interface IAggregator {
 	 * <p>
 	 * Any services registered using the {@link IConfigListener} interface are
 	 * notified.
-	 * 
+	 *
 	 * @return True if the config has been modified since it was last loaded.
 	 * @throws IOException
 	 */
@@ -247,7 +247,7 @@ public interface IAggregator {
 
 	/**
 	 * Returns this instance of the aggregator as a HttpServlet.
-	 * 
+	 *
 	 * @return The aggregator as a HttpServlet
 	 */
 	public HttpServlet asServlet();
@@ -257,7 +257,7 @@ public interface IAggregator {
 	 * extensions that have been registered for this aggregator. This includes
 	 * extensions obtained from the eclipse extension registry, as well as
 	 * extensions registered though the {@link IExtensionRegistrar} interface.
-	 * 
+	 *
 	 * @return An Iterable to the collection of resource factory extensions for
 	 *         this aggregator
 	 */
@@ -268,7 +268,7 @@ public interface IAggregator {
 	 * extensions that have been registered for this aggregator. This includes
 	 * extensions obtained from the eclipse extension registry, as well as
 	 * extensions registered though the {@link IExtensionRegistrar} interface.
-	 * 
+	 *
 	 * @return An Iterable to the collection of module builder extensions for
 	 *         this aggregator
 	 */
@@ -277,13 +277,13 @@ public interface IAggregator {
 	/**
 	 * Returns the {@code IAggregatorExtension} for the HttpTransport
 	 * for this aggregator.
-	 * 
+	 *
 	 * @return The IAggregatorExtension for the http transport.
 	 */
 	public IAggregatorExtension getHttpTransportExtension();
 	/**
 	 * Factory method for IModule instances.
-	 * 
+	 *
 	 * @param mid
 	 *            the module id
 	 * @param uri
@@ -294,14 +294,14 @@ public interface IAggregator {
 
 	/**
 	 * Factory method for ILayerCache
-	 * 
+	 *
 	 * @return the new ILayerCache instance
 	 */
 	public ILayerCache newLayerCache();
-	
+
 	/**
 	 * Factory method for IModuleCache
-	 * 
+	 *
 	 * @return the new IModuleCache instance
 	 */
 	public IModuleCache newModuleCache();
@@ -314,40 +314,39 @@ public interface IAggregator {
 	 * one resolver is registered, the first one that returns a value for the variable
 	 * will be used.  If no value is found for a variable, then the variable
 	 * identifier is unmodified in the returned string.
-	 * 
+	 *
 	 * @param str The string for which variables should be substituted
 	 * @return The input string with variables of the form ${name} replaced with
 	 * the variable values.
 	 */
 	public String substituteProps(String str);
-	
+
 	/**
 	 * Like {@link #substituteProps(String)}, but allows the caller to specify
 	 * a transformer class to process the substitution values.
-	 * 
+	 *
 	 * @param str The input string
 	 * @param transformer An instance of {@link SubstitutionTransformer}
 	 * @return The transformed string
 	 */
 	public String substituteProps(String str, SubstitutionTransformer transformer);
-	
+
 	/**
-	 * Get the <code>IPlatformServices</code> implementation for this aggregator. 
-	 * 
+	 * Get the <code>IPlatformServices</code> implementation for this aggregator.
+	 *
 	 * @return An implementation of <code>IPlatformServices</code>
 	 */
-	
+
 	public IPlatformServices getPlatformServices();
-	
-	
+
 	/**
-	 * Transformer interface used by 
-	 * {@link IAggregator#substituteProps(String, SubstitutionTransformer)}. 
+	 * Transformer interface used by
+	 * {@link IAggregator#substituteProps(String, SubstitutionTransformer)}.
 	 */
 	public interface SubstitutionTransformer {
 		/**
 		 * Transforms the string property being substituted.
-		 * 
+		 *
 		 * @param name the property name
 		 * @param value the property value
 		 * @return the transformed property value

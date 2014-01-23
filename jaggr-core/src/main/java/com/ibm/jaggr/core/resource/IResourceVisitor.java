@@ -27,10 +27,10 @@ import java.net.URI;
 public interface IResourceVisitor {
 
 	/**
-	 * This method is called by {@link IResource#walkTree(IResourceVisitor)} 
+	 * This method is called by {@link IResource#walkTree(IResourceVisitor)}
 	 * for both folder and non-folder resources encountered while walking the
 	 * folder tree rooted at resource that walkTree was called on.
-	 * 
+	 *
 	 * @param resource
 	 *            The non-folder resource being visited.
 	 * @param pathName
@@ -73,14 +73,14 @@ public interface IResourceVisitor {
 
 		/**
 		 * @return A {@link Reader} object for the resource.
-		 * 
+		 *
 		 * @throws IOException
 		 */
 		public Reader getReader() throws IOException;
-		
+
 		/**
 		 * @return A {@link InputStream} object for the resource.
-		 * 
+		 *
 		 * @throws IOException
 		 */
 		public InputStream getInputStream() throws IOException;

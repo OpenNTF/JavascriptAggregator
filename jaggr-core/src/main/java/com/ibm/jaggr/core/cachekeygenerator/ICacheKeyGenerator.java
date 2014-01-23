@@ -75,7 +75,7 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * Note that {@link IOptions} properties do not need to be factored into the
 	 * returned key since any changes in these properties invalidates cached
 	 * responses and clears the module and layer caches.
-	 * 
+	 *
 	 * @param request
 	 *            The request object
 	 * @return the cache key for the request
@@ -109,17 +109,17 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * <p>
 	 * If combining this cache key generator with the specified cache key
 	 * generator yields a cache key generator that produces identical cache keys
-	 * as this cache key generator, then this cache key generator should be 
+	 * as this cache key generator, then this cache key generator should be
 	 * returned.
-	 * 
+	 *
 	 * @param other
 	 *            A reference to the CacheKeyGenerator object that is to be
 	 *            combined with this object. The Aggregator guarantees that
 	 *            {@code other} will be of the same type as the current object,
 	 *            so it is always safe to cast {@code other} to an instance of
 	 *            the current object.
-	 * 
-	 * @return The combined CacheKeyGenerator, or this object if combining 
+	 *
+	 * @return The combined CacheKeyGenerator, or this object if combining
 	 *         this object with <code>other</code> will produce a cache key
 	 *         generator that generates the same keys as this object.
 	 */
@@ -150,13 +150,13 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * generators into their constituent key generators so that the cache key
 	 * generators contributing to a layer cache key may be combined more
 	 * effectively.
-	 * 
+	 *
 	 * @param request
 	 *            The request object
 	 * @return Array of constituent cache key generators, or null.
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request);
-	
+
 	/**
 	 * Instances of this object can be provisional. If cache keys for the module
 	 * associated with this generator need to depend on the content of the
@@ -186,31 +186,31 @@ public interface ICacheKeyGenerator extends Serializable {
 	 * gained in the process of building it, can be used to broaden the scope of
 	 * the key by ignoring request parameters or features that are not
 	 * applicable to the module as determined by its content.
-	 * 
+	 *
 	 * @return True if this is a provisional cache key generator
 	 */
 	public boolean isProvisional();
-	
+
 	/**
 	 * Cache key generators should implement this function to return a short
-	 * keyword identifier for the generator (typically the same keyword used 
-	 * in generated keys) plus a string representation of the instance data 
+	 * keyword identifier for the generator (typically the same keyword used
+	 * in generated keys) plus a string representation of the instance data
 	 * that is used in constructing the keys (if any).
-	 * 
+	 *
 	 * @return The string representation of the generator
 	 */
 	@Override
 	public String toString();
-	
+
 	/**
 	 * This method should return true if this object's {@link #generateKey(HttpServletRequest)}
-	 * method will always return the same value as <code>other</code> for the same 
+	 * method will always return the same value as <code>other</code> for the same
 	 * {@link HttpServletRequest} object.  Classes that implement this method should
 	 * implement {@link Object#hashCode()} as well.
-	 * 
+	 *
 	 * @return True if this object is logically equal to <code>other</code>
 	 */
 	@Override
 	public boolean equals(Object other);
-	
+
 }

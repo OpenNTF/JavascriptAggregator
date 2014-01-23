@@ -29,13 +29,13 @@ import java.util.Dictionary;
  * these functionalities. The implementations are kept in the platform specific
  * bundles. For OSGi, the implementation of this interface is location in
  * {@code jaggr-service} bundle.
- * 
+ *
  */
 public interface IPlatformServices {
 	/**
 	 * Registers the specified service object with the specified properties
 	 * under the specified class name with the platform.
-	 * 
+	 *
 	 * @param clazz
 	 *            The class name under which the service is registered
 	 * @param service
@@ -45,14 +45,14 @@ public interface IPlatformServices {
 	 * @return service registration object. For OSGi implementation, this object
 	 *         refers to implementation of {@code org.osgi.framework.ServiceRegistration}
 	 *         interface.
-	 * 
+	 *
 	 */
 	public Object registerService(String clazz, Object service,
 			Dictionary<String, String> properties);
 
 	/**
 	 * Removes the service registration from the platform.
-	 * 
+	 *
 	 * @param serviceRegistration
 	 *            Service registration object. For OSGi implementation, this
 	 *            object refers to implementation of
@@ -63,7 +63,7 @@ public interface IPlatformServices {
 	/**
 	 * Returns an array of service references for the services that were
 	 * registered under the specified class and filter.
-	 * 
+	 *
 	 * @param clazz
 	 *            The class name under which the service is registered
 	 * @param filter
@@ -78,7 +78,7 @@ public interface IPlatformServices {
 
 	/**
 	 * Returns the service object corresponding to the service registration.
-	 * 
+	 *
 	 * @param serviceReference
 	 *            Service reference object for the desired service object. For
 	 *            OSGi implementation, this object refers to implementation of
@@ -89,7 +89,7 @@ public interface IPlatformServices {
 
 	/**
 	 * Removes the service reference from the platform
-	 * 
+	 *
 	 * @param serviceReference
 	 *            Service reference object. For OSGi implementation, this object
 	 *            refers to implementation of {@code org.osgi.framework.ServiceReference}
@@ -101,7 +101,7 @@ public interface IPlatformServices {
 
 	/**
 	 * A method to access a resource within an application
-	 * 
+	 *
 	 * @param resourceName
 	 * @return {@code URL} of the resource
 	 */
@@ -110,23 +110,23 @@ public interface IPlatformServices {
 	/**
 	 * An interface method to get the headers from the application context. For
 	 * OSGi, it could be extracting the headers from the bundle context.
-	 * 
+	 *
 	 * @return A {@code Dictionary} of key-value pairs depicting the headers.
 	 */
 
-	public Dictionary<String, String> getHeaders();	
+	public Dictionary<String, String> getHeaders();
 
 	/**
 	 * This method returns true when the platform is shutting down.
-	 * 
-	 * @return boolean 
+	 *
+	 * @return boolean
 	 */
 	public boolean isShuttingdown();
-	
+
 	/**
-	 * This method returns the URI pointing to the context root of the consuming application. 
-	 * 
-	 * @return URI object pointing to the context root of the consuming application. 
+	 * This method returns the URI pointing to the context root of the consuming application.
+	 *
+	 * @return URI object pointing to the context root of the consuming application.
 	 */
 	public URI getAppContextURI() throws URISyntaxException;
 

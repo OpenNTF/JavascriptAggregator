@@ -29,24 +29,24 @@ import java.util.regex.Pattern;
 public class CacheImpl implements ICache {
 	private static final long serialVersionUID = 8499083762317350377L;
 	/// The caches
-    private ILayerCache _layerCache;
+	private ILayerCache _layerCache;
 	private IModuleCache _moduleCache;
-	
+
 	private Object _control;	// used by cache manager to control cache life span
-	
+
 	private final long _created;
-	
+
 	/**
 	 * @param initialSize The initial size of the cache
 	 */
 	public CacheImpl(ILayerCache layerCache, IModuleCache moduleCache, Object control) {
-		_layerCache = layerCache; 
+		_layerCache = layerCache;
 		_moduleCache = moduleCache;
 		_control = control;
-		
+
 		_created = new Date().getTime();
 	}
-	
+
 	/**
 	 * @return The ILayer cache
 	 */
@@ -54,7 +54,7 @@ public class CacheImpl implements ICache {
 	public ILayerCache getLayers() {
 		return _layerCache;
 	}
-	
+
 	/**
 	 * @return The IModule cache
 	 */
@@ -62,37 +62,37 @@ public class CacheImpl implements ICache {
 	public IModuleCache getModules() {
 		return _moduleCache;
 	}
-	
+
 	@Override
 	public long getCreated() {
 		return _created;
 	}
-	
+
 	public Object getControlObj() {
 		return _control;
 	}
-	
-    /**
-     * Help out the GC by clearing out the cache maps.  
-     */
-    public synchronized void clear() {
+
+	/**
+	 * Help out the GC by clearing out the cache maps.
+	 */
+	public synchronized void clear() {
 		_layerCache.clear();
 		_moduleCache.clear();
-    }
-    
-    /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.cache.ICache#dump(java.io.Writer, java.util.regex.Pattern)
-     */
-    @Override
-    public void dump(Writer writer, Pattern filter) throws IOException {
-    	_layerCache.dump(writer, filter);
-    	_moduleCache.dump(writer, filter);
-    }
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.cache.ICache#dump(java.io.Writer, java.util.regex.Pattern)
+	 */
+	@Override
+	public void dump(Writer writer, Pattern filter) throws IOException {
+		_layerCache.dump(writer, filter);
+		_moduleCache.dump(writer, filter);
+	}
 
 	@Override
 	public void setAggregator(IAggregator aggregator) {
 		_layerCache.setAggregator(aggregator);
 		_moduleCache.setAggregator(aggregator);
 	}
-    
+
 }

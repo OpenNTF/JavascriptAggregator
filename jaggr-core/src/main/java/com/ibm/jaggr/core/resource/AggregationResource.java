@@ -28,19 +28,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * This class implements an aggregating resource that combines the 
+ * This class implements an aggregating resource that combines the
  * contents of one or more component resources.
  */
 public class AggregationResource implements IResource, IResourceVisitor.Resource {
-	
+
 	private final URI facadeUri;
-	private final List<IResource> resources; 
+	private final List<IResource> resources;
 
 	public AggregationResource(URI facadeUri, List<IResource> resources) {
 		this.facadeUri = facadeUri;
 		this.resources = resources;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.resource.IResource#getURI()
 	 */

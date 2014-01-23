@@ -37,7 +37,7 @@ import java.util.Enumeration;
 public class BundleResource implements IResource {
 	final URI uri;
 	final String symname;
-	
+
 	public BundleResource(URI uri, BundleContext context) {
 		this.uri = uri;
 		Bundle bundle = null;
@@ -52,12 +52,12 @@ public class BundleResource implements IResource {
 		}
 		symname = (bundle != null) ? bundle.getSymbolicName() : null;
 	}
-	
+
 	protected BundleResource(URI uri, String symname) {
 		this.uri = uri;
 		this.symname = symname;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResource#getURI()
 	 */
@@ -93,7 +93,7 @@ public class BundleResource implements IResource {
 	public IResource resolve(String relative) {
 		return new BundleResource(getURI().resolve(relative), symname);
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResource#getReader()
 	 */
@@ -101,7 +101,7 @@ public class BundleResource implements IResource {
 	public Reader getReader() throws IOException {
 		return new InputStreamReader(uri.toURL().openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResource#getInputStream()
 	 */
@@ -121,7 +121,7 @@ public class BundleResource implements IResource {
 		Bundle bundle = Platform.getBundle(symname);
 		recurse(bundle, uri.getPath(), visitor, ""); //$NON-NLS-1$
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResource#asVisitorResource()
 	 */
@@ -140,10 +140,10 @@ public class BundleResource implements IResource {
 		}
 		return resource;
 	}
-	
+
 	/**
 	 * Internal method for recursing sub directories.
-	 * 
+	 *
 	 * @param file
 	 *            The file object
 	 * @param visitor
@@ -163,8 +163,8 @@ public class BundleResource implements IResource {
 				int idx = temp.lastIndexOf("/"); //$NON-NLS-1$
 				String childName = temp.substring(idx+1);
 				String relPath = relPathName
-					+ (relPathName.length() == 0 ? "" : "/") //$NON-NLS-1$ //$NON-NLS-2$
-					+ childName;
+						+ (relPathName.length() == 0 ? "" : "/") //$NON-NLS-1$ //$NON-NLS-2$
+						+ childName;
 				boolean result = visitor.visitResource(
 						new VisitorResource(child), relPath);
 				if (result && child.getPath().endsWith("/")) { //$NON-NLS-1$
@@ -173,17 +173,17 @@ public class BundleResource implements IResource {
 			}
 		}
 	}
-	
+
 	private static class VisitorResource implements IResourceVisitor.Resource {
 
 		URL url;
 		long lastModified;
-		
+
 		private VisitorResource(URL url) throws IOException {
 			this.url = url;
 			this.lastModified = url.openConnection().getLastModified();
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#isFolder()
 		 */
@@ -219,7 +219,7 @@ public class BundleResource implements IResource {
 		public Reader getReader() throws IOException {
 			return new InputStreamReader(url.openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
 		}
-		
+
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#getInputStream()
 		 */

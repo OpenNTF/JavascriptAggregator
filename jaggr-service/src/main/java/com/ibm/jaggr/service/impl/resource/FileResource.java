@@ -44,7 +44,7 @@ public class FileResource implements IResource {
 
 	/**
 	 * Public constructor used by factory
-	 * 
+	 *
 	 * @param uri
 	 *            the resource URI
 	 */
@@ -58,7 +58,7 @@ public class FileResource implements IResource {
 		ref = null;
 		factory = null;
 	}
-	
+
 	public FileResource(URI ref, IResourceFactory factory, URI uri) {
 		this(uri);
 		this.ref = ref;
@@ -70,7 +70,7 @@ public class FileResource implements IResource {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see com.ibm.jaggr.service.modules.Resource#getURI()
 	 */
 	@Override
@@ -80,7 +80,7 @@ public class FileResource implements IResource {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see com.ibm.jaggr.service.modules.Resource#exists()
 	 */
 	@Override
@@ -90,7 +90,7 @@ public class FileResource implements IResource {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see com.ibm.jaggr.service.modules.Resource#lastModified()
 	 */
 	@Override
@@ -114,7 +114,7 @@ public class FileResource implements IResource {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see com.ibm.jaggr.service.modules.Resource#getReader()
 	 */
 	@Override
@@ -132,7 +132,7 @@ public class FileResource implements IResource {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * com.ibm.jaggr.service.modules.Resource#walkTree(com.ibm.jaggr.modules
 	 * .ResourceVisitor, boolean)
@@ -150,7 +150,7 @@ public class FileResource implements IResource {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * com.ibm.jaggr.service.resource.IResource#asVisitorResource()
 	 */
@@ -164,7 +164,7 @@ public class FileResource implements IResource {
 
 	/**
 	 * Internal method for recursing sub directories.
-	 * 
+	 *
 	 * @param file
 	 *            The file object
 	 * @param visitor
@@ -216,7 +216,7 @@ public class FileResource implements IResource {
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see
 		 * com.ibm.jaggr.service.resource.IResourceVisitor.Resource
 		 * #isFolder()
@@ -228,7 +228,7 @@ public class FileResource implements IResource {
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see
 		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
 		 * getURI()
@@ -240,7 +240,7 @@ public class FileResource implements IResource {
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see
 		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
 		 * lastModified()
@@ -252,7 +252,7 @@ public class FileResource implements IResource {
 
 		/*
 		 * (non-Javadoc)
-		 * 
+		 *
 		 * @see
 		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
 		 * getReader()
@@ -270,7 +270,7 @@ public class FileResource implements IResource {
 			return new FileInputStream(file);
 		}
 	}
-	
+
 	private static URI getURI(File file) {
 		URI uri = file.toURI();
 		if (uri.toString().startsWith("file:////")) { //$NON-NLS-1$
@@ -287,14 +287,14 @@ public class FileResource implements IResource {
 		}
 		return uri;
 	}
-	
+
 	/*
 	 * Package private accessor for unit testing
 	 */
 	URI getRefUri() {
 		return ref;
 	}
-	
+
 	/*
 	 * Package private accessor for unit testing
 	 */

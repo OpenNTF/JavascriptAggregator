@@ -35,7 +35,7 @@ import java.util.Properties;
  * {@link IExtensionRegistrar#registerExtension(Object, Properties, String, String, IAggregatorExtension)}
  * when the extension's
  * {@link IExtensionInitializer#initialize(IAggregator, IAggregatorExtension, IExtensionRegistrar)}
- * method is called (assuming the extension implements the 
+ * method is called (assuming the extension implements the
  * {@link IExtensionInitializer} interface).
  * <p>
  * The extension point defines the {@code scheme} attribute which is used by the
@@ -60,16 +60,16 @@ public interface IResourceFactory {
 	 * else it may need to convert a URI using a pseudo scheme such as
 	 * <code>namedbundleentry</code> into a URI that is supported by the
 	 * platform.
-	 * 
+	 *
 	 * @param uri
 	 *            The resource URI. The concrete implementation of the returned
 	 *            type is determined by the URI scheme.
-	 * 
+	 *
 	 * @return A {@link IResource} object for the specified URI. The returned
 	 *         object MUST be serialiable.
 	 */
 	public IResource newResource(URI uri);
-	
+
 	public boolean handles(URI uri);
 
 }

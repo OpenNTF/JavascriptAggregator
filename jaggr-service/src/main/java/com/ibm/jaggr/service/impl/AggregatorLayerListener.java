@@ -31,9 +31,9 @@ import javax.servlet.http.HttpServletRequest;
 public class AggregatorLayerListener implements ILayerListener {
 
 	public static final String PREAMBLEFMT = "\n/*-------- %s --------*/\n"; //$NON-NLS-1$
-	
+
 	private IAggregator aggregator;
-	
+
 	public AggregatorLayerListener(IAggregator aggregator) {
 		this.aggregator = aggregator;
 	}
@@ -45,27 +45,27 @@ public class AggregatorLayerListener implements ILayerListener {
 		if (type == EventType.BEGIN_LAYER) {
 			StringBuffer sb = new StringBuffer();
 			// Add the application specified notice to the beginning of the response
-	        String notice = aggregator.getConfig().getNotice();
-	        if (notice != null) {
+			String notice = aggregator.getConfig().getNotice();
+			if (notice != null) {
 				sb.append(notice).append("\r\n"); //$NON-NLS-1$
-	        }
-	        // If development mode is enabled, say so
-	        IOptions options = aggregator.getOptions();
+			}
+			// If development mode is enabled, say so
+			IOptions options = aggregator.getOptions();
 			if (options.isDevelopmentMode() || options.isDebugMode()) {
 				sb.append("/* ") //$NON-NLS-1$
-				  .append(options.isDevelopmentMode() ? 
-						  com.ibm.jaggr.service.impl.layer.Messages.LayerImpl_1 : 
-				          com.ibm.jaggr.service.impl.layer.Messages.LayerImpl_2)
-				  .append(" */\r\n"); //$NON-NLS-1$ 
+				.append(options.isDevelopmentMode() ?
+						com.ibm.jaggr.service.impl.layer.Messages.LayerImpl_1 :
+							com.ibm.jaggr.service.impl.layer.Messages.LayerImpl_2)
+							.append(" */\r\n"); //$NON-NLS-1$
 			}
 			return sb.toString();
 		} else if (type == EventType.BEGIN_MODULE) {
-	        IOptions options = aggregator.getOptions();
+			IOptions options = aggregator.getOptions();
 			// Include the filename preamble if requested.
 			if ((options.isDebugMode() || options.isDevelopmentMode()) && TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))) {
 				return String.format(PREAMBLEFMT, modules.get(0).getURI().toString());
 			}
-		}		
+		}
 		return null;
 	}
 

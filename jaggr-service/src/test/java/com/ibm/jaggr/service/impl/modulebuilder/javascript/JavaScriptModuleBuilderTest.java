@@ -22,8 +22,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -48,7 +46,7 @@ import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 
-import junit.framework.Assert;
+import com.google.common.io.Files;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -91,10 +89,12 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
+import junit.framework.Assert;
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest( JavaScriptModuleBuilder.class )
 public class JavaScriptModuleBuilderTest extends EasyMock {
-	
+
 	File tmpdir = null;
 	IAggregator mockAggregator;
 	HttpServletRequest mockRequest;
@@ -102,9 +102,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	IDependencies mockDependencies = createMock(IDependencies.class);
 	Map<String, List<String>> dependentFeaturesMap = new HashMap<String, List<String>>();
-	
-	
-	
+
+
+
 	@BeforeClass
 	public static void setupBeforeClass() {
 	}
@@ -127,7 +127,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				String name = (String)getCurrentArguments()[0];
 				return dependentFeaturesMap.get(name);
 			}
-			
+
 		}).anyTimes();
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
@@ -138,7 +138,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		replay(mockDependencies);
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}"));
 	}
-	
+
 	@After
 	public void tearDown() throws Exception {
 		if (tmpdir != null) {
@@ -148,14 +148,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	}
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getBuild(javax.servlet.http.HttpServletRequest)}.
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
-	 * @throws ClassNotFoundException 
+	 * @throws ExecutionException
+	 * @throws InterruptedException
+	 * @throws ClassNotFoundException
 	 */
 	@Test
 	public void testGet() throws Exception {
 		TestUtils.createTestFiles(tmpdir);
-		
+
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "/p1/p1.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
 		Future<ModuleBuildReader> future = p1.getBuild(mockRequest);
@@ -197,7 +197,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		assertEquals(compiled,  writer.toString());
-		
+
 		// delete the cached module file and make sure get from cache fails
 		new File(mockAggregator.getCacheManager().getCacheDir(), cacheFileName).delete();
 		try {
@@ -207,12 +207,12 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		// compile again, this time specifying a has condition and require list expansion
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		
+
 		Features features = new Features();
 		features.put("conditionTrue", true);
 		features.put("conditionFalse", false);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
-		
+
 		future = p1.getBuild(mockRequest);
 		reader = future.get();
 		writer = new StringWriter();
@@ -222,24 +222,24 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		gens = future.get().getCacheKeyGenerators();
 		String cacheFile1 = p1.getCachedFileName(KeyGenUtil.generateKey(mockRequest, gens));
 		assertTrue(new File(mockAggregator.getCacheManager().getCacheDir(), cacheFile1).exists());
-		
+
 		System.out.println(compiled);
 		// validate that require list was expanded and has blocks were removed
 		Matcher m = Pattern.compile("require\\(\\[\\\"([^\"]*)\\\",\\\"([^\"]*)\\\",\\\"([^\"]*)\\\"\\]").matcher(compiled);
 		Assert.assertTrue(compiled, m.find());
 		Assert.assertEquals(
-				new HashSet<String>(Arrays.asList(new String[]{"p2/a", "p2/b", "p2/c"})),  
+				new HashSet<String>(Arrays.asList(new String[]{"p2/a", "p2/b", "p2/c"})),
 				new HashSet<String>(Arrays.asList(new String[]{m.group(1), m.group(2), m.group(3)})));
 		assertTrue(compiled.contains("condition_True"));
 		assertFalse(compiled.contains("condition_False"));
 		assertFalse(compiled.contains("has("));
-		
+
 		features.put("condition_Foo", true);
 		// Make sure that adding a has condition doesn't change the cache key
 		// (i.e. the feature list is filtered by the has conditionals that are
 		// actually specified in the source).
 		assertEquals(cacheFile1, p1.getCachedFileName(KeyGenUtil.generateKey(mockRequest, gens)));
-		
+
 		// remove the conditionFalse feature and verify that the has conditional
 		// is in the output
 		features.remove("conditionFalse");
@@ -248,39 +248,39 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		System.out.println(compiled);
-	
+
 		assertTrue(compiled.contains("condition_True"));
 		assertTrue(compiled.contains("condition_False"));
 		assertFalse(compiled.contains("has(\"conditionTrue\")"));
 		assertTrue(compiled.contains("has(\"conditionFalse\")"));
-		
+
 		Collection<String> cacheKeys = new TreeSet<String>(p1.getKeys());
 		System.out.println(cacheKeys);
 		assertEquals("[expn:0;js:S:0:0:1;has{}, expn:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}, expn:0;js:S:1:0:1;has{conditionTrue}]",
 				cacheKeys.toString());
-		
+
 		// Now set the coerceUndefinedToFalse option and make sure that the
 		// conditionFalse block is again removed
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{coerceUndefinedToFalse:true}"));
 		// Setting properties clears normally clears the cache
 		p1.clearCached(mockAggregator.getCacheManager());
-		
+
 		reader = p1.getBuild(mockRequest).get();
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		System.out.println(compiled);
-		
+
 		assertFalse(compiled.contains("has(\"conditionFalse\")"));
 		assertFalse(compiled.contains("conditionFalse"));
-		
+
 		cacheKeys = new TreeSet<String>(p1.getKeys());
 		System.out.println(cacheKeys);
 		assertEquals("[expn:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}]",
 				cacheKeys.toString());
-		
+
 		Thread.sleep(1500L);   // Wait long enough for systems with coarse grained last-mod
-		                       // times to notice the file has been updated
+		// times to notice the file has been updated
 		// Now touch the source file and assert that the cached results are cleared
 		new File(tmpdir, "p1/p1.js").setLastModified(new Date().getTime());
 		requestAttributes.remove(IHttpTransport.FEATUREMAP_REQATTRNAME);
@@ -288,7 +288,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		cacheKeys = p1.getKeys();
 		System.out.println(cacheKeys);
 		assertEquals("[expn:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
-		
+
 		// Test error handling.  In production mode, a js syntax error should throw an excepton
 		TestUtils.createTestFile(new File(tmpdir, "p1"), "err", TestUtils.err);
 		p1 = new JsModuleTester("p1/err", new File(tmpdir, "p1/err.js").toURI());
@@ -313,7 +313,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		System.out.println(compiled);
 		Assert.assertTrue(Pattern.compile("\\sconsole\\.error\\(\\\"Error compiling module:[^\"]*\\\"\\);\\s*\\/\\* Comment \\*\\/").matcher(compiled).find());
 		Assert.assertTrue(compiled.endsWith(TestUtils.err));
-		
+
 	}
 
 	@Test
@@ -332,15 +332,15 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		} catch (java.util.concurrent.ExecutionException ex) {
 			Assert.assertEquals(DependencyVerificationException.class, ex.getCause().getClass());
 		}
-		
+
 		dependentFeaturesMap.put("p1/p1", Arrays.asList(new String[]{"conditionTrue", "conditionFalse"}));
 		future = p1.getBuild(mockRequest);
 		future.get();
 	}
-	
+
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getModuleName()}.
-	 * @throws URISyntaxException 
+	 * @throws URISyntaxException
 	 */
 	@Test
 	public void testGetName() throws URISyntaxException {
@@ -350,9 +350,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#clear()}.
-	 * @throws IOException 
-	 * @throws ExecutionException 
-	 * @throws InterruptedException 
+	 * @throws IOException
+	 * @throws ExecutionException
+	 * @throws InterruptedException
 	 */
 	@Test
 	public void testClear() throws Exception {
@@ -360,22 +360,22 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
-		
+
 		p1.getBuild(mockRequest).get().close();
 
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.WHITESPACE);
 		p1.getBuild(mockRequest).get().close();
-		
+
 		assertEquals(2, p1.getKeys().size());
 	}
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#clear(com.ibm.jaggr.service.cache.ICacheManager, int)}.
-	 * @throws IOException 
-	 * @throws InterruptedException 
-	 * @throws ExecutionException 
+	 * @throws IOException
+	 * @throws InterruptedException
+	 * @throws ExecutionException
 	 */
 	@Test
 	public void testClearCached() throws Exception {
@@ -386,13 +386,13 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		Future<ModuleBuildReader> future = p1.getBuild(mockRequest);
 		future.get().close();
-		
+
 		requestAttributes.clear();
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.WHITESPACE);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		p1.getBuild(mockRequest).get().close();
 		future.get().close();
-		
+
 		Collection<String> keys = p1.getKeys();
 		assertEquals(2, keys.size());
 		System.out.println(keys);
@@ -416,7 +416,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#toString()}.
-	 * @throws Exception 
+	 * @throws Exception
 	 */
 	@Test
 	public void testToString() throws Exception {
@@ -428,7 +428,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		assertTrue(Pattern.compile("IModule: p1/p1\\n").matcher(s).find());
 		assertTrue(Pattern.compile("Source: .*p1\\.js").matcher(s).find());
 		String lastModified = new Date(new File(tmpdir, "p1/p1.js").lastModified()).toString();
-		
+
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		p1.getBuild(mockRequest).get().close();
@@ -447,7 +447,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.javascript.JavaScriptModuleBuilder#s_generateCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@Test
 	public void testGenerateCacheKey() throws IOException {
@@ -496,7 +496,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	/**
 	 * Test method for {@link com.ibm.servlets.amd.aggregator.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isHasFiltering(javax.servlet.http.HttpServletRequest)}.
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@Test
 	public void testIsHasFiltering() throws Exception {
@@ -509,7 +509,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	/**
 	 * Test method for {@link com.ibm.servlets.amd.aggregator.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isExplodeRequires(javax.servlet.http.HttpServletRequest)}.
-	 * @throws IOException 
+	 * @throws IOException
 	 */
 	@Test
 	public void testIsExplodeRequires() throws Exception {
@@ -524,7 +524,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		mockAggregator.getOptions().setOption(IOptions.DISABLE_REQUIRELISTEXPANSION, true);
 		assertFalse(RequestUtil.isExplodeRequires(mockRequest));
 	}
-	
+
 	@Test
 	public void testLayerBeginEndNotifier_disableExportModuleNames() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
@@ -534,23 +534,23 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertNull(result);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-		
+
 		// Test that EXPORTMODULENAMES is disabled when compliler optimiation is turned off
 		mockRequest.setAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.NONE);
 		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		
+
 		// First, try with debug mode disabled (has no effect)
 		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertNull(result);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-		
+
 		// Now, enable development mode.  Should cause export names to be disabled
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertNull(result);
 		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-		
+
 		// Should also work with debug mode
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, false);
 		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, true);
@@ -567,7 +567,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertNull(result);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
 	}
-	
+
 	@Test
 	public void testLayerBeginEndNotifier_exportModuleNames() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
@@ -576,7 +576,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertNull(result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
-		
+
 		Features features = new Features();
 		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
 		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
@@ -584,12 +584,12 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{deps:['cfgfoo']}"));
 		final DependencyList mockConfigDeps = createMock(DependencyList.class);
 		final DependencyList mockLayerDeps = createMock(DependencyList.class);
-		
+
 		ModuleDeps configExplicitDeps = new ModuleDeps();
 		ModuleDeps configExpandedDeps = new ModuleDeps();
 		configExplicitDeps.add("cfgfoo", new ModuleDepInfo());
 		configExpandedDeps.add("cfgfoodep", new ModuleDepInfo());
-		
+
 		expect(mockConfigDeps.getExplicitDeps()).andReturn(configExplicitDeps).anyTimes();
 		expect(mockConfigDeps.getExpandedDeps()).andReturn(configExpandedDeps).anyTimes();
 		expect(mockConfigDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature1"}))).anyTimes();
@@ -603,7 +603,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expect(mockLayerDeps.getExplicitDeps()).andReturn(layerExplicitDeps).anyTimes();
 		expect(mockLayerDeps.getExpandedDeps()).andReturn(layerExpandedDeps).anyTimes();
 		expect(mockLayerDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature2"}))).anyTimes();
-		
+
 		ModuleDeps expectedDeps = new ModuleDeps();
 		expectedDeps.addAll(configExplicitDeps);
 		expectedDeps.addAll(configExpandedDeps);
@@ -611,19 +611,19 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExpandedDeps);
 
 		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), eq(false))
-		                .andAnswer(new IAnswer<DependencyList>() {
-							@Override public DependencyList answer() throws Throwable {
-								@SuppressWarnings("unchecked")
-								List<String> modules = (List<String>)getCurrentArguments()[0];
-								if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
-									return mockConfigDeps;
-								} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
-									return mockLayerDeps;
-								}
-								Assert.fail("Unexpected argument");
-								return null;
-							}
-		                }).anyTimes();
+		.andAnswer(new IAnswer<DependencyList>() {
+			@Override public DependencyList answer() throws Throwable {
+				@SuppressWarnings("unchecked")
+				List<String> modules = (List<String>)getCurrentArguments()[0];
+				if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
+					return mockConfigDeps;
+				} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
+					return mockLayerDeps;
+				}
+				Assert.fail("Unexpected argument");
+				return null;
+			}
+		}).anyTimes();
 		PowerMock.replay(mockConfigDeps, mockLayerDeps, DependencyList.class);
 
 		modules = Arrays.asList(new IModule[]{
@@ -636,7 +636,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(expectedDeps, resultDeps);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
 	}
-	
+
 	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
 	@Test
 	public void testLayerBeginEndNotifier_exportModuleNamesWithDetails() throws Exception {
@@ -646,7 +646,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertNull(result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
-		
+
 		Features features = new Features();
 		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
 		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
@@ -655,12 +655,12 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{deps:['cfgfoo']}"));
 		final DependencyList mockConfigDeps = createMock(DependencyList.class);
 		final DependencyList mockLayerDeps = createMock(DependencyList.class);
-		
+
 		ModuleDeps configExplicitDeps = new ModuleDeps();
 		ModuleDeps configExpandedDeps = new ModuleDeps();
 		configExplicitDeps.add("cfgfoo", new ModuleDepInfo(null, null, "cfgfoo detail"));
 		configExpandedDeps.add("cfgfoodep", new ModuleDepInfo(null, null, "cfgfoodep detail"));
-		
+
 		expect(mockConfigDeps.getExplicitDeps()).andReturn(configExplicitDeps).anyTimes();
 		expect(mockConfigDeps.getExpandedDeps()).andReturn(configExpandedDeps).anyTimes();
 		expect(mockConfigDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature1"}))).anyTimes();
@@ -674,7 +674,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expect(mockLayerDeps.getExplicitDeps()).andReturn(layerExplicitDeps).anyTimes();
 		expect(mockLayerDeps.getExpandedDeps()).andReturn(layerExpandedDeps).anyTimes();
 		expect(mockLayerDeps.getDependentFeatures()).andReturn(new HashSet<String>(Arrays.asList(new String[]{"feature2"}))).anyTimes();
-		
+
 		ModuleDeps expectedDeps = new ModuleDeps();
 		expectedDeps.addAll(configExplicitDeps);
 		expectedDeps.addAll(configExpandedDeps);
@@ -682,19 +682,19 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExpandedDeps);
 
 		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), anyBoolean())
-		                .andAnswer(new IAnswer<DependencyList>() {
-							@Override public DependencyList answer() throws Throwable {
-								@SuppressWarnings("unchecked")
-								List<String> modules = (List<String>)getCurrentArguments()[0];
-								if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
-									return mockConfigDeps;
-								} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
-									return mockLayerDeps;
-								}
-								Assert.fail("Unexpected argument");
-								return null;
-							}
-		                }).anyTimes();
+		.andAnswer(new IAnswer<DependencyList>() {
+			@Override public DependencyList answer() throws Throwable {
+				@SuppressWarnings("unchecked")
+				List<String> modules = (List<String>)getCurrentArguments()[0];
+				if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
+					return mockConfigDeps;
+				} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
+					return mockLayerDeps;
+				}
+				Assert.fail("Unexpected argument");
+				return null;
+			}
+		}).anyTimes();
 		PowerMock.replay(mockConfigDeps, mockLayerDeps, DependencyList.class);
 
 		modules = Arrays.asList(new IModule[]{
@@ -716,14 +716,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
-	
+
 	}
 	/**
 	 * Tester class that extends JavaScriptModuleBuilder to expose protected methods for testing
 	 */
 	private static class JsModuleTester extends ModuleImpl {
 		private static final long serialVersionUID = 1L;
-		
+
 		public Future<ModuleBuildReader> get(final HttpServletRequest request, boolean fromCacheOnly) throws IOException {
 			return super.getBuild(request, fromCacheOnly);
 		}
@@ -731,25 +731,25 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		protected JsModuleTester(ModuleImpl module) {
 			super(module);
 		}
-		
+
 		public JsModuleTester(String mid, URI uri) {
 			super(mid, uri);
 		}
-		
+
 		public String getCachedFileName(String key) throws InterruptedException {
 			return super.getCachedFileName(key);
 		}
-		
+
 		public Collection<String> getKeys() {
 			return super.getKeys();
 		}
-		
+
 		protected Object writeReplace() throws ObjectStreamException {
 			return new SerializationProxy(this);
 		}
 
 		private void readObject(ObjectInputStream stream) throws InvalidObjectException {
-		    throw new InvalidObjectException("Proxy required");
+			throw new InvalidObjectException("Proxy required");
 		}
 
 		static class SerializationProxy extends ModuleImpl.SerializationProxy implements Serializable {
@@ -758,14 +758,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 			SerializationProxy(ModuleImpl module) {
 				super(module);
-		    }
+			}
 
-		    protected Object readResolve() {
-		    	return new JsModuleTester((ModuleImpl)super.readResolve());
-		    }
+			protected Object readResolve() {
+				return new JsModuleTester((ModuleImpl)super.readResolve());
+			}
 		}
 	}
-	
+
 	public class TestJavaScriptModuleBuilder extends JavaScriptModuleBuilder {
 		@Override
 		public List<ICacheKeyGenerator> getCacheKeyGenerators(

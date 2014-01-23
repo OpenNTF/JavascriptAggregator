@@ -22,11 +22,11 @@ import org.apache.felix.service.command.CommandSession;
 public class CSConsoleWriter implements ConsoleWriter {
 
 	private final CommandSession cs;
-	
+
 	public CSConsoleWriter(CommandSession cs) {
 		this.cs = cs;
 	}
-	
+
 	@Override
 	public void println(String msg) {
 		cs.getConsole().println(msg);

@@ -24,12 +24,12 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * @deprecated as of 1.1.7, replaced by {@link ILayerListener}
- * 
+ *
  * Listener interface for HTTP request processing.  The start method
  * is called for all registered listeners by the aggregator
  * at the start of request processing.
  * <p>
- * Listeners are registered as an OSGi service using the name of 
+ * Listeners are registered as an OSGi service using the name of
  * the aggregator as the name attribute of the listener object.
  */
 @Deprecated
@@ -39,15 +39,15 @@ public interface IRequestListener {
 	 * The transport has already set the request attributes defined in
 	 * {@link IHttpTransport}.
 	 * <p>
-	 * This method is called by the main request processing thread, so 
-	 * the request object can be updated without worrying about 
+	 * This method is called by the main request processing thread, so
+	 * the request object can be updated without worrying about
 	 * threading issues.
-	 * 
+	 *
 	 * @param request the request object
 	 * @param response the response object
 	 */
 	void startRequest(HttpServletRequest request, HttpServletResponse response);
-	
+
 	/**
 	 * Called when processing of a request completes normally. All worker
 	 * threads that have been started for module builders on this request have
@@ -56,7 +56,7 @@ public interface IRequestListener {
 	 * This method is not guaranteed to be called following a call to
 	 * {@link #startRequest} if, for example, an exception is thrown while
 	 * processing the request.
-	 * 
+	 *
 	 * @param request the request object
 	 * @param response the response object
 	 */

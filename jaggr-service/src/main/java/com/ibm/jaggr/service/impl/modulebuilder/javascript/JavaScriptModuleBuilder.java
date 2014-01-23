@@ -16,17 +16,6 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import com.google.common.collect.HashMultimap;
-import com.google.javascript.jscomp.CheckLevel;
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.CustomPassExecutionTime;
-import com.google.javascript.jscomp.DiagnosticGroups;
-import com.google.javascript.jscomp.JSError;
-import com.google.javascript.jscomp.JSSourceFile;
-import com.google.javascript.jscomp.Result;
-
 import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
@@ -50,6 +39,17 @@ import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.StringUtil;
+
+import com.google.common.collect.HashMultimap;
+import com.google.javascript.jscomp.CheckLevel;
+import com.google.javascript.jscomp.CompilationLevel;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.CustomPassExecutionTime;
+import com.google.javascript.jscomp.DiagnosticGroups;
+import com.google.javascript.jscomp.JSError;
+import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.Result;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -92,7 +92,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	static final String EXPANDED_DEPENDENCIES = ILayer.class.getName() + ".layerdeps"; //$NON-NLS-1$
 
 	private static final ICacheKeyGenerator exportNamesCacheKeyGenerator =
-		new ExportNamesCacheKeyGenerator();
+			new ExportNamesCacheKeyGenerator();
 
 	static {
 		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING); //$NON-NLS-1$
@@ -103,20 +103,20 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	private List<Object> registrations = new LinkedList<Object>();
 
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
-        CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
+		CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
 		IAggregator aggregator = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggregator.getOptions();
-        if (options.isDevelopmentMode() || options.isDebugMode()) {
+		if (options.isDevelopmentMode() || options.isDebugMode()) {
 			OptimizationLevel optimize = (OptimizationLevel)request.getAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME);
-	        if (optimize == OptimizationLevel.WHITESPACE) {
-	            level = CompilationLevel.WHITESPACE_ONLY;
-	        } else if (optimize == OptimizationLevel.ADVANCED) {
-	            level = CompilationLevel.ADVANCED_OPTIMIZATIONS;
-	        } else if (optimize == OptimizationLevel.NONE) {
-	            level = null;
-	        }
-        }
-        return level;
+			if (optimize == OptimizationLevel.WHITESPACE) {
+				level = CompilationLevel.WHITESPACE_ONLY;
+			} else if (optimize == OptimizationLevel.ADVANCED) {
+				level = CompilationLevel.ADVANCED_OPTIMIZATIONS;
+			} else if (optimize == OptimizationLevel.NONE) {
+				level = null;
+			}
+		}
+		return level;
 	}
 
 	@Override
@@ -154,45 +154,45 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					moduleIds.add(module.getModuleId());
 				}
 				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-	    		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-	    		DependencyList configDepList = new DependencyList(
-	    				aggr.getConfig().getDeps(),
-	    				aggr,
-	    				features,
-	    				true,	// resolveAliases
-	    				isReqExpLogging);
+				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
+				DependencyList configDepList = new DependencyList(
+						aggr.getConfig().getDeps(),
+						aggr,
+						features,
+						true,	// resolveAliases
+						isReqExpLogging);
 
-	    		DependencyList layerDepList = new DependencyList(
-	    				moduleIds,
-	    				aggr,
-	    				features,
-	    				false,	// Don't resolve aliases for module ids requested by the loader
-	    				isReqExpLogging);
+				DependencyList layerDepList = new DependencyList(
+						moduleIds,
+						aggr,
+						features,
+						false,	// Don't resolve aliases for module ids requested by the loader
+						isReqExpLogging);
 
-	    		ModuleDeps configDeps = new ModuleDeps();
-	    		ModuleDeps layerDeps = new ModuleDeps();
-	    		try {
-	    			configDeps.addAll(configDepList.getExplicitDeps());
-	    			configDeps.addAll(configDepList.getExpandedDeps());
-		    		layerDeps.addAll(layerDepList.getExplicitDeps());
-		    		layerDeps.addAll(layerDepList.getExpandedDeps());
+				ModuleDeps configDeps = new ModuleDeps();
+				ModuleDeps layerDeps = new ModuleDeps();
+				try {
+					configDeps.addAll(configDepList.getExplicitDeps());
+					configDeps.addAll(configDepList.getExpandedDeps());
+					layerDeps.addAll(layerDepList.getExplicitDeps());
+					layerDeps.addAll(layerDepList.getExpandedDeps());
 					dependentFeatures.addAll(configDepList.getDependentFeatures());
 					dependentFeatures.addAll(layerDepList.getDependentFeatures());
-	    		} catch (IOException e) {
-	    			throw new RuntimeException(e.getMessage(), e);
-	    		}
+				} catch (IOException e) {
+					throw new RuntimeException(e.getMessage(), e);
+				}
 
 				if (isReqExpLogging) {
 					StringBuffer sb = new StringBuffer();
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_4 + "\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$ //$NON-NLS-2$
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_2 + "\", \"color:blue\");") //$NON-NLS-1$ //$NON-NLS-2$
-					  .append("console.log(\"%c"); //$NON-NLS-1$
+					.append("console.log(\"%c"); //$NON-NLS-1$
 					for (Map.Entry<String, String> entry : configDeps.getModuleIdsWithComments().entrySet()) {
 						sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					}
 					sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_3 + "\", \"color:blue\");") //$NON-NLS-1$ //$NON-NLS-2$
-					  .append("console.log(\"%c"); //$NON-NLS-1$
+					.append("console.log(\"%c"); //$NON-NLS-1$
 					for (Map.Entry<String, String> entry : layerDeps.getModuleIdsWithComments().entrySet()) {
 						sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					}
@@ -220,21 +220,21 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			HttpServletRequest request,
 			List<ICacheKeyGenerator> keyGens
 			)
-	throws Exception {
+					throws Exception {
 		final IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		// Get the parameters from the request
-        CompilationLevel level = getCompilationLevel(request);
+		CompilationLevel level = getCompilationLevel(request);
 		boolean createNewKeyGen = (keyGens == null);
-    	boolean isHasFiltering = RequestUtil.isHasFiltering(request);
+		boolean isHasFiltering = RequestUtil.isHasFiltering(request);
 		// If the source doesn't exist, throw an exception.
 		if (!resource.exists()) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.warning(
-					MessageFormat.format(
-						Messages.JavaScriptModuleBuilder_0,
-						new Object[]{resource.getURI().toString()}
-					)
-				);
+						MessageFormat.format(
+								Messages.JavaScriptModuleBuilder_0,
+								new Object[]{resource.getURI().toString()}
+								)
+						);
 			}
 			throw new NotFoundException(resource.getURI().toString());
 		}
@@ -251,10 +251,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				code.append(sf.getCode());
 			}
 			return new ModuleBuild(
-				code.toString(),
-				keyGens,
-				false
-			);
+					code.toString(),
+					keyGens,
+					false
+					);
 		}
 		boolean coerceUndefinedToFalse = aggr.getConfig().isCoerceUndefinedToFalse();
 		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
@@ -273,7 +273,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		Compiler compiler = new Compiler();
 		CompilerOptions compiler_options = new CompilerOptions();
-    	compiler_options.customPasses = HashMultimap.create();
+		compiler_options.customPasses = HashMultimap.create();
 		if (isHasFiltering && (level != null || keyGens == null)) {
 			// Run has filtering compiler pass if we are doing has filtering, or if this
 			// is the first build for this module (keyGens == null) so that we can get
@@ -281,9 +281,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			HasFilteringCompilerPass hfcp = new HasFilteringCompilerPass(
 					features,
 					keyGens == null ? hasFiltDiscoveredHasConditionals : null,
-					coerceUndefinedToFalse
-			);
-   			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
+							coerceUndefinedToFalse
+					);
+			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
 		}
 
 		boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
@@ -295,13 +295,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			 * require lists to include nested dependencies
 			 */
 			RequireExpansionCompilerPass recp =
-				new RequireExpansionCompilerPass(
-						aggr,
-						features,
-						discoveredHasConditionals,
-						expandedDepsList,
-						(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
-						isReqExpLogging);
+					new RequireExpansionCompilerPass(
+							aggr,
+							features,
+							discoveredHasConditionals,
+							expandedDepsList,
+							(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
+							isReqExpLogging);
 
 			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, recp);
 		}
@@ -309,7 +309,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			compiler_options.customPasses.put(
 					CustomPassExecutionTime.BEFORE_CHECKS,
 					new ExportModuleNameCompilerPass()
-			);
+					);
 		}
 
 		if (level != null && level != CompilationLevel.WHITESPACE_ONLY) {
@@ -319,9 +319,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			// setOptionsForCompilationLevel because it disables custom
 			// compiler passes and we want them to run.
 
-		    // Allows annotations that are not standard.
-		    compiler_options.setWarningLevel(DiagnosticGroups.NON_STANDARD_JSDOC,
-		        CheckLevel.OFF);
+			// Allows annotations that are not standard.
+			compiler_options.setWarningLevel(DiagnosticGroups.NON_STANDARD_JSDOC,
+					CheckLevel.OFF);
 		}
 
 		// we do our own threading, so disable compiler threads.
@@ -371,14 +371,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		} else {
 			// Got a compiler error.  Output a warning message to the browser console
 			StringBuffer sb = new StringBuffer(
-				MessageFormat.format(
-					Messages.JavaScriptModuleBuilder_1,
-					new Object[] {resource.getURI().toString()}
-				)
-			);
+					MessageFormat.format(
+							Messages.JavaScriptModuleBuilder_1,
+							new Object[] {resource.getURI().toString()}
+							)
+					);
 			for (JSError error : result.errors) {
 				sb.append("\r\n\t").append(error.description) //$NON-NLS-1$
-				   .append(" (").append(error.lineNumber).append(")."); //$NON-NLS-1$ //$NON-NLS-2$
+				.append(" (").append(error.lineNumber).append(")."); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 			if (aggr.getOptions().isDevelopmentMode() || aggr.getOptions().isDebugMode()) {
 				// In development mode, return the error console output
@@ -387,8 +387,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				// Reuse the string buffer and output a console error message
 				// along with the uncompiled source files as the build output.
 				sb.replace(0, sb.length(), "\r\nconsole.error(\"") //$NON-NLS-1$
-				  .append(escaped)
-				  .append("\");\r\n"); //$NON-NLS-1$
+				.append(escaped)
+				.append("\");\r\n"); //$NON-NLS-1$
 				for (JSSourceFile sf : sources) {
 					sb.append(sf.getCode());
 				}
@@ -400,10 +400,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return new ModuleBuild(
 				expandedDepsList == null || expandedDepsList.size() == 0 ?
 						output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging),
-				createNewKeyGen ?
-						getCacheKeyGenerators(discoveredHasConditionals) :
-						keyGens,
-				false);
+						createNewKeyGen ?
+								getCacheKeyGenerators(discoveredHasConditionals) :
+									keyGens,
+									false);
 	}
 
 	/**
@@ -479,7 +479,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		 */
 		@Override
 		public String generateKey(HttpServletRequest request) {
-	        CompilationLevel level = getCompilationLevel(request);
+			CompilationLevel level = getCompilationLevel(request);
 			boolean requireListExpansion = RequestUtil.isExplodeRequires(request);
 			boolean reqExpLogging = RequestUtil.isRequireExpLogging(request);
 			boolean hasFiltering = RequestUtil.isHasFiltering(request);
@@ -490,14 +490,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						"requireListExpansion=" + Boolean.toString(requireListExpansion) + ", " + //$NON-NLS-1$ //$NON-NLS-2$
 						"requireExpLogging=" + Boolean.toString(reqExpLogging) + "," + //$NON-NLS-1$ //$NON-NLS-2$
 						"hasFiltering=" + Boolean.toString(hasFiltering) //$NON-NLS-1$
-				);
+						);
 
 			}
 			StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
-				sb.append((level != null ? level.toString() : "NONE").substring(0,1))  //$NON-NLS-1$
-				  .append(requireListExpansion ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-				  .append(reqExpLogging ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-				  .append(hasFiltering ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			sb.append((level != null ? level.toString() : "NONE").substring(0,1))  //$NON-NLS-1$
+			.append(requireListExpansion ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(reqExpLogging ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(hasFiltering ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 
 			if (featureKeyGen != null &&
 					RequestUtil.isHasFiltering(request) &&

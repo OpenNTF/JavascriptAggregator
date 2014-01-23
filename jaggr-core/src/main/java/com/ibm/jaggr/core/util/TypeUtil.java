@@ -31,14 +31,14 @@ public class TypeUtil {
 		}
 		return result;
 	}
-	
+
 	public static Boolean asBoolean(Object obj, boolean defaultValue) {
 		if (obj == null) {
 			return defaultValue;
 		}
 		return asBoolean(obj);
 	}
-	
+
 	public static int asInt(Object obj, int defaultValue) {
 		int result = defaultValue;
 		if (obj != null) {
@@ -49,7 +49,7 @@ public class TypeUtil {
 					result = Integer.parseInt((String)obj);
 				} catch (NumberFormatException ignore) {}
 			}
-		}	
+		}
 		return result;
 	}
 }

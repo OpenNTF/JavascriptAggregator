@@ -55,74 +55,74 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
-    static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
-    static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
-    static final String[] loaderExtensionResources = {
-    	"./loaderExtCommon.js", //$NON-NLS-1$
-    	"./dojo/_loaderExt.js" //$NON-NLS-1$
-    };
-    static final String dojo = "dojo"; //$NON-NLS-1$
-    static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
-    static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
-    static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
-    static final String dojoTextPluginName = "text"; //$NON-NLS-1$
-    static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
-    static final URI dojoPluginUri;
+	static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
+	static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
+	static final String[] loaderExtensionResources = {
+		"./loaderExtCommon.js", //$NON-NLS-1$
+		"./dojo/_loaderExt.js" //$NON-NLS-1$
+	};
+	static final String dojo = "dojo"; //$NON-NLS-1$
+	static final String aggregatorTextPluginAlias = "__aggregator_text_plugin"; //$NON-NLS-1$
+	static final String dojoTextPluginAlias = "__original_text_plugin"; //$NON-NLS-1$
+	static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
+	static final String dojoTextPluginName = "text"; //$NON-NLS-1$
+	static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
+	static final URI dojoPluginUri;
 
-    static {
-    	try {
-    		dojoPluginUri = new URI("./"+dojoTextPluginName); //$NON-NLS-1$
-    	} catch (URISyntaxException e) {
-    		// Should never happen
-    		throw new RuntimeException(e);
-    	}
-    }
+	static {
+		try {
+			dojoPluginUri = new URI("./"+dojoTextPluginName); //$NON-NLS-1$
+		} catch (URISyntaxException e) {
+			// Should never happen
+			throw new RuntimeException(e);
+		}
+	}
 
-    private List<String[]> clientConfigAliases = new LinkedList<String[]>();
+	private List<String[]> clientConfigAliases = new LinkedList<String[]>();
 
-    /**
-     * Property accessor for the loaderExtensionPath property
-     *
-     * @return the loader extension path
-     */
-    protected String getLoaderExtensionPath() {
-    	return loaderExtensionPath;
-    }
+	/**
+	 * Property accessor for the loaderExtensionPath property
+	 *
+	 * @return the loader extension path
+	 */
+	protected String getLoaderExtensionPath() {
+		return loaderExtensionPath;
+	}
 
-    /**
-     * Property accessor for the loaderExtensionResources property
-     *
-     * @return the loader extension resources
-     */
-    protected String[] getLoaderExtensionResources() {
-    	return loaderExtensionResources;
-    }
+	/**
+	 * Property accessor for the loaderExtensionResources property
+	 *
+	 * @return the loader extension resources
+	 */
+	protected String[] getLoaderExtensionResources() {
+		return loaderExtensionResources;
+	}
 
-    /**
-     * Returns the list of client config aliases
-     *
-     * @return the client aliases
-     */
-    protected List<String[]> getClientConfigAliases() {
-    	return clientConfigAliases;
-    }
+	/**
+	 * Returns the list of client config aliases
+	 *
+	 * @return the client aliases
+	 */
+	protected List<String[]> getClientConfigAliases() {
+		return clientConfigAliases;
+	}
 
-    protected String getAggregatorTextPluginName() {
-    	return getResourcePathId() + "/text"; //$NON-NLS-1$
-    }
+	protected String getAggregatorTextPluginName() {
+		return getResourcePathId() + "/text"; //$NON-NLS-1$
+	}
 
-    /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, java.lang.String)
-     */
-    @Override
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, java.lang.String)
+	 */
+	@Override
 	public String getLayerContribution(HttpServletRequest request,
 			LayerContributionType type, Object arg) {
 
-    	super.validateLayerContributionState(request, type, arg);
+		super.validateLayerContributionState(request, type, arg);
 
-    	// Implement wrapping of modules required by dojo loader for modules that
-    	// are loaded with the loader.
-    	switch (type) {
+		// Implement wrapping of modules required by dojo loader for modules that
+		// are loaded with the loader.
+		switch (type) {
 		case BEGIN_REQUIRED_MODULES:
 			return "require({cache:{"; //$NON-NLS-1$
 		case BEFORE_FIRST_REQUIRED_MODULE:
@@ -132,78 +132,78 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		case AFTER_REQUIRED_MODULE:
 			return getAfterRequiredModule(request, arg.toString());
 		case END_REQUIRED_MODULES:
-			{
-				StringBuffer sb = new StringBuffer();
-				sb.append("}});require({cache:{}});require(["); //$NON-NLS-1$
-				int i = 0;
-				@SuppressWarnings("unchecked")
-				Set<String> requiredModules = (Set<String>)arg;
-				for (String name : requiredModules) {
-					sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-				}
-				sb.append("]);"); //$NON-NLS-1$
-				return sb.toString();
+		{
+			StringBuffer sb = new StringBuffer();
+			sb.append("}});require({cache:{}});require(["); //$NON-NLS-1$
+			int i = 0;
+			@SuppressWarnings("unchecked")
+			Set<String> requiredModules = (Set<String>)arg;
+			for (String name : requiredModules) {
+				sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			}
+			sb.append("]);"); //$NON-NLS-1$
+			return sb.toString();
+		}
 		default:
 		}
 		return null;
 	}
 
-    static final Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/"); //$NON-NLS-1$
-    /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
-     */
-    @Override
+	static final Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/"); //$NON-NLS-1$
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
+	 */
+	@Override
 	public boolean isServerExpandable(HttpServletRequest request, String mid) {
-    	int idx = mid.indexOf("!"); //$NON-NLS-1$
-    	String plugin = idx != -1 ? mid.substring(0, idx) : null;
-    	String name = idx != -1 ? mid.substring(idx+1) : mid;
-    	if (name.startsWith("/") || urlId.matcher(name).find() || name.contains("?")) { //$NON-NLS-1$ //$NON-NLS-2$
-    		return false;
-    	}
-    	if (plugin != null) {
-    		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-    		if (!aggr.getConfig().getTextPluginDelegators().contains(plugin) &&
-    			!aggr.getConfig().getJsPluginDelegators().contains(plugin)) {
-    			return false;
-    		}
-    	}
+		int idx = mid.indexOf("!"); //$NON-NLS-1$
+		String plugin = idx != -1 ? mid.substring(0, idx) : null;
+		String name = idx != -1 ? mid.substring(idx+1) : mid;
+		if (name.startsWith("/") || urlId.matcher(name).find() || name.contains("?")) { //$NON-NLS-1$ //$NON-NLS-2$
+			return false;
+		}
+		if (plugin != null) {
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			if (!aggr.getConfig().getTextPluginDelegators().contains(plugin) &&
+					!aggr.getConfig().getJsPluginDelegators().contains(plugin)) {
+				return false;
+			}
+		}
 		return true;
 	}
 
 	protected String getBeforeRequiredModule(HttpServletRequest request, String mid) {
-    	String result;
-    	int idx = mid.indexOf("!"); //$NON-NLS-1$
-    	if (idx == -1) {
-    		result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
-    	} else {
-    		String plugin = mid.substring(0, idx);
-    		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-    		IConfig config = aggr.getConfig();
-    		if (config.getTextPluginDelegators().contains(plugin)) {
-    			result = "\"url:" + mid.substring(idx+1) + "\":"; //$NON-NLS-1$ //$NON-NLS-2$
-    		} else if (config.getJsPluginDelegators().contains(plugin)) {
-    			result = "\"" + mid.substring(idx+1) + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
-    		} else {
-    			result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
-    		}
-    	}
-    	return result;
-    }
+		String result;
+		int idx = mid.indexOf("!"); //$NON-NLS-1$
+		if (idx == -1) {
+			result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
+		} else {
+			String plugin = mid.substring(0, idx);
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			IConfig config = aggr.getConfig();
+			if (config.getTextPluginDelegators().contains(plugin)) {
+				result = "\"url:" + mid.substring(idx+1) + "\":"; //$NON-NLS-1$ //$NON-NLS-2$
+			} else if (config.getJsPluginDelegators().contains(plugin)) {
+				result = "\"" + mid.substring(idx+1) + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
+			} else {
+				result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+		return result;
+	}
 
-    protected String getAfterRequiredModule(HttpServletRequest request, String mid) {
-    	int idx = mid.indexOf("!"); //$NON-NLS-1$
-    	String plugin = idx == -1 ? null : mid.substring(0, idx);
-    	String result = "}";//$NON-NLS-1$
-    	if (plugin != null) {
-    		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-    		IConfig config = aggr.getConfig();
-    		if (config.getTextPluginDelegators().contains(plugin)) {
-    			result = ""; //$NON-NLS-1$
-    		}
-    	}
-    	return result;
-    }
+	protected String getAfterRequiredModule(HttpServletRequest request, String mid) {
+		int idx = mid.indexOf("!"); //$NON-NLS-1$
+		String plugin = idx == -1 ? null : mid.substring(0, idx);
+		String result = "}";//$NON-NLS-1$
+		if (plugin != null) {
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			IConfig config = aggr.getConfig();
+			if (config.getTextPluginDelegators().contains(plugin)) {
+				result = ""; //$NON-NLS-1$
+			}
+		}
+		return result;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getCacheKeyGenerators()
@@ -245,12 +245,12 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		super.initialize(aggregator, extension, reg);
 
 		// Get first resource factory extension so we can add to beginning of list
-    	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
-    	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
+		Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+		IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
 
-    	// Register the loaderExt resource factory
-    	Properties attributes = new Properties();
-    	attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+		// Register the loaderExt resource factory
+		Properties attributes = new Properties();
+		attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
 		reg.registerExtension(
 				new LoaderExtensionResourceFactory(),
 				attributes,
@@ -267,17 +267,17 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	protected String getDynamicLoaderExtensionJavaScript() {
 		StringBuffer sb = new StringBuffer();
 		sb.append("plugins[\"") //$NON-NLS-1$
-		  .append(getResourcePathId())
-		  .append("/text") //$NON-NLS-1$
-		  .append("\"] = 1;\r\n"); //$NON-NLS-1$
+		.append(getResourcePathId())
+		.append("/text") //$NON-NLS-1$
+		.append("\"] = 1;\r\n"); //$NON-NLS-1$
 		for (String[] alias : getClientConfigAliases()) {
 			sb.append("aliases.push([\"" + alias[0] + "\", \"" + alias[1] + "\"]);\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 		// Add server option settings that we care about
 		IOptions options = getAggregator().getOptions();
 		sb.append("combo.serverOptions={skipHasFiltering:") //$NON-NLS-1$
-		  .append(Boolean.toString(options.isDisableHasFiltering()))
-		  .append("};\r\n"); //$NON-NLS-1$
+		.append(Boolean.toString(options.isDisableHasFiltering()))
+		.append("};\r\n"); //$NON-NLS-1$
 
 		// add in the super class's contribution
 		sb.append(super.getDynamicLoaderExtensionJavaScript());
@@ -414,7 +414,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_3,
 						new Object[]{dojoTextPluginFullPath, getComboUri().resolve(textPluginPath)}
-				));
+						));
 			}
 
 			paths.put(dojoTextPluginFullPath, paths, getComboUri().resolve(textPluginPath));
@@ -435,7 +435,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_3,
 						new Object[]{dojoTextPluginAliasFullPath, Context.toString(dojoTextPluginPath)}
-				));
+						));
 			}
 			paths.put(dojoTextPluginAliasFullPath, paths, dojoTextPluginPath);
 
@@ -449,7 +449,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_4,
 						new Object[]{dojoTextPluginAlias, dojoTextPluginAliasFullPath}
-				));
+						));
 			}
 			Scriptable alias = context.newArray(config, 3);
 			alias.put(0, alias, dojoTextPluginAlias);

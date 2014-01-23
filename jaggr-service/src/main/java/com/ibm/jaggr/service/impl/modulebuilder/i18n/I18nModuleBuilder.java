@@ -53,11 +53,11 @@ import javax.servlet.http.HttpServletRequest;
  * the request.
  * <p>
  * Expanding the response to include resources that were not requested requires
- * the module names be exported in the define functions of anonymous modules, so 
+ * the module names be exported in the define functions of anonymous modules, so
  * don't do this if exporting module names is disabled, or if the optimization
  * level is 'none'.
  */
-public class I18nModuleBuilder 
+public class I18nModuleBuilder
 extends JavaScriptModuleBuilder {
 
 	public static String OPTION_DISABLE_LOCALE_EXPANSION = "disableLocaleExpansion"; //$NON-NLS-1$
@@ -70,13 +70,13 @@ extends JavaScriptModuleBuilder {
 	// courtesy of http://requirejs.org and the dojo i18n plugin
 	private static final Pattern re = Pattern.compile("(^.*(^|\\/)nls)(\\/|$)([^\\/]*)\\/?([^\\/]*)"); //$NON-NLS-1$
 
-	
+
 	private IAggregator aggregator = null;
 
 	@Override
 	public ModuleBuild build(String mid, IResource resource,
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {
-	
+
 		ModuleBuild result = super.build(mid, resource, request, keyGens);
 		List<IModule> additionalModules = getExpandedModules(mid, resource, request, keyGens);
 		if (keyGens != result.getCacheKeyGenerators()) {
@@ -84,13 +84,13 @@ extends JavaScriptModuleBuilder {
 			List<ICacheKeyGenerator> newKeyGens = new ArrayList<ICacheKeyGenerator>();
 			newKeyGens.addAll(result.getCacheKeyGenerators());
 			/*
-			 * In development mode, we want to detect new resources when they are added so we 
-			 * don't remember the list of available locales when the cache key generator is 
+			 * In development mode, we want to detect new resources when they are added so we
+			 * don't remember the list of available locales when the cache key generator is
 			 * created.  We do this by specifying a null availableLocales list.  Since development
 			 * mode is an aggregator option and changing options flushes cached responses, a new
 			 * cache key generator will be created when development mode is turned off.
 			 */
-			
+
 			String[] availableLocales = aggr.getOptions().isDevelopmentMode() ?
 					null : getAvailableLocales(request, mid, resource, keyGens);
 			newKeyGens.add(new CacheKeyGenerator(availableLocales, false));
@@ -107,7 +107,7 @@ extends JavaScriptModuleBuilder {
 
 	protected List<IModule> getExpandedModules(String mid, IResource resource,
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
-		
+
 		List<IModule> result = Collections.emptyList();
 		if (isExpandLocaleResources(request)) {
 			Matcher m = re.matcher(mid);
@@ -143,11 +143,11 @@ extends JavaScriptModuleBuilder {
 	public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
 		return null;
 	}
-	
+
 	private void processLocale(IResource resource, List<IModule> result,
 			Matcher m, Collection<String> availableLocales, Set<String> added,
 			IAggregator aggr, String bundleName, String locale)
-			throws IOException {
+					throws IOException {
 		String[] a = locale.split("-"); //$NON-NLS-1$
 		String language = a[0].toLowerCase();
 		String country = (a.length > 1) ? a[1].toLowerCase() : ""; //$NON-NLS-1$
@@ -169,7 +169,7 @@ extends JavaScriptModuleBuilder {
 				added.add(path);
 				return;
 			}
-		} 
+		}
 		if (language.length() > 0) {
 			// Now try just language code
 			String tryLocale = language;
@@ -181,31 +181,31 @@ extends JavaScriptModuleBuilder {
 	}
 
 	static boolean isExpandLocaleResources(HttpServletRequest request) {
-		// Expanding the response to include more than what was requested requires that 
-		// we export module names in the define functions of anonymous modules, so don't 
+		// Expanding the response to include more than what was requested requires that
+		// we export module names in the define functions of anonymous modules, so don't
 		// expand the response if module name exporting is disabled, or if the optimization
 		// level is set to 'none'.
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
-		return 
+		return
 				!TypeUtil.asBoolean(options.getOption(OPTION_DISABLE_LOCALE_EXPANSION)) &&
 				!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME));
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	private static String[] getAvailableLocales(
-			final HttpServletRequest request, 
-			final String mid, 
+			final HttpServletRequest request,
+			final String mid,
 			final IResource res,
-			final List<ICacheKeyGenerator> keyGens) 
-	throws IOException {
+			final List<ICacheKeyGenerator> keyGens)
+					throws IOException {
 		String key = I18nModuleBuilder.class.getName() + "." + mid; //$NON-NLS-1$
-		ConcurrentMap<String, Object> reqmap = 
-			(ConcurrentMap<String, Object>)request.getAttribute(IAggregator.CONCURRENTMAP_REQATTRNAME);
+		ConcurrentMap<String, Object> reqmap =
+				(ConcurrentMap<String, Object>)request.getAttribute(IAggregator.CONCURRENTMAP_REQATTRNAME);
 		String[] availableLocales = (String[])reqmap.get(key);
-		if (availableLocales != null) 
+		if (availableLocales != null)
 			return availableLocales;
-		
+
 		// The list of available locales isn't in the request.  Try to get it from
 		// the cache key generator
 		if (keyGens != null) {
@@ -219,7 +219,7 @@ extends JavaScriptModuleBuilder {
 				}
 			}
 		}
-		
+
 		// Get the available locales from disk
 		final Collection<String> result = new HashSet<String>();
 		final URI baseUri = res.getURI().resolve(""); //$NON-NLS-1$
@@ -245,10 +245,10 @@ extends JavaScriptModuleBuilder {
 		reqmap.put(key, availableLocales);
 		return availableLocales;
 	}
-	
+
 	/**
 	 * Adds the source for the locale specific i18n resource if it exists.
-	 * 
+	 *
 	 * @param list
 	 *            The list of source files to add the i18n resource to
 	 * @param bundleRoot
@@ -264,13 +264,13 @@ extends JavaScriptModuleBuilder {
 	 */
 	private boolean tryAddModule(
 			IAggregator aggregator,
-			List<IModule> list, 
-			String bundleRoot, 
-			IResource bundleRootRes, 
+			List<IModule> list,
+			String bundleRoot,
+			IResource bundleRootRes,
 			String locale,
 			String resource,
-			Collection<String> availableLocales) 
-	throws IOException {
+			Collection<String> availableLocales)
+					throws IOException {
 		if (availableLocales != null && !availableLocales.contains(locale)) {
 			return false;
 		}
@@ -280,17 +280,17 @@ extends JavaScriptModuleBuilder {
 		IResource testResource = aggregator.newResource(testUri);
 		if (availableLocales != null || testResource.exists()) {
 			String mid = bundleRoot+"/"+locale+"/"+resource; //$NON-NLS-1$ //$NON-NLS-2$
-			IModule module = aggregator.newModule(mid, testUri); 
-			list.add(module); 
+			IModule module = aggregator.newModule(mid, testUri);
+			list.add(module);
 			result = true;
 		}
 		return result;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#getCacheKeyGenerator()
 	 */
-	@Override 
+	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		// Return a provisional cache key generator
 		ArrayList<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
@@ -298,22 +298,22 @@ extends JavaScriptModuleBuilder {
 		keyGens.add(new CacheKeyGenerator(null, true));
 		return keyGens;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder#handles(java.lang.String, com.ibm.jaggr.service.resource.IResource)
 	 */
 	@Override
 	public boolean handles(String mid, IResource resource) {
 		Matcher m = re.matcher(mid);
-		return super.handles(mid, resource) && 
-					m.matches() && m.group(5).length() == 0;
+		return super.handles(mid, resource) &&
+				m.matches() && m.group(5).length() == 0;
 	}
-	
+
 	protected IAggregator getAggregator() {
 		return aggregator;
 	}
-	
-	
+
+
 	List<String> parseAcceptLanguageHeader(HttpServletRequest request) {
 		String header = request.getHeader("Accept-Language"); //$NON-NLS-1$
 		List<String> result = Collections.emptyList();
@@ -347,32 +347,32 @@ extends JavaScriptModuleBuilder {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * This cache key generator is a simple composite cache key generator
 	 * that wraps the {@link I18nCacheKeyGenerator} and controls whether
 	 * or not the wrapped generator is expressed for a given request based
-	 * on the value returned by 
+	 * on the value returned by
 	 * {@link I18nModuleBuilder#isExpandLocaleResources(HttpServletRequest)}.
 	 */
 	static private final class CacheKeyGenerator implements ICacheKeyGenerator {
 
 		private static final long serialVersionUID = -3519536825171383430L;
-		
+
 		private static final String eyeCatcher = "i18nBldr"; //$NON-NLS-1$
 
 		private final I18nCacheKeyGenerator keyGen;
-		
+
 		CacheKeyGenerator(String[] availableLocales, boolean provisional) {
 			keyGen = new I18nCacheKeyGenerator(
 					availableLocales != null ? Arrays.asList(availableLocales) : null,
-					provisional);
+							provisional);
 		}
-		
+
 		private CacheKeyGenerator(I18nCacheKeyGenerator keyGen) {
 			this.keyGen = keyGen;
 		}
-		
+
 		@Override
 		public String generateKey(HttpServletRequest request) {
 			return isExpandLocaleResources(request) ?
@@ -386,7 +386,7 @@ extends JavaScriptModuleBuilder {
 			}
 			return new CacheKeyGenerator(
 					(I18nCacheKeyGenerator)keyGen.combine(((CacheKeyGenerator)otherKeyGen).keyGen)
-			);
+					);
 		}
 
 		@Override
@@ -409,13 +409,13 @@ extends JavaScriptModuleBuilder {
 		public String toString() {
 			return eyeCatcher + ":(" + keyGen.toString() + ")"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		
+
 		@Override
 		public boolean equals(Object other) {
 			return other != null && getClass().equals(other.getClass()) && keyGen.equals(((CacheKeyGenerator)other).keyGen);
 		}
-		
-		@Override 
+
+		@Override
 		public int hashCode() {
 			return getClass().hashCode() * 31 + keyGen.hashCode();
 		}

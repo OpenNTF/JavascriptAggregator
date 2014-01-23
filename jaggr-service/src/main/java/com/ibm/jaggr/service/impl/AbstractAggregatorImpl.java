@@ -127,65 +127,65 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * Default value for resourcefactories init-param
 	 */
 	protected static final String DEFAULT_RESOURCEFACTORIES =
-		"com.ibm.jaggr.service.default.resourcefactories"; //$NON-NLS-1$
+			"com.ibm.jaggr.service.default.resourcefactories"; //$NON-NLS-1$
 
 	/**
 	 * Default value for modulebuilders init-param
 	 */
 	protected static final String DEFAULT_MODULEBUILDERS =
-		"com.ibm.jaggr.service.default.modulebuilders"; //$NON-NLS-1$
+			"com.ibm.jaggr.service.default.modulebuilders"; //$NON-NLS-1$
 
 	/**
 	 * Default value for httptransport init-param
 	 */
 	protected static final String DEFAULT_HTTPTRANSPORT =
-		"com.ibm.jaggr.service.dojo.httptransport"; //$NON-NLS-1$
+			"com.ibm.jaggr.service.dojo.httptransport"; //$NON-NLS-1$
 
 	private static final Logger log = Logger.getLogger(AbstractAggregatorImpl.class.getName());
 
 	private File workdir = null;
-    private ICacheManager cacheMgr = null;
-    private IConfig config = null;
-    private ServiceTracker optionsServiceTracker = null;
-    private ServiceTracker executorsServiceTracker = null;
+	private ICacheManager cacheMgr = null;
+	private IConfig config = null;
+	private ServiceTracker optionsServiceTracker = null;
+	private ServiceTracker executorsServiceTracker = null;
 	private ServiceTracker variableResolverServiceTracker = null;
-    private Bundle bundle = null;
-    private String name = null;
-    private IDependencies deps = null;
-    private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
-    private List<ServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<ServiceReference>());
-    private InitParams initParams = null;
-    private IOptions localOptions = null;
+	private Bundle bundle = null;
+	private String name = null;
+	private IDependencies deps = null;
+	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<ServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<ServiceReference>());
+	private InitParams initParams = null;
+	private IOptions localOptions = null;
 
-    private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
-    private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
-    private IAggregatorExtension httpTransportExtension = null;
-    protected IPlatformServices platformServices;
+	private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
+	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
+	private IAggregatorExtension httpTransportExtension = null;
+	protected IPlatformServices platformServices;
 
-    enum RequestNotifierAction {
-    	start,
-    	end
-    };
+	enum RequestNotifierAction {
+		start,
+		end
+	};
 
-    /* (non-Javadoc)
-     * @see javax.servlet.GenericServlet#init(javax.servlet.ServletConfig)
-     */
-    @Override
-    public void init(ServletConfig servletConfig) throws ServletException {
-        super.init(servletConfig);
+	/* (non-Javadoc)
+	 * @see javax.servlet.GenericServlet#init(javax.servlet.ServletConfig)
+	 */
+	@Override
+	public void init(ServletConfig servletConfig) throws ServletException {
+		super.init(servletConfig);
 
-        final ServletContext context = servletConfig.getServletContext();
+		final ServletContext context = servletConfig.getServletContext();
 
-       	// Set servlet context attributes for access though the request
-        context.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, this);
-    }
+		// Set servlet context attributes for access though the request
+		context.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, this);
+	}
 
-    /* (non-Javadoc)
-     * @see javax.servlet.GenericServlet#destroy()
-     */
-    @Override
+	/* (non-Javadoc)
+	 * @see javax.servlet.GenericServlet#destroy()
+	 */
+	@Override
 	public void destroy() {
-    	shutdown();
+		shutdown();
 		// Clear references to objects that can potentially reference this object
 		// so as to avoid memory leaks due to circular references.
 		resourceFactoryExtensions.clear();
@@ -194,48 +194,48 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		cacheMgr = null;
 		config = null;
 		deps = null;
-    	super.destroy();
-    }
+		super.destroy();
+	}
 
 
-    /**
-     * Called when the aggregator is shutting down.  Note that there is inconsistency
-     * among servlet bridge implementations over when {@link HttpServlet#destroy()}
-     * is called relative to when (or even if) the bundle is stopped.  So this method
-     * may be called from the destroy method or the bundle listener or both.
-     */
-    synchronized protected void shutdown() {
-    	// Make sure the bundle context is valid
-    	int state = bundle != null ? bundle.getState() : Bundle.RESOLVED;
-    	if (state == Bundle.ACTIVE || state == Bundle.STOPPING) {
-    		BundleContext bundleContext = getBundleContext();
+	/**
+	 * Called when the aggregator is shutting down.  Note that there is inconsistency
+	 * among servlet bridge implementations over when {@link HttpServlet#destroy()}
+	 * is called relative to when (or even if) the bundle is stopped.  So this method
+	 * may be called from the destroy method or the bundle listener or both.
+	 */
+	synchronized protected void shutdown() {
+		// Make sure the bundle context is valid
+		int state = bundle != null ? bundle.getState() : Bundle.RESOLVED;
+		if (state == Bundle.ACTIVE || state == Bundle.STOPPING) {
+			BundleContext bundleContext = getBundleContext();
 			bundle = null;	// make sure we don't shutdown more than once
-        	ServiceReference[] refs = null;
+			ServiceReference[] refs = null;
 			try {
 				refs = bundleContext.getServiceReferences(
-	    				IShutdownListener.class.getName(),
-	    				"(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+						IShutdownListener.class.getName(),
+						"(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 			} catch (InvalidSyntaxException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
 				}
 			}
-	    	if (refs != null) {
-	    		for (ServiceReference ref : refs) {
-	    			IShutdownListener listener = (IShutdownListener)bundleContext.getService(ref);
-	    			if (listener != null) {
-	    				try {
-	    					listener.shutdown(this);
-	    				} catch (Exception e) {
-	    					if (log.isLoggable(Level.SEVERE)) {
-	    						log.log(Level.SEVERE, e.getMessage(), e);
-	    					}
-	    				} finally {
-	    					bundleContext.ungetService(ref);
-	    				}
-	    			}
-	    		}
-	    	}
+			if (refs != null) {
+				for (ServiceReference ref : refs) {
+					IShutdownListener listener = (IShutdownListener)bundleContext.getService(ref);
+					if (listener != null) {
+						try {
+							listener.shutdown(this);
+						} catch (Exception e) {
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, e.getMessage(), e);
+							}
+						} finally {
+							bundleContext.ungetService(ref);
+						}
+					}
+				}
+			}
 			for (ServiceRegistration registration : registrations) {
 				registration.unregister();
 			}
@@ -246,24 +246,24 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 			optionsServiceTracker.close();
 			executorsServiceTracker.close();
 			variableResolverServiceTracker.close();
-    	}
+		}
 	}
 
-    /* (non-Javadoc)
-     * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
-    	if (log.isLoggable(Level.FINEST))
+	/* (non-Javadoc)
+	 * @see javax.servlet.http.HttpServlet#doGet(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+	 */
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
+		if (log.isLoggable(Level.FINEST))
 			log.finest("doGet: URL=" + req.getRequestURI()); //$NON-NLS-1$
 
-    	req.setAttribute(AGGREGATOR_REQATTRNAME, this);
-    	ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
-    	req.setAttribute(CONCURRENTMAP_REQATTRNAME, concurrentMap);
+		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
+		ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
+		req.setAttribute(CONCURRENTMAP_REQATTRNAME, concurrentMap);
 
-        try {
-	        // Validate config last-modified if development mode is enabled
-	        if (getOptions().isDevelopmentMode()) {
+		try {
+			// Validate config last-modified if development mode is enabled
+			if (getOptions().isDevelopmentMode()) {
 				long lastModified = -1;
 				URI configUri = getConfig().getConfigUri();
 				if (configUri != null) {
@@ -282,105 +282,105 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 						// asynchronously.  Rather than forcing the current request to wait, return
 						// a response that will display an alert informing the user of what is
 						// happening and asking them to reload the page.
-		            	String content = "alert('" +  //$NON-NLS-1$
-		            			StringUtil.escapeForJavaScript(Messages.ConfigModified) +
-		            			"');"; //$NON-NLS-1$
-		            	resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+						String content = "alert('" +  //$NON-NLS-1$
+								StringUtil.escapeForJavaScript(Messages.ConfigModified) +
+								"');"; //$NON-NLS-1$
+						resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
 						CopyUtil.copy(new StringReader(content), resp.getOutputStream());
-		            	return;
+						return;
 					}
 				}
-	        }
+			}
 
-       		getTransport().decorateRequest(req);
-       		notifyRequestListeners(RequestNotifierAction.start, req, resp);
+			getTransport().decorateRequest(req);
+			notifyRequestListeners(RequestNotifierAction.start, req, resp);
 
-            ILayer layer = getLayer(req);
-            long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
-            long lastModified = (Math.max(getCacheManager().getCache().getCreated(), layer.getLastModified(req)) / 1000) * 1000;
-            if (modifiedSince >= lastModified) {
-            	if (log.isLoggable(Level.FINER)) {
-            		log.finer("Returning Not Modified response for layer in servlet" +  //$NON-NLS-1$
-            				getName() + ":" + req.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString()); //$NON-NLS-1$
-            	}
-                resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-            }
-            else {
-            	// Get the InputStream for the response.  This call sets the Content-Type,
-            	// Content-Length and Content-Encoding headers in the response.
-            	InputStream in = layer.getInputStream(req, resp);
-    	    	// if any of the readers included an error response, then don't cache the layer.
-    	        if (req.getAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME) != null) {
-    	        	resp.addHeader("Cache-Control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-    	        } else {
-                    resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
-                    int expires = getConfig().getExpires();
-                    if (expires > 0) {
-                        resp.addHeader("Cache-Control", "public, max-age=" + expires); //$NON-NLS-1$ //$NON-NLS-2$
-                    }
-    	        }
-            	CopyUtil.copy(in, resp.getOutputStream());
-            }
-       		notifyRequestListeners(RequestNotifierAction.end, req, resp);
-        } catch (DependencyVerificationException e) {
-        	// clear the cache now even though it will be cleared when validateDeps has
-        	// finished (asynchronously) so that any new requests will be forced to wait
-        	// until dependencies have been validated.
-        	getCacheManager().clearCache();
-        	getDependencies().validateDeps(false);
+			ILayer layer = getLayer(req);
+			long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
+			long lastModified = (Math.max(getCacheManager().getCache().getCreated(), layer.getLastModified(req)) / 1000) * 1000;
+			if (modifiedSince >= lastModified) {
+				if (log.isLoggable(Level.FINER)) {
+					log.finer("Returning Not Modified response for layer in servlet" +  //$NON-NLS-1$
+							getName() + ":" + req.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString()); //$NON-NLS-1$
+				}
+				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+			}
+			else {
+				// Get the InputStream for the response.  This call sets the Content-Type,
+				// Content-Length and Content-Encoding headers in the response.
+				InputStream in = layer.getInputStream(req, resp);
+				// if any of the readers included an error response, then don't cache the layer.
+				if (req.getAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME) != null) {
+					resp.addHeader("Cache-Control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+				} else {
+					resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
+					int expires = getConfig().getExpires();
+					if (expires > 0) {
+						resp.addHeader("Cache-Control", "public, max-age=" + expires); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+				}
+				CopyUtil.copy(in, resp.getOutputStream());
+			}
+			notifyRequestListeners(RequestNotifierAction.end, req, resp);
+		} catch (DependencyVerificationException e) {
+			// clear the cache now even though it will be cleared when validateDeps has
+			// finished (asynchronously) so that any new requests will be forced to wait
+			// until dependencies have been validated.
+			getCacheManager().clearCache();
+			getDependencies().validateDeps(false);
 
-        	resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-        	if (getOptions().isDevelopmentMode()) {
-        		String msg = StringUtil.escapeForJavaScript(
-    				MessageFormat.format(
-	        			Messages.DepVerificationFailed,
-	        			new Object[]{
-	        				e.getMessage(),
-	        				AggregatorCommandProvider.EYECATCHER + " " + //$NON-NLS-1$
-	        					AggregatorCommandProvider.CMD_VALIDATEDEPS + " " + //$NON-NLS-1$
-	        					getName() + " " + //$NON-NLS-1$
-	        					AggregatorCommandProvider.PARAM_CLEAN,
-	        				getWorkingDirectory().toString().replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
-	        			}
-	        		)
-	        	);
-	        	String content = "alert('" + msg + "');"; //$NON-NLS-1$ //$NON-NLS-2$
-	        	try {
+			resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (getOptions().isDevelopmentMode()) {
+				String msg = StringUtil.escapeForJavaScript(
+						MessageFormat.format(
+								Messages.DepVerificationFailed,
+								new Object[]{
+										e.getMessage(),
+										AggregatorCommandProvider.EYECATCHER + " " + //$NON-NLS-1$
+												AggregatorCommandProvider.CMD_VALIDATEDEPS + " " + //$NON-NLS-1$
+												getName() + " " + //$NON-NLS-1$
+												AggregatorCommandProvider.PARAM_CLEAN,
+												getWorkingDirectory().toString().replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
+								}
+								)
+						);
+				String content = "alert('" + msg + "');"; //$NON-NLS-1$ //$NON-NLS-2$
+				try {
 					CopyUtil.copy(new StringReader(content), resp.getOutputStream());
 				} catch (IOException e1) {
 					if (log.isLoggable(Level.SEVERE)) {
 						log.log(Level.SEVERE, e1.getMessage(), e1);
 					}
-		        	resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+					resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 				}
-        	} else {
-        		resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        	}
-        } catch (ProcessingDependenciesException e) {
-        	resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-        	if (getOptions().isDevelopmentMode()) {
-	        	String content = "alert('" + StringUtil.escapeForJavaScript(Messages.Busy) + "');"; //$NON-NLS-1$ //$NON-NLS-2$
-	        	try {
+			} else {
+				resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+			}
+		} catch (ProcessingDependenciesException e) {
+			resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+			if (getOptions().isDevelopmentMode()) {
+				String content = "alert('" + StringUtil.escapeForJavaScript(Messages.Busy) + "');"; //$NON-NLS-1$ //$NON-NLS-2$
+				try {
 					CopyUtil.copy(new StringReader(content), resp.getOutputStream());
 				} catch (IOException e1) {
 					if (log.isLoggable(Level.SEVERE)) {
 						log.log(Level.SEVERE, e1.getMessage(), e1);
 					}
-		        	resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+					resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 				}
-        	} else {
-        		resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-        	}
-        } catch (BadRequestException e) {
-        	exceptionResponse(req, resp, e, HttpServletResponse.SC_BAD_REQUEST);
-        } catch (NotFoundException e) {
-        	exceptionResponse(req, resp, e, HttpServletResponse.SC_NOT_FOUND);
-        } catch (Exception e) {
-        	exceptionResponse(req, resp, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-        } finally {
-        	concurrentMap.clear();
-        }
-    }
+			} else {
+				resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+			}
+		} catch (BadRequestException e) {
+			exceptionResponse(req, resp, e, HttpServletResponse.SC_BAD_REQUEST);
+		} catch (NotFoundException e) {
+			exceptionResponse(req, resp, e, HttpServletResponse.SC_NOT_FOUND);
+		} catch (Exception e) {
+			exceptionResponse(req, resp, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		} finally {
+			concurrentMap.clear();
+		}
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#reloadConfig()
@@ -394,38 +394,38 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @see com.ibm.jaggr.service.IAggregator#getDependencies()
 	 */
 	@Override
-    public IDependencies getDependencies() {
-    	return deps;
-    }
+	public IDependencies getDependencies() {
+		return deps;
+	}
 
-    /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.IAggregator#getName()
-     */
-    @Override
-    public String getName() {
-    	return name;
-    }
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IAggregator#getName()
+	 */
+	@Override
+	public String getName() {
+		return name;
+	}
 
-    /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.IAggregator#getOptions()
-     */
-    @Override
-    public IOptions getOptions() {
-    	return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
-    }
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IAggregator#getOptions()
+	 */
+	@Override
+	public IOptions getOptions() {
+		return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
+	}
 
-    @Override
-    public IExecutors getExecutors() {
-    	return (IExecutors) executorsServiceTracker.getService();
-    }
+	@Override
+	public IExecutors getExecutors() {
+		return (IExecutors) executorsServiceTracker.getService();
+	}
 
-    /* (non-Javadoc)
-     * @see com.ibm.jaggr.service.IAggregator#getConfig()
-     */
-    @Override
-    public IConfig getConfig() {
-    	return config;
-    }
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IAggregator#getConfig()
+	 */
+	@Override
+	public IConfig getConfig() {
+		return config;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getCacheManager()
@@ -490,55 +490,55 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 				throw new CoreException(
 						new Status(Status.ERROR, configElem.getNamespaceIdentifier(),
 								e.getMessage(), e)
-					);
+						);
 			}
 		}
-        try {
-    		BundleContext bundleContext = contributingBundle.getBundleContext();
-    		platformServices = new PlatformServicesImpl(bundleContext);
-    		bundle = bundleContext.getBundle();
-            name = getAggregatorName(configElem);
-            initParams = getInitParams(configElem);
-       		executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
-       		variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
-            initOptions(initParams);
-       		workdir = initWorkingDirectory( // this must be after initOptions
-       				Platform.getStateLocation(getBundleContext().getBundle()).toFile(),
-       				configElem
-       		);
-        	initExtensions(configElem);
+		try {
+			BundleContext bundleContext = contributingBundle.getBundleContext();
+			platformServices = new PlatformServicesImpl(bundleContext);
+			bundle = bundleContext.getBundle();
+			name = getAggregatorName(configElem);
+			initParams = getInitParams(configElem);
+			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
+			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
+			initOptions(initParams);
+			workdir = initWorkingDirectory( // this must be after initOptions
+					Platform.getStateLocation(getBundleContext().getBundle()).toFile(),
+					configElem
+					);
+			initExtensions(configElem);
 
-        	// create the config.  Keep it local so it won't be seen by deps and cacheMgr
-        	// until after we check for customization last-mods.  Then we'll set the config
-        	// in the instance data and call the config listeners.
-	        IConfig config = newConfig();
+			// create the config.  Keep it local so it won't be seen by deps and cacheMgr
+			// until after we check for customization last-mods.  Then we'll set the config
+			// in the instance data and call the config listeners.
+			IConfig config = newConfig();
 
-	        // Check last-modified times of resources in the overrides folders.  These resources
-	        // are considered to be dynamic in a production environment and we want to
-	        // detect new/changed resources in these folders on startup so that we can clear
-	        // caches, etc.
-	        OverrideFoldersTreeWalker walker = new OverrideFoldersTreeWalker(this, config);
-        	walker.walkTree();
-        	deps = newDependencies(walker.getLastModifiedJS());
+			// Check last-modified times of resources in the overrides folders.  These resources
+			// are considered to be dynamic in a production environment and we want to
+			// detect new/changed resources in these folders on startup so that we can clear
+			// caches, etc.
+			OverrideFoldersTreeWalker walker = new OverrideFoldersTreeWalker(this, config);
+			walker.walkTree();
+			deps = newDependencies(walker.getLastModifiedJS());
 			cacheMgr = newCacheManager(walker.getLastModified());
-	        this.config = config;
+			this.config = config;
 			// Notify listeners
 			notifyConfigListeners(1);
 
 			bundleContext.addBundleListener(this);
-        } catch (Exception e) {
+		} catch (Exception e) {
 			throw new CoreException(
 					new Status(Status.ERROR, configElem.getNamespaceIdentifier(),
 							e.getMessage(), e)
-				);
+					);
 		}
 
-        Properties dict = new Properties();
-        dict.put("name", getName()); //$NON-NLS-1$
-        registrations.add(getBundleContext().registerService(
-        		IAggregator.class.getName(), this, dict));
+		Properties dict = new Properties();
+		dict.put("name", getName()); //$NON-NLS-1$
+		registrations.add(getBundleContext().registerService(
+				IAggregator.class.getName(), this, dict));
 
-        registerLayerListener();
+		registerLayerListener();
 	}
 
 	/* (non-Javadoc)
@@ -561,7 +561,7 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		if (factory == null) {
 			throw new UnsupportedOperationException(
 					"No resource factory for " + uri.toString() //$NON-NLS-1$
-			);
+					);
 		}
 
 		return factory.newResource(uri);
@@ -594,7 +594,7 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		if (builder == null) {
 			throw new UnsupportedOperationException(
 					"No module builder for " + mid //$NON-NLS-1$
-			);
+					);
 		}
 		return builder;
 
@@ -708,51 +708,51 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	}
 
 	/**
-     * Sets response status and headers for an error response based on the
-     * information in the specified exception.  If development mode is
-     * enabled, then returns a 200 status with a console.error() message
-     * specifying the exception message
-     *
-     * @param resp The response object
-     * @param t The exception object
-     * @param status The response status
-     */
-    protected void exceptionResponse(HttpServletRequest req, HttpServletResponse resp, Throwable t, int status) {
-    	resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-    	Level logLevel = (t instanceof BadRequestException || t instanceof NotFoundException)
-    						? Level.WARNING : Level.SEVERE;
-    	if (log.isLoggable(logLevel)) {
-    		String queryArgs = req.getQueryString();
-    		StringBuffer url = req.getRequestURL();
-    		if (queryArgs != null) {
-    			url.append("?").append(queryArgs); //$NON-NLS-1$
-    		}
-    		log.log(logLevel, url.toString(), t);
-    	}
-    	if (getOptions().isDevelopmentMode() || getOptions().isDebugMode()) {
-    		// In development mode, display server exceptions on the browser console
-	    	String msg = StringUtil.escapeForJavaScript(
-   				MessageFormat.format(
-					Messages.ExceptionResponse,
-					new Object[]{
-						t.getClass().getName(),
-						t.getMessage() != null ? StringUtil.escapeForJavaScript(t.getMessage()) : "" //$NON-NLS-1$
-					}
-				)
-	    	);
-    		String content = "console.error('" + msg + "');";  //$NON-NLS-1$ //$NON-NLS-2$
-    		try {
+	 * Sets response status and headers for an error response based on the
+	 * information in the specified exception.  If development mode is
+	 * enabled, then returns a 200 status with a console.error() message
+	 * specifying the exception message
+	 *
+	 * @param resp The response object
+	 * @param t The exception object
+	 * @param status The response status
+	 */
+	protected void exceptionResponse(HttpServletRequest req, HttpServletResponse resp, Throwable t, int status) {
+		resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+		Level logLevel = (t instanceof BadRequestException || t instanceof NotFoundException)
+				? Level.WARNING : Level.SEVERE;
+		if (log.isLoggable(logLevel)) {
+			String queryArgs = req.getQueryString();
+			StringBuffer url = req.getRequestURL();
+			if (queryArgs != null) {
+				url.append("?").append(queryArgs); //$NON-NLS-1$
+			}
+			log.log(logLevel, url.toString(), t);
+		}
+		if (getOptions().isDevelopmentMode() || getOptions().isDebugMode()) {
+			// In development mode, display server exceptions on the browser console
+			String msg = StringUtil.escapeForJavaScript(
+					MessageFormat.format(
+							Messages.ExceptionResponse,
+							new Object[]{
+									t.getClass().getName(),
+									t.getMessage() != null ? StringUtil.escapeForJavaScript(t.getMessage()) : "" //$NON-NLS-1$
+							}
+							)
+					);
+			String content = "console.error('" + msg + "');";  //$NON-NLS-1$ //$NON-NLS-2$
+			try {
 				CopyUtil.copy(new StringReader(content), resp.getOutputStream());
 			} catch (IOException e1) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e1.getMessage(), e1);
 				}
-	        	resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+				resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 			}
-    	} else {
-        	resp.setStatus(status);
-    	}
-    }
+		} else {
+			resp.setStatus(status);
+		}
+	}
 
 	/**
 	 * Returns the {@code Layer} object for the specified request.
@@ -763,9 +763,9 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 */
 	protected ILayer getLayer(HttpServletRequest request) throws Exception {
 
-        // Try non-blocking get() request first
-        return getCacheManager().getCache().getLayers().getLayer(request);
-    }
+		// Try non-blocking get() request first
+		return getCacheManager().getCache().getLayers().getLayer(request);
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.servlets.amd.aggregator.IAggregator#substituteProps(java.lang.String)
@@ -786,46 +786,46 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		}
 		StringBuffer buf = new StringBuffer();
 		Matcher matcher = pattern.matcher(str);
-	    while ( matcher.find() ) {
-	    	String propName = matcher.group(1);
-	    	String propValue = null;
-	    	if (getBundleContext() != null) {
-	    		propValue = getBundleContext().getProperty(propName);
-	    	} else {
-	    		propValue = System.getProperty(propName);
-	    	}
-	    	if (propValue == null && variableResolverServiceTracker != null) {
-	    		ServiceReference[] refs = variableResolverServiceTracker.getServiceReferences();
-	    		if (refs != null) {
-		    		for (ServiceReference sr : refs) {
-		    			IVariableResolver resolver = (IVariableResolver)getBundleContext().getService(sr);
-		    			try {
-			    			propValue = resolver.resolve(propName);
-			    			if (propValue != null) {
-			    				break;
-			    			}
-		    			} finally {
-		    				getBundleContext().ungetService(sr);
-		    			}
-		    		}
-	    		}
-	    	}
-	    	if (propValue != null) {
-	    		if (transformer != null) {
-	    			propValue = transformer.transform(propName, propValue);
-	    		}
-	    		matcher.appendReplacement(
-	    				buf,
-	    				propValue
-	    					.replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
-	    					.replace("$", "\\$")  //$NON-NLS-1$ //$NON-NLS-2$
-	    		);
-	    	} else {
-	    		matcher.appendReplacement(buf, "\\${"+propName+"}"); //$NON-NLS-1$ //$NON-NLS-2$
-	    	}
-	    }
-	    matcher.appendTail(buf);
-	    return buf.toString();
+		while ( matcher.find() ) {
+			String propName = matcher.group(1);
+			String propValue = null;
+			if (getBundleContext() != null) {
+				propValue = getBundleContext().getProperty(propName);
+			} else {
+				propValue = System.getProperty(propName);
+			}
+			if (propValue == null && variableResolverServiceTracker != null) {
+				ServiceReference[] refs = variableResolverServiceTracker.getServiceReferences();
+				if (refs != null) {
+					for (ServiceReference sr : refs) {
+						IVariableResolver resolver = (IVariableResolver)getBundleContext().getService(sr);
+						try {
+							propValue = resolver.resolve(propName);
+							if (propValue != null) {
+								break;
+							}
+						} finally {
+							getBundleContext().ungetService(sr);
+						}
+					}
+				}
+			}
+			if (propValue != null) {
+				if (transformer != null) {
+					propValue = transformer.transform(propName, propValue);
+				}
+				matcher.appendReplacement(
+						buf,
+						propValue
+						.replace("\\", "\\\\") //$NON-NLS-1$ //$NON-NLS-2$
+						.replace("$", "\\$")  //$NON-NLS-1$ //$NON-NLS-2$
+						);
+			} else {
+				matcher.appendReplacement(buf, "\\${"+propName+"}"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+		matcher.appendTail(buf);
+		return buf.toString();
 	}
 
 
@@ -863,8 +863,8 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		try {
 			refs = getBundleContext()
 					.getServiceReferences(IRequestListener.class.getName(),
-							              "(name="+getName()+")" //$NON-NLS-1$ //$NON-NLS-2$
-					);
+							"(name="+getName()+")" //$NON-NLS-1$ //$NON-NLS-2$
+							);
 		} catch (InvalidSyntaxException e) {
 			throw new IOException(e);
 		}
@@ -896,15 +896,15 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 			// notify any listeners that the config has been updated
 			refs = getBundleContext()
 					.getServiceReferences(IConfigListener.class.getName(),
-							              "(name="+getName()+")" //$NON-NLS-1$ //$NON-NLS-2$
-					);
+							"(name="+getName()+")" //$NON-NLS-1$ //$NON-NLS-2$
+							);
 		} catch (InvalidSyntaxException e) {
 			throw new IOException(e);
 		}
 		if (refs != null) {
 			for (ServiceReference ref : refs) {
 				IConfigListener listener =
-					(IConfigListener)getBundleContext().getService(ref);
+						(IConfigListener)getBundleContext().getService(ref);
 				if (listener != null) {
 					try {
 						listener.configLoaded(config, seq);
@@ -1011,37 +1011,37 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @param reg The extension registrar.
 	 */
 	protected void callExtensionInitializers(Iterable<IAggregatorExtension> extensions, ExtensionRegistrar reg) {
-    	for (IAggregatorExtension extension : extensions) {
+		for (IAggregatorExtension extension : extensions) {
 			Object instance = extension.getInstance();
 			if (instance instanceof IExtensionInitializer) {
 				((IExtensionInitializer)instance).initialize(this, extension, reg);
 			}
-    	}
+		}
 	}
 
 	protected void initOptions(InitParams initParams) throws InvalidSyntaxException {
-   		optionsServiceTracker = getOptionsServiceTracker(getBundleContext());
-   		String registrationName = getServletBundleName();
-   		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
-   		if (values != null && values.size() > 0) {
-   			String value = values.get(0);
-   			final File file = new File(substituteProps(value));
-   			if (file.exists()) {
-   				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
-   				localOptions = new OptionsImpl(registrationName, true, this) {
-   					@Override public File getPropsFile() { return file; }
-   				};
-   				if (log.isLoggable(Level.INFO)) {
-   					log.info(
-   						MessageFormat.format(Messages.CustomOptionsFile,new Object[] {file.toString()})
-   					);
-   				}
-   			}
-   		}
-        Properties dict = new Properties();
-        dict.put("name", registrationName); //$NON-NLS-1$
-        registrations.add(getBundleContext().registerService(
-        		IOptionsListener.class.getName(), this, dict));
+		optionsServiceTracker = getOptionsServiceTracker(getBundleContext());
+		String registrationName = getServletBundleName();
+		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
+		if (values != null && values.size() > 0) {
+			String value = values.get(0);
+			final File file = new File(substituteProps(value));
+			if (file.exists()) {
+				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
+				localOptions = new OptionsImpl(registrationName, true, this) {
+					@Override public File getPropsFile() { return file; }
+				};
+				if (log.isLoggable(Level.INFO)) {
+					log.info(
+							MessageFormat.format(Messages.CustomOptionsFile,new Object[] {file.toString()})
+							);
+				}
+			}
+		}
+		Properties dict = new Properties();
+		dict.put("name", registrationName); //$NON-NLS-1$
+		registrations.add(getBundleContext().registerService(
+				IOptionsListener.class.getName(), this, dict));
 
 	}
 
@@ -1055,93 +1055,93 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @throws NotFoundException
 	 */
 	protected void initExtensions(IConfigurationElement configElem) throws CoreException, NotFoundException {
-    	/*
-    	 *  Init the resource factory extensions
-    	 */
-    	Collection<String> resourceFactories = getInitParams().getValues(InitParams.RESOURCEFACTORIES_INITPARAM);
-    	if (resourceFactories.size() == 0) {
-    		resourceFactories.add(DEFAULT_RESOURCEFACTORIES);
-    	}
-        IExtensionRegistry registry = Platform.getExtensionRegistry();
-        for (String resourceFactory : resourceFactories) {
-	        IExtension extension = registry.getExtension(
-	        		IResourceFactoryExtensionPoint.NAMESPACE,
-	        		IResourceFactoryExtensionPoint.NAME,
-	        		resourceFactory);
-	        if (extension == null) {
-	        	throw new NotFoundException(resourceFactory);
-	        }
-			for (IConfigurationElement member : extension.getConfigurationElements()) {
-	            IResourceFactory factory = (IResourceFactory)member.createExecutableExtension("class"); //$NON-NLS-1$
-	            Properties props = new Properties();
-            	for (String name : member.getAttributeNames()) {
-            		props.put(name, member.getAttribute(name));
-            	}
-            	registerResourceFactory(new AggregatorExtension(extension, factory, props), null);
+		/*
+		 *  Init the resource factory extensions
+		 */
+		Collection<String> resourceFactories = getInitParams().getValues(InitParams.RESOURCEFACTORIES_INITPARAM);
+		if (resourceFactories.size() == 0) {
+			resourceFactories.add(DEFAULT_RESOURCEFACTORIES);
+		}
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		for (String resourceFactory : resourceFactories) {
+			IExtension extension = registry.getExtension(
+					IResourceFactoryExtensionPoint.NAMESPACE,
+					IResourceFactoryExtensionPoint.NAME,
+					resourceFactory);
+			if (extension == null) {
+				throw new NotFoundException(resourceFactory);
 			}
-        }
-
-        /*
-         *  Init the module builder extensions
-         */
-        Collection<String> moduleBuilders = getInitParams().getValues(InitParams.MODULEBUILDERS_INITPARAM);
-        if (moduleBuilders.size() == 0) {
-        	moduleBuilders.add(DEFAULT_MODULEBUILDERS);
-        }
-        for (String moduleBuilder : moduleBuilders) {
-        	IExtension extension = registry.getExtension(
-        			IModuleBuilderExtensionPoint.NAMESPACE,
-        			IModuleBuilderExtensionPoint.NAME,
-        			moduleBuilder);
-	        if (extension == null) {
-	        	throw new NotFoundException(moduleBuilder);
-	        }
 			for (IConfigurationElement member : extension.getConfigurationElements()) {
-            	IModuleBuilder builder = (IModuleBuilder)member.createExecutableExtension("class"); //$NON-NLS-1$
-            	Properties props = new Properties();
-            	for (String name : member.getAttributeNames()) {
-            		props.put(name, member.getAttribute(name));
-            	}
-            	registerModuleBuilder(new AggregatorExtension(extension, builder, props), null);
+				IResourceFactory factory = (IResourceFactory)member.createExecutableExtension("class"); //$NON-NLS-1$
+				Properties props = new Properties();
+				for (String name : member.getAttributeNames()) {
+					props.put(name, member.getAttribute(name));
+				}
+				registerResourceFactory(new AggregatorExtension(extension, factory, props), null);
 			}
-        }
+		}
 
-        /*
-         * Init the http transport extension
-         */
-        Collection<String> transports = getInitParams().getValues(InitParams.TRANSPORT_INITPARAM);
-        if (transports.size() == 0) {
-        	transports.add(DEFAULT_HTTPTRANSPORT);
-        }
-        if (transports.size() != 1) {
-        	throw new IllegalStateException(transports.toString());
-        }
-        String transportName = transports.iterator().next();
-    	IExtension extension = registry.getExtension(
-    			IHttpTransportExtensionPoint.NAMESPACE,
-    			IHttpTransportExtensionPoint.NAME,
-    			transportName);
-        if (extension == null) {
-        	throw new NotFoundException(transportName);
-        }
+		/*
+		 *  Init the module builder extensions
+		 */
+		Collection<String> moduleBuilders = getInitParams().getValues(InitParams.MODULEBUILDERS_INITPARAM);
+		if (moduleBuilders.size() == 0) {
+			moduleBuilders.add(DEFAULT_MODULEBUILDERS);
+		}
+		for (String moduleBuilder : moduleBuilders) {
+			IExtension extension = registry.getExtension(
+					IModuleBuilderExtensionPoint.NAMESPACE,
+					IModuleBuilderExtensionPoint.NAME,
+					moduleBuilder);
+			if (extension == null) {
+				throw new NotFoundException(moduleBuilder);
+			}
+			for (IConfigurationElement member : extension.getConfigurationElements()) {
+				IModuleBuilder builder = (IModuleBuilder)member.createExecutableExtension("class"); //$NON-NLS-1$
+				Properties props = new Properties();
+				for (String name : member.getAttributeNames()) {
+					props.put(name, member.getAttribute(name));
+				}
+				registerModuleBuilder(new AggregatorExtension(extension, builder, props), null);
+			}
+		}
+
+		/*
+		 * Init the http transport extension
+		 */
+		Collection<String> transports = getInitParams().getValues(InitParams.TRANSPORT_INITPARAM);
+		if (transports.size() == 0) {
+			transports.add(DEFAULT_HTTPTRANSPORT);
+		}
+		if (transports.size() != 1) {
+			throw new IllegalStateException(transports.toString());
+		}
+		String transportName = transports.iterator().next();
+		IExtension extension = registry.getExtension(
+				IHttpTransportExtensionPoint.NAMESPACE,
+				IHttpTransportExtensionPoint.NAME,
+				transportName);
+		if (extension == null) {
+			throw new NotFoundException(transportName);
+		}
 		IConfigurationElement member = extension.getConfigurationElements()[0];
-    	Properties props = new Properties();
-    	IHttpTransport transport = (IHttpTransport)member.createExecutableExtension("class"); //$NON-NLS-1$
-    	for (String attrname : member.getAttributeNames()) {
-    		props.put(attrname, member.getAttribute(attrname));
-    	}
-    	registerHttpTransport(new AggregatorExtension(extension, transport, props));
+		Properties props = new Properties();
+		IHttpTransport transport = (IHttpTransport)member.createExecutableExtension("class"); //$NON-NLS-1$
+		for (String attrname : member.getAttributeNames()) {
+			props.put(attrname, member.getAttribute(attrname));
+		}
+		registerHttpTransport(new AggregatorExtension(extension, transport, props));
 
-    	/*
-    	 *  Now call setAggregator on the loaded extensions starting with the
-    	 *  transport and then the rest of the extensions.
-    	 */
-    	ExtensionRegistrar reg = new ExtensionRegistrar();
-    	callExtensionInitializers(Arrays.asList(new IAggregatorExtension[]{getHttpTransportExtension()}), reg);
-    	callExtensionInitializers(getResourceFactoryExtensions(), reg);
-    	callExtensionInitializers(getModuleBuilderExtensions(), reg);
-    	reg.open = false;
-    }
+		/*
+		 *  Now call setAggregator on the loaded extensions starting with the
+		 *  transport and then the rest of the extensions.
+		 */
+		ExtensionRegistrar reg = new ExtensionRegistrar();
+		callExtensionInitializers(Arrays.asList(new IAggregatorExtension[]{getHttpTransportExtension()}), reg);
+		callExtensionInitializers(getResourceFactoryExtensions(), reg);
+		callExtensionInitializers(getModuleBuilderExtensions(), reg);
+		reg.open = false;
+	}
 
 	// Instances of this class are NOT serializable
 	private void writeObject(ObjectOutputStream out) throws IOException {
@@ -1180,20 +1180,20 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		if (!dirFile.exists()) {
 			throw new FileNotFoundException(dirFile.toString());
 		}
-        // Create a directory using the alias name within the contributing bundle's working
-        // directory
+		// Create a directory using the alias name within the contributing bundle's working
+		// directory
 		File workDir = new File(dirFile, getName());
-        // Create a bundle-version specific subdirectory.  If the directory doesn't exist, assume
-        // the bundle has been updated and clean out the workDir to remove all stale cache files.
+		// Create a bundle-version specific subdirectory.  If the directory doesn't exist, assume
+		// the bundle has been updated and clean out the workDir to remove all stale cache files.
 		File servletDir = new File(workDir, Long.toString(getBundleContext().getBundle().getBundleId()));
 		if (!servletDir.exists()) {
 			FileUtils.deleteQuietly(workDir);
 		}
-   		servletDir.mkdirs();
-   		if (!servletDir.exists()) {
-   			throw new FileNotFoundException(servletDir.getAbsolutePath());
-   		}
-   		return servletDir;
+		servletDir.mkdirs();
+		if (!servletDir.exists()) {
+			throw new FileNotFoundException(servletDir.getAbsolutePath());
+		}
+		return servletDir;
 	}
 
 	/**
@@ -1209,13 +1209,13 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @return The aggregator name
 	 */
 	protected String getAggregatorName(IConfigurationElement configElem) {
-    	// trim leading and trailing '/'
+		// trim leading and trailing '/'
 		String alias = configElem.getAttribute("alias"); //$NON-NLS-1$
-        while (alias.charAt(0) == '/')
-        	alias = alias.substring(1);
-        while (alias.charAt(alias.length()-1) == '/')
-        	alias = alias.substring(0, alias.length()-1);
-        return alias;
+		while (alias.charAt(0) == '/')
+			alias = alias.substring(1);
+		while (alias.charAt(alias.length()-1) == '/')
+			alias = alias.substring(0, alias.length()-1);
+		return alias;
 	}
 
 	/**
@@ -1231,14 +1231,14 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @return The init params
 	 */
 	protected InitParams getInitParams(IConfigurationElement configElem) {
-        List<InitParam> initParams = new LinkedList<InitParam>();
-        IConfigurationElement[] children = configElem.getChildren("init-param"); //$NON-NLS-1$
-        for (IConfigurationElement child : children) {
-        	String name = child.getAttribute("name"); //$NON-NLS-1$
-        	String value = child.getAttribute("value"); //$NON-NLS-1$
-        	initParams.add(new InitParam(name, value));
-        }
-        return new InitParams(initParams);
+		List<InitParam> initParams = new LinkedList<InitParam>();
+		IConfigurationElement[] children = configElem.getChildren("init-param"); //$NON-NLS-1$
+		for (IConfigurationElement child : children) {
+			String name = child.getAttribute("name"); //$NON-NLS-1$
+			String value = child.getAttribute("value"); //$NON-NLS-1$
+			initParams.add(new InitParam(name, value));
+		}
+		return new InitParams(initParams);
 	}
 
 	/**
@@ -1251,13 +1251,13 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @throws InvalidSyntaxException
 	 */
 	protected ServiceTracker getOptionsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
-   		ServiceTracker tracker = new ServiceTracker(
-   				bundleContext,
-   				bundleContext.createFilter(
-   						"(&(" + Constants.OBJECTCLASS + "=" + IOptions.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
-   						")(name=" + getServletBundleName() + "))"), //$NON-NLS-1$ //$NON-NLS-2$
-   				null);
-   		tracker.open();
+		ServiceTracker tracker = new ServiceTracker(
+				bundleContext,
+				bundleContext.createFilter(
+						"(&(" + Constants.OBJECTCLASS + "=" + IOptions.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
+						")(name=" + getServletBundleName() + "))"), //$NON-NLS-1$ //$NON-NLS-2$
+						null);
+		tracker.open();
 		return tracker;
 	}
 
@@ -1272,13 +1272,13 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * @throws InvalidSyntaxException
 	 */
 	protected ServiceTracker getExecutorsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
-   		ServiceTracker tracker = new ServiceTracker(
-   				bundleContext,
-   				bundleContext.createFilter(
-   						"(&(" + Constants.OBJECTCLASS + "=" + IExecutors.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
-   						")(name=" + getServletBundleName() + "))"), //$NON-NLS-1$ //$NON-NLS-2$
-   				null);
-   		tracker.open();
+		ServiceTracker tracker = new ServiceTracker(
+				bundleContext,
+				bundleContext.createFilter(
+						"(&(" + Constants.OBJECTCLASS + "=" + IExecutors.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
+						")(name=" + getServletBundleName() + "))"), //$NON-NLS-1$ //$NON-NLS-2$
+						null);
+		tracker.open();
 		return tracker;
 	}
 
@@ -1348,22 +1348,22 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 						new Properties(attributes),
 						extensionPointId,
 						uniqueId
-				);
+						);
 				registerResourceFactory(
 						extension,
 						before
-				);
+						);
 			} else if (impl instanceof IModuleBuilder) {
 				extension = new AggregatorExtension(
 						impl,
 						attributes,
 						extensionPointId,
 						uniqueId
-				);
+						);
 				registerModuleBuilder(
 						extension,
 						before
-				);
+						);
 			} else {
 				throw new UnsupportedOperationException(impl.getClass().getName());
 			}
@@ -1377,10 +1377,10 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 	 * Registers the layer listener
 	 */
 	protected void registerLayerListener() {
-        Properties dict = new Properties();
-        dict.put("name", getName()); //$NON-NLS-1$
-        registrations.add(getBundleContext().registerService(
-        		ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
+		Properties dict = new Properties();
+		dict.put("name", getName()); //$NON-NLS-1$
+		registrations.add(getBundleContext().registerService(
+				ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
 	}
 }
 

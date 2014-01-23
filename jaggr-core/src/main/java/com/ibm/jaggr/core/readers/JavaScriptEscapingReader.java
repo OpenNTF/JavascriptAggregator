@@ -21,13 +21,13 @@ import java.util.Arrays;
 import java.util.Collection;
 
 public class JavaScriptEscapingReader extends CharacterEscapingReader {
-	/** 
+	/**
 	 * Set of characters that need to be escaped when they appear
 	 * within javascript strings.
 	 */
 	public static final Collection<Character> escapeChars = Arrays
 			.asList(new Character[] { '\'', '\n', '\r', '\\' });
-	
+
 
 	public JavaScriptEscapingReader(Reader reader) {
 		super(reader, escapeChars);

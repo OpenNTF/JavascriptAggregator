@@ -20,8 +20,6 @@ import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.util.BooleanTerm;
 
-import junit.framework.Assert;
-
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -30,6 +28,8 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.HashSet;
+
+import junit.framework.Assert;
 
 public class ModuleDepsTest {
 
@@ -57,16 +57,16 @@ public class ModuleDepsTest {
 		Assert.assertTrue(deps.add("module2", new ModuleDepInfo("has", new BooleanTerm("C"), null)));
 		Assert.assertEquals(2, deps.size());
 		Assert.assertEquals(
-				new HashSet<String>(Arrays.asList(new String[]{"has!A?"})), 
+				new HashSet<String>(Arrays.asList(new String[]{"has!A?"})),
 				deps.get("module1").getHasPluginPrefixes()
-		);
+				);
 		Assert.assertEquals(
-				new HashSet<String>(Arrays.asList(new String[]{"has!B?", "has!C?"})), 
+				new HashSet<String>(Arrays.asList(new String[]{"has!B?", "has!C?"})),
 				deps.get("module2").getHasPluginPrefixes()
-		);
+				);
 		// Ensure adding an entry already in the deps list doesn't change the list
 		Assert.assertFalse(deps.add("module1", deps.get("module1")));
-		
+
 	}
 	@Test
 	public void testAddAll() {
@@ -74,7 +74,7 @@ public class ModuleDepsTest {
 		Assert.assertTrue(deps.add("module1", new ModuleDepInfo("has", new BooleanTerm("A"), null)));
 		Assert.assertTrue(deps.add("module2", new ModuleDepInfo("has", new BooleanTerm("B"), null)));
 		Assert.assertTrue(deps.add("module2", new ModuleDepInfo("has", new BooleanTerm("C"), null)));
-		
+
 		ModuleDeps deps2 = new ModuleDeps();
 		Assert.assertTrue(deps2.addAll(deps));
 		Assert.assertEquals(deps2, deps);
@@ -94,7 +94,7 @@ public class ModuleDepsTest {
 		Assert.assertFalse(deps.containsDep("module2", BooleanTerm.TRUE));
 		Assert.assertTrue(deps.containsDep("module3", BooleanTerm.TRUE));
 		Assert.assertTrue(deps.containsDep("module4", BooleanTerm.FALSE));
-		
+
 		Assert.assertTrue(deps.add("module1", new ModuleDepInfo("has", new BooleanTerm("!A"), null)));
 		Assert.assertTrue(deps.containsDep("module1", BooleanTerm.TRUE));
 	}
@@ -109,14 +109,14 @@ public class ModuleDepsTest {
 		Assert.assertTrue(deps.add("module4", new ModuleDepInfo("has", BooleanTerm.FALSE, null)));
 		Assert.assertTrue(deps.subtract("module2", new ModuleDepInfo("has", new BooleanTerm("C"), null)));
 		Assert.assertEquals(
-				new HashSet<String>(Arrays.asList(new String[]{"has!B?"})), 
+				new HashSet<String>(Arrays.asList(new String[]{"has!B?"})),
 				deps.get("module2").getHasPluginPrefixes()
-		);
+				);
 		Assert.assertTrue(deps.subtract("module2", new ModuleDepInfo("has", new BooleanTerm("B"), null)));
 		Assert.assertEquals(0, deps.get("module2").getHasPluginPrefixes().size());
 		Assert.assertFalse(deps.subtract("module_missing", new ModuleDepInfo(null, BooleanTerm.TRUE, null)));
 		Assert.assertFalse(deps.subtract("module1", new ModuleDepInfo("has", new BooleanTerm("a"), null)));
-		
+
 	}
 
 	@Test
@@ -127,7 +127,7 @@ public class ModuleDepsTest {
 		Assert.assertTrue(deps.add("module2", new ModuleDepInfo("has", new BooleanTerm("C"), null)));
 		Assert.assertTrue(deps.add("module3", new ModuleDepInfo(null, BooleanTerm.TRUE, null)));
 		Assert.assertTrue(deps.add("module4", new ModuleDepInfo("has", BooleanTerm.FALSE, null)));
-		
+
 		ModuleDeps deps2 = new ModuleDeps();
 		Assert.assertTrue(deps2.add("module2", new ModuleDepInfo("has", new BooleanTerm("B"), null)));
 		Assert.assertTrue(deps2.add("module2", new ModuleDepInfo("has", new BooleanTerm("C"), null)));
@@ -150,7 +150,7 @@ public class ModuleDepsTest {
 						"has!A?module1", "has!B?module2", "has!C?module2", "module3"
 				})),
 				deps.getModuleIds()
-		);
+				);
 	}
 
 }

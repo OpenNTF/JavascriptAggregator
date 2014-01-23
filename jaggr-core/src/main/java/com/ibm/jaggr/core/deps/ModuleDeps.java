@@ -26,24 +26,24 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * This class extends LinkedHashMap to provide additional methods for 
+ * This class extends LinkedHashMap to provide additional methods for
  * managing a map of module names to ModuleDepInfo objects.
- * 
+ *
  * This class is not thread safe, so external provisions for thread
  * safety need to be made if instances of this class are to be shared
  * by multiple threads.
  */
 public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
-	
+
 	private static final long serialVersionUID = -8057569894102155520L;
 
 	public ModuleDeps() {
 	}
-	
+
 	/**
 	 * Copy constructor.  Creates a deep copy (clones the {@link ModuleDepInfo}
 	 * objects) of {@code other}.
-	 * 
+	 *
 	 * @param other
 	 */
 	public ModuleDeps(ModuleDeps other) {
@@ -51,11 +51,11 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 			super.put(entry.getKey(), new ModuleDepInfo(entry.getValue()));
 		}
 	}
-	
+
 	/**
 	 * Adds the specified pair to the map. If an entry for the key exists, then
 	 * the specified module dep info is added to the existing module dep info.
-	 * 
+	 *
 	 * @param key
 	 *            The module name to associate with the dep info object
 	 * @param info
@@ -78,10 +78,10 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return modified;
 	}
-	
+
 	/**
 	 * Adds all of the map entries from other to this map
-	 * 
+	 *
 	 * @param other
 	 *            the map containing entries to add
 	 * @return true if the map was modified
@@ -98,7 +98,7 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	 * Returns true if the map contains the module name with the specified term.
 	 * See {@link ModuleDepInfo#containsTerm(BooleanTerm)} for a description of
 	 * containment.
-	 * 
+	 *
 	 * @param moduleName
 	 *            The module name
 	 * @param term
@@ -113,11 +113,11 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return result;
 	}
-	
+
 	/**
-	 * Calls {@link ModuleDepInfo#andWith(ModuleDepInfo)} on each of the 
+	 * Calls {@link ModuleDepInfo#andWith(ModuleDepInfo)} on each of the
 	 * entries in this list.
-	 * 
+	 *
 	 * @param info
 	 *            the {@link ModuleDepInfo} who's formula will be anded with the
 	 *            entries in the list.
@@ -129,14 +129,14 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return this;
 	}
-	
+
 	/**
 	 * Subtracts the terms in <code>subInfo</code> from the terms in the module
 	 * dep info object associated with the specified key.
 	 * <p>
 	 * See {@link ModuleDepInfo#subtract(ModuleDepInfo)} for a description of
 	 * what it means to subtract boolean terms.
-	 * 
+	 *
 	 * @param key
 	 *            The module name
 	 * @param subInfo
@@ -151,11 +151,11 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return modified;
 	}
-	
+
 	/**
 	 * Calls {@link #subtract(String, ModuleDepInfo)} for each of the map
 	 * entries in <code>toSub</code>
-	 * 
+	 *
 	 * @param toSub
 	 *            The map to subtract from this map
 	 * @return True if this map was modified
@@ -174,7 +174,7 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	 * the entries will include the prefixes. Note that one map entry may result
 	 * in multiple (or zero) result entries depending on the evaluation of the
 	 * boolean formula which represents the has conditionals.
-	 * 
+	 *
 	 * @return The set of module ids
 	 */
 	public Set<String> getModuleIds() {
@@ -191,14 +191,14 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Returns a map of module ids with comments for the keys in this map. If
 	 * the module dep info objects associated with a key specifies has plugin
 	 * prefixes, then the entries will include the prefixes. Note that one map
 	 * entry may result in multiple (or zero) result entries depending on the
 	 * evaluation of the boolean formula which represents the has conditionals.
-	 * 
+	 *
 	 * @return The map of module id, comment pairs
 	 */
 	public Map<String, String> getModuleIdsWithComments() {
@@ -216,13 +216,13 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return result;
 	}
-	
+
 	/**
 	 * Calls {@link ModuleDepInfo#resolveWith(Features)} on each of the
 	 * values in the map.
-	 * 
+	 *
 	 * @param features the feature set to apply.
-	 * 
+	 *
 	 * @return the current object
 	 */
 	public ModuleDeps resolveWith(Features features) {
@@ -231,7 +231,7 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 		}
 		return this;
 	}
-	
+
 	@Override
 	public ModuleDepInfo put(String key, ModuleDepInfo value) {
 		throw new UnsupportedOperationException();

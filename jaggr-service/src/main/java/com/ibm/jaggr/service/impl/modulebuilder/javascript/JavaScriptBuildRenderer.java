@@ -32,8 +32,8 @@ import javax.servlet.http.HttpServletRequest;
 
 public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRenderer {
 
-  private static final Logger log = Logger.getLogger(JavaScriptBuildRenderer.class.getName());
-	
+	private static final Logger log = Logger.getLogger(JavaScriptBuildRenderer.class.getName());
+
 	/**
 	 * Format string for the place holder module name used to stand in for the
 	 * expanded require list. Note that the punctuation characters (including
@@ -44,7 +44,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 	 * the place holder string.
 	 */
 	static final String REQUIRE_EXPANSION_PLACEHOLDER_FMT = "$/{jaggr expand require,%1$d};/$"; //$NON-NLS-1$
-	
+
 	/**
 	 * Format string for the place holder module name used to stand in for the
 	 * expanded require list in log messages.
@@ -55,31 +55,31 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 	 * Regular expression pattern for locating the place holder module name used
 	 * to stand in for the expanded require list.
 	 */
-	static final Pattern REQUIRE_EXPANSION_PLACEHOLDER_PAT = 
+	static final Pattern REQUIRE_EXPANSION_PLACEHOLDER_PAT =
 			Pattern.compile("(,\\s*\"\\$/\\{jaggr expand require,([0-9]+)\\};/\\$\")|(\\$/\\{jaggr expand require,([0-9]+)\\}log;/\\$)", Pattern.MULTILINE); //$NON-NLS-1$
-	
+
 	private static final long serialVersionUID = -2475505194723490517L;
 
 	/**
 	 * The compiled module fragments.  The compiled module is split into
-	 * fragments at the points where expanded dependencies will be 
+	 * fragments at the points where expanded dependencies will be
 	 * inserted into the end of require calls.
 	 */
 	private List<String> contentFragments = new ArrayList<String>();
-	
+
 	/**
 	 * The module id
 	 */
 	private final String mid;
-	
+
 	/**
 	 * The list of expended dependencies for require calls within the
-	 * compiled modules. 
+	 * compiled modules.
 	 */
 	private List<ModuleDeps> expandedDeps = new ArrayList<ModuleDeps>();
-	
+
 	private List<Boolean> isLogOutput = null;
-	
+
 	public JavaScriptBuildRenderer(String mid, String content, List<ModuleDeps> depsList, boolean isReqExpLogging) {
 		final String methodName = "<ctor>"; //$NON-NLS-1$
 		final boolean isDebugLogging = log.isLoggable(Level.FINER);
@@ -118,7 +118,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			if (isTraceLogging) {
 				log.finest("Adding to contentFragments - " + sb.toString());
 			}
-			ModuleDeps expandedDep = depsList.get(depIdx); 
+			ModuleDeps expandedDep = depsList.get(depIdx);
 			expandedDeps.add(expandedDep);
 			if (isTraceLogging) {
 				log.finest("Adding to expandedDeps - " + expandedDeps);
@@ -137,8 +137,8 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			log.exiting(JavaScriptBuildRenderer.class.getName(), methodName);
 		}
 	}
-	
-	
+
+
 	public String renderBuild(HttpServletRequest request, Set<String> dependentFeatures) {
 		final String methodName = "renderBuild"; //$NON-NLS-1$
 		final boolean isDebugLogging = log.isLoggable(Level.FINER);

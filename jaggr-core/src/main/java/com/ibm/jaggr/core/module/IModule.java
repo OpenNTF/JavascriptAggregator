@@ -34,7 +34,7 @@ import javax.servlet.http.HttpServletRequest;
  * IModule objects are responsible for creating and organizing collections of
  * cached module builds for a given module. Module builds may be request
  * specific, and can provide a cache key generator to be used by the layer
- * manager, which assembles multiple module builds into cached layer builds, 
+ * manager, which assembles multiple module builds into cached layer builds,
  * to combine the cache keys for individual module builds into a cache key
  * that can be used for all the modules in the layer.
  * <p>
@@ -58,7 +58,7 @@ public interface IModule extends Serializable {
 	 * module build for the specified request. The build object is returned
 	 * asynchronously in order to facilitate concurrent processing of module
 	 * builds.
-	 * 
+	 *
 	 * @param request
 	 *            The HTTP request object
 	 * @return A {@link Future} to a {@link ModuleBuildReader} object that will be available
@@ -69,7 +69,7 @@ public interface IModule extends Serializable {
 
 	/**
 	 * Delete any cache files associated with this module
-	 * 
+	 *
 	 * @param mgr
 	 *            The cache manager. Modules can use
 	 *            {@link ICacheManager#deleteFileDelayed(String)} to
@@ -79,11 +79,11 @@ public interface IModule extends Serializable {
 	 *            threads.
 	 */
 	public void clearCached(ICacheManager mgr);
-	
+
 	/**
 	 * Returns the module id for this module.  The id includes the plugin name,
 	 * if any, and the module name separated by a '!'.
-	 * 
+	 *
 	 * @return The module id
 	 */
 	public String getModuleId();
@@ -91,33 +91,33 @@ public interface IModule extends Serializable {
 	/**
 	 * Returns the module name.  The module name is the name part of the module id,
 	 * excluding the plugin name.
-	 * 
+	 *
 	 * @return the module name
 	 */
 	public String getModuleName();
-	
+
 	/**
 	 * Returns the plugin name.  The plugin name is the part of the module id
 	 * preceding the '!' character.
-	 * 
+	 *
 	 * @return the plugin name.
 	 */
 	public String getPluginName();
 	/**
 	 * Returns the source url for this module
-	 * 
+	 *
 	 * @return The url
 	 */
 	public URI getURI();
-	
+
 	/**
-	 * This method is provided so that the module can function as a runtime cache 
-	 * for the {@link IResource} object associated with the module URI that was 
+	 * This method is provided so that the module can function as a runtime cache
+	 * for the {@link IResource} object associated with the module URI that was
 	 * used to construct this instance.
 	 * <p>
-	 * Note that instances of {@code IModule} are both Serializable 
+	 * Note that instances of {@code IModule} are both Serializable
 	 * and Cloneable, yet instances of {@code IResource} are neither, so the module
-	 * must not attempt to save the cached {@code IResource} object to its 
+	 * must not attempt to save the cached {@code IResource} object to its
 	 * persistent state, nor to object clones.
 
 	 * @param aggregator the aggregator.  The module may use the {@link IAggregator#newResource(URI)}

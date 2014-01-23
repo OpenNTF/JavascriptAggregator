@@ -20,8 +20,6 @@ import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.service.test.TestUtils;
 
-import junit.framework.Assert;
-
 import org.easymock.EasyMock;
 import org.junit.Test;
 
@@ -31,8 +29,10 @@ import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
 
+import junit.framework.Assert;
+
 public class JavaScriptBuildRendererTest {
-	static final String content = "define([],function() {require(\"foo\",\"" + 
+	static final String content = "define([],function() {require(\"foo\",\"" +
 			String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, 0) +
 			"\");require(\"bar\", \"" +
 			String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, 1) +
@@ -47,14 +47,14 @@ public class JavaScriptBuildRendererTest {
 		deps2.add("bardep", new ModuleDepInfo());
 		List<ModuleDeps> depsList = Arrays.asList(new ModuleDeps[]{deps1, deps2});
 		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer("test", content, depsList, false);
-		
+
 		// validate the rendered output
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		EasyMock.replay(mockRequest);
 		String result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
 		Assert.assertEquals("define([],function() {require(\"foo\",\"foodep1\",\"foodep2\");require(\"bar\",\"bardep\")});", result);
-		
+
 		ModuleDeps enclosingDeps = new ModuleDeps();
 		enclosingDeps.add("foodep2", new ModuleDepInfo());
 		enclosingDeps.add("bardep", new ModuleDepInfo());
@@ -66,7 +66,7 @@ public class JavaScriptBuildRendererTest {
 
 	@Test
 	public void testRenderBuild_withDetails() throws Exception {
-		String contentWithComments = content + 
+		String contentWithComments = content +
 				"console.log(\"deps1=" +
 				String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_LOG_PLACEHOLDER_FMT, 0) +
 				"\");console.log(\"deps2=" +
@@ -79,7 +79,7 @@ public class JavaScriptBuildRendererTest {
 		deps2.add("bardep", new ModuleDepInfo());
 		List<ModuleDeps> depsList = Arrays.asList(new ModuleDeps[]{deps1, deps2, deps1, deps2});
 		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer("test", contentWithComments, depsList, true);
-		
+
 		// validate the rendered output
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		EasyMock.replay(mockRequest);
@@ -95,7 +95,7 @@ public class JavaScriptBuildRendererTest {
 		mockRequest.setAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES, enclosingDeps);
 		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		Assert.assertEquals(
-				"define([],function() {require(\"foo\",\"foodep1\");require(\"bar\")});console.log(\"deps1=foodep1\");console.log(\"deps2=\");", 
+				"define([],function() {require(\"foo\",\"foodep1\");require(\"bar\")});console.log(\"deps1=foodep1\");console.log(\"deps2=\");",
 				result);
 		System.out.println(result);
 	}

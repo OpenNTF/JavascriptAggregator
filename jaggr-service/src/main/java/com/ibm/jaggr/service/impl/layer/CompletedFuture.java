@@ -27,9 +27,9 @@ import java.util.concurrent.TimeoutException;
  * @param <T>
  */
 public class CompletedFuture<T> implements Future<T> {
-	
+
 	private final T _t;
-	
+
 	public CompletedFuture(T t) {
 		_t = t;
 	}
@@ -55,7 +55,7 @@ public class CompletedFuture<T> implements Future<T> {
 	 */
 	@Override
 	public T get(long timeout, TimeUnit unit) throws InterruptedException,
-			ExecutionException, TimeoutException {
+	ExecutionException, TimeoutException {
 		return _t;
 	}
 

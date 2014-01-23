@@ -50,8 +50,8 @@ public class NotFoundResource implements IResource {
 	public Reader getReader() throws IOException {
 		throw new IOException(uri.toString());
 	}
-	
-	@Override 
+
+	@Override
 	public InputStream getInputStream() throws IOException {
 		throw new IOException(uri.toString());
 	}

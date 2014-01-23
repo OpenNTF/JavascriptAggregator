@@ -84,20 +84,20 @@ public class DepTreeNode implements Cloneable, Serializable {
 		private List<String> declaredDependencies;
 		private List<String> dependentFeatures;
 		private DependencyInfo(String[] declaredDependencies, String[] dependentFeatures) {
-			this.declaredDependencies = declaredDependencies != null ? 
+			this.declaredDependencies = declaredDependencies != null ?
 					Collections.unmodifiableList(Arrays.asList(declaredDependencies)) :
-					Collections.<String>emptyList();
-			this.dependentFeatures = dependentFeatures != null ?
-					Collections.unmodifiableList(Arrays.asList(dependentFeatures)) :
-					Collections.<String>emptyList();
+						Collections.<String>emptyList();
+					this.dependentFeatures = dependentFeatures != null ?
+							Collections.unmodifiableList(Arrays.asList(dependentFeatures)) :
+								Collections.<String>emptyList();
 		}
 		public List<String> getDeclaredDependencies() { return declaredDependencies; }
 		public List<String> getDepenedentFeatures() { return dependentFeatures; }
 	}
-	
+
 	/**
 	 * Object constructor. Creates a node with the given name.
-	 * 
+	 *
 	 * @param name
 	 *            The module name. Must not contain '/' characters.
 	 */
@@ -126,7 +126,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	public long lastModified() {
 		return lastModified;
 	}
-	
+
 	/**
 	 * Returns the last modified date of the dependencies for this node. The
 	 * dependency last modified date is updated only when the javascript file
@@ -138,23 +138,23 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * Dependency last modified dates are used by the cache manager to determine
 	 * when the entire cache must be invalidated do to changes in dependency
 	 * lists which can have ripple effects across many cached responses.
-	 * 
+	 *
 	 * @return The last modified date of this node's dependency list
 	 */
 	public long lastModifiedDep() {
 		return lastModifiedDep;
 	}
-	
+
 	/**
 	 * Returns the most recent last modified date of all the dependencies that are
 	 * descendants of this node, including this node.
-	 * 
+	 *
 	 * @return The most recent last modified date
 	 */
 	public long lastModifiedDepTree() {
 		return lastModifiedDepTree(-1);
 	}
-	
+
 	/**
 	 * @return A reference to the parent node, or null if this node is the root
 	 *         node or has not been inserted into a tree.
@@ -172,14 +172,14 @@ public class DepTreeNode implements Cloneable, Serializable {
 		DepTreeNode parentRef = parent.get();
 		return parentRef != null ? parentRef.getRoot() : this;
 	}
-	
+
 	/**
 	 * @return The dependency array
 	 */
 	public String[] getDepArray() {
 		return dependencies;
 	}
-	
+
 	/**
 	 * @return The depenedent features array
 	 */
@@ -201,7 +201,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 				sb.append(path);
 			}
 			sb.append(sb.length() == 0 ? "" : "/").append(parentRef.getName()); //$NON-NLS-1$ //$NON-NLS-2$
-			
+
 		} else {
 			return null;
 		}
@@ -221,7 +221,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 
 	/**
 	 * Add the specified node to this node's children.
-	 * 
+	 *
 	 * @param child
 	 *            The node to add to this node's children
 	 */
@@ -232,13 +232,13 @@ public class DepTreeNode implements Cloneable, Serializable {
 		children.put(child.getName(), child);
 		child.setParent(this);
 	}
-	
+
 	/**
 	 * Overlay the specified node and its descendants over this node.  The
 	 * specified node will be merged with this node, with the dependencies
-	 * of any nodes from the specified node replacing the dependencies of 
+	 * of any nodes from the specified node replacing the dependencies of
 	 * the corresponding node in this node's tree.
-	 * 
+	 *
 	 * @param child
 	 */
 	public void overlay(DepTreeNode node) {
@@ -263,12 +263,12 @@ public class DepTreeNode implements Cloneable, Serializable {
 			add(child);
 		}
 	}
-	
+
 	/**
 	 * Returns the node at the specified path location within the tree, or
 	 * creates it if it is not already in the tree. Will create any required
 	 * parent nodes.
-	 * 
+	 *
 	 * @param path
 	 *            The path name, relative to this node, of the node to return.
 	 * @return The node at the specified path.
@@ -279,7 +279,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		}
 		if (path.length() == 0)
 			return this;
-		
+
 		String[] pathComps = path.split("/"); //$NON-NLS-1$
 		DepTreeNode node = this;
 		for (String comp : pathComps) {
@@ -292,7 +292,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		}
 		return node;
 	}
-	
+
 	/**
 	 * @param path
 	 *            The node with the specified path relative to this node, or
@@ -303,17 +303,17 @@ public class DepTreeNode implements Cloneable, Serializable {
 		if (path.startsWith("/")) { //$NON-NLS-1$
 			if (log.isLoggable(Level.WARNING)) {
 				log.warning(
-					MessageFormat.format(
-						Messages.DepTreeNode_3,
-						new Object[]{path}
-					)
-				);
+						MessageFormat.format(
+								Messages.DepTreeNode_3,
+								new Object[]{path}
+								)
+						);
 			}
 			return null;
 		}
 		if (path.length() == 0)
 			return this;
-		
+
 		String[] pathComps = path.split("/"); //$NON-NLS-1$
 		DepTreeNode node = this;
 		for (String comp : pathComps) {
@@ -328,7 +328,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 
 	/**
 	 * Removes the specified child node
-	 * 
+	 *
 	 * @param child
 	 *            The node to remove
 	 */
@@ -399,7 +399,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * Specifies the dependency list of modules for the module named by this
 	 * node, along with the last modified date of the javascript file that the
 	 * dependency list was obtained from.
-	 * 
+	 *
 	 * @param dependencies
 	 *            The dependency list of module names
 	 * @param dependentFeatures
@@ -416,7 +416,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		this.lastModified = lastModifiedFile;
 		this.lastModifiedDep = lastModifiedDep;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
@@ -448,7 +448,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 */
 	@Override
 	public DepTreeNode clone() throws CloneNotSupportedException {
-		
+
 		// Clone this node
 		DepTreeNode clone = (DepTreeNode)super.clone();
 
@@ -467,16 +467,16 @@ public class DepTreeNode implements Cloneable, Serializable {
 		}
 		return clone;
 	}
-	
+
 	public IConfig getConfig() {
 		return getRoot().getConfig();
 	}
-	
+
 	/**
 	 * Sets the parent reference for this node using a {@link WeakReference}
-	 * so as to avoid unwanted circular references which could prevent the 
+	 * so as to avoid unwanted circular references which could prevent the
 	 * GC from doing its job.
-	 * 
+	 *
 	 * @param parent The reference to the parent node.
 	 */
 	private void setParent(DepTreeNode parent) {
@@ -490,7 +490,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	/**
 	 * Returns the most recent last modified date for all the dependencies that
 	 * are descendants of this node, including this node.
-	 * 
+	 *
 	 * @param lm
 	 *            The most recent last modified date so far
 	 * @return The most recent last modified date including this node and it
@@ -509,7 +509,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	/**
 	 * Prints the string representaton of the tree rooted at this node to the
 	 * specified {@link StringBuffer}.
-	 * 
+	 *
 	 * @param indent
 	 *            String for indenting nodes
 	 * @param sb
@@ -526,10 +526,10 @@ public class DepTreeNode implements Cloneable, Serializable {
 
 	/**
 	 * Normalizes any module names in this node's dependency list
-	 * (i.e. removes ./ and ../ path components) so that all the dependency 
+	 * (i.e. removes ./ and ../ path components) so that all the dependency
 	 * names are based on this node's parent path.  For example, if a child
 	 * node has the dependency {@code ../bar} and this node's parent path
-	 * is {@code foo}, then the normalized dependency will be 
+	 * is {@code foo}, then the normalized dependency will be
 	 * {@code foo/bar}.
 	 * <p>
 	 * Recursively calls itself for all this node's children so that the
@@ -545,12 +545,12 @@ public class DepTreeNode implements Cloneable, Serializable {
 			}
 		}
 	}
-	
+
 	/**
-	 * Populates the provided map with the dependencies, keyed by 
-	 * full path name.  This is done to facilitate more efficient 
+	 * Populates the provided map with the dependencies, keyed by
+	 * full path name.  This is done to facilitate more efficient
 	 * lookups of the dependencies.
-	 * 
+	 *
 	 * @param depMap
 	 */
 	void populateDepMap(Map<String, DependencyInfo> depMap) {
@@ -566,13 +566,13 @@ public class DepTreeNode implements Cloneable, Serializable {
 
 	/**
 	 * Method called when this object is de-serialized
-	 * 
+	 *
 	 * @param in The {@link ObjectInputStream} to read from
 	 * @throws IOException
 	 * @throws ClassNotFoundException
 	 */
 	private void readObject(ObjectInputStream in) throws IOException,
-			ClassNotFoundException {
+	ClassNotFoundException {
 
 		// Call the default implementation to de-serialize our object
 		in.defaultReadObject();

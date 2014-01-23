@@ -24,7 +24,7 @@ import java.util.Properties;
 /**
  * Initialization interface for aggregator extensions. Extensions implementing
  * this interface will be called in the
- * {@link #initialize(IAggregator, IAggregatorExtension, IExtensionRegistrar)} 
+ * {@link #initialize(IAggregator, IAggregatorExtension, IExtensionRegistrar)}
  * initialize method immediately after the extension has been created.
  */
 public interface IExtensionInitializer {
@@ -32,7 +32,7 @@ public interface IExtensionInitializer {
 	/**
 	 * Called immediately after the extension is created to set the aggregator
 	 * instance that this extension object was created for.
-	 * 
+	 *
 	 * @param aggregator
 	 *            The aggregator that this extension was created for.
 	 * @param extension
@@ -47,7 +47,7 @@ public interface IExtensionInitializer {
 	 * Interface that can be used by Aggregator extensions to register
 	 * additional {@link IResourceFactory} or {@link IModuleBuilder} extensions.
 	 * For a list of currently registered extensions, call
-	 * {@link IAggregator#getResourceFactoryExtensions()} or 
+	 * {@link IAggregator#getResourceFactoryExtensions()} or
 	 * {@link IAggregator#getModuleBuilderExtensions()};
 	 */
 	public interface IExtensionRegistrar {
@@ -58,7 +58,7 @@ public interface IExtensionInitializer {
 		 * modulebuilder extension points for the names and descriptions of
 		 * attributes. Extensions registered through this method do not need to
 		 * be in the eclipse extension registry.
-		 * 
+		 *
 		 * @param impl
 		 *            an object which implements {@link IResourceFactory} or
 		 *            {@link IModuleBuilder}.
@@ -77,7 +77,7 @@ public interface IExtensionInitializer {
 		 */
 		public void registerExtension(Object impl, Properties attributes,
 				String extensionPointId, String uniqueId, IAggregatorExtension before)
-				throws IllegalStateException;
+						throws IllegalStateException;
 	}
 
 }

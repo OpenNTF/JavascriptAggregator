@@ -23,8 +23,6 @@ import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -35,6 +33,8 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
+
+import com.google.common.io.Files;
 
 import org.easymock.IAnswer;
 import org.junit.Before;
@@ -49,7 +49,7 @@ import java.util.Map;
 import java.util.Set;
 
 public class DependencyListTest {
-	
+
 	URI tmpDir = null;
 	IAggregator mockAggregator;
 	IDependencies mockDependencies;
@@ -57,8 +57,8 @@ public class DependencyListTest {
 	Map<String, String[]> moduleDeps;
 	Set<String> dependentFeatures;
 	Features features;
-	
-	@Before 
+
+	@Before
 	public void setup() throws Exception {
 		tmpDir = Files.createTempDir().toURI();
 		configRef = new Ref<IConfig>(null);
@@ -78,12 +78,12 @@ public class DependencyListTest {
 		}).anyTimes();
 		replay(mockAggregator, mockDependencies);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{}"));
-	}		
+	}
 
 	@Test
 	public void testNoExpandedDeps() throws Exception {
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{}"));
-		
+
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"foo/test", "bar/test"}));
 		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false) {
 			@Override
@@ -95,8 +95,8 @@ public class DependencyListTest {
 		assertTrue(depList.getExpandedDeps().isEmpty());
 		assertTrue(depList.getDependentFeatures().isEmpty());
 	}
-	
-	@Test 
+
+	@Test
 	public void testExpandedDeps() throws Exception {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"foo/test", "bar/test"}));
 		moduleDeps.put("foo/test", new String[]{"foo/dep1", "foo/dep2"});
@@ -106,7 +106,7 @@ public class DependencyListTest {
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/dep1", "foo/dep2", "bar/dep"})),depList.getExpandedDeps().getModuleIds());
 		assertTrue(depList.getDependentFeatures().isEmpty());
 	}
-	
+
 	@Test
 	public void testExpandedDepsWithNameReplacement() throws Exception {
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test','bar/test']]}"));
@@ -137,7 +137,7 @@ public class DependencyListTest {
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has!test?has", "has!test?zzz?foo/dep", "has!test?yyy?foo/dep"})),depList.getExpandedDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test", "yyy", "zzz"})), depList.getDependentFeatures());
 	}
-	
+
 	@Test
 	public void testResolveExcplicitDeps() throws Exception {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"has!test?foo/test"}));

@@ -44,10 +44,10 @@ public class PlatformServicesImpl implements IPlatformServices {
 	public PlatformServicesImpl(BundleContext bc){
 		bundleContext = bc;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.BundleContext#registerService(String clazz,
 	 * Object service, Dictionary properties)
 	 */
@@ -64,7 +64,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.ServiceRegistration#unRegisterService()
 	 */
 	@Override
@@ -74,7 +74,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.BundleContext#getServiceReferences(String clazz,
 	 * String filter)
 	 */
@@ -94,7 +94,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.BundleContext#getService(ServiceReference
 	 * reference)
 	 */
@@ -110,7 +110,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.BundleContext#unGetService(ServiceReference
 	 * reference)
 	 */
@@ -126,7 +126,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.Bundle#getResource(String name)
 	 */
 	@Override
@@ -140,7 +140,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.osgi.framework.Bundle#getHeaders()
 	 */
 	@SuppressWarnings("unchecked")
@@ -151,7 +151,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		} else {
 			return null;
 		}
-	}	
+	}
 
 	@Override
 	public boolean isShuttingdown() {
@@ -171,7 +171,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	public URI getAppContextURI() throws URISyntaxException {
 		URI uri = null;
 		uri = new URI("namedbundleresource://" +  //$NON-NLS-1$
-					bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-1$
+				bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-1$
 		return uri;
 	}
 

@@ -28,7 +28,7 @@ public class VariableGZIPOutputStream extends GZIPOutputStream {
 	public VariableGZIPOutputStream(OutputStream out, int size) throws IOException {
 		super(out, size);
 	}
-	
+
 	public void setLevel(int level) {
 		def.setLevel(level);
 	}

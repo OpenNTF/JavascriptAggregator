@@ -18,8 +18,6 @@ package com.ibm.jaggr.service.impl.module;
 
 import static org.junit.Assert.assertTrue;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -35,7 +33,7 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuild
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 
-import junit.framework.Assert;
+import com.google.common.io.Files;
 
 import org.apache.commons.lang.ArrayUtils;
 import org.easymock.EasyMock;
@@ -65,10 +63,12 @@ import java.util.regex.Pattern;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.Assert;
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(JavaScriptModuleBuilder.class)
 public class ModuleImplTest {
-	
+
 	static File tmpdir = null;
 	IAggregator mockAggregator;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
@@ -120,7 +120,7 @@ public class ModuleImplTest {
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
 	}
-	
+
 	@After
 	public void tearDown() throws Exception {
 		mockAggregator.getCacheManager().clearCache();
@@ -130,7 +130,7 @@ public class ModuleImplTest {
 			}
 		}
 	}
-	
+
 	/*
 	 * Tests to make sure that the cache key generator for the module is properly updated
 	 * by requests that modify the dependent feature set (implemented via a path alias
@@ -141,12 +141,12 @@ public class ModuleImplTest {
 		testDepMap.put("p2/a", (String[])ArrayUtils.add(testDepMap.get("p2/a"), "p1/aliased/d"));
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
-		
+
 		Features features = new Features();
 		features.put("foo", true);
 		features.put("bar", true);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
-		
+
 		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
@@ -157,7 +157,7 @@ public class ModuleImplTest {
 		String compiled = writer.toString();
 		System.out.println(compiled);
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
-		
+
 		features.put("foo", false);
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
@@ -168,7 +168,7 @@ public class ModuleImplTest {
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/bar/d\\\".*?\\],").matcher(compiled).find());
-		
+
 		features.put("bar", false);
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
@@ -176,17 +176,17 @@ public class ModuleImplTest {
 		Assert.assertEquals("[expn, js:(has:[bar, conditionFalse, conditionTrue, foo, non])]", module.getCacheKeyGenerators().toString());
 		Assert.assertTrue(module.getKeys().size() == 3 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-					"expn:0;js:S:1:0:1;has{foo}", 
-					"expn:0;js:S:1:0:1;has{bar,!foo}",
-					"expn:0;js:S:1:0:1;has{!bar,!foo}" 
+						"expn:0;js:S:1:0:1;has{foo}",
+						"expn:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;js:S:1:0:1;has{!bar,!foo}"
 				}
-		)));
+				)));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		System.out.println(compiled);
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/non/d\\\".*?\\],").matcher(compiled).find());
-		
+
 		features.remove("bar");
 		features.put("foo", true);
 		reader = module.getBuild(mockRequest).get();
@@ -194,11 +194,11 @@ public class ModuleImplTest {
 		Assert.assertTrue(cacheKeyGenerators == module.getCacheKeyGenerators());
 		Assert.assertTrue(module.getKeys().size() == 3 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-					"expn:0;js:S:1:0:1;has{foo}", 
-					"expn:0;js:S:1:0:1;has{bar,!foo}",
-					"expn:0;js:S:1:0:1;has{!bar,!foo}" 
+						"expn:0;js:S:1:0:1;has{foo}",
+						"expn:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;js:S:1:0:1;has{!bar,!foo}"
 				}
-		)));
+				)));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
@@ -211,22 +211,22 @@ public class ModuleImplTest {
 		Assert.assertTrue(cacheKeyGenerators == module.getCacheKeyGenerators());
 		Assert.assertTrue(module.getKeys().size() == 4 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-					"expn:0;js:S:1:0:1;has{foo}", 
-					"expn:0;js:S:1:0:1;has{bar,foo}",
-					"expn:0;js:S:1:0:1;has{bar,!foo}",
-					"expn:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;js:S:1:0:1;has{foo}",
+						"expn:0;js:S:1:0:1;has{bar,foo}",
+						"expn:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;js:S:1:0:1;has{!bar,!foo}"
 				}
-		)));
+				)));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testBuildRendererDependentFeatures() throws Exception {
-		
+
 		PowerMock.expectNew(JavaScriptBuildRenderer.class, EasyMock.isA(String.class), EasyMock.isA(String.class), EasyMock.isA(List.class), EasyMock.eq(false)).andAnswer(new IAnswer<JavaScriptBuildRenderer>() {
 			@SuppressWarnings("serial")
 			@Override
@@ -243,7 +243,7 @@ public class ModuleImplTest {
 					}
 				};
 			}
-			
+
 		}).anyTimes();
 		PowerMock.replay(JavaScriptBuildRenderer.class);
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
@@ -259,6 +259,6 @@ public class ModuleImplTest {
 		CopyUtil.copy(reader, writer);
 		// dependent features from build renderer should now be in request
 		Assert.assertEquals((Set<String>)new HashSet<String>(Arrays.asList(new String[]{"feature1"})), (Set<String>)mockRequest.getAttribute(ILayer.DEPENDENT_FEATURES));
-		
+
 	}
 }

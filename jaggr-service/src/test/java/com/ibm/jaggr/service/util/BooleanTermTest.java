@@ -42,9 +42,9 @@ public class BooleanTermTest {
 		assertFalse(BooleanTerm.FALSE.equals(new BooleanTerm("A")));
 		assertFalse(new BooleanTerm("A").equals(BooleanTerm.FALSE));
 		assertTrue(new BooleanTerm("A*!B").equals(new BooleanTerm("!B*A")));
-		assertFalse(new BooleanTerm("A*!B").equals(new BooleanTerm("B*A")));	
+		assertFalse(new BooleanTerm("A*!B").equals(new BooleanTerm("B*A")));
 	}
-	
+
 	@Test
 	public void testHashCode() {
 		assertEquals(Boolean.FALSE.hashCode(), BooleanTerm.FALSE.hashCode());
@@ -66,12 +66,12 @@ public class BooleanTermTest {
 		assertTrue(BooleanTerm.FALSE.isFalse());
 		assertFalse(new BooleanTerm("A").isFalse());
 	}
-	
+
 	@Test(expected=NullPointerException.class)
 	public void testNullVarConstruction() {
 		new BooleanTerm((BooleanVar)null);
 	}
-	
+
 	@Test(expected=NullPointerException.class)
 	public void testNullSetConstruction() {
 		new BooleanTerm((Set<BooleanVar>)null);
@@ -81,19 +81,19 @@ public class BooleanTermTest {
 	public void testEmptySetConstruction() {
 		new BooleanTerm(new HashSet<BooleanVar>());
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testAddFail() {
 		BooleanTerm term = new BooleanTerm("A");
 		term.add(new BooleanVar("B", false));
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testClearFail() {
 		BooleanTerm term = new BooleanTerm("A");
 		term.clear();
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testRemoveFail() {
 		Set<BooleanVar> vars = new HashSet<BooleanVar>();
@@ -101,7 +101,7 @@ public class BooleanTermTest {
 		BooleanTerm term = new BooleanTerm(vars);
 		term.remove(new BooleanVar("A", true));
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testRemoveAllFail() {
 		Set<BooleanVar> vars = new HashSet<BooleanVar>();
@@ -110,7 +110,7 @@ public class BooleanTermTest {
 		BooleanTerm term = new BooleanTerm(vars);
 		term.removeAll(vars);
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testAddAllFail() {
 		Set<BooleanVar> vars = new HashSet<BooleanVar>();
@@ -119,7 +119,7 @@ public class BooleanTermTest {
 		BooleanTerm term = new BooleanTerm("C");
 		term.addAll(vars);
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testRetainAllFail() {
 		Set<BooleanVar> vars = new HashSet<BooleanVar>();
@@ -128,17 +128,17 @@ public class BooleanTermTest {
 		BooleanTerm term = new BooleanTerm("C");
 		term.retainAll(vars);
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testAddToTrueFail() {
 		BooleanTerm.TRUE.add(new BooleanVar("A", true));
 	}
-	
+
 	@Test(expected=UnsupportedOperationException.class)
 	public void testAddToFalseFail() {
 		BooleanTerm.FALSE.add(new BooleanVar("A", true));
 	}
-	
+
 	@Test
 	public void testToString() {
 		assertEquals("[TRUE]", BooleanTerm.TRUE.toString());
@@ -147,7 +147,7 @@ public class BooleanTermTest {
 		assertEquals("(A*B)", new BooleanTerm("A*B").toString());
 		assertEquals("(!A*B)", new BooleanTerm("B*!A").toString());
 	}
-	
+
 	@Test
 	public void testResolveWith() {
 		Features features = new Features();
@@ -162,7 +162,7 @@ public class BooleanTermTest {
 		assertEquals(BooleanTerm.TRUE, BooleanTerm.TRUE.resolveWith(features));
 		assertEquals(BooleanTerm.FALSE, BooleanTerm.FALSE.resolveWith(features));
 	}
-	
+
 	@Test
 	public void testAndWith() {
 		assertEquals(BooleanTerm.TRUE, BooleanTerm.TRUE.andWith(BooleanTerm.TRUE));

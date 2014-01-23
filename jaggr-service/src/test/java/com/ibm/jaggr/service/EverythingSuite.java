@@ -39,8 +39,8 @@ import com.ibm.jaggr.service.impl.modulebuilder.javascript.RequireExpansionCompi
 import com.ibm.jaggr.service.impl.modulebuilder.text.TxtModuleContentProviderTest;
 import com.ibm.jaggr.service.impl.resource.BundleResourceFactoryTests;
 import com.ibm.jaggr.service.impl.resource.FileResourceTests;
-import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
 import com.ibm.jaggr.service.impl.transport.AbstractDojoHttpTransportTest;
+import com.ibm.jaggr.service.impl.transport.AbstractHttpTransportTest;
 import com.ibm.jaggr.service.util.BooleanTermTest;
 import com.ibm.jaggr.service.util.DependencyListTest;
 import com.ibm.jaggr.service.util.DependencyListTest_processDep;
@@ -49,34 +49,34 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 
 @RunWith(Suite.class)
-@Suite.SuiteClasses(value = { 
-	BooleanFormulaTest.class,
-	ConfigTests.class,
-	DependenciesTest.class,
-	DepTreeNodeTests.class,
-	ModuleDepInfoTest.class,
-	ModuleDepsTest.class,
-	DepUtilsTest.class,
-	HasNodeTests.class,
-	LayerTest.class,
-	LayerCacheTest.class,
-	LayerBuilderTest.class,
-	ModuleImplTest.class,
-	CSSModuleBuilderTest.class,
-	I18nModuleBuilderTest.class,
-	ExportModuleNameCompilerPassTest.class,
-	HasFilteringCompilerPassTest.class,
-	JavaScriptModuleBuilderTest.class,
-	TxtModuleContentProviderTest.class,
-	RequireExpansionCompilerPassTest.class,
-	AbstractHttpTransportTest.class,
-	AbstractDojoHttpTransportTest.class,
-	AbstractAggregatorImplTest.class,
-	BundleResourceFactoryTests.class,
-	FileResourceTests.class,
-	CacheManagerImplTest.class,
-	BooleanTermTest.class,
-	DependencyListTest.class,
-	DependencyListTest_processDep.class
+@Suite.SuiteClasses(value = {
+		BooleanFormulaTest.class,
+		ConfigTests.class,
+		DependenciesTest.class,
+		DepTreeNodeTests.class,
+		ModuleDepInfoTest.class,
+		ModuleDepsTest.class,
+		DepUtilsTest.class,
+		HasNodeTests.class,
+		LayerTest.class,
+		LayerCacheTest.class,
+		LayerBuilderTest.class,
+		ModuleImplTest.class,
+		CSSModuleBuilderTest.class,
+		I18nModuleBuilderTest.class,
+		ExportModuleNameCompilerPassTest.class,
+		HasFilteringCompilerPassTest.class,
+		JavaScriptModuleBuilderTest.class,
+		TxtModuleContentProviderTest.class,
+		RequireExpansionCompilerPassTest.class,
+		AbstractHttpTransportTest.class,
+		AbstractDojoHttpTransportTest.class,
+		AbstractAggregatorImplTest.class,
+		BundleResourceFactoryTests.class,
+		FileResourceTests.class,
+		CacheManagerImplTest.class,
+		BooleanTermTest.class,
+		DependencyListTest.class,
+		DependencyListTest_processDep.class
 })
 public class EverythingSuite { }

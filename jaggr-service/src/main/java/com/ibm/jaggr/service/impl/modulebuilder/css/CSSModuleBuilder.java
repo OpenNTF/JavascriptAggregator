@@ -179,9 +179,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			boolean inlineImages = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME));
 			boolean showFilenames = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
 			StringBuffer sb = new StringBuffer(eyecatcher)
-			  .append(inlineImports ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			  .append(inlineImages ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			  .append(showFilenames ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			.append(inlineImports ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(inlineImages ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(showFilenames ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 			return sb.toString();
 		}
 		@Override
@@ -216,7 +216,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			IResource resource,
 			HttpServletRequest request,
 			List<ICacheKeyGenerator> keyGens)
-	throws IOException {
+					throws IOException {
 
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
 		// whitespace
@@ -274,11 +274,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		while (m.find()) {
 			String text = (m.group(1) != null) ?
 					("url(" + StringUtils.trim(m.group(1)) + ")") :   //$NON-NLS-1$ //$NON-NLS-2$
-					m.group(0);
-			quotedStringReplacements.add(i, text);
-			String replacement = "%%" + QUOTED_STRING_MARKER + (i++) + "__%%"; //$NON-NLS-1$ //$NON-NLS-2$
-			m.appendReplacement(sb, ""); //$NON-NLS-1$
-			sb.append(replacement);
+						m.group(0);
+					quotedStringReplacements.add(i, text);
+					String replacement = "%%" + QUOTED_STRING_MARKER + (i++) + "__%%"; //$NON-NLS-1$ //$NON-NLS-2$
+					m.appendReplacement(sb, ""); //$NON-NLS-1$
+					sb.append(replacement);
 		}
 		m.appendTail(sb);
 		css = sb.toString();
@@ -347,8 +347,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		 * the beginning of the file.
 		 */
 		boolean includePreamble
-				= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
-								&& (options.isDebugMode() || options.isDevelopmentMode());
+		= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
+		&& (options.isDebugMode() || options.isDevelopmentMode());
 		if (includePreamble && path != null && path.length() > 0) {
 			buf.append("/* @import "  + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
@@ -395,9 +395,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 							new InputStreamReader(
 									importRes.getURI().toURL().openStream(),
 									"UTF-8" //$NON-NLS-1$
+									)
 							)
-					)
-			);
+					);
 			importCss = minify(importCss, importRes);
 			// Inline images
 			importCss = inlineImageUrls(req, importCss, importRes);
@@ -458,10 +458,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				}
 				m.appendReplacement(buf, ""); //$NON-NLS-1$
 				buf.append("url(") //$NON-NLS-1$
-					.append(quoted)
-					.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
-					.append(quoted)
-					.append(")"); //$NON-NLS-1$
+				.append(quoted)
+				.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
+				.append(quoted)
+				.append(")"); //$NON-NLS-1$
 			}
 			m.appendTail(buf);
 			css = buf.toString();
@@ -558,13 +558,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			} catch (IOException ex) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.log(
-						Level.WARNING,
-						MessageFormat.format(
-							Messages.CSSModuleBuilder_0,
-							new Object[]{imageUri}
-						),
-						ex
-					);
+							Level.WARNING,
+							MessageFormat.format(
+									Messages.CSSModuleBuilder_0,
+									new Object[]{imageUri}
+									),
+									ex
+							);
 				}
 			} finally {
 				if (in != null) {

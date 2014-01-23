@@ -22,12 +22,12 @@ import com.google.javascript.rhino.Token;
  * Utility methods for traversing Rhino nodes.
  */
 public class NodeUtil {
-	
+
 	/**
 	 * If the specified node represents a has() function call, then return the
 	 * formal parameter of the function call if it is a string literal, and the
 	 * result of the function call is used as a boolean value.
-	 * 
+	 *
 	 * @param cursor
 	 *            the node specifying a has() function call
 	 * @return the feature name (function argument), else null.
@@ -36,14 +36,14 @@ public class NodeUtil {
 		if (cursor.getType() == Token.CALL) {
 			// The node is a function or method call
 			Node name, arg;
-			if ((name = cursor.getFirstChild()) != null && 
-				name.getType() == Token.NAME && 		// named function call
-				name.getString().equals("has") && 		// name is "has" //$NON-NLS-1$
-				(arg = name.getNext()) != null && 		
-				arg.getType() == Token.STRING && 		// first param is a string literal
-				arg.getNext() == null) 					// only one param
+			if ((name = cursor.getFirstChild()) != null &&
+					name.getType() == Token.NAME && 		// named function call
+					name.getString().equals("has") && 		// name is "has" //$NON-NLS-1$
+					(arg = name.getNext()) != null &&
+					arg.getType() == Token.STRING && 		// first param is a string literal
+					arg.getNext() == null) 					// only one param
 			{
-				// Ensure that the result of the has function is treated as a 
+				// Ensure that the result of the has function is treated as a
 				// boolean expression.  This is necessary to avoid problems
 				// with code similar to "if (has("ieVersion") < 6)"
 				Node parent = cursor.getParent();
@@ -57,24 +57,24 @@ public class NodeUtil {
 					// these implicitly coerce the result of the function call
 					// to boolean so we don't need to do anything else
 					break;
-					
+
 				default:
 					// Replacing the function call with a boolean value might not
 					// have the desired effects if the code treats the result of
 					// the function as a non-boolean, so don't do anything.
 					return null;
 				}
-				
+
 				return arg.getString();
 			}
 		}
 		return null;
 	}
-	
+
 	/**
 	 * If the specified node represents a define() function call, then return
 	 * the node for the dependency list, else return null.
-	 * 
+	 *
 	 * @param cursor
 	 *            the node for a define() function call
 	 * @return the dependency list node for the define() function call, else null
@@ -84,7 +84,7 @@ public class NodeUtil {
 			// The node is a function or method call
 			Node name;
 			if ((name = cursor.getFirstChild()) != null && name.getType() == Token.NAME && // named function call
-				name.getString().equals("define")) { // name is "define //$NON-NLS-1$
+					name.getString().equals("define")) { // name is "define //$NON-NLS-1$
 				/*
 				 * This is a define() function call.  There are multiple variants and
 				 * the dependency array can be the first or second parameter.
@@ -100,11 +100,11 @@ public class NodeUtil {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * If the specified node represents a require() function call, then return
 	 * the node for the dependency list, else return null.
-	 * 
+	 *
 	 * @param cursor
 	 *            the node for a require() function call
 	 * @return the dependency list node for the require() function call, else null
@@ -123,7 +123,7 @@ public class NodeUtil {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * If the specified node is for a property named 'deps' and the property is
 	 * a member of the object identified by <code>configVarName</code>, and the
@@ -134,7 +134,7 @@ public class NodeUtil {
 	 * the specified node is for the 'deps' property in
 	 * <code>require.deps = ["foo", "bar"];</code>, then this method will return
 	 * the node for the array. Various flavors of the assignment are supported.
-	 * 
+	 *
 	 * @param cursor
 	 *            the node for the 'deps' property.
 	 * @param configVarName
@@ -146,15 +146,15 @@ public class NodeUtil {
 		if (cursor.getType() == Token.STRING && cursor.getString().equals("deps")) { //$NON-NLS-1$
 			// handle require.deps assignment of array literal
 			Node parent = cursor.getParent(),
-			     previousSibling = parent.getChildBefore(cursor);
-			if (previousSibling != null && 
+					previousSibling = parent.getChildBefore(cursor);
+			if (previousSibling != null &&
 					parent.getType() == Token.GETPROP &&
 					parent.getParent().getType() == Token.ASSIGN &&
-					(previousSibling.getType() == Token.NAME && 
+					(previousSibling.getType() == Token.NAME &&
 					previousSibling.getString().equals(configVarName) ||
 					previousSibling.getType() == Token.GETPROP &&
 					previousSibling.getFirstChild().getNext().getString().equals(configVarName)) &&
-					parent.getNext() != null && 
+					parent.getNext() != null &&
 					parent.getNext().getType() == Token.ARRAYLIT) {
 				// require.deps = [...];
 				return parent.getNext();

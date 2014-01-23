@@ -16,14 +16,12 @@
 
 package com.ibm.jaggr.service.impl.cache;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cache.ICacheManager.CreateCompletionCallback;
 import com.ibm.jaggr.service.test.TestUtils;
 
-import junit.framework.Assert;
+import com.google.common.io.Files;
 
 import org.easymock.EasyMock;
 import org.junit.Before;
@@ -38,11 +36,13 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.regex.Pattern;
 
+import junit.framework.Assert;
+
 public class CacheManagerImplTest {
-	
+
 	private File tmpDir;
 	private IAggregator mockAggregator;
-	
+
 	private static class TestObj implements Serializable {
 		private static final long serialVersionUID = 1L;
 		private final boolean canSerialize;
@@ -56,16 +56,16 @@ public class CacheManagerImplTest {
 				throw new NotSerializableException();
 			}
 		}
-		
-		
+
+
 	}
 
-	@Before 
+	@Before
 	public void setup() throws Exception {
 		tmpDir = Files.createTempDir();
 		mockAggregator = TestUtils.createMockAggregator(null, tmpDir);
 		EasyMock.replay(mockAggregator);
-		
+
 	}
 
 	@Test
@@ -89,7 +89,7 @@ public class CacheManagerImplTest {
 		TestObj cached = (TestObj) is.readObject();
 		is.close();
 		Assert.assertEquals(cached.toString(), "Hello World!");
-		
+
 		// Now try to serialize an object that will throw an exception
 		callbackCalled[0] = false;
 		cacheMgr.externalizeCacheObjectAsync("testObj.", new TestObj("Hello World!", false), new CreateCompletionCallback() {

@@ -37,11 +37,11 @@ class AggregatorExtension  implements IAggregatorExtension {
 	private String contributorId;
 	private Object instance;
 	private Properties attributes;
-	
+
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and
 	 * an {@link IExtension}
-	 * 
+	 *
 	 * @param extension
 	 *            The IExtension object
 	 * @param instance
@@ -57,16 +57,16 @@ class AggregatorExtension  implements IAggregatorExtension {
 		this.attributes = attributes;
 		validate();
 	}
-	
+
 	/**
-	 * Constructs a new AggregatorExtension object from an object instance and 
+	 * Constructs a new AggregatorExtension object from an object instance and
 	 * and the specified extension point id
 	 * @param instance
 	 *            The instantiated object for this extension
 	 * @param attributes
 	 *            The attributes for this extension
 	 * @param extensionPointId
-	 *            the extension point id 
+	 *            the extension point id
 	 * @param uniqueId
 	 *            the extension unique id
 	 */
@@ -78,7 +78,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 		this.attributes = attributes;
 		validate();
 	}
-	
+
 	private void validate() {
 		if (IResourceFactoryExtensionPoint.ID.equals(extensionPointId)) {
 			if (!(instance instanceof IResourceFactory)) {
@@ -115,7 +115,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 			}
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator.ILoadedExtension#getExtensionPointId()
 	 */
@@ -123,7 +123,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 	public String getExtensionPointId() {
 		return extensionPointId;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator.ILoadedExtension#getInstance()
 	 */
@@ -131,7 +131,7 @@ class AggregatorExtension  implements IAggregatorExtension {
 	public Object getInstance() {
 		return instance;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator.ILoadedExtension#getAttribute(java.lang.String)
 	 */

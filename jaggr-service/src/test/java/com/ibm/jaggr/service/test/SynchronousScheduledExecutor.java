@@ -36,32 +36,32 @@ public class SynchronousScheduledExecutor extends ScheduledThreadPoolExecutor {
 	public SynchronousScheduledExecutor() {
 		super(0);
 	}
-    public Future<?> submit(Runnable task) {
-        if (task == null) throw new NullPointerException();
-        RunnableFuture<Object> ftask = newTaskFor(task, null);
-        execute(ftask);
-        return ftask;
-    }
+	public Future<?> submit(Runnable task) {
+		if (task == null) throw new NullPointerException();
+		RunnableFuture<Object> ftask = newTaskFor(task, null);
+		execute(ftask);
+		return ftask;
+	}
 
-    public <T> Future<T> submit(Runnable task, T result) {
-        if (task == null) throw new NullPointerException();
-        RunnableFuture<T> ftask = newTaskFor(task, result);
-        execute(ftask);
-        return ftask;
-    }
+	public <T> Future<T> submit(Runnable task, T result) {
+		if (task == null) throw new NullPointerException();
+		RunnableFuture<T> ftask = newTaskFor(task, result);
+		execute(ftask);
+		return ftask;
+	}
 
-    public <T> Future<T> submit(Callable<T> task) {
-        if (task == null) throw new NullPointerException();
-        RunnableFuture<T> ftask = newTaskFor(task);
-        execute(ftask);
-        return ftask;
-    }
+	public <T> Future<T> submit(Callable<T> task) {
+		if (task == null) throw new NullPointerException();
+		RunnableFuture<T> ftask = newTaskFor(task);
+		execute(ftask);
+		return ftask;
+	}
 
-    public ScheduledFuture<?> schedule(Runnable command,
-            long delay,
-            TimeUnit unit) {
+	public ScheduledFuture<?> schedule(Runnable command,
+			long delay,
+			TimeUnit unit) {
 		if (command == null || unit == null)
-		throw new NullPointerException();
+			throw new NullPointerException();
 		if (delay <= 0) {
 			RunnableScheduledFuture<?> t = decorateTask(command,
 					new ScheduledFutureTask<Boolean>(command, null));
@@ -70,29 +70,29 @@ public class SynchronousScheduledExecutor extends ScheduledThreadPoolExecutor {
 		} else {
 			return super.schedule(command, delay, unit);
 		}
-    }
+	}
 
-    public <V> ScheduledFuture<V> schedule(Callable<V> callable,
-            long delay,
-            TimeUnit unit) {
-    	if (callable == null || unit == null)
-		throw new NullPointerException();
-    	if (delay <= 0) {
+	public <V> ScheduledFuture<V> schedule(Callable<V> callable,
+			long delay,
+			TimeUnit unit) {
+		if (callable == null || unit == null)
+			throw new NullPointerException();
+		if (delay <= 0) {
 			RunnableScheduledFuture<V> t = decorateTask(callable,
-			new ScheduledFutureTask<V>(callable));
+					new ScheduledFutureTask<V>(callable));
 			t.run();
 			return t;
-    	} else {
-    		return super.schedule(callable, delay, unit);
-    	}
-    }
+		} else {
+			return super.schedule(callable, delay, unit);
+		}
+	}
 
-    @Override
+	@Override
 	public void execute(Runnable command) {
 		command.run();
 	}
-    
-    static private class ScheduledFutureTask<V> extends FutureTask<V> implements RunnableScheduledFuture<V> {
+
+	static private class ScheduledFutureTask<V> extends FutureTask<V> implements RunnableScheduledFuture<V> {
 
 		public ScheduledFutureTask(Callable<V> callable) {
 			super(callable);
@@ -101,7 +101,7 @@ public class SynchronousScheduledExecutor extends ScheduledThreadPoolExecutor {
 		public ScheduledFutureTask(Runnable runnable, V result) {
 			super(runnable, result);
 		}
-		
+
 		@Override
 		public long getDelay(TimeUnit unit) {
 			return 0;
@@ -109,9 +109,9 @@ public class SynchronousScheduledExecutor extends ScheduledThreadPoolExecutor {
 
 		@Override
 		public int compareTo(Delayed other) {
-            long d = (getDelay(TimeUnit.NANOSECONDS) -
-                    other.getDelay(TimeUnit.NANOSECONDS));
-          return (d == 0)? 0 : ((d < 0)? -1 : 1);
+			long d = (getDelay(TimeUnit.NANOSECONDS) -
+					other.getDelay(TimeUnit.NANOSECONDS));
+			return (d == 0)? 0 : ((d < 0)? -1 : 1);
 		}
 
 		@Override
@@ -119,7 +119,7 @@ public class SynchronousScheduledExecutor extends ScheduledThreadPoolExecutor {
 			return false;
 		}
 
-    }
+	}
 
 
 }

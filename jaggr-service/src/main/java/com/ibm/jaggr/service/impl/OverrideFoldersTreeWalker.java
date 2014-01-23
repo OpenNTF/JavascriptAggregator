@@ -42,13 +42,13 @@ import java.util.logging.Logger;
  * Walks the directory trees rooted at the override folders specified in the
  * config and determines a last-modified date for the entire set of overrides.
  * <p>
- * If any top level override folder that existed the last time the tree 
- * walker was run no longer exist, then the last-modified time is the 
- * current time. 
+ * If any top level override folder that existed the last time the tree
+ * walker was run no longer exist, then the last-modified time is the
+ * current time.
  */
 public class OverrideFoldersTreeWalker implements Serializable {
 	private static final long serialVersionUID = -5957040347146874129L;
-	
+
 	private static final Logger log = Logger.getLogger(OverrideFoldersTreeWalker.class.getName());
 	private static final String CACHED_OVERRIDES_FILE = "overrides.ser"; //$NON-NLS-1$
 
@@ -65,12 +65,12 @@ public class OverrideFoldersTreeWalker implements Serializable {
 	private final transient IAggregator aggr;
 	private final transient IConfig config;
 	private Collection<URI> overrides = new HashSet<URI>();
-	
+
 	public OverrideFoldersTreeWalker(IAggregator aggr, IConfig config) {
 		this.aggr = aggr;
 		this.config = config;
 	}
-	
+
 	void walkTree() {
 		Collection<URI> uris = new HashSet<URI>();
 		for (IConfig.Location loc : config.getPaths().values()) {
@@ -96,7 +96,7 @@ public class OverrideFoldersTreeWalker implements Serializable {
 					}
 				}
 			}
-		}		
+		}
 		// For each customization directory specified in the config, get the last-modified
 		// time for the directory and its contents.
 		for (URI uri : uris) {
@@ -118,39 +118,39 @@ public class OverrideFoldersTreeWalker implements Serializable {
 		// De-serialize previous results to look for removed folders/resources
 		OverrideFoldersTreeWalker cached = null;
 		File file = new File(aggr.getWorkingDirectory(), CACHED_OVERRIDES_FILE);
-    	try {
-    		ObjectInputStream is = new ObjectInputStream(new FileInputStream(file));
-    		try {
-    			cached = (OverrideFoldersTreeWalker)is.readObject();
-    		} finally {
-    			try { is.close(); } catch (Exception ignore) {}
-    		}
-    	} catch (FileNotFoundException ignore) {
-    		// Not an error
-    	} catch (Exception e) {
-    		if (log.isLoggable(Level.SEVERE))
+		try {
+			ObjectInputStream is = new ObjectInputStream(new FileInputStream(file));
+			try {
+				cached = (OverrideFoldersTreeWalker)is.readObject();
+			} finally {
+				try { is.close(); } catch (Exception ignore) {}
+			}
+		} catch (FileNotFoundException ignore) {
+			// Not an error
+		} catch (Exception e) {
+			if (log.isLoggable(Level.SEVERE))
 				log.log(Level.SEVERE, e.getMessage(), e);
-    	}
-    	if (cached != null) {
-    		// make sure we don't return a time earlier than previous results
-    		lastModified = Math.max(lastModified, cached.lastModified);
-    		lastModifiedJS = Math.max(lastModifiedJS, cached.lastModifiedJS);
-    		
-    		long now = new Date().getTime();
-    		// Look for missing (deleted) folders/resources
-    		for (URI override : cached.overrides) {
-    			if (!overrides.contains(override)) {
-    				// previously detected folder/resource has been removed.
-    				// Set last modified times to current time
-    				lastModified = lastModifiedJS = now;
-    			}
-    		}
-    	}
-    	// Serialize new results if changed
-    	if (cached == null || 
-    			!overrides.equals(cached.overrides) || 
-    			lastModified != cached.lastModified || 
-    			lastModifiedJS != cached.lastModifiedJS) {
+		}
+		if (cached != null) {
+			// make sure we don't return a time earlier than previous results
+			lastModified = Math.max(lastModified, cached.lastModified);
+			lastModifiedJS = Math.max(lastModifiedJS, cached.lastModifiedJS);
+
+			long now = new Date().getTime();
+			// Look for missing (deleted) folders/resources
+			for (URI override : cached.overrides) {
+				if (!overrides.contains(override)) {
+					// previously detected folder/resource has been removed.
+					// Set last modified times to current time
+					lastModified = lastModifiedJS = now;
+				}
+			}
+		}
+		// Serialize new results if changed
+		if (cached == null ||
+				!overrides.equals(cached.overrides) ||
+				lastModified != cached.lastModified ||
+				lastModifiedJS != cached.lastModifiedJS) {
 			try {
 				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
 				try {
@@ -162,7 +162,7 @@ public class OverrideFoldersTreeWalker implements Serializable {
 				if (log.isLoggable(Level.SEVERE))
 					log.log(Level.SEVERE, e.getMessage(), e);
 			}
-    	}
+		}
 	}
 
 	private class LastModChecker implements IResourceVisitor {
@@ -179,6 +179,6 @@ public class OverrideFoldersTreeWalker implements Serializable {
 			}
 			return true;
 		}
-		
+
 	}
 }

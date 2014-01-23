@@ -29,33 +29,31 @@ import javax.servlet.http.HttpServletRequest;
 
 public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	private static final long serialVersionUID = -8488089828754517200L;
-	
+
 	private static final String eyecatcher = "i18n"; //$NON-NLS-1$
 
 	private final Collection<String> availableLocales;
 	private final boolean provisional;
-	
+
 	/**
 	 * Element constructor.
-	 * 
+	 *
 	 * @param availableLocales
 	 *            Set of available locales that this cache key generator depends on.
 	 *            The key output by this key generator will contain only those
 	 *            locales from the request that are included in
 	 *            {@code availableLocales}.  If the value is null, then all
-	 *            the locales specified in the request are included in the 
+	 *            the locales specified in the request are included in the
 	 *            generated cache key.
 	 * @param provisional
 	 *            True if this is a provisional cache key generator.
 	 */
-	public I18nCacheKeyGenerator(
-			Collection<String> availableLocales,
-			boolean provisional) {
-		this.availableLocales = availableLocales != null ? 
+	public I18nCacheKeyGenerator(Collection<String> availableLocales, boolean provisional) {
+		this.availableLocales = availableLocales != null ?
 				Collections.unmodifiableCollection(new HashSet<String>(availableLocales)) : null;
-		this.provisional = provisional;
+				this.provisional = provisional;
 	}
-	
+
 	@Override
 	public String generateKey(HttpServletRequest request) {
 		StringBuffer sb = new StringBuffer();
@@ -72,18 +70,18 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 					String country = (a.length > 1) ? a[1].toLowerCase() : ""; //$NON-NLS-1$
 					String varient = (a.length > 2) ? a[2].toLowerCase() : ""; //$NON-NLS-1$
 					if (
-							language.length() > 0 && 
+							language.length() > 0 &&
 							country.length() > 0 &&
-							varient.length() > 0 && 
+							varient.length() > 0 &&
 							availableLocales.contains(language+"-"+country+"-"+varient)) { //$NON-NLS-1$ //$NON-NLS-2$
 						sb.append(i++ > 0 ? "," : "").append(language+"-"+country+"-"+varient); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 					} else if (
-							language.length() > 0 && 
-							country.length() > 0 && 
+							language.length() > 0 &&
+							country.length() > 0 &&
 							availableLocales.contains(language+"-"+country)) { //$NON-NLS-1$
 						sb.append(i++ > 0 ? "," : "").append(language+"-"+country); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					} else if (
-							language.length() > 0 && 
+							language.length() > 0 &&
 							availableLocales.contains(language)) {
 						sb.append(i++ > 0 ? "," : "").append(language); //$NON-NLS-1$ //$NON-NLS-2$
 					}
@@ -92,7 +90,7 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 		}
 		return sb.length() > 0 ? sb.insert(0, eyecatcher+"{").append("}").toString() : ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
-	
+
 	@Override
 	public boolean isProvisional() {
 		return provisional;
@@ -116,13 +114,13 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 		Collection<String> combined = new HashSet<String>();
 		if (availableLocales != null) {
 			combined.addAll(other.availableLocales);
-		} 
+		}
 		if (other.availableLocales != null) {
 			combined.addAll(other.availableLocales);
 		}
 		return new I18nCacheKeyGenerator(combined, false);
 	}
-	
+
 	@Override
 	public String toString() {
 		// Map features into sorted set so we get predictable ordering of
@@ -140,22 +138,21 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(HttpServletRequest request) {
 		return null;
 	}
-	
+
 	public Collection<String> getLocales() {
 		return availableLocales;
 	}
 
 	@Override
 	public boolean equals(Object other) {
-		return other != null && getClass().equals(other.getClass()) && 
+		return other != null && getClass().equals(other.getClass()) &&
 				provisional == ((I18nCacheKeyGenerator)other).provisional &&
 				(
-					availableLocales != null && availableLocales.equals(((I18nCacheKeyGenerator)other).availableLocales) ||
-					availableLocales == null && ((I18nCacheKeyGenerator)other).availableLocales == null
+						availableLocales != null && availableLocales.equals(((I18nCacheKeyGenerator)other).availableLocales) ||
+						availableLocales == null && ((I18nCacheKeyGenerator)other).availableLocales == null
 				);
-		
 	}
-	
+
 	@Override
 	public int hashCode() {
 		int result = getClass().hashCode();

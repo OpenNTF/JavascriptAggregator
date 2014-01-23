@@ -27,7 +27,7 @@ import java.util.logging.Logger;
 public class StringUtil {
 
 	private static final Logger log = Logger.getLogger(StringUtil.class.getName());
-	
+
 	static public String escapeForJavaScript(String in) {
 		if (in == null) {
 			return null;

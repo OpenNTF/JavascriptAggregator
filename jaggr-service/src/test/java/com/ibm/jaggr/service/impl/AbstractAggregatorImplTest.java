@@ -15,10 +15,10 @@
  */
 package com.ibm.jaggr.service.impl;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.service.test.TestUtils;
+
+import com.google.common.io.Files;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -63,7 +63,7 @@ public class AbstractAggregatorImplTest {
 			Assert.assertEquals(new File(defaultDir, "tester/69"), result);
 			Assert.assertTrue(new File(defaultDir, "tester/69").exists());
 			EasyMock.verify(mockBundle);
-			
+
 			// Change bundle id and make sure new bundle dir is create and old one is deleted
 			EasyMock.reset(mockBundle);
 			EasyMock.expect(mockBundle.getBundleId()).andReturn((long)70).times(2);
@@ -72,7 +72,7 @@ public class AbstractAggregatorImplTest {
 			Assert.assertEquals(new File(defaultDir, "tester/70"), result);
 			Assert.assertTrue(new File(defaultDir, "tester/70").exists());
 			Assert.assertFalse(new File(defaultDir, "tester/69").exists());
-			
+
 			// Make sure that cache directory specified in options is honored
 			EasyMock.verify(mockOptions);
 			EasyMock.reset(mockOptions);

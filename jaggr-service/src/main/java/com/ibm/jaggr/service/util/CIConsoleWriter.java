@@ -26,7 +26,7 @@ public class CIConsoleWriter implements ConsoleWriter {
 	public CIConsoleWriter(CommandInterpreter ci) {
 		this.ci = ci;
 	}
-	
+
 	@Override
 	public void println(String msg) {
 		ci.println(msg);
@@ -36,5 +36,5 @@ public class CIConsoleWriter implements ConsoleWriter {
 	public void print(String msg) {
 		ci.print(msg);
 	}
-	
+
 }

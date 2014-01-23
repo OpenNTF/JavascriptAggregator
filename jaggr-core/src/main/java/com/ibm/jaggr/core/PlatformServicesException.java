@@ -22,14 +22,14 @@ package com.ibm.jaggr.core;
 public class PlatformServicesException extends Exception {
 
 	private static final long serialVersionUID = 107124091694842289L;
-	
+
 	public PlatformServicesException(){
 		super();
 	}
 
 	/**
 	 * Constructs a new exception with the specified message.
-	 * 
+	 *
 	 * @param message
 	 *            a <code>String</code> specifying the text of the exception
 	 *            message
@@ -43,7 +43,7 @@ public class PlatformServicesException extends Exception {
 	 * and include a message about the "root cause" exception that interfered
 	 * with its normal operation. The exception's message is based on the
 	 * localized message of the underlying exception.
-	 * 
+	 *
 	 * @param rootCause
 	 *            the <code>Throwable</code> exception that interfered with the
 	 *            <code>IPlatformServices</code>'s normal operation, making this exception necessary
@@ -56,7 +56,7 @@ public class PlatformServicesException extends Exception {
 	 * Constructs a new exception when the <code>IPlatformServices</code> needs to throw an exception
 	 * and include a message about the "root cause" exception that interfered
 	 * with its normal operation, including a description message.
-	 * 
+	 *
 	 * @param message
 	 *            a <code>String</code> specifying the text of the exception
 	 *            message

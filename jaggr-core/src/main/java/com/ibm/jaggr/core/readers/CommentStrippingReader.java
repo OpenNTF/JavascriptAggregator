@@ -27,7 +27,7 @@ import java.io.Reader;
  * In particular, it doesn't support JavaScript regular expressions, and
  * may improperly recognize comment start and end tokens inside regular
  * expressions.  It does the job for what we need, though, which is removing
- * comments from CSS and server-side JSON files.  
+ * comments from CSS and server-side JSON files.
  */
 public class CommentStrippingReader extends Reader {
 	PushbackReader reader;
@@ -35,7 +35,7 @@ public class CommentStrippingReader extends Reader {
 	boolean inSQ = false;
 	boolean inDQ = false;
 	int ch = ' ';
-	
+
 	public CommentStrippingReader(Reader reader) {
 		this.reader = new PushbackReader(reader);
 	}
@@ -51,14 +51,14 @@ public class CommentStrippingReader extends Reader {
 			if (ch == -1) {
 				return ch;
 			}
-			
+
 			// Peek at the next character in the stream.
 			int chNext = reader.read();
 			if (chNext != -1) {
 				// Can't push back eof
 				reader.unread(chNext);
 			}
-			
+
 			if (inSQ) {
 				if (ch == '\'' && chPrev != '\\') {
 					inSQ = false;
@@ -75,43 +75,43 @@ public class CommentStrippingReader extends Reader {
 			inSQ = ch == '\'';
 
 			if (ch == '/') {
-	            if (chNext == '*') {
-	            	reader.read();
-	            	// consume characters until the end of the block
-	            	while (true) {
-	            		ch = reader.read();
-	            		if (ch == -1) {
-	            			break;
-	            		}
-	            		if (ch != '*') {
-	            			continue;
-	            		}
-	            		ch = reader.read();
-	            		if (ch == '/') {
-	            			break;
-	            		}
-	            		if (ch != -1) {
-	            			// can't push back eof
-	            			reader.unread(ch);
-	            		} 
-	            	}
-	                continue;
-	            }
-	            if (chNext == '/') {
-	            	reader.read();
-	            	// consume characters until the end of the line
-	            	while (true) {
-	            		ch = reader.read();
-	            		if (ch == '\n' || ch == '\r' || ch == -1) {
-	            			break;
-	            		}
-	            	}
-	            }
+				if (chNext == '*') {
+					reader.read();
+					// consume characters until the end of the block
+					while (true) {
+						ch = reader.read();
+						if (ch == -1) {
+							break;
+						}
+						if (ch != '*') {
+							continue;
+						}
+						ch = reader.read();
+						if (ch == '/') {
+							break;
+						}
+						if (ch != -1) {
+							// can't push back eof
+							reader.unread(ch);
+						}
+					}
+					continue;
+				}
+				if (chNext == '/') {
+					reader.read();
+					// consume characters until the end of the line
+					while (true) {
+						ch = reader.read();
+						if (ch == '\n' || ch == '\r' || ch == -1) {
+							break;
+						}
+					}
+				}
 			}
-	        return ch;
+			return ch;
 		}
 	}
-	
+
 	@Override
 	public int read(char[] cbuf, int off, int len) throws IOException {
 		int i, ch = 0;
@@ -129,11 +129,11 @@ public class CommentStrippingReader extends Reader {
 	public int read(char[] cbuf) throws IOException {
 		return read(cbuf, 0, cbuf.length);
 	}
-	
+
 	@Override
 	public void close() throws IOException {
 		closed = true;
 		reader.close();
-		
+
 	}
 }

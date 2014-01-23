@@ -53,9 +53,9 @@ import java.util.logging.Logger;
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
-    
-    private Object configUpdateListener;
-    private Object optionsUpdateListener;
+
+	private Object configUpdateListener;
+	private Object optionsUpdateListener;
 	private Object shutdownListener;
 	private String servletName;
 	private long depsLastModified = -1;
@@ -67,50 +67,50 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	private String cacheBust = null;
 	private boolean initFailed = false;
 	private Map<String, DepTreeNode.DependencyInfo> depMap;
-	
+
 	private IAggregator aggregator = null;
 	private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
-	
+
 	public DependenciesImpl(IAggregator aggregator, long stamp) {
-		Hashtable<String, String> dict; 		
+		Hashtable<String, String> dict;
 		this.aggregator = aggregator;
 		this.initStamp = stamp;
 		servletName = aggregator.getName();
 		initialized = new CountDownLatch(1);
-		
+
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		shutdownListener = aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);	
-		
+		shutdownListener = aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
+
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		configUpdateListener= aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
-		
+
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		optionsUpdateListener= aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
 
-			if (aggregator.getConfig() != null) {
-				configLoaded(aggregator.getConfig(), 1);
-			}
-			
-			if (aggregator.getOptions() != null) {
-				optionsUpdated(aggregator.getOptions(), 1);
-			}
+		if (aggregator.getConfig() != null) {
+			configLoaded(aggregator.getConfig(), 1);
 		}
+
+		if (aggregator.getOptions() != null) {
+			optionsUpdated(aggregator.getOptions(), 1);
+		}
+	}
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		this.aggregator = null;
 		aggregator.getPlatformServices().unRegisterService(configUpdateListener);
 		aggregator.getPlatformServices().unRegisterService(optionsUpdateListener);
 		aggregator.getPlatformServices().unRegisterService(shutdownListener);
-		
+
 	}
 
 	protected IAggregator getAggregator() {
 		return aggregator;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.deps.IDependencies#validateDeps(boolean)
 	 */
@@ -130,7 +130,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	public synchronized void configLoaded(IConfig config, long sequence) {
 		String previousRawConfig = rawConfig;
 		rawConfig = config.toString();
-		
+
 		if (previousRawConfig == null || !previousRawConfig.equals(rawConfig)) {
 			processDeps(validate, false, sequence);
 			validate = false;
@@ -150,7 +150,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 	}
 
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.deps.IDependencies#getLastModified()
 	 */
@@ -158,7 +158,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	public long getLastModified() {
 		return depsLastModified;
 	}
-	
+
 	private synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
 		if (aggregator.getConfig() == null || processingDeps) {
 			return;
@@ -175,13 +175,13 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 					// initialize the console service for the worker thread.
 					ConsoleService workerCs = new ConsoleService(cs);
 					try {
-						// Map of path names to URIs for locations to be scanned for js files 
+						// Map of path names to URIs for locations to be scanned for js files
 						final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> packageURIs = new LinkedHashMap<String, URI>(); 
+						final Map<String, URI> packageURIs = new LinkedHashMap<String, URI>();
 						final Map<String, URI> pathURIs = new LinkedHashMap<String, URI>();
 						final Map<String, URI> packageOverrideURIs = new LinkedHashMap<String, URI>();
 						final Map<String, URI> pathOverrideURIs = new LinkedHashMap<String, URI>();
-						
+
 						// Add top level files and folders in the location specified by baseUrl
 						// unless disabled by servlet init-param
 						IConfig config = getAggregator().getConfig();
@@ -226,14 +226,14 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 								pathOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
 							}
 						}
-						
+
 						Collection<URI> paths = new LinkedList<URI>();
 						paths.addAll(baseURIs.values());
 						paths.addAll(packageURIs.values());
 						paths.addAll(pathURIs.values());
 						paths.addAll(packageOverrideURIs.values());
 						paths.addAll(pathOverrideURIs.values());
-						
+
 						boolean cleanCache = clean;
 						while (true) {
 							DepTree deps = null;
@@ -242,9 +242,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 										paths,
 										getAggregator(),
 										initStamp,
-										cleanCache, 
-										validate); 
-						
+										cleanCache,
+										validate);
+
 								DepTreeRoot depTree = new DepTreeRoot(config);
 								deps.mapDependencies(depTree, baseURIs);
 								deps.mapDependencies(depTree, packageURIs);
@@ -267,14 +267,14 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 								throw e;	// rethrow the exception
 							}
 							break;
-						}						
+						}
 						// Notify listeners that dependencies have been updated
 						Object[] refs = null;
-						
+
 						refs = aggregator.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
-						
+
 						if (refs != null) {
-							for (Object ref : refs) {								
+							for (Object ref : refs) {
 								IDependenciesListener listener = (IDependenciesListener)(aggregator.getPlatformServices().getService(ref));
 								if (listener != null) {
 									try {
@@ -305,7 +305,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			});
 			// Wait for the worker thread to obtain the read lock.  We do this so that
 			// this thread can safely determine when the worker thread has finished by
-			// calling getExpandedDependencies() and waiting for it to return (or 
+			// calling getExpandedDependencies() and waiting for it to return (or
 			// not throw ProcessingDependenciesException when in development mode).
 			int maxWait = 50;	// Max wait = 5 seconds
 			while (processingDeps && !processDepsThreadStarted.get() && maxWait-- > 0) {
@@ -345,7 +345,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 		return result;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.deps.IDependencies#getDependentFeatures()
 	 */
@@ -369,7 +369,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 		return result;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.deps.IDependencies#getDependencyNames()
 	 */
@@ -410,7 +410,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			rwl.readLock().lock();
 		}
 	}
-	
+
 	private void releaseReadLock() {
 		rwl.readLock().unlock();
 	}

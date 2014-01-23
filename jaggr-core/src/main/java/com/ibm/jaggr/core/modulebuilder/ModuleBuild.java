@@ -43,7 +43,7 @@ public final class ModuleBuild {
 	/**
 	 * Convenience constructor utilizing a null cache key generator and no
 	 * error.
-	 * 
+	 *
 	 * @param buildOutput
 	 *            The built output for the module
 	 */
@@ -53,7 +53,7 @@ public final class ModuleBuild {
 
 	/**
 	 * Full arguments constructor
-	 * 
+	 *
 	 * @param buildOutput
 	 *            The build output for the module
 	 * @param keyGens
@@ -79,7 +79,7 @@ public final class ModuleBuild {
 	/**
 	 * Returns the built (processed and minified) output for this request,
 	 * as an AMD module string.
-	 * 
+	 *
 	 * @return the build outupt
 	 */
 	public Object getBuildOutput() {
@@ -91,7 +91,7 @@ public final class ModuleBuild {
 	 * required if
 	 * {@link IModuleBuilder#getCacheKeyGenerators(IAggregator)}
 	 * returned a provisional cache key generator for the same request.
-	 * 
+	 *
 	 * @return The cache key generator
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators() {
@@ -101,19 +101,19 @@ public final class ModuleBuild {
 	/**
 	 * Returns true if this build is an error response. Error responses are
 	 * not cached, either on the server or on the client.
-	 * 
+	 *
 	 * @return True if a build error occurred
 	 */
 	public boolean isError() {
 		return error;
 	}
-	
+
 	/**
 	 * Adds the specified module to the list of before modules.
 	 * <p>
 	 * Before modules are included in the layer build that contains this
 	 * module build ahead of this module build.
-	 * 
+	 *
 	 * @param module The module to add to the before list
 	 */
 	public void addBefore(IModule module) {
@@ -128,7 +128,7 @@ public final class ModuleBuild {
 	 * <p>
 	 * After modules are included in the layer build that contains this
 	 * module build following this module build.
-	 * 
+	 *
 	 * @param module The module to add to the after list
 	 */
 	public void addAfter(IModule module) {
@@ -137,21 +137,21 @@ public final class ModuleBuild {
 		}
 		after.add(module);
 	}
-	
+
 	/**
-	 * Returns the list of additional modules that should be included ahead 
+	 * Returns the list of additional modules that should be included ahead
 	 * of this module build in the layer
-	 * 
+	 *
 	 * @return The list of before modules.
 	 */
 	public List<IModule> getBefore() {
 		return before == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(before);
 	}
-	
+
 	/**
-	 * Returns the list of additional modules that should be included following 
+	 * Returns the list of additional modules that should be included following
 	 * this module build in the layer
-	 * 
+	 *
 	 * @return The list of after modules.
 	 */
 	public List<IModule> getAfter() {

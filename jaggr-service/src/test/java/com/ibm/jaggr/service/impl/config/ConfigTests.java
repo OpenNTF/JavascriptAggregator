@@ -16,8 +16,6 @@
 
 package com.ibm.jaggr.service.impl.config;
 
-import com.google.common.io.Files;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
@@ -27,6 +25,8 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestUtils;
+
+import com.google.common.io.Files;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -53,18 +53,18 @@ import java.util.Map;
 import java.util.Set;
 
 public class ConfigTests {
-	
+
 	File tmpFile = null;
 	URI tmpDir = null;
 	IAggregator mockAggregator;
 
-	@Before 
+	@Before
 	public void setup() throws Exception {
 		tmpFile = Files.createTempDir();
 		tmpDir = tmpFile.toURI();
 		mockAggregator = TestUtils.createMockAggregator();
 		EasyMock.replay(mockAggregator);
-		
+
 	}
 	@After
 	public void tearDown() throws Exception {
@@ -78,19 +78,19 @@ public class ConfigTests {
 	public void normalizePaths() throws IOException, URISyntaxException {
 		String ref = "aaa/bbb/ccc/ddd";
 		String[] paths = new String[]{
-			"./yyy",
-			".././zzz",
-			"../../..//xxx",
-			"../../../../yyy",
-			"ddd/eee",
-			"plugin!aaa/bbb",
-			"plugin!./aaa/bbb",
-			"plugin!../aaa/bbb",
-			"./plugin!aaa/bbb",
-			"../plugin!aaa/bbb",
-			"../../has!dojo-firebug?../../with_firebug:../../withot_firebug",
-			"abc/123/.",
-			"dojo/has!vml?dojo/text!./templates/spinner-vml.html:dojo/text!./templates/spinner-canvas.html",
+				"./yyy",
+				".././zzz",
+				"../../..//xxx",
+				"../../../../yyy",
+				"ddd/eee",
+				"plugin!aaa/bbb",
+				"plugin!./aaa/bbb",
+				"plugin!../aaa/bbb",
+				"./plugin!aaa/bbb",
+				"../plugin!aaa/bbb",
+				"../../has!dojo-firebug?../../with_firebug:../../withot_firebug",
+				"abc/123/.",
+				"dojo/has!vml?dojo/text!./templates/spinner-vml.html:dojo/text!./templates/spinner-canvas.html",
 		};
 		String[] result = PathUtil.normalizePaths(ref, paths);
 		Assert.assertEquals(result[0], "aaa/bbb/ccc/ddd/yyy");
@@ -133,7 +133,7 @@ public class ConfigTests {
 			exceptionCaught = true;
 		}
 		Assert.assertTrue(exceptionCaught);
-		
+
 		exceptionCaught = false;
 		try {
 			result = PathUtil.normalizePaths(ref, new String[]{"/plugin!aaa/bbb"});
@@ -141,7 +141,7 @@ public class ConfigTests {
 			exceptionCaught = true;
 		}
 		Assert.assertTrue(exceptionCaught);
-		
+
 		ref = "/aaa/bbb";
 		paths = new String[] {
 				"ccc",
@@ -164,9 +164,9 @@ public class ConfigTests {
 			exceptionCaught = true;
 		}
 		Assert.assertTrue(exceptionCaught);
-		
+
 	}
-	
+
 	@Test
 	public void testVariableSubstitution() throws Exception {
 		mockAggregator = new MockAggregatorWrapper() {
@@ -191,7 +191,7 @@ public class ConfigTests {
 		loc = cfg.getPaths().get("subst2");
 		Assert.assertEquals("file:/c:/substdir/bar", loc.getPrimary().toString());
 	}
-	
+
 	@Test
 	public void testJsVars() throws Exception {
 		// Test to make sure the shared scope options and initParams variables are working
@@ -200,8 +200,8 @@ public class ConfigTests {
 		initParams.add(new InitParams.InitParam("param1", "param1Value2"));
 		initParams.add(new InitParams.InitParam("param2", "param2Value"));
 		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
-		
-		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);		
+
+		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);
 		final Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("foo", "foobar");
 		EasyMock.expect(mockPlatformServices.getHeaders()).andAnswer(new IAnswer<Dictionary<String, String>>() {
@@ -209,8 +209,8 @@ public class ConfigTests {
 				return dict;
 			}
 		}).anyTimes();
-		EasyMock.replay(mockPlatformServices);		
-		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();	
+		EasyMock.replay(mockPlatformServices);
+		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
 		EasyMock.replay(mockAggregator);
 		mockAggregator.getOptions().setOption("foo", "bar");
 		String config = "{cacheBust:(function(){console.log(options.foo);console.info(initParams.param1[0]);console.warn(initParams.param1[1]);console.error(initParams.param2[0]);return headers.foo;})()}";
@@ -229,24 +229,24 @@ public class ConfigTests {
 		Assert.assertEquals("warn: param1Value2", logged.get(2));
 		Assert.assertEquals("error: param2Value", logged.get(3));
 	}
-	
+
 	@Test
 	public void testAliasResolver() throws Exception {
 		Features features = new Features();
 		Set<String> dependentFeatures = new HashSet<String>();
-		
+
 		// Test simple string matcher resolver
 		String config = "{aliases:[['foo/test', 'bar/test']]}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		String result = cfg.resolveAliases("foo/test", features, dependentFeatures, null);
 		Assert.assertEquals("bar/test", result);
-		
+
 		// Test regular expression matcher with string replacement
 		config = "{aliases:[[/\\/bar\\//, '/foo/']]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		result = cfg.resolveAliases("p1/bar/p2/bar/test", features, dependentFeatures, null);
 		Assert.assertEquals("p1/foo/p2/foo/test", result);
-		
+
 		// Test regular expression matcher with replacement function conditioned on feature test
 		config = "{aliases:[[/\\/foo\\//, function(s){return '/'+has('test')+'/'}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
@@ -255,35 +255,35 @@ public class ConfigTests {
 		Assert.assertEquals("p1/true/p2", result);
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("test", dependentFeatures.iterator().next());
-		
+
 		features.put("test", false);
 		dependentFeatures.clear();
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/false/p2", result);
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("test", dependentFeatures.iterator().next());
-		
+
 		features.remove("test");
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/undefined/p2", result);
 		Assert.assertEquals(1, dependentFeatures.size());
 		Assert.assertEquals("test", dependentFeatures.iterator().next());
-		
-		// Test regular expression with string based group replacement 
+
+		// Test regular expression with string based group replacement
 		dependentFeatures.clear();
 		config = "{aliases:[[/^(.*)\\/foo\\/(.*)$/, '$2/bar/$1']]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p2/bar/p1", result);
 		Assert.assertEquals(0, dependentFeatures.size());
-		
+
 		// Test regular expression with function based group replacement
 		config = "{aliases:[[/^(.*)\\/foo\\/(.*)$/, function(a,b,c){return c+'/bar/'+b;}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p2/bar/p1", result);
 		Assert.assertEquals(0, dependentFeatures.size());
-		
+
 		// Test regular expression with replacement function conditioned on options value
 		IOptions options = mockAggregator.getOptions();
 		options.setOption("developmentMode", "false");
@@ -295,7 +295,7 @@ public class ConfigTests {
 		cfg.optionsUpdated(options, 2);
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p2/bar/p1", result);
-		
+
 		// Test regular expression flags
 		config = "{aliases:[[/^(.*)\\/Foo\\/(.*)$/, function(a,b,c){return b+'/bar/'+c;}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
@@ -311,9 +311,9 @@ public class ConfigTests {
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/foo/p2", result);
-		
+
 	}
-	
+
 	@Test
 	public void testGetBase() throws Exception {
 		// Test path without override
@@ -322,31 +322,31 @@ public class ConfigTests {
 		IConfig.Location loc = cfg.getBase();
 		Assert.assertEquals(tmpDir, loc.getPrimary());
 		Assert.assertNull(loc.getOverride());
-		
+
 		config = "{baseUrl:'WebContent'}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getBase();
 		Assert.assertEquals(tmpDir.resolve("WebContent/"), loc.getPrimary());
 		Assert.assertNull(loc.getOverride());
-		
+
 		config = "{baseUrl:['namedbundleresource://com.ibm.config.test/resources']}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getBase();
 		Assert.assertEquals("namedbundleresource://com.ibm.config.test/resources/", loc.getPrimary().toString());
 		Assert.assertNull(loc.getOverride());
-		
+
 		config = "{baseUrl:['WebContent/', 'file:/e:/overrides']}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getBase();
 		Assert.assertEquals(tmpDir.resolve("WebContent/"), loc.getPrimary());
 		Assert.assertEquals("file:/e:/overrides/", loc.getOverride().toString());
-		
+
 		config = "{baseUrl:['../primary', '.']}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getBase();
 		Assert.assertEquals(tmpDir.resolve("../primary/"), loc.getPrimary());
 		Assert.assertEquals(tmpDir, loc.getOverride());
-		
+
 		config = "{baseUrl:['WebContent/', '../override/', 'extra']}";
 		boolean exceptionCaught = false;
 		try {
@@ -356,7 +356,7 @@ public class ConfigTests {
 		}
 		Assert.assertTrue(exceptionCaught);
 	}
-	
+
 	@Test
 	public void testGetPaths() throws Exception {
 		// Test path without override
@@ -365,19 +365,19 @@ public class ConfigTests {
 		IConfig.Location loc = cfg.getPaths().get("foo");
 		Assert.assertEquals(tmpDir.resolve("fooPath"), loc.getPrimary());
 		Assert.assertNull(loc.getOverride());
-		
+
 		config = "{paths:{abspath:'file:/c:/temp/resources'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getPaths().get("abspath");
 		Assert.assertEquals("file:/c:/temp/resources", loc.getPrimary().toString());
 		Assert.assertNull(loc.getOverride());
-		
+
 		config = "{paths:{foo:['fooPath', 'barPath']}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getPaths().get("foo");
 		Assert.assertEquals(tmpDir.resolve("fooPath"), loc.getPrimary());
 		Assert.assertEquals(tmpDir.resolve("barPath"), loc.getOverride());
-		
+
 		config = "{paths:{foo:['fooPath', 'barPath', 'extraPath']}}";
 		boolean exceptionThrown = false;
 		try {
@@ -386,21 +386,21 @@ public class ConfigTests {
 			exceptionThrown = true;
 		}
 		Assert.assertTrue(exceptionThrown);
-		
+
 		// test resolving paths against base
 		config = "{baseUrl:'file:/c:/primary',paths:{foo:'fooPath'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getPaths().get("foo");
 		Assert.assertEquals("file:/c:/primary/fooPath", loc.getPrimary().toString());
 		Assert.assertNull(loc.getOverride());
-		
-		
+
+
 		config = "{baseUrl:'file:/c:/primary',paths:{foo:['fooPath', 'fooPathOverride']}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getPaths().get("foo");
 		Assert.assertEquals("file:/c:/primary/fooPath", loc.getPrimary().toString());
 		Assert.assertEquals("file:/c:/primary/fooPathOverride", loc.getOverride().toString());
-		
+
 		config = "{baseUrl:['file:/c:/primary', 'file:/c:/override'],paths:{foo:['fooPath'], bar:['barPath', 'barPathOverride']}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		loc = cfg.getPaths().get("foo");
@@ -410,7 +410,7 @@ public class ConfigTests {
 		Assert.assertEquals("file:/c:/primary/barPath", loc.getPrimary().toString());
 		Assert.assertEquals("file:/c:/override/barPathOverride", loc.getOverride().toString());
 	}
-	
+
 	@Test
 	public void testGetPackages() throws Exception {
 		// Test path without override
@@ -432,7 +432,7 @@ public class ConfigTests {
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		pkg = cfg.getPackages().get("foo");
 		Assert.assertEquals("foo/fooMain", pkg.getMain());
-		
+
 		config = "{packages:[{name:'foo', location:['fooPkgLoc', 'fooOverride']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		pkg = cfg.getPackages().get("foo");
@@ -456,14 +456,14 @@ public class ConfigTests {
 		loc = pkg.getLocation();
 		Assert.assertEquals("file:/c:/primary/fooPath/", loc.getPrimary().toString());
 		Assert.assertNull(loc.getOverride());
-		
+
 		config = "{baseUrl:'file:/c:/primary', packages:[{name:'foo', location:['fooPath', 'barPath']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		pkg = cfg.getPackages().get("foo");
 		loc = pkg.getLocation();
 		Assert.assertEquals("file:/c:/primary/fooPath/", loc.getPrimary().toString());
 		Assert.assertEquals("file:/c:/primary/barPath/", loc.getOverride().toString());
-		
+
 		config = "{baseUrl:['file:/c:/primary', 'file:/c:/override'], packages:[{name:'foo', location:['fooPath\']}, {name:'bar', location:['barPath', 'barPathOverride\']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		pkg = cfg.getPackages().get("foo");
@@ -475,7 +475,7 @@ public class ConfigTests {
 		Assert.assertEquals("file:/c:/primary/barPath/", loc.getPrimary().toString());
 		Assert.assertEquals("file:/c:/override/barPathOverride/", loc.getOverride().toString());
 	}
-	
+
 	@Test
 	public void testLocateModuleResource() throws Exception {
 
@@ -484,8 +484,8 @@ public class ConfigTests {
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		URI uri = cfg.locateModuleResource("fooPath/foo");
 		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
-		
-		
+
+
 		config = "{baseUrl:['.', '" + tmpDir.resolve("override") + "']}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		uri = cfg.locateModuleResource("fooPath/foo");
@@ -495,16 +495,16 @@ public class ConfigTests {
 			uri = cfg.locateModuleResource("fooPath/foo");
 			Assert.assertEquals(tmpDir.resolve("override/fooPath/foo.js"), uri);
 			config = "{paths:{'foo':['fooPath/foo', 'override/fooPath/foo']}}";
-			
+
 			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 			uri = cfg.locateModuleResource("foo");
 			Assert.assertEquals(tmpDir.resolve("override/fooPath/foo.js"), uri);
-		} finally {	
+		} finally {
 			TestUtils.deleteRecursively(tmpFile);
 		}
 		uri = cfg.locateModuleResource("foo");
 		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
-		
+
 		// test that path definitions override package locations
 		config = "{packages:[{name:'foo', location:'fooPath1'}], paths:{foo:'fooPath2'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
@@ -512,7 +512,7 @@ public class ConfigTests {
 		Assert.assertEquals(tmpDir.resolve("fooPath2/bar.js"), uri);
 		uri = cfg.locateModuleResource("foo");
 		Assert.assertEquals(tmpDir.resolve("fooPath2.js"), uri);
-		
+
 		config = "{packages:[{name:'foo', location:'fooPath'}], paths:{bar:'barPath'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		uri = cfg.locateModuleResource("foo/bar");
@@ -523,7 +523,7 @@ public class ConfigTests {
 		Assert.assertEquals(tmpDir.resolve("barPath.js"), uri);
 		uri = cfg.locateModuleResource("bar/bar");
 		Assert.assertEquals(tmpDir.resolve("barPath/bar.js"), uri);
-		
+
 		config = "{packages:[{name:'foo', location:['fooPath', 'fooPathOverride']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		uri = cfg.locateModuleResource("foo/bar");
@@ -546,13 +546,13 @@ public class ConfigTests {
 		uri = cfg.locateModuleResource("foo");
 		Assert.assertEquals(tmpDir.resolve("overrides/fooPathOverride/main.js"), uri);
 	}
-	
+
 	@Test
 	public void testIsDepsIncludeBaseUrl() throws Exception {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertFalse(cfg.isDepsIncludeBaseUrl());
-		
+
 		config = "{depsIncludeBaseUrl:true}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertTrue(cfg.isDepsIncludeBaseUrl());
@@ -569,36 +569,36 @@ public class ConfigTests {
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertFalse(cfg.isDepsIncludeBaseUrl());
 	}
-	
+
 	@Test
 	public void testIsCoerceUndefinedToFalse() throws Exception {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertFalse(cfg.isCoerceUndefinedToFalse());
-		
+
 		config = "{coerceUndefinedToFalse:true}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertTrue(cfg.isCoerceUndefinedToFalse());
-		
+
 		config = "{coerceUndefinedToFalse:'true'}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertTrue(cfg.isCoerceUndefinedToFalse());
-		
+
 		config = "{coerceUndefinedToFalse:'foo'}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertFalse(cfg.isCoerceUndefinedToFalse());
 	}
-	
+
 	@Test
 	public void testGetExpires() throws Exception {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getExpires());
-		
+
 		config = "{expires:1000}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(1000, cfg.getExpires());
-		
+
 		config = "{expires:'1000'}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(1000, cfg.getExpires());
@@ -612,33 +612,33 @@ public class ConfigTests {
 		}
 		Assert.assertTrue(exceptionCaught);
 	}
-	
+
 	@Test
 	public void testGetDeps() throws Exception {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		List<String> deps = cfg.getDeps();
 		Assert.assertEquals(0, deps.size());
-		
+
 		config = "{deps:['foo', 'bar']}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		deps = cfg.getDeps();
 		Assert.assertEquals(2, deps.size());
 		Assert.assertEquals("foo", deps.get(0));
 		Assert.assertEquals("bar", deps.get(1));
-		
+
 		config = "{deps:{foo:'bar'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0,  cfg.getDeps().size());
 	}
-	
+
 	@Test
 	public void testGetNotice() throws Exception {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertNull(cfg.getNotice());
-		
-		String copywrite = "/* Copyright IBM Corporation */"; 
+
+		String copywrite = "/* Copyright IBM Corporation */";
 		URI noticeUri = tmpDir.resolve("notice.txt");
 		Writer fileWriter = new FileWriter(new File(noticeUri));
 		fileWriter.append(copywrite);
@@ -669,7 +669,7 @@ public class ConfigTests {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertNull(cfg.getCacheBust());
-		
+
 		config = "{cacheBust:'123'}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals("123", cfg.getCacheBust());
@@ -680,7 +680,7 @@ public class ConfigTests {
 		String config = "{}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getPackageLocations().size());
-		
+
 		config = "{packages:[{name:'foo', location:'fooloc'},{name:'bar', location:['primary', 'override']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Map<String, IConfig.Location> map = cfg.getPackageLocations();
@@ -690,11 +690,11 @@ public class ConfigTests {
 		Assert.assertEquals(tmpDir.resolve("primary/"), map.get("bar").getPrimary());
 		Assert.assertEquals(tmpDir.resolve("override/"), map.get("bar").getOverride());
 	}
-	
+
 	@Test
 	public void testLastModified() throws Exception {
-		
-		String config = "{paths:{foo:'fooloc'}}"; 
+
+		String config = "{paths:{foo:'fooloc'}}";
 		URI cfgUri = tmpDir.resolve("config.js");
 		File cfgFile = new File(cfgUri);
 		Writer fileWriter = new FileWriter(new File(cfgUri));
@@ -703,7 +703,7 @@ public class ConfigTests {
 		long today = cfgFile.lastModified();
 		Assert.assertTrue(cfgFile.setLastModified(today - 24 * 60 * 60 * 1000));
 		long yesterday = cfgFile.lastModified();
-		
+
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, cfgUri.toString()));
 		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
@@ -718,12 +718,12 @@ public class ConfigTests {
 
 	@Test
 	public void testGetConfigUri() throws Exception {
-		String config = "{paths:{foo:'fooloc'}}"; 
+		String config = "{paths:{foo:'fooloc'}}";
 		URI cfgUri = tmpDir.resolve("config.js");
 		Writer fileWriter = new FileWriter(new File(cfgUri));
 		fileWriter.append(config);
 		fileWriter.close();
-		
+
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, cfgUri.toString()));
 		mockAggregator = TestUtils.createMockAggregator(null, null, initParams);
@@ -733,31 +733,31 @@ public class ConfigTests {
 	}
 
 	// Make sure that if the uri to the config is relative, then getConfigUri returns
-	// a namedbundleresource uri 
+	// a namedbundleresource uri
 	@Test
 	public void testGetConfigUriRelative() throws Exception {
-		String config = "{paths:{foo:'fooloc'}}"; 
+		String config = "{paths:{foo:'fooloc'}}";
 		URI cfgUri = tmpDir.resolve("config.js");
 		Writer fileWriter = new FileWriter(new File(cfgUri));
 		fileWriter.append(config);
 		fileWriter.close();
-		
+
 		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
 		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, "config.js"));
-		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);		
-		
-		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);	
+		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
+
+		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);
 		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/")).anyTimes();;
-		EasyMock.replay(mockPlatformServices);		
-		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();		
+		EasyMock.replay(mockPlatformServices);
+		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
 		EasyMock.replay(mockAggregator);
-		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);		
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);
 		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());
 	}
 
 	@Test
 	public void testGetRawConfig() throws Exception {
-		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()"; 
+		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Object rawCfg = cfg.getRawConfig();
 		Context.enter();
@@ -765,29 +765,29 @@ public class ConfigTests {
 		Context.exit();
 		Assert.assertEquals("{paths:{foo:\"fooloc\"}}", str);
 	}
-	
+
 	@Test
 	public void testToString() throws Exception {
-		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()"; 
+		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Object rawCfg = cfg.getRawConfig();
 		Context.enter();
 		String str = Context.toString(rawCfg);
 		Context.exit();
 		Assert.assertEquals(str, cfg.toString());
-		
+
 	}
-	
+
 	@Test
 	public void testGetTextPluginDelegators() throws Exception {
 		String config = "{textPluginDelegators:[\"foo/bar\", \"t2\"]}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getTextPluginDelegators());
-		
+
 		config = "{textPluginDelegators:\"t1\"}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
-		
+
 		config = "{textPluginDelegators:[]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
@@ -796,13 +796,13 @@ public class ConfigTests {
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getTextPluginDelegators().size());
 	}
-	
+
 	@Test
 	public void testGetJsPluginDelegators() throws Exception {
 		String config = "{jsPluginDelegators:[\"foo/bar\", \"t2\"]}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar", "t2"})), cfg.getJsPluginDelegators());
-		
+
 		config = "{jsPluginDelegators:\"t1\"}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
@@ -815,7 +815,7 @@ public class ConfigTests {
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals(0, cfg.getJsPluginDelegators().size());
 	}
-	
+
 	@Test
 	public void testResolve() throws Exception {
 		Features features = new Features();
@@ -831,7 +831,7 @@ public class ConfigTests {
 		features.put("", false);
 		Assert.assertEquals("foo", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, false));
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"xxx"})), dependentFeatures);
-		
+
 		features = new Features();
 		dependentFeatures = new HashSet<String>();
 		config = "{aliases:[['foo', 'bar']]}";
@@ -847,7 +847,7 @@ public class ConfigTests {
 		Assert.assertEquals(1, dependentFeatures.size());
 		features.put("xxx", false);
 		Assert.assertEquals("foobar", cfg.resolve("has!xxx?foo:foobar", features, dependentFeatures, null, false));
-		
+
 		dependentFeatures.clear();
 		config = "{aliases:[['foo', 'has!bar?aaa:bbb']], packages:[{name:'aaa', location:'aaaloc'}, {name:'bbb', location:'bbbloc', main:'mainloc'}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
@@ -860,9 +860,9 @@ public class ConfigTests {
 		Assert.assertEquals("mainloc", cfg.resolve("foo", features, dependentFeatures, null, true));
 		features.put("xxx", true);
 		Assert.assertEquals("mainloc", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, true));
-		
+
 	}
-	
+
 	public static class TestConsoleLogger extends ConfigImpl.Console {
 		List<String> logged = new ArrayList<String>();
 		List<String> getLogged() {
@@ -889,5 +889,5 @@ public class ConfigTests {
 			logged.add("error: " + msg);
 		}
 	}
-	
+
 }

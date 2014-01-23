@@ -49,31 +49,31 @@ import javax.servlet.http.HttpServlet;
  * methods for test.
  */
 public class MockAggregatorWrapper implements IAggregator {
-	
+
 	protected IAggregator mock;
-	
+
 	public MockAggregatorWrapper() throws Exception {
 		mock = TestUtils.createMockAggregator();
 		EasyMock.replay(mock);
 	}
-	
+
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory) throws Exception {
 		mock = TestUtils.createMockAggregator(configRef, workingDirectory);
 		EasyMock.replay(mock);
 	}
-	
+
 	public MockAggregatorWrapper(Ref<IConfig> configRef,
 			File workingDirectory,
 			List<InitParam> initParams) throws Exception {
 		mock = TestUtils.createMockAggregator(configRef, workingDirectory, initParams);
 		EasyMock.replay(mock);
 	}
-	
+
 	public MockAggregatorWrapper(IAggregator mock) {
 		this.mock = mock;
 	}
-	
+
 	@Override
 	public String getName() {
 		return mock.getName();
@@ -184,7 +184,7 @@ public class MockAggregatorWrapper implements IAggregator {
 			SubstitutionTransformer transformer) {
 		return mock.substituteProps(str, transformer);
 	}
-	
+
 	@Override
 	public IPlatformServices getPlatformServices() {
 		return mock.getPlatformServices();

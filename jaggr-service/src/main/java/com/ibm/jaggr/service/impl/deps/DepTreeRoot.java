@@ -26,17 +26,17 @@ import java.io.ObjectOutputStream;
 public class DepTreeRoot extends DepTreeNode {
 
 	private IConfig config;
-	
+
 	public DepTreeRoot(IConfig config) {
 		super(""); //$NON-NLS-1$
 		this.config = config;
 	}
-	
+
 	@Override
 	public IConfig getConfig() {
 		return config;
 	}
-	
+
 	@Override
 	public DepTreeNode getRoot() {
 		return this;
@@ -45,7 +45,7 @@ public class DepTreeRoot extends DepTreeNode {
 	 * Instances of this object should not be serialized, but the
 	 * base class is serializable, so we need to throw an
 	 * exception here if an attempt is made to serialize this class.
-	 * 
+	 *
 	 * @param out The {@link ObjectOutputStream} to read from
 	 * @throws IOException
 	 * @throws NotSerializableException

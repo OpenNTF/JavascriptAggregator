@@ -82,7 +82,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	private static final Logger log = Logger.getLogger(ModuleImpl.class
 			.getName());
-	
+
 
 	@SuppressWarnings("serial")
 	private static final List<ICacheKeyGenerator> defaultCacheKeyGenerators = Collections.unmodifiableList(
@@ -98,12 +98,13 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				return eyecatcher;
 			}
 		}
-	}));
-	
+		})
+	);
+
 	private final URI uri;
-	
+
 	private transient IResource resource = null;
-	
+
 	private volatile List<ICacheKeyGenerator> _cacheKeyGenerators;
 
 	/** Last modified time of source file that the cached entries are based on. */
@@ -113,11 +114,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * A mapping of keyname to cache object pairs where the keyname is a string
 	 * that is computed by the cache key generator
 	 */
-	private volatile ConcurrentMap<String, CacheEntry> _moduleBuilds = null; 
+	private volatile ConcurrentMap<String, CacheEntry> _moduleBuilds = null;
 
 	/**
 	 * Constructor
-	 * 
+	 *
 	 * @param source
 	 *            The module source
 	 */
@@ -125,10 +126,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		super(mid);
 		this.uri = uri;
 	}
-	
+
 	/**
 	 * Copy constructor.  Needed by subclasses that override writeReplace
-	 * 
+	 *
 	 * @param module
 	 */
 	protected ModuleImpl(ModuleImpl module) {
@@ -141,7 +142,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			_moduleBuilds = module._moduleBuilds;
 		}
 	}
-	
+
 	/**
 	 * @return The uri for this module
 	 */
@@ -177,10 +178,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * <p>
 	 * The caller of this function is responsible for closing the reader
 	 * associated with the build object.
-	 * 
+	 *
 	 * @param request
 	 *            The http servlet request object
-	 * 
+	 *
 	 * @return A {@link Future}{@code <}{@link ModuleReader}{@code >} that can
 	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
@@ -194,7 +195,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * Adds <code>fromCacheOnly</code> param that is used by unit test cases. Do
 	 * not call this method directly from production code. Use
 	 * {@link #getBuild(HttpServletRequest)} instead.
-	 * 
+	 *
 	 * @param request
 	 *            The http servlet request object
 	 * @param fromCacheOnly
@@ -222,7 +223,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					_moduleBuilds = new ConcurrentHashMap<String, CacheEntry>();
 				}
 			}
-			
+
 		}
 		// If the source doesn't exist, throw an exception.
 		final IResource resource = getResource(aggr);
@@ -232,8 +233,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						MessageFormat.format(
 								Messages.ModuleImpl_1,
 								new Object[]{resource.getURI().toString()}
-						)
-				);
+								)
+						);
 			throw new NotFoundException(resource.getURI()
 					.toString());
 		}
@@ -288,7 +289,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		if (!ignoreCached) {
 			existingEntry = moduleBuilds.get(key);
 			if (existingEntry != null
-				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
+					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
 				if (isLogLevelFiner) {
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
@@ -310,7 +311,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		if (!ignoreCached) {
 			existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
 			if (existingEntry != null
-				&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
+					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
 				if (isLogLevelFiner) {
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
@@ -336,7 +337,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		// Future<ModuleReader> to the caller
 		return aggr.getExecutors().getBuildExecutor().submit(new Callable<ModuleBuildReader>() {
 			public ModuleBuildReader call() throws Exception {
-				List<ICacheKeyGenerator> newCacheKeyGenerators = 
+				List<ICacheKeyGenerator> newCacheKeyGenerators =
 						KeyGenUtil.isProvisional(cacheKeyGenerators) ? null : cacheKeyGenerators;
 				ModuleBuild build;
 				// Synchronize on the ModuleBuild object for the compile.
@@ -363,16 +364,16 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 										+ key);
 							}
 							ModuleBuildReader mbr = new ModuleBuildReader(reader,
-									_cacheKeyGenerators, false); 
+									_cacheKeyGenerators, false);
 							processExtraModules(mbr, request, cacheEntry);
 							return mbr;
 						}
 						// Build the output
 						IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
 						build = builder.build(
-								getModuleId(), 
-								resource, 
-								request, 
+								getModuleId(),
+								resource,
+								request,
 								newCacheKeyGenerators);
 						if (build.isError()) {
 							// Don't cache error results
@@ -380,16 +381,16 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 									.getBuildOutput().toString()), null, true);
 						}
 						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
-						
-						// If the cache key generator has changed, then update the 
+
+						// If the cache key generator has changed, then update the
 						if (newCacheKeyGenerators == null || !newCacheKeyGenerators.equals(build.getCacheKeyGenerators())) {
 							synchronized (this) {
 								if (_moduleBuilds == moduleBuilds) {
 									_cacheKeyGenerators = newCacheKeyGenerators = Collections.unmodifiableList(
 											newCacheKeyGenerators == null ?
 													build.getCacheKeyGenerators() :
-													KeyGenUtil.combine(newCacheKeyGenerators, build.getCacheKeyGenerators())
-									);
+														KeyGenUtil.combine(newCacheKeyGenerators, build.getCacheKeyGenerators())
+											);
 								}
 							}
 							if (!ignoreCached) {
@@ -423,15 +424,15 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						if (options.isDevelopmentMode() || options.isDebugMode()) {
 							if (options.isDevelopmentMode()) {
 								Throwable t = ex;
-					        	while (t != null) {
-						        	if (t instanceof DependencyVerificationException) {
-						        		// This exception will be handled by the layer builder
-						        		throw (DependencyVerificationException)t;
-						        	} else if (t instanceof ProcessingDependenciesException) {
-						        		throw (ProcessingDependenciesException)t;
-						        	}
-					        		t = t.getCause();
-					        	}
+								while (t != null) {
+									if (t instanceof DependencyVerificationException) {
+										// This exception will be handled by the layer builder
+										throw (DependencyVerificationException)t;
+									} else if (t instanceof ProcessingDependenciesException) {
+										throw (ProcessingDependenciesException)t;
+									}
+									t = t.getCause();
+								}
 							}
 							// Log error
 							if (log.isLoggable(Level.SEVERE)) {
@@ -441,18 +442,18 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							// Instead, log the
 							// error on the client.
 							return new ModuleBuildReader(
-								new ErrorModuleReader(
-									StringUtil.escapeForJavaScript(	
-										ex.getClass().getName() + 
-										": " + 	ex.getMessage() + //$NON-NLS-1$
-										"\r\n" + //$NON-NLS-1$
-										Messages.ModuleImpl_2
-									),
-									getModuleName(),
-									request
-								), null, true
-							);
-		
+									new ErrorModuleReader(
+											StringUtil.escapeForJavaScript(
+													ex.getClass().getName() +
+													": " + 	ex.getMessage() + //$NON-NLS-1$
+													"\r\n" + //$NON-NLS-1$
+													Messages.ModuleImpl_2
+													),
+													getModuleName(),
+													request
+											), null, true
+									);
+
 						} else {
 							throw ex;
 						}
@@ -460,7 +461,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(
 						cacheEntry.getReader(mgr.getCacheDir(), request),
-						newCacheKeyGenerators, false); 
+						newCacheKeyGenerators, false);
 				processExtraModules(mbr, request, cacheEntry);
 				// return a build reader object
 				return mbr;
@@ -472,23 +473,23 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * For any extra modules specified by {@code cacheEntry}, obtain a build
 	 * future from the module cache manager and add it to the build futures
 	 * queue specified by {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME}.
-	 * 
+	 *
 	 * @param request
 	 *            The http request
 	 * @param cacheEntry
 	 *            The cache entry object for the current module
 	 * @throws IOException
 	 */
-	public void processExtraModules(ModuleBuildReader reader, HttpServletRequest request, CacheEntry cacheEntry) 
+	public void processExtraModules(ModuleBuildReader reader, HttpServletRequest request, CacheEntry cacheEntry)
 			throws IOException {
-		
+
 		List<IModule> before = cacheEntry.getBefore(), after = cacheEntry.getAfter();
 		if (!before.isEmpty() || !after.isEmpty()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			for (IModule module : cacheEntry.getBefore()) {
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(
-						module, 
+						module,
 						future,
 						ModuleSpecifier.BUILD_ADDED);
 				reader.addBefore(mbf);
@@ -496,7 +497,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			for (IModule module : cacheEntry.getAfter()) {
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(
-						module, 
+						module,
 						future,
 						ModuleSpecifier.BUILD_ADDED);
 				reader.addAfter(mbf);
@@ -505,7 +506,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	}
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
@@ -513,23 +514,23 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
 		StringBuffer sb = new StringBuffer();
 		sb.append("IModule: ").append(getModuleName()) //$NON-NLS-1$
-				.append("\nSource: ") //$NON-NLS-1$
-				.append(uri).append(linesep);
+		.append("\nSource: ") //$NON-NLS-1$
+		.append(uri).append(linesep);
 
 		long lastModified = _lastModified;
 		if (lastModified != 0) {
 			sb.append("Modified: ").append(new Date(lastModified).toString()) //$NON-NLS-1$
-					.append(linesep);
+			.append(linesep);
 		}
 		if (_cacheKeyGenerators != null) {
 			sb.append("KeyGen: ") //$NON-NLS-1$
-				.append(KeyGenUtil.toString(_cacheKeyGenerators))
-				.append(linesep);
+			.append(KeyGenUtil.toString(_cacheKeyGenerators))
+			.append(linesep);
 		}
 		if (_moduleBuilds != null) {
 			for (Map.Entry<String, CacheEntry> entry : _moduleBuilds.entrySet()) {
 				sb.append("\t").append(entry.getKey()).append(" : ") //$NON-NLS-1$ //$NON-NLS-2$
-						.append(entry.getValue().fileName()).append(linesep);
+				.append(entry.getValue().fileName()).append(linesep);
 			}
 		}
 		sb.append(linesep);
@@ -555,7 +556,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	/*
 	 * Returns the set of keys for cached entries. Used for unit testing
-	 * 
+	 *
 	 * @return the cache keys
 	 */
 	protected Collection<String> getKeys() {
@@ -568,16 +569,16 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	/*
 	 * Returns the cache key generators for this module. Used for unit testing
-	 * 
+	 *
 	 * @return the cache keys
 	 */
 	protected List<ICacheKeyGenerator> getCacheKeyGenerators() {
-		return _cacheKeyGenerators; 
+		return _cacheKeyGenerators;
 	}
-	
+
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see
 	 * com.ibm.domino.servlets.aggrsvc.modules.Module#deleteCached(com.ibm.domino
 	 * .servlets.aggrsvc.modules.CacheManager, int)
@@ -602,7 +603,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	/**
 	 * Static factory method for a new module cache object
-	 * 
+	 *
 	 * @param aggregator the aggregator that this module cache belongs to
 	 * @return the new module cache object
 	 */
@@ -612,16 +613,16 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	/* ---------------- Serialization Support -------------- */
 	/*
-	 * Use a Serialization proxy so that we can copy the proxy object 
-	 * in a thread safe manner, thereby avoiding the need to use 
-	 * synchronization while doing disk i/o. 
+	 * Use a Serialization proxy so that we can copy the proxy object
+	 * in a thread safe manner, thereby avoiding the need to use
+	 * synchronization while doing disk i/o.
 	 */
 	protected Object writeReplace() throws ObjectStreamException {
 		return new SerializationProxy(this);
 	}
 
 	private void readObject(ObjectInputStream stream) throws InvalidObjectException {
-	    throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
+		throw new InvalidObjectException("Proxy required"); //$NON-NLS-1$
 	}
 
 	protected static class SerializationProxy extends ModuleIdentifier implements Serializable {
@@ -630,7 +631,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		private final URI uri;
 		private final List<ICacheKeyGenerator> _cacheKeyGenerators;
 		private final long _lastModified;
-		private final ConcurrentHashMap<String, CacheEntry> _moduleBuilds; 
+		private final ConcurrentHashMap<String, CacheEntry> _moduleBuilds;
 
 		protected SerializationProxy(ModuleImpl module) {
 			super(module.getModuleId());
@@ -638,18 +639,18 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				uri = module.uri;
 				_cacheKeyGenerators = module._cacheKeyGenerators;
 				_lastModified = module._lastModified;
-				_moduleBuilds = (module._moduleBuilds != null) ? 
+				_moduleBuilds = (module._moduleBuilds != null) ?
 						new ConcurrentHashMap<String, CacheEntry>(module._moduleBuilds) : null;
 			}
-	    }
+		}
 
-	    protected Object readResolve() {
-	    	ModuleImpl module = new ModuleImpl(super.getModuleId(), uri);
-	    	module._cacheKeyGenerators = _cacheKeyGenerators;
-	    	module._lastModified = _lastModified;
-	    	module._moduleBuilds = _moduleBuilds;
-	    	return module;
-	    }
+		protected Object readResolve() {
+			ModuleImpl module = new ModuleImpl(super.getModuleId(), uri);
+			module._cacheKeyGenerators = _cacheKeyGenerators;
+			module._lastModified = _lastModified;
+			module._moduleBuilds = _moduleBuilds;
+			return module;
+		}
 	}
 
 	/**
@@ -658,7 +659,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * files. ICache files are deleted using a {@link ScheduledExecutorService}
 	 * with a 10 minute delay to allow sufficient time for any threads that may
 	 * still be using the file to be done with them.
-	 * 
+	 *
 	 * This class avoids synchronization by declaring the instance variables
 	 * volatile and being careful about the order in which variables are
 	 * assigned and read. See comments in the various methods for details.
@@ -713,7 +714,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					}
 					// Read the file and return a StringReader instead of just
 					// returning a reader to the file so that we can take advantage of
-					// parallel processing to read the files on the module builder threads.  
+					// parallel processing to read the files on the module builder threads.
 					Reader fileReader = new FileReader(new File(cacheDir, filename));
 					StringWriter writer = new StringWriter();
 					CopyUtil.copy(fileReader, writer);
@@ -762,26 +763,26 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		/**
 		 * Returns the list of module IDs to include in a layer build before
 		 * this module
-		 * 
+		 *
 		 * @return The list of before modules
 		 */
 		public List<IModule> getBefore()  {
 			return beforeModules == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(beforeModules);
 		}
-		
+
 		/**
 		 * Returns the list of module IDs to include in a layer build after
 		 * this module
-		 * 
+		 *
 		 * @return The list of after modules
 		 */
 		public List<IModule> getAfter()  {
 			return afterModules == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(afterModules);
 		}
-		
+
 		/**
 		 * A version of getReader that can fail, but won't throw
-		 * 
+		 *
 		 * @return A ModuleReader for the output, or null if no output is
 		 *         available
 		 */
@@ -795,11 +796,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					// replace the cached entry
 					if (log.isLoggable(Level.INFO))
 						log.info(
-							MessageFormat.format(
-								Messages.ModuleImpl_3,
-								new Object[]{filename}
-							)
-						);
+								MessageFormat.format(
+										Messages.ModuleImpl_3,
+										new Object[]{filename}
+										)
+								);
 
 					// Clear filename so that we won't throw an exception again
 					filename = null;
@@ -813,7 +814,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		/**
 		 * Asynchronously saves the build output to a cache file on disk and
 		 * updates the {@code filename} field with the cache file name.
-		 * 
+		 *
 		 * @param mgr
 		 *            The {@Link ICacheManager} from which to obtain the
 		 *            {@Link ExecutorService}
@@ -826,43 +827,43 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			int idx = mid.lastIndexOf("/"); //$NON-NLS-1$
 			String name = "_" + ((idx != -1) ? mid.substring(idx + 1) : mid) + "."; //$NON-NLS-1$ //$NON-NLS-2$
 			if (isString) {
-				mgr.createCacheFileAsync(name, 
+				mgr.createCacheFileAsync(name,
 						new StringReader(content.toString()),
 						new ICacheManager.CreateCompletionCallback() {
-							@Override
-							public void completed(String fname, Exception e) {
-								if (e == null) {
-									// Must set filename before clearing content
-									// since we don't synchronize.
-									filename = fname;
-									// Free up the memory for the content now that
-									// we've written out to disk
-									// TODO: Determine a size threshold where we may
-									// want to keep the contents
-									// of small files in memory to reduce disk i/o.
-									content = null;
-								}
-							}
-						});
+					@Override
+					public void completed(String fname, Exception e) {
+						if (e == null) {
+							// Must set filename before clearing content
+							// since we don't synchronize.
+							filename = fname;
+							// Free up the memory for the content now that
+							// we've written out to disk
+							// TODO: Determine a size threshold where we may
+							// want to keep the contents
+							// of small files in memory to reduce disk i/o.
+							content = null;
+						}
+					}
+				});
 			} else {
-				mgr.externalizeCacheObjectAsync(name, 
+				mgr.externalizeCacheObjectAsync(name,
 						content,
 						new ICacheManager.CreateCompletionCallback() {
-							@Override
-							public void completed(String fname, Exception e) {
-								if (e == null) {
-									// Must set filename before clearing content
-									// since we don't synchronize.
-									filename = fname;
-									// Free up the memory for the content now that
-									// we've written out to disk
-									// TODO: Determine a size threshold where we may
-									// want to keep the contents
-									// of small files in memory to reduce disk i/o.
-									content = null;
-								}
-							}
-						});
+					@Override
+					public void completed(String fname, Exception e) {
+						if (e == null) {
+							// Must set filename before clearing content
+							// since we don't synchronize.
+							filename = fname;
+							// Free up the memory for the content now that
+							// we've written out to disk
+							// TODO: Determine a size threshold where we may
+							// want to keep the contents
+							// of small files in memory to reduce disk i/o.
+							content = null;
+						}
+					}
+				});
 			}
 		}
 
@@ -879,14 +880,14 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			}
 		}
 	}
-	
+
 	/*
 	 * Implementation of a reader for build content that implements
-	 * IModuleBuildRenderer.  Used to delay rendering until the 
+	 * IModuleBuildRenderer.  Used to delay rendering until the
 	 * build output is read by the layer builder.
 	 */
 	static final private class BuildRendererReader extends Reader {
-		
+
 		private final IModuleBuildRenderer build;
 		private final HttpServletRequest request;
 		private Reader reader;
@@ -895,7 +896,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			this.build = build;
 			this.request = request;
 		}
-		
+
 		@Override
 		public int read(char[] cbuf, int off, int len) throws IOException {
 			if (reader == null) {
