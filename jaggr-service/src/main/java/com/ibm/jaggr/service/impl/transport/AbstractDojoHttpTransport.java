@@ -57,9 +57,9 @@ import javax.servlet.http.HttpServletRequest;
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
  */
-public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
-	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
-	
+public class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExecutableExtension, IExtensionInitializer {
+	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
+
     static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent"; //$NON-NLS-1$ //$NON-NLS-2$
     static final String textPluginProxyUriStr = comboUriStr + "/dojo/text"; //$NON-NLS-1$
     static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
@@ -74,7 +74,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     static final String dojoTextPluginName = "text"; //$NON-NLS-1$
     static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
     static final URI dojoPluginUri;
- 
+
     static {
     	try {
     		dojoPluginUri = new URI("./"+dojoTextPluginName); //$NON-NLS-1$
@@ -88,54 +88,54 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     private URI comboUri;
 
     private List<String[]> clientConfigAliases = new LinkedList<String[]>();
-    
+
     /**
      * Property accessor for the comboUriStr property
-     * 
+     *
      * @return the combo URI string value
      */
     protected String getComboUriStr() {
     	return comboUriStr;
     }
-    
+
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getPluginUniqueId()
      */
     protected String getPluginUniqueId() {
     	return pluginUniqueId;
     }
-    
+
     /**
      * Property accessor for the loaderExtensionPath property
-     * 
+     *
      * @return the loader extension path
      */
     protected String getLoaderExtensionPath() {
     	return loaderExtensionPath;
     }
-    
+
     /**
      * Property accessor for the loaderExtensionResources property
-     * 
+     *
      * @return the loader extension resources
      */
     protected String[] getLoaderExtensionResources() {
     	return loaderExtensionResources;
     }
-    
+
     /**
      * Returns the list of client config aliases
-     * 
+     *
      * @return the client aliases
      */
     protected List<String[]> getClientConfigAliases() {
     	return clientConfigAliases;
     }
-    
+
     protected String getAggregatorTextPluginName() {
     	return getResourcePathId() + "/text"; //$NON-NLS-1$
     }
-    
+
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, java.lang.String)
      */
@@ -144,8 +144,8 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			LayerContributionType type, Object arg) {
 
     	super.validateLayerContributionState(request, type, arg);
-    	
-    	// Implement wrapping of modules required by dojo loader for modules that 
+
+    	// Implement wrapping of modules required by dojo loader for modules that
     	// are loaded with the loader.
     	switch (type) {
 		case BEGIN_REQUIRED_MODULES:
@@ -159,12 +159,12 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		case END_REQUIRED_MODULES:
 			{
 				StringBuffer sb = new StringBuffer();
-				sb.append("}});require({cache:{}});require(["); //$NON-NLS-1$ 
+				sb.append("}});require({cache:{}});require(["); //$NON-NLS-1$
 				int i = 0;
 				@SuppressWarnings("unchecked")
 				Set<String> requiredModules = (Set<String>)arg;
 				for (String name : requiredModules) {
-					sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ 
+					sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 				}
 				sb.append("]);"); //$NON-NLS-1$
 				return sb.toString();
@@ -173,7 +173,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		}
 		return null;
 	}
-    
+
     static final Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/"); //$NON-NLS-1$
     /* (non-Javadoc)
      * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
@@ -215,7 +215,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
     	}
     	return result;
     }
-    
+
     protected String getAfterRequiredModule(HttpServletRequest request, String mid) {
     	int idx = mid.indexOf("!"); //$NON-NLS-1$
     	String plugin = idx == -1 ? null : mid.substring(0, idx);
@@ -242,15 +242,15 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		 */
 		return null;
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getComboUri()
 	 */
-	@Override 
+	@Override
 	protected URI getComboUri() {
 		return comboUri;
 	}
-	
+
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 		super.decorateRequest(request);
@@ -276,22 +276,22 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	@Override
 	public void setInitializationData(IConfigurationElement config, String propertyName,
 			Object data) throws CoreException {
-		
+
 		// Save this extension's pluginUniqueId
 		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
 
 		// Initialize the combo uri
 		super.setInitializationData(config, propertyName, data);
 		try {
-			comboUri = new URI(getComboUriStr()); 
+			comboUri = new URI(getComboUriStr());
 		} catch (URISyntaxException e) {
 			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(), 
+					new Status(Status.ERROR, config.getNamespaceIdentifier(),
 							e.getMessage(), e)
 				);
 		}
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
 	 */
@@ -302,19 +302,19 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		// Get first resource factory extension so we can add to beginning of list
     	Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
     	IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
-    	
+
     	// Register the loaderExt resource factory
     	Properties attributes = new Properties();
     	attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
 		reg.registerExtension(
-				new LoaderExtensionResourceFactory(), 
+				new LoaderExtensionResourceFactory(),
 				attributes,
 				IResourceFactoryExtensionPoint.ID,
 				getPluginUniqueId(),
 				first);
-		
+
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getDynamicLoaderExtensionJavaScript()
 	 */
@@ -333,13 +333,13 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		sb.append("combo.serverOptions={skipHasFiltering:") //$NON-NLS-1$
 		  .append(Boolean.toString(options.isDisableHasFiltering()))
 		  .append("};\r\n"); //$NON-NLS-1$
-		
+
 		// add in the super class's contribution
 		sb.append(super.getDynamicLoaderExtensionJavaScript());
-		
+
 		return sb.toString();
 	}
-	
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
@@ -363,21 +363,21 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 * plugin via static names, allowing the actual names to be dynamic without
 	 * requiring us to dynamically modify the contents of the proxy plugin
 	 * resource itself.  This method sets the server-side config aliases
-	 * and sets up the client-side config aliases to be set in 
+	 * and sets up the client-side config aliases to be set in
 	 * {@link #contributeLoaderExtensionJavaScript(String)}.
 	 */
 	@Override
 	public void modifyConfig(IAggregator aggregator, Scriptable config) {
 		// let the superclass do its thing
 		super.modifyConfig(aggregator, config);
-		
+
 		// Get the server-side config properties we need to start with
 		Object pathsObj = config.get(IConfig.PATHS_CONFIGPARAM, config);
 		Object packagesObj = config.get(IConfig.PACKAGES_CONFIGPARAM, config);
 		Object aliasesObj = config.get(IConfig.ALIASES_CONFIGPARAM, config);
 		Object textPluginDelegatorsObj = config.get(IConfig.TEXTPLUGINDELEGATORS_CONFIGPARAM, config);
 		Object jsPluginDelegatorsObj = config.get(IConfig.JSPLUGINDELEGATORS_CONFIGPARAM, config);
-		
+
 		Scriptable paths = (pathsObj != null && pathsObj instanceof Scriptable) ? (Scriptable)pathsObj : null;
 		Scriptable packages = (packagesObj != null && packagesObj instanceof Scriptable) ? (Scriptable)packagesObj : null;
 		Scriptable aliases = (aliasesObj != null && aliasesObj instanceof Scriptable) ? (Scriptable)aliasesObj : null;
@@ -434,7 +434,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			}
 			return;
 		}
-		
+
 		if (paths != null && paths.get(dojoTextPluginFullPath, paths) != Scriptable.NOT_FOUND) {
 			// if config overrides dojo/text, then bail
 			if (log.isLoggable(Level.INFO)) {
@@ -463,7 +463,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				config.put(IConfig.JSPLUGINDELEGATORS_CONFIGPARAM, config, context.newArray(config, 0));
 				jsPluginDelegators = (Scriptable)config.get(IConfig.JSPLUGINDELEGATORS_CONFIGPARAM, null);
 			}
-	
+
 			// Specify paths entry to map dojo/text to our text plugin proxy
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(
@@ -471,13 +471,13 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 						new Object[]{dojoTextPluginFullPath, textPluginProxyUriStr}
 				));
 			}
-		
+
 			paths.put(dojoTextPluginFullPath, paths, textPluginProxyUriStr);
-			
+
 			// Specify paths entry to map the dojo text plugin alias name to the original
 			// dojo text plugin
 			Scriptable dojoTextPluginPath = context.newArray(config, 2);
-			URI primary = dojoLoc.getPrimary(), override = dojoLoc.getOverride(); 
+			URI primary = dojoLoc.getPrimary(), override = dojoLoc.getOverride();
 			primary = primary.resolve(dojoPluginUri);
 			if (override != null) {
 				override = override.resolve(dojoPluginUri);
@@ -493,11 +493,11 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				));
 			}
 			paths.put(dojoTextPluginAliasFullPath, paths, dojoTextPluginPath);
-			
+
 			// Specify an alias mapping for the static alias used
 			// by the proxy module to the name which includes the path dojo/ so that
 			// relative module ids in dojo/text will resolve correctly.
-			// 
+			//
 			// We need this in the server-side config so that the server can follow
 			// module dependencies from the plugin proxy
 			if (log.isLoggable(Level.INFO)) {
@@ -515,7 +515,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				if (id instanceof Number) max = Math.max(max, (Integer)((Number)id));
 			}
 			aliases.put(max+1, aliases, alias);
-			
+
 			max = -1;
 			for (Object id : textPluginDelegators.getIds()) {
 				if (id instanceof Number) max = Math.max(max, (Integer)((Number)id));
@@ -525,7 +525,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		} finally {
 			Context.exit();
 		}
-		
+
 		// Add alias definitions to be specified in client-side config
 		getClientConfigAliases().add(new String[]{dojoTextPluginAlias, dojoTextPluginAliasFullPath});
 		// Add alias mapping for aggregator text plugin alias used in the text plugin proxy
@@ -533,7 +533,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		// definitions
 		getClientConfigAliases().add(new String[]{aggregatorTextPluginAlias, getAggregatorTextPluginName()});
 	}
-	
+
 	/**
 	 * Resource factory that creates a
 	 * {@link AbstractHttpTransport.LoaderExtensionResource} for the dojo http
@@ -548,7 +548,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		public boolean handles(URI uri) {
 			String path = uri.getPath();
 			if (path.equals(getLoaderExtensionPath())) {
-				if (uri.getScheme().equals(getComboUri().getScheme()) 
+				if (uri.getScheme().equals(getComboUri().getScheme())
 						&& uri.getHost().equals(getComboUri().getHost())) {
 					return true;
 				}

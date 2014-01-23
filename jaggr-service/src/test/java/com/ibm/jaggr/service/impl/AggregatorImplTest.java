@@ -42,7 +42,7 @@ public class AggregatorImplTest {
 			EasyMock.expect(mockContext.getBundle()).andReturn(mockBundle).times(3);
 			EasyMock.expect(mockBundle.getBundleId()).andReturn((long)69).times(1);
 			EasyMock.expect(mockOptions.getCacheDirectory()).andReturn(null).times(2);
-			AggregatorImpl aggregator = EasyMock.createMockBuilder(AggregatorImpl.class)
+			AbstractAggregatorImpl aggregator = EasyMock.createMockBuilder(AbstractAggregatorImpl.class)
 					.addMockedMethod("getOptions")
 					.addMockedMethod("getName")
 					.addMockedMethod("getBundleContext")
