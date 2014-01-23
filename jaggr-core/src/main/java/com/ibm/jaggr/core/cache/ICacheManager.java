@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.core.cache;
 
+import com.ibm.jaggr.core.options.IOptions;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.Writer;
 import java.util.regex.Pattern;
-
-import com.ibm.jaggr.core.options.IOptions;
 
 /**
  *

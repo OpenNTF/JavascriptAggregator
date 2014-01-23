@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.core.util;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import javax.servlet.http.HttpServletRequest;
 
 public class RequestUtil {
 

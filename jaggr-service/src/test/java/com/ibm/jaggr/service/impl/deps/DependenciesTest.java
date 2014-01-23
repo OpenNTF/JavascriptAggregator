@@ -17,6 +17,19 @@
 package com.ibm.jaggr.service.impl.deps;
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.io.Files;
+
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.test.TestUtils;
+
+import org.easymock.EasyMock;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -29,18 +42,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
-
-import org.easymock.EasyMock;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.test.TestUtils;
 
 public class DependenciesTest extends EasyMock {
 

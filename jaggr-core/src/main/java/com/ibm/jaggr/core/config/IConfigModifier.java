@@ -16,9 +16,9 @@
 
 package com.ibm.jaggr.core.config;
 
-import org.mozilla.javascript.Scriptable;
-
 import com.ibm.jaggr.core.IAggregator;
+
+import org.mozilla.javascript.Scriptable;
 
 /**
  * Interface for config modifier class. Instances of this class are registered

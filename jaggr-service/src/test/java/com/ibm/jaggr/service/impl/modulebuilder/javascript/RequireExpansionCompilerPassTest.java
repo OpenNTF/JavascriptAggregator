@@ -16,6 +16,28 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
+import com.google.common.collect.HashMultimap;
+import com.google.javascript.jscomp.CompilationLevel;
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.Compiler.CodeBuilder;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.CustomPassExecutionTime;
+import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.rhino.Node;
+
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.service.test.TestUtils;
+
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -26,27 +48,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Pattern;
-
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-
-import com.google.common.collect.HashMultimap;
-import com.google.javascript.jscomp.CompilationLevel;
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.Compiler.CodeBuilder;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.CustomPassExecutionTime;
-import com.google.javascript.jscomp.JSSourceFile;
-import com.google.javascript.rhino.Node;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.service.test.TestUtils;
 
 public class RequireExpansionCompilerPassTest extends EasyMock {
 	

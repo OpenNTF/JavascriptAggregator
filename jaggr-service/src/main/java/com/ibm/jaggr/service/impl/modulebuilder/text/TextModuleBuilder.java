@@ -16,15 +16,6 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.text;
 
-import java.io.IOException;
-import java.io.Reader;
-import java.io.StringWriter;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -35,6 +26,15 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * This class specializes JavaScriptModuleBuilder for text modules.  Text modules are returned as 

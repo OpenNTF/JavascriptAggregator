@@ -16,9 +16,9 @@
 
 package com.ibm.jaggr.core;
 
-import java.util.Properties;
-
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
+
+import java.util.Properties;
 
 /**
  * Interface for a registered aggregator extension.  An {@link Iterable} of

@@ -16,14 +16,14 @@
 
 package com.ibm.jaggr.core.layer;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
+
 import java.util.List;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 
 /**
  * Listener interface for Layer events. To receive notification of layer events,

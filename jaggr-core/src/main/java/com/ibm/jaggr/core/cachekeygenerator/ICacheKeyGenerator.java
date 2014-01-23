@@ -16,16 +16,16 @@
 
 package com.ibm.jaggr.core.cachekeygenerator;
 
-import java.io.Serializable;
-import java.util.List;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+
+import java.io.Serializable;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Instances of CacheKeyGenerator are used to create request specific cache keys

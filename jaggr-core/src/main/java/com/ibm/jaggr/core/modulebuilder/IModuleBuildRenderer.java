@@ -16,13 +16,13 @@
 
 package com.ibm.jaggr.core.modulebuilder;
 
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.resource.IResource;
+
 import java.util.List;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.resource.IResource;
 
 /**
  * If the object returned by

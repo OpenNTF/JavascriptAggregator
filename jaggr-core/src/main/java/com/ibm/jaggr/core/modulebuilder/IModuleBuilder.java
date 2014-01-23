@@ -16,11 +16,6 @@
 
 package com.ibm.jaggr.core.modulebuilder;
 
-import java.util.List;
-import java.util.Set;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
@@ -28,6 +23,11 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import java.util.List;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * This interface is implemented by module builders.

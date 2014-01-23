@@ -16,19 +16,19 @@
 
 package com.ibm.jaggr.core.config;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.mozilla.javascript.Scriptable;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
+
+import org.mozilla.javascript.Scriptable;
+
+import java.net.URI;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * This interface encapsulates an aggregator configuration. An aggregator

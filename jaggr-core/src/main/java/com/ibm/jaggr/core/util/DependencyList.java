@@ -16,6 +16,11 @@
 
 package com.ibm.jaggr.core.util;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -26,11 +31,6 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
-import com.ibm.jaggr.core.deps.ModuleDeps;
 
 /**
  * Container class for the set of expanded dependencies for a list of modules. 

@@ -16,6 +16,12 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.rhino.Node;
+
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Arrays;
@@ -25,11 +31,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.JSSourceFile;
-import com.google.javascript.rhino.Node;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 /**
  * This class implements the {@link Callable} interface to parse an AMD module

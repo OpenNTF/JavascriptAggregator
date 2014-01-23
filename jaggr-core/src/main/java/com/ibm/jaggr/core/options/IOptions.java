@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.core.options;
 
+import com.ibm.jaggr.core.IAggregator;
+
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
-
-import com.ibm.jaggr.core.IAggregator;
 
 /**
  * This interface defines property names for standard aggregator options

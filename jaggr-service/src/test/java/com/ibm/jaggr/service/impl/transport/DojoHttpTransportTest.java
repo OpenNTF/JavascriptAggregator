@@ -16,10 +16,12 @@
 
 package com.ibm.jaggr.service.impl.transport;
 
-import java.io.File;
-import java.net.URI;
-import java.util.LinkedList;
-import java.util.List;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.test.TestUtils;
 
 import junit.framework.Assert;
 
@@ -33,12 +35,10 @@ import org.junit.Test;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IAggregatorExtension;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.test.TestUtils;
+import java.io.File;
+import java.net.URI;
+import java.util.LinkedList;
+import java.util.List;
 
 public class DojoHttpTransportTest {
 

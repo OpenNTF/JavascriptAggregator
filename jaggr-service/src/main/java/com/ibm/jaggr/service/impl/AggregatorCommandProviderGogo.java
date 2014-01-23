@@ -15,11 +15,8 @@ help * (C) Copyright 2012, IBM Corporation
  */
 package com.ibm.jaggr.service.impl;
 
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.service.util.CSConsoleWriter;
 
 import org.apache.felix.service.command.CommandSession;
 import org.apache.felix.service.command.Descriptor;
@@ -27,8 +24,11 @@ import org.apache.wink.json4j.JSONException;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 
-import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.service.util.CSConsoleWriter;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	

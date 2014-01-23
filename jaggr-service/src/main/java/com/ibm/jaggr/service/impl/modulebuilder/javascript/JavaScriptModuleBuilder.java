@@ -16,25 +16,6 @@
 
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
-import javax.servlet.http.HttpServletRequest;
-
 import com.google.common.collect.HashMultimap;
 import com.google.javascript.jscomp.CheckLevel;
 import com.google.javascript.jscomp.CompilationLevel;
@@ -45,6 +26,7 @@ import com.google.javascript.jscomp.DiagnosticGroups;
 import com.google.javascript.jscomp.JSError;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.jscomp.Result;
+
 import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
@@ -69,17 +51,36 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.StringUtil;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.MessageFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * This class minifies a javacript module.  The modules is assumed to use the AMD
  * loader format.  Modules are minified sing the Google Closure compiler,
  * and module builds differ according to the requested compilation level and has-filtering
- * condiftions.  The requested compilation level and has-filtering conditions are 
+ * condiftions.  The requested compilation level and has-filtering conditions are
  * specified as attributes in the http request when calling {@link #build}.
  *
  */
 public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, ILayerListener, IShutdownListener {
 	private static final Logger log = Logger.getLogger(JavaScriptModuleBuilder.class.getName());
-	
+
 	private static final List<JSSourceFile> externs = Collections.emptyList();
 
 	/**
@@ -90,7 +91,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 */
 	static final String EXPANDED_DEPENDENCIES = ILayer.class.getName() + ".layerdeps"; //$NON-NLS-1$
 
-	private static final ICacheKeyGenerator exportNamesCacheKeyGenerator = 
+	private static final ICacheKeyGenerator exportNamesCacheKeyGenerator =
 		new ExportNamesCacheKeyGenerator();
 
 	static {
@@ -100,7 +101,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	}
 
 	private List<Object> registrations = new LinkedList<Object>();
-	
+
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
         CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
 		IAggregator aggregator = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
@@ -117,13 +118,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
         }
         return level;
 	}
-	
+
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		Dictionary<String,String> props;
 		props = new Hashtable<String,String>();
-		props.put("name", aggregator.getName()); //$NON-NLS-1$		
+		props.put("name", aggregator.getName()); //$NON-NLS-1$
 		registrations.add(aggregator.getPlatformServices().registerService(ILayerListener.class.getName(), this, props));
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
@@ -135,16 +136,16 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		String result = null;
 		if (type == EventType.BEGIN_LAYER) {
 			// Check to see if optimization is disabled for this request and if so,
-			// then disable module name exporting since we can't export names of 
+			// then disable module name exporting since we can't export names of
 			// javascript modules without the compiler.
 			CompilationLevel level = getCompilationLevel(request);
 			if (level  == null) {
 				// optimization is disabled, so disable exporting of module name
 				request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
 			}
-			
+
 			// If we're doing require list expansion, then set the EXPANDED_DEPENDENCIES attribute
-			// with the set of expanded dependencies for the layer.  This will be used by the 
+			// with the set of expanded dependencies for the layer.  This will be used by the
 			// build renderer to filter layer dependencies from the require list expansion.
 			if (RequestUtil.isExplodeRequires(request)) {
 				boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
@@ -160,14 +161,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	    				features,
 	    				true,	// resolveAliases
 	    				isReqExpLogging);
-	    				
+
 	    		DependencyList layerDepList = new DependencyList(
 	    				moduleIds,
 	    				aggr,
 	    				features,
 	    				false,	// Don't resolve aliases for module ids requested by the loader
 	    				isReqExpLogging);
-	    		
+
 	    		ModuleDeps configDeps = new ModuleDeps();
 	    		ModuleDeps layerDeps = new ModuleDeps();
 	    		try {
@@ -180,7 +181,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	    		} catch (IOException e) {
 	    			throw new RuntimeException(e.getMessage(), e);
 	    		}
-				
+
 				if (isReqExpLogging) {
 					StringBuffer sb = new StringBuffer();
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_4 + "\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -204,26 +205,26 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 		return result;
 	}
-	
+
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (Object reg : registrations) {
-			aggregator.getPlatformServices().unRegisterService(reg);			
+			aggregator.getPlatformServices().unRegisterService(reg);
 		}
 	}
 
 	@Override
 	public ModuleBuild build(
-			String mid, 
-			IResource resource, 
+			String mid,
+			IResource resource,
 			HttpServletRequest request,
 			List<ICacheKeyGenerator> keyGens
-			) 
+			)
 	throws Exception {
 		final IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		// Get the parameters from the request
         CompilationLevel level = getCompilationLevel(request);
-		boolean createNewKeyGen = (keyGens == null); 
+		boolean createNewKeyGen = (keyGens == null);
     	boolean isHasFiltering = RequestUtil.isHasFiltering(request);
 		// If the source doesn't exist, throw an exception.
 		if (!resource.exists()) {
@@ -239,7 +240,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 
 		List<JSSourceFile> sources = this.getJSSource(mid, resource, request, keyGens);
-		
+
 		// If optimization level is none, then just return the source, unless
 		// we were given a null keyGens array, in which case we
 		// need to process the source to be able to provide a
@@ -253,7 +254,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				code.toString(),
 				keyGens,
 				false
-			); 
+			);
 		}
 		boolean coerceUndefinedToFalse = aggr.getConfig().isCoerceUndefinedToFalse();
 		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
@@ -264,44 +265,44 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			features = Features.emptyFeatures;
 			coerceUndefinedToFalse = false;
 		}
-		
-		
+
+
 		Set<String> discoveredHasConditionals = new LinkedHashSet<String>();
 		Set<String> hasFiltDiscoveredHasConditionals = new HashSet<String>();
 		String output = null;
-	
+
 		Compiler compiler = new Compiler();
 		CompilerOptions compiler_options = new CompilerOptions();
     	compiler_options.customPasses = HashMultimap.create();
 		if (isHasFiltering && (level != null || keyGens == null)) {
 			// Run has filtering compiler pass if we are doing has filtering, or if this
-			// is the first build for this module (keyGens == null) so that we can get 
+			// is the first build for this module (keyGens == null) so that we can get
 			// the dependent features for the module to include in the cache key generator.
 			HasFilteringCompilerPass hfcp = new HasFilteringCompilerPass(
-					features, 
-					keyGens == null ? hasFiltDiscoveredHasConditionals : null, 
+					features,
+					keyGens == null ? hasFiltDiscoveredHasConditionals : null,
 					coerceUndefinedToFalse
 			);
    			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
 		}
 
 		boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
-		List<ModuleDeps> expandedDepsList = null; 
+		List<ModuleDeps> expandedDepsList = null;
 		if (RequestUtil.isExplodeRequires(request) && level != null) {
 			expandedDepsList = new ArrayList<ModuleDeps>();
 			/*
-			 * Register the RequireExpansionCompilerPass if we're exploding 
+			 * Register the RequireExpansionCompilerPass if we're exploding
 			 * require lists to include nested dependencies
 			 */
-			RequireExpansionCompilerPass recp = 
+			RequireExpansionCompilerPass recp =
 				new RequireExpansionCompilerPass(
-						aggr, 
+						aggr,
 						features,
 						discoveredHasConditionals,
 						expandedDepsList,
 						(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
 						isReqExpLogging);
-			
+
 			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, recp);
 		}
 		if (RequestUtil.isExportModuleName(request) && level != null) {
@@ -310,28 +311,28 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					new ExportModuleNameCompilerPass()
 			);
 		}
-		
+
 		if (level != null && level != CompilationLevel.WHITESPACE_ONLY) {
 			level.setOptionsForCompilationLevel(compiler_options);
 		} else {
-			// If CompilationLevel is WHITESPACE_ONLY, then don't call 
+			// If CompilationLevel is WHITESPACE_ONLY, then don't call
 			// setOptionsForCompilationLevel because it disables custom
 			// compiler passes and we want them to run.
-			
+
 		    // Allows annotations that are not standard.
 		    compiler_options.setWarningLevel(DiagnosticGroups.NON_STANDARD_JSDOC,
 		        CheckLevel.OFF);
 		}
-		
+
 		// we do our own threading, so disable compiler threads.
 		compiler.disableThreads();
-		
+
 		// compile the module
 		Result result = compiler.compile(externs, sources, compiler_options);
 		if (result.success) {
 			if (aggr.getOptions().isDevelopmentMode() && aggr.getOptions().isVerifyDeps()) {
-				// Validate dependencies for this module by comparing the 
-				// discovered has conditionals against the dependent features 
+				// Validate dependencies for this module by comparing the
+				// discovered has conditionals against the dependent features
 				// that were discovered when building the dependency graph
 				List<String> dependentFeatures = aggr.getDependencies().getDependentFeatures(mid);
 				if (dependentFeatures != null) {
@@ -342,12 +343,12 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			discoveredHasConditionals.addAll(hasFiltDiscoveredHasConditionals);
 			if (keyGens != null) {
-				// Determine if we need to update the cache key generator.  Updating may be 
-				// necessary due to require list expansion as a result of different 
+				// Determine if we need to update the cache key generator.  Updating may be
+				// necessary due to require list expansion as a result of different
 				// dependency path traversals resulting from the specification of different
 				// feature sets in the request.
 				CacheKeyGenerator keyGen = (CacheKeyGenerator)keyGens.get(1);
-				if (keyGen.featureKeyGen == null || 
+				if (keyGen.featureKeyGen == null ||
 						keyGen.featureKeyGen.getFeatureSet() == null ||
 						!keyGen.featureKeyGen.getFeatureSet().containsAll(discoveredHasConditionals)) {
 					discoveredHasConditionals.addAll(keyGen.featureKeyGen.getFeatureSet());
@@ -356,7 +357,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			if (level == null) {
 				// If optimization level is null, then we compiled only to discover
-				// the dependent features for the cache key generator.  Set the 
+				// the dependent features for the cache key generator.  Set the
 				// response output to the un-modified source code.
 				StringBuffer code = new StringBuffer();
 				for (JSSourceFile sf : sources) {
@@ -364,7 +365,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 				output = code.toString();
 			} else {
-				// Get the compiler output and set the data in the ModuleBuild 
+				// Get the compiler output and set the data in the ModuleBuild
 				output = compiler.toSource();
 			}
 		} else {
@@ -397,18 +398,18 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 		}
 		return new ModuleBuild(
-				expandedDepsList == null || expandedDepsList.size() == 0 ? 
+				expandedDepsList == null || expandedDepsList.size() == 0 ?
 						output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging),
-				createNewKeyGen ? 
-						getCacheKeyGenerators(discoveredHasConditionals) : 
+				createNewKeyGen ?
+						getCacheKeyGenerators(discoveredHasConditionals) :
 						keyGens,
 				false);
-	}		
-	
+	}
+
 	/**
 	 * Overrideable method for getting the source modules to compile
-	 * 
-	 * @param mid 
+	 *
+	 * @param mid
 	 * @param resource
 	 * @param request
 	 * @param keyGens
@@ -416,7 +417,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * @throws IOException
 	 */
 	protected List<JSSourceFile> getJSSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
-		
+
 		List<JSSourceFile> result = new LinkedList<JSSourceFile>();
 		InputStream in = resource.getInputStream();
 		JSSourceFile sf = JSSourceFile.fromInputStream(mid, in);
@@ -430,7 +431,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		return getCacheKeyGenerators((Set<String>)null);
 	}
-	
+
 	@Override
 	public boolean handles(String mid, IResource resource) {
 		return resource.getURI().getPath().endsWith(".js"); //$NON-NLS-1$
@@ -442,7 +443,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		keyGens.add(new CacheKeyGenerator(dependentFeatures, dependentFeatures == null));
 		return keyGens;
 	}
-	
+
 	static final class CacheKeyGenerator implements ICacheKeyGenerator {
 
 		private static final long serialVersionUID = -3344636280865415030L;
@@ -450,15 +451,15 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		private static final String eyecatcher = "js"; //$NON-NLS-1$
 
 		private final FeatureSetCacheKeyGenerator featureKeyGen;
-		
+
 		CacheKeyGenerator(Set<String> depFeatures, boolean provisional) {
 			featureKeyGen = new FeatureSetCacheKeyGenerator(depFeatures, provisional);
 		}
-		
+
 		private CacheKeyGenerator(FeatureSetCacheKeyGenerator featureKeyGen) {
-			this.featureKeyGen = featureKeyGen; 
+			this.featureKeyGen = featureKeyGen;
 		}
-		
+
 		/**
 		 * Calculates a string in the form
 		 * <code>&lt;<i>level</i>&gt;:&lt;0|1&gt;{&lt;<i>has-conditions</i>&gt;}</code>
@@ -469,7 +470,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		 * only has-conditions from {@code hasMap} that are also members of
 		 * {@code includedHas} (i.e. only has-conditions that are relevant to this
 		 * module).
-		 * 
+		 *
 		 * @param request
 		 *            The request
 		 * @param includedHas
@@ -482,7 +483,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			boolean requireListExpansion = RequestUtil.isExplodeRequires(request);
 			boolean reqExpLogging = RequestUtil.isRequireExpLogging(request);
 			boolean hasFiltering = RequestUtil.isHasFiltering(request);
-			
+
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest("Creating cache key: level=" +  //$NON-NLS-1$
 						(level != null ? level.toString() : "null") + ", " + //$NON-NLS-1$ //$NON-NLS-2$
@@ -490,17 +491,17 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						"requireExpLogging=" + Boolean.toString(reqExpLogging) + "," + //$NON-NLS-1$ //$NON-NLS-2$
 						"hasFiltering=" + Boolean.toString(hasFiltering) //$NON-NLS-1$
 				);
-						
+
 			}
 			StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
 				sb.append((level != null ? level.toString() : "NONE").substring(0,1))  //$NON-NLS-1$
 				  .append(requireListExpansion ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 				  .append(reqExpLogging ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 				  .append(hasFiltering ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
-			
-			if (featureKeyGen != null && 
-					RequestUtil.isHasFiltering(request) && 
-					getCompilationLevel(request) != null) 
+
+			if (featureKeyGen != null &&
+					RequestUtil.isHasFiltering(request) &&
+					getCompilationLevel(request) != null)
 			{
 				String s = featureKeyGen.generateKey(request);
 				if (s.length() > 0) {
@@ -533,7 +534,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		public boolean isProvisional() {
 			return featureKeyGen != null ? featureKeyGen.isProvisional() : false;
 		}
-		
+
 		@Override
 		public String toString() {
 			return eyecatcher + (featureKeyGen != null ? (":(" + featureKeyGen.toString()) + ")" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -557,16 +558,16 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			return result;
 		}
-		
+
 		@Override
 		public boolean equals(Object other) {
-			return other != null && getClass().equals(other.getClass()) && 
+			return other != null && getClass().equals(other.getClass()) &&
 					featureKeyGen.equals(((CacheKeyGenerator)other).featureKeyGen);
 		}
-		
+
 		@Override
 		public int hashCode() {
 			return getClass().hashCode() * 31 + featureKeyGen.hashCode();
 		}
 	}
-}	
+}

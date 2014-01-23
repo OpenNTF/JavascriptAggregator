@@ -16,6 +16,9 @@
 
 package com.ibm.jaggr.core.module;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
@@ -24,9 +27,6 @@ import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.readers.ModuleBuildReader;
 
 /**
  * Interface for module cache object

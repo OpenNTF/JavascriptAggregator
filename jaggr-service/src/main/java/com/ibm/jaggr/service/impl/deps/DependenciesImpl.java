@@ -16,6 +16,21 @@
 
 package com.ibm.jaggr.service.impl.deps;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfig.Location;
+import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.SequenceNumberProvider;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -34,21 +49,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.ProcessingDependenciesException;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfig.Location;
-import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
-import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
 

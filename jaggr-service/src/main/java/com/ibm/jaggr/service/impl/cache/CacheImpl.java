@@ -16,15 +16,15 @@
 
 package com.ibm.jaggr.service.impl.cache;
 
-import java.io.IOException;
-import java.io.Writer;
-import java.util.Date;
-import java.util.regex.Pattern;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModuleCache;
+
+import java.io.IOException;
+import java.io.Writer;
+import java.util.Date;
+import java.util.regex.Pattern;
 
 public class CacheImpl implements ICache {
 	private static final long serialVersionUID = 8499083762317350377L;

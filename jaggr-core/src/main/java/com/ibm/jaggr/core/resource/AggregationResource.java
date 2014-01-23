@@ -16,16 +16,16 @@
 
 package com.ibm.jaggr.core.resource;
 
+import com.ibm.jaggr.core.readers.AggregationReader;
+
+import org.apache.commons.io.input.ReaderInputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-
-import org.apache.commons.io.input.ReaderInputStream;
-
-import com.ibm.jaggr.core.readers.AggregationReader;
 
 /**
  * This class implements an aggregating resource that combines the 

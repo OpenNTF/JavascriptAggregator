@@ -15,21 +15,14 @@
  */
 package com.ibm.jaggr.service.util;
 
-import static org.easymock.EasyMock.replay;
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-import java.net.URI;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.HashSet;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.google.common.io.Files;
+
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -41,6 +34,14 @@ import com.ibm.jaggr.core.util.Messages;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.URI;
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class DependencyListTest_processDep {
 

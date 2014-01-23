@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.core;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @deprecated as of 1.1.7, replaced by {@link ILayerListener}

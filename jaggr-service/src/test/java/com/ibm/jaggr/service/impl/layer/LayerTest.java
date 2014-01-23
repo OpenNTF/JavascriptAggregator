@@ -23,6 +23,41 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.io.Files;
+
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.layer.ILayerListener;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.service.impl.AggregatorLayerListener;
+import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.service.impl.module.NotFoundModule;
+import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
+import com.ibm.jaggr.service.test.TestUtils;
+import com.ibm.jaggr.service.test.TestUtils.Ref;
+
+import org.apache.commons.lang.ArrayUtils;
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -48,40 +83,6 @@ import java.util.zip.Deflater;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.apache.commons.lang.ArrayUtils;
-import org.easymock.EasyMock;
-import org.easymock.IAnswer;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
-
-import com.google.common.io.Files;
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IPlatformServices;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.layer.ILayerListener;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.module.IModuleCache;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.service.impl.AggregatorLayerListener;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
-import com.ibm.jaggr.service.impl.module.NotFoundModule;
-import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
-import com.ibm.jaggr.service.test.TestUtils;
-import com.ibm.jaggr.service.test.TestUtils.Ref;
 
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(LayerImpl.class)

@@ -16,6 +16,30 @@
 
 package com.ibm.jaggr.service.impl.layer;
 
+import com.ibm.jaggr.core.BadRequestException;
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.layer.ILayerCache;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.ModuleIdentifier;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.DependencyList;
+import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.TypeUtil;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -48,30 +72,6 @@ import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import com.ibm.jaggr.core.BadRequestException;
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cache.ICacheManager;
-import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.layer.ILayer;
-import com.ibm.jaggr.core.layer.ILayerCache;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.module.ModuleIdentifier;
-import com.ibm.jaggr.core.module.ModuleSpecifier;
-import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.readers.ModuleBuildReader;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.DependencyList;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.RequestUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 /**
  * A LayerImpl is a collection of LayerBuild objects that are composed using the same

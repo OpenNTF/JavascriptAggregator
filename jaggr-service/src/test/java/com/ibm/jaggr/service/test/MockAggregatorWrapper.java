@@ -16,16 +16,6 @@
 
 package com.ibm.jaggr.service.test;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.List;
-
-import javax.servlet.http.HttpServlet;
-
-import org.easymock.EasyMock;
-import org.osgi.framework.BundleContext;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IPlatformServices;
@@ -43,6 +33,16 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
+
+import org.easymock.EasyMock;
+import org.osgi.framework.BundleContext;
+
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.util.List;
+
+import javax.servlet.http.HttpServlet;
 
 /**
  * Wrapper class for mock aggregator to make it easy to override

@@ -16,16 +16,17 @@
 
 package com.ibm.jaggr.core.layer;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.Serializable;
-
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * A layer is an aggregation of modules. An ILayer object organizes a collection

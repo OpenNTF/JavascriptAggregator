@@ -16,6 +16,9 @@
 
 package com.ibm.jaggr.service.impl.layer;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICacheManager;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -27,9 +30,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.logging.Level;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cache.ICacheManager;
 
 /**
  * Class to encapsulate operations on layer builds.  Uses {@link ExecutorService}

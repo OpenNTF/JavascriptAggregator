@@ -16,6 +16,11 @@
 
 package com.ibm.jaggr.core.readers;
 
+import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -25,11 +30,6 @@ import java.util.List;
 import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.module.IModule;
-import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
 
 /**
  * Objects of this class are returned in a {@link Future} from 

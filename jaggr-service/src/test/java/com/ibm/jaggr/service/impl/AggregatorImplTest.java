@@ -15,7 +15,10 @@
  */
 package com.ibm.jaggr.service.impl;
 
-import java.io.File;
+import com.google.common.io.Files;
+
+import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.service.test.TestUtils;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -24,9 +27,7 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
-import com.google.common.io.Files;
-import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.service.test.TestUtils;
+import java.io.File;
 
 public class AggregatorImplTest {
 

@@ -16,6 +16,11 @@
 
 package com.ibm.jaggr.core.cachekeygenerator;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.Features;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -28,11 +33,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.Features;
 
 /**
  * Cache key generator for content that depends on the feature set specified in

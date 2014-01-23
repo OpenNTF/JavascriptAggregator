@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.core.cachekeygenerator;
 
+import com.ibm.jaggr.core.transport.IHttpTransport;
+
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
@@ -24,8 +26,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 import javax.servlet.http.HttpServletRequest;
-
-import com.ibm.jaggr.core.transport.IHttpTransport;
 
 public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	private static final long serialVersionUID = -8488089828754517200L;
