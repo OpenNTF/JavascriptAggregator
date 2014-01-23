@@ -29,7 +29,7 @@ import org.osgi.framework.BundleContext;
 
 import java.io.File;
 
-public class AggregatorImplTest {
+public class AbstractAggregatorImplTest {
 
 	@Test
 	public void testInitWorkingDirectory() throws Exception {
