@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.css;
+package com.ibm.jaggr.core.impl.modulebuilder.css;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
@@ -24,14 +24,13 @@ import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
-import com.ibm.jaggr.core.impl.modulebuilder.css.Messages;
+import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.CommentStrippingReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
-import com.ibm.jaggr.service.impl.modulebuilder.text.TextModuleBuilder;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;

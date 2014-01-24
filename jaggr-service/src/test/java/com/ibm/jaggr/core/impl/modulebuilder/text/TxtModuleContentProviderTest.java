@@ -14,13 +14,15 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.text;
+package com.ibm.jaggr.core.impl.modulebuilder.text;
 
 import static org.junit.Assert.assertEquals;
 
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
 import com.ibm.jaggr.service.impl.resource.FileResource;
 import com.ibm.jaggr.service.test.TestUtils;
 
@@ -67,7 +69,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getCacheKey(javax.servlet.http.HttpServletRequest, java.util.Set)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.text.modulebuilder.impl.text.TextModuleBuilder#getCacheKey(javax.servlet.http.HttpServletRequest, java.util.Set)}.
 	 */
 	@Test
 	public void testGetCacheKeyGenerator() {
@@ -83,7 +85,7 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getJSSource()}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.text.modulebuilder.impl.text.TextModuleBuilder#getJSSource()}.
 	 * @throws IOException 
 	 */
 	@Test

@@ -14,13 +14,17 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.javascript;
+package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.RequireExpansionCompilerPass;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.RuntimeDependencyVerificationException;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.util.Features;
+
 import com.ibm.jaggr.service.test.TestUtils;
 
 import com.google.common.collect.HashMultimap;

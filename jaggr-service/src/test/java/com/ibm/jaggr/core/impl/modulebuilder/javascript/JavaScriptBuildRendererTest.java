@@ -14,10 +14,13 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.javascript;
+package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
+
 import com.ibm.jaggr.service.test.TestUtils;
 
 import org.easymock.EasyMock;

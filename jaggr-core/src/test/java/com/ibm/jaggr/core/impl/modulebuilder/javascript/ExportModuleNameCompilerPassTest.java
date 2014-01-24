@@ -14,7 +14,9 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.javascript;
+package com.ibm.jaggr.core.impl.modulebuilder.javascript;
+
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.ExportModuleNameCompilerPass;
 
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;

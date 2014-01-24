@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.i18n;
+package com.ibm.jaggr.core.impl.modulebuilder.i18n;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.modulebuilder.i18n.I18nModuleBuilder;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.options.IOptions;

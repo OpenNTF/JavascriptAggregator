@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.modulebuilder.text;
+package com.ibm.jaggr.core.impl.modulebuilder.text;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
