@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.executors;
+package com.ibm.jaggr.core.impl.executors;
 
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.executors.IExecutors;
-import com.ibm.jaggr.core.impl.executors.Messages;
 import com.ibm.jaggr.core.options.IOptions;
 
 import java.text.MessageFormat;
