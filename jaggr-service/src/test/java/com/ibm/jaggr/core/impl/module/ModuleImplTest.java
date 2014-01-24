@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.module;
+package com.ibm.jaggr.core.impl.module;
 
 import static org.junit.Assert.assertTrue;
 
@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;

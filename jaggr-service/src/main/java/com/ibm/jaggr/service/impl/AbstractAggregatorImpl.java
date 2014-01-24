@@ -41,6 +41,7 @@ import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.core.impl.layer.LayerImpl;
+import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -60,7 +61,6 @@ import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
 
 import org.apache.commons.io.FileUtils;

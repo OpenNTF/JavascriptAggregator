@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.module;
+package com.ibm.jaggr.core.impl.module;
 
 import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
@@ -25,7 +25,6 @@ import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.impl.layer.CompletedFuture;
-import com.ibm.jaggr.core.impl.module.Messages;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;

@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.options.IOptions;
@@ -43,7 +44,6 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 

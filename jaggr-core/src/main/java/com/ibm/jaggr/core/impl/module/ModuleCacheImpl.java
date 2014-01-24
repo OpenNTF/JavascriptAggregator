@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.module;
+package com.ibm.jaggr.core.impl.module;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.NotFoundException;

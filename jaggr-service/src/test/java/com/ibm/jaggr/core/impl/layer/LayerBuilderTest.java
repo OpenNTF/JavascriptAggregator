@@ -34,6 +34,7 @@ import com.ibm.jaggr.core.impl.layer.LayerBuilder;
 import com.ibm.jaggr.core.impl.layer.Messages;
 import com.ibm.jaggr.core.impl.layer.ModuleList;
 import com.ibm.jaggr.core.impl.layer.ModuleList.ModuleListEntry;
+import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
@@ -49,7 +50,6 @@ import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.util.CopyUtil;
 
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
-import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 
 import org.easymock.EasyMock;
