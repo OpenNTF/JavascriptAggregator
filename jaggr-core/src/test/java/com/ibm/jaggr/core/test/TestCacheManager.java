@@ -17,8 +17,8 @@
 package com.ibm.jaggr.core.test;
 
 import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cache.CacheManagerImpl;
 import com.ibm.jaggr.core.cache.ICache;
+import com.ibm.jaggr.core.impl.cache.CacheManagerImpl;
 
 import java.io.IOException;
 

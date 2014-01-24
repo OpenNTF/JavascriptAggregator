@@ -19,9 +19,9 @@ package com.ibm.jaggr.service.impl;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.Messages;
+import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
+import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.service.impl.executors.ExecutorsImpl;
-import com.ibm.jaggr.service.impl.options.OptionsImpl;
 
 import org.eclipse.core.runtime.Plugin;
 import org.osgi.framework.BundleActivator;

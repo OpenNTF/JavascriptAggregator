@@ -144,7 +144,11 @@
               ${project.groupId}.core.impl.layer;version="${project.version}",
               ${project.groupId}.core.impl.module;version="${project.version}",
               ${project.groupId}.core.impl.modulebuilder.css;version="${project.version}",
+              ${project.groupId}.core.impl.modulebuilder.i18n;version="${project.version}",
               ${project.groupId}.core.impl.modulebuilder.javascript;version="${project.version}",
+              ${project.groupId}.core.impl.modulebuilder.text;version="${project.version}",
+              ${project.groupId}.core.impl.options;version="${project.version}",
+              ${project.groupId}.core.impl.resource;version="${project.version}",
               ${project.groupId}.core.impl.transport;version="${project.version}",
               ${project.groupId}.core.layer;version="${project.version}",
               ${project.groupId}.core.module;version="${project.version}",
@@ -160,7 +164,7 @@
               !*
             </Import-Package>
             <!-- embed dependencies -->
-            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,commons-codec,js</Embed-Dependency>
+            <Embed-Dependency>wink-json4j,commons-io,commons-lang</Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
@@ -309,22 +313,22 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.javascript</groupId>
-      <artifactId>closure-compiler</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>rhino</groupId>
       <artifactId>js</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.felix</groupId>

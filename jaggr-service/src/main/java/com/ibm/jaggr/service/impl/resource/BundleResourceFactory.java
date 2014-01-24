@@ -19,6 +19,8 @@ package com.ibm.jaggr.service.impl.resource;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.impl.resource.FileResource;
+import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.util.PathUtil;
