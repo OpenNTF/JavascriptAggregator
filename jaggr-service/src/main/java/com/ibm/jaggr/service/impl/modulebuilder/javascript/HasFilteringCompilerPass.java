@@ -17,7 +17,7 @@
 package com.ibm.jaggr.service.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.service.util.NodeUtil;
+import com.ibm.jaggr.core.util.NodeUtil;
 
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
