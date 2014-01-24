@@ -248,15 +248,5 @@
        <artifactId>powermock-module-junit4</artifactId>
       <scope>test</scope>
      </dependency>
-    <dependency>
-      <groupId>org.eclipse.core</groupId>
-      <artifactId>runtime</artifactId>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi</artifactId>
-      <scope>provided</scope>
-    </dependency>
   </dependencies>
 </project>
