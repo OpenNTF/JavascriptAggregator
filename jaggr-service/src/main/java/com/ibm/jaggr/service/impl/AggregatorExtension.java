@@ -24,8 +24,6 @@ import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
-import org.eclipse.core.runtime.IExtension;
-
 import java.util.Properties;
 
 /**
@@ -37,26 +35,6 @@ class AggregatorExtension  implements IAggregatorExtension {
 	private String contributorId;
 	private Object instance;
 	private Properties attributes;
-
-	/**
-	 * Constructs a new AggregatorExtension object from an object instance and
-	 * an {@link IExtension}
-	 *
-	 * @param extension
-	 *            The IExtension object
-	 * @param instance
-	 *            The instantiated object for this extension
-	 * @param attributes
-	 *            The attributes for this extension
-	 */
-	AggregatorExtension(IExtension extension, Object instance, Properties attributes) {
-		this.extensionPointId = extension.getExtensionPointUniqueIdentifier();
-		this.uniqueId = extension.getUniqueIdentifier();
-		this.contributorId = extension.getContributor().getName();
-		this.instance = instance;
-		this.attributes = attributes;
-		validate();
-	}
 
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and

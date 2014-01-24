@@ -1077,7 +1077,12 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 				for (String name : member.getAttributeNames()) {
 					props.put(name, member.getAttribute(name));
 				}
-				registerResourceFactory(new AggregatorExtension(extension, factory, props), null);
+				registerResourceFactory(
+					new AggregatorExtension(factory, props,
+						extension.getExtensionPointUniqueIdentifier(),
+						extension.getUniqueIdentifier()
+					), null
+				);
 			}
 		}
 
@@ -1102,7 +1107,12 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 				for (String name : member.getAttributeNames()) {
 					props.put(name, member.getAttribute(name));
 				}
-				registerModuleBuilder(new AggregatorExtension(extension, builder, props), null);
+				registerModuleBuilder(
+					new AggregatorExtension(builder, props,
+						extension.getExtensionPointUniqueIdentifier(),
+						extension.getUniqueIdentifier()
+					), null
+				);
 			}
 		}
 
@@ -1130,7 +1140,12 @@ public class AbstractAggregatorImpl extends HttpServlet implements IExecutableEx
 		for (String attrname : member.getAttributeNames()) {
 			props.put(attrname, member.getAttribute(attrname));
 		}
-		registerHttpTransport(new AggregatorExtension(extension, transport, props));
+		registerHttpTransport(
+			new AggregatorExtension(transport, props,
+				extension.getExtensionPointUniqueIdentifier(),
+				extension.getUniqueIdentifier()
+			)
+		);
 
 		/*
 		 *  Now call setAggregator on the loaded extensions starting with the
