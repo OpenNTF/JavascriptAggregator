@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.layer;
+package com.ibm.jaggr.core.impl.layer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -29,6 +29,11 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.layer.CacheEntry;
+import com.ibm.jaggr.core.impl.layer.LayerBuildsAccessor;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
+import com.ibm.jaggr.core.impl.layer.LayerImpl;
+import com.ibm.jaggr.core.impl.layer.VariableGZIPOutputStream;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -195,7 +200,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.core.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.core.config.IConfig, long)}.
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
@@ -463,7 +468,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.core.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.core.config.IConfig, long)}.
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
@@ -508,7 +513,7 @@ public class LayerTest extends EasyMock {
 
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#toString()}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#toString()}.
 	 */
 	@Test
 	public void testToString() throws Exception {
@@ -529,7 +534,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.core.config.IConfig)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.core.config.IConfig)}.
 	 */
 	@Test
 	public void testGetResourceURI() throws IOException {

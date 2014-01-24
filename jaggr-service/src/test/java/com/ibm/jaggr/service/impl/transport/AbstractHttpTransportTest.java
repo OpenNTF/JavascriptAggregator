@@ -69,7 +69,7 @@ public class AbstractHttpTransportTest {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.impl.layer.LayerImpl#getHasReaturesFromRequest(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getHasReaturesFromRequest(javax.servlet.http.HttpServletRequest)}.
 	 * @throws ServletException
 	 */
 	@Test

@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -37,7 +38,6 @@ import com.ibm.jaggr.core.test.SynchronousScheduledExecutor;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
-import com.ibm.jaggr.service.impl.layer.LayerCacheImpl;
 import com.ibm.jaggr.service.impl.module.ModuleCacheImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;

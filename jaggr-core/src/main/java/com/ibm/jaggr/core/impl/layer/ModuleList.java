@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.layer;
+package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.ModuleSpecifier;

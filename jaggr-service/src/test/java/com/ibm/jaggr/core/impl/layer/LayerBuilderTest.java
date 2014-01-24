@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.layer;
+package com.ibm.jaggr.core.impl.layer;
 
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.eq;
@@ -29,7 +29,11 @@ import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.impl.layer.CompletedFuture;
+import com.ibm.jaggr.core.impl.layer.LayerBuilder;
 import com.ibm.jaggr.core.impl.layer.Messages;
+import com.ibm.jaggr.core.impl.layer.ModuleList;
+import com.ibm.jaggr.core.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
@@ -45,7 +49,6 @@ import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.util.CopyUtil;
 
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
-import com.ibm.jaggr.service.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 import com.ibm.jaggr.service.test.TestUtils;
 

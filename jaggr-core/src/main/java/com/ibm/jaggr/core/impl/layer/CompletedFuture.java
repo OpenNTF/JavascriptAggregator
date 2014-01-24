@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.layer;
+package com.ibm.jaggr.core.impl.layer;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;

@@ -18,6 +18,7 @@ package com.ibm.jaggr.service.impl.module;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.impl.layer.CompletedFuture;
 import com.ibm.jaggr.core.impl.module.Messages;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.ModuleIdentifier;
@@ -25,7 +26,6 @@ import com.ibm.jaggr.core.readers.ErrorModuleReader;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.StringUtil;
-import com.ibm.jaggr.service.impl.layer.CompletedFuture;
 
 import java.io.Serializable;
 import java.net.URI;

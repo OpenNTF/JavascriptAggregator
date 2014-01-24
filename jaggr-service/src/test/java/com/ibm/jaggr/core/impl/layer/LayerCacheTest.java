@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.layer;
+package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
@@ -22,6 +22,9 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.layer.CacheEntry;
+import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
+import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.test.TestCacheManager;

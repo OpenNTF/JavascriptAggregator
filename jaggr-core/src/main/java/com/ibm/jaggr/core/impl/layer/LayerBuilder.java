@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.layer;
+package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.layer.Messages;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
