@@ -19,7 +19,8 @@ import static org.junit.Assert.assertEquals;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
+
 import com.ibm.jaggr.service.test.TestUtils;
 
 import com.google.common.io.Files;

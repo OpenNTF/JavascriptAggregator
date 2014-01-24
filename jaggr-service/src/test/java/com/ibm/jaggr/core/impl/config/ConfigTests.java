@@ -14,15 +14,17 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.config;
+package com.ibm.jaggr.core.impl.config;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.PathUtil;
+
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestUtils;
 

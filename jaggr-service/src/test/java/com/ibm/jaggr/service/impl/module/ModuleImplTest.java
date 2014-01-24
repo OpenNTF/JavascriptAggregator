@@ -23,11 +23,12 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
+
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
 import com.ibm.jaggr.service.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.service.test.TestUtils;

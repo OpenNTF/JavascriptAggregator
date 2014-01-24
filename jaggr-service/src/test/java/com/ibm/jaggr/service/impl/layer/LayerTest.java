@@ -28,6 +28,7 @@ import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -36,8 +37,8 @@ import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
+
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.module.NotFoundModule;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.test.TestUtils;

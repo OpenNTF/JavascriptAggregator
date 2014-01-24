@@ -20,12 +20,13 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
+
 import com.ibm.jaggr.service.test.TestUtils;
 
 import org.apache.commons.codec.binary.Base64;

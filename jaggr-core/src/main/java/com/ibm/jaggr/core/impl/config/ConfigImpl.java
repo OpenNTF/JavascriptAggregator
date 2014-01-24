@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.config;
+package com.ibm.jaggr.core.impl.config;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
@@ -22,7 +22,6 @@ import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
-import com.ibm.jaggr.core.impl.config.Messages;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;

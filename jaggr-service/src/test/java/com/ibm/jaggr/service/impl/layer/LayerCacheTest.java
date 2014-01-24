@@ -21,13 +21,13 @@ import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 
-import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestUtils;
