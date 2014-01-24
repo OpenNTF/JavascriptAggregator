@@ -163,7 +163,7 @@
               !*
             </Import-Package>
             <!-- embed dependencies -->
-            <Embed-Dependency>closure-compiler;inline=false,concurrentlinkedhashmap-lru;inline=false,guava,wink-json4j,commons-io,commons-lang,commons-codec,js</Embed-Dependency>
+            <Embed-Dependency>wink-json4j,commons-io,commons-lang</Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
@@ -312,22 +312,22 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.javascript</groupId>
-      <artifactId>closure-compiler</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>rhino</groupId>
       <artifactId>js</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
       <artifactId>concurrentlinkedhashmap-lru</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.apache.felix</groupId>

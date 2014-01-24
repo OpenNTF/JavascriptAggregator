@@ -92,7 +92,6 @@
             <Export-Package>
               ${project.groupId}.core;version="${project.version}",
               ${project.groupId}.core.*;version="${project.version}"
-              
             </Export-Package>          
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
@@ -101,7 +100,16 @@
               org.apache.felix.service.command;resolution:=optional,
               !*
             </Import-Package>
-            <Embed-Dependency>commons-io,commons-lang</Embed-Dependency>
+            <Embed-Dependency>
+              closure-compiler,
+              commons-codec,
+              commons-io,
+              commons-lang,
+              concurrentlinkedhashmap-lru,
+              guava,
+              js,
+              wink-json4j
+            </Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
