@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl;
+package com.ibm.jaggr.core.impl;
 
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
@@ -29,7 +29,8 @@ import java.util.Properties;
 /**
  * Implementation  for {@link IAggregatorExtension} interface.
  */
-class AggregatorExtension  implements IAggregatorExtension {
+// TODO: Reduce visibility once AbstractAggregatorImpl is moved to jaggr-core
+public class AggregatorExtension  implements IAggregatorExtension {
 	private String extensionPointId;
 	private String uniqueId;
 	private String contributorId;
@@ -48,7 +49,8 @@ class AggregatorExtension  implements IAggregatorExtension {
 	 * @param uniqueId
 	 *            the extension unique id
 	 */
-	AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
+	// TODO: Reduce visibility once AbstractAggregatorImpl is moved to jaggr-core
+	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
 		this.extensionPointId = extensionPointId;
 		this.uniqueId = uniqueId;
 		this.contributorId = null;

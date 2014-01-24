@@ -35,6 +35,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.AggregatorExtension;
 import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
