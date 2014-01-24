@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ibm.jaggr.service.impl.resource;
+package com.ibm.jaggr.core.impl.resource;
 
+import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 
 import org.easymock.EasyMock;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import java.io.File;
 import java.net.URI;
@@ -56,7 +58,7 @@ public class FileResourceTests {
 		URI resolved = relativeRes.getURI();
 		EasyMock.verify(mockBundleResourceFactory);
 		Assert.assertEquals(new File(fileUri).toURI().resolve("../relative"), resolved);
-		Assert.assertEquals(relativeBundleUri, relativeRes.getRefUri());
-		Assert.assertTrue(mockBundleResourceFactory == relativeRes.getFactory());
+		Assert.assertEquals(relativeBundleUri, Whitebox.getInternalState(relativeRes, "ref"));
+		Assert.assertTrue(mockBundleResourceFactory == Whitebox.getInternalState(relativeRes, "factory"));
 	}
 }

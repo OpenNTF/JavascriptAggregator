@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.resource;
+package com.ibm.jaggr.core.impl.resource;
 
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
@@ -286,19 +286,5 @@ public class FileResource implements IResource {
 			}
 		}
 		return uri;
-	}
-
-	/*
-	 * Package private accessor for unit testing
-	 */
-	URI getRefUri() {
-		return ref;
-	}
-
-	/*
-	 * Package private accessor for unit testing
-	 */
-	IResourceFactory getFactory() {
-		return factory;
 	}
 }

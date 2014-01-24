@@ -21,9 +21,9 @@ import static org.junit.Assert.assertEquals;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
+import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
-import com.ibm.jaggr.service.impl.resource.FileResource;
 import com.ibm.jaggr.service.test.TestUtils;
 
 import com.google.common.io.Files;

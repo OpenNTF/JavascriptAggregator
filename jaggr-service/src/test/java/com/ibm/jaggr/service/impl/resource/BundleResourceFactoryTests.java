@@ -17,6 +17,9 @@ package com.ibm.jaggr.service.impl.resource;
 
 import static org.junit.Assert.assertEquals;
 
+import com.ibm.jaggr.core.impl.resource.FileResource;
+import com.ibm.jaggr.core.impl.resource.NotFoundResource;
+
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
@@ -24,6 +27,7 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.powermock.reflect.Whitebox;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -141,8 +145,8 @@ public class BundleResourceFactoryTests {
 		EasyMock.replay(mockContext, mockUrlConverterSR, mockUrlConverter);
 		FileResource res = (FileResource)factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
-		Assert.assertTrue(factory == res.getFactory());
-		Assert.assertEquals(bundleUrl.toURI(), res.getRefUri());
+		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
+		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "res"));
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
 
 		/*
@@ -179,8 +183,8 @@ public class BundleResourceFactoryTests {
 		bundleNameMap.put("com.test.bundle", mockBundle);
 		res = (FileResource)factory.newResource(namedBundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter, mockBundle);
-		Assert.assertTrue(factory == res.getFactory());
-		Assert.assertEquals(bundleUrl.toURI(), res.getRefUri());
+		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
+		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "res"));
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
 
 		/*

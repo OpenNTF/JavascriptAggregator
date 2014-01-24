@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.impl.resource.ExceptionResource;
 import com.ibm.jaggr.core.impl.transport.Messages;
 import com.ibm.jaggr.core.readers.AggregationReader;
 import com.ibm.jaggr.core.resource.IResource;
@@ -37,7 +38,6 @@ import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.TypeUtil;
-import com.ibm.jaggr.service.impl.resource.ExceptionResource;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.input.ReaderInputStream;

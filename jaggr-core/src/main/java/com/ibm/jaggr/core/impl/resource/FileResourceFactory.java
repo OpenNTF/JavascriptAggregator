@@ -14,13 +14,12 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.resource;
+package com.ibm.jaggr.core.impl.resource;
 
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 
 import java.net.URI;
-
 
 /**
  * Default implementation for {@link IResourceFactory} that currently supports
@@ -37,7 +36,7 @@ public class FileResourceFactory implements IResourceFactory {
 		if ("file".equals(scheme) || scheme == null) { //$NON-NLS-1$
 			result = new FileResource(uri);
 		} else {
-			throw new UnsupportedOperationException(uri.getScheme()); 
+			throw new UnsupportedOperationException(uri.getScheme());
 		}
 		return result;
 	}
