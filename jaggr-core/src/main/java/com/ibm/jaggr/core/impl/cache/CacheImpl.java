@@ -14,9 +14,10 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.core.cache;
+package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModuleCache;
 
