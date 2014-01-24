@@ -14,10 +14,9 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.cache;
+package com.ibm.jaggr.core.cache;
 
 import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.cache.ICacheManager;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;

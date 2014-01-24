@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.cache;
+package com.ibm.jaggr.core.cache;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.cache.ICache;
-import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;

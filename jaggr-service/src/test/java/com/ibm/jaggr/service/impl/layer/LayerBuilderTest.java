@@ -39,13 +39,14 @@ import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.util.CopyUtil;
+
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
 import com.ibm.jaggr.service.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
-import com.ibm.jaggr.service.test.TestCacheManager;
 import com.ibm.jaggr.service.test.TestUtils;
 
 import org.easymock.EasyMock;
