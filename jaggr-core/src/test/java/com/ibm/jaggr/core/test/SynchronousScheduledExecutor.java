@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.test;
+package com.ibm.jaggr.core.test;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.Delayed;

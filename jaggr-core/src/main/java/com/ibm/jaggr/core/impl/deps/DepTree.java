@@ -14,11 +14,10 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.deps;
+package com.ibm.jaggr.core.impl.deps;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.impl.deps.Messages;
 import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.PathUtil;
 

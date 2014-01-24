@@ -17,15 +17,15 @@
 package com.ibm.jaggr.service;
 
 import com.ibm.jaggr.core.impl.config.ConfigTests;
+import com.ibm.jaggr.core.impl.deps.DepTreeNodeTests;
+import com.ibm.jaggr.core.impl.deps.DepUtilsTest;
+import com.ibm.jaggr.core.impl.deps.DependenciesTest;
 
 import com.ibm.jaggr.service.deps.ModuleDepInfoTest;
 import com.ibm.jaggr.service.deps.ModuleDepsTest;
 import com.ibm.jaggr.service.impl.AbstractAggregatorImplTest;
 import com.ibm.jaggr.service.impl.cache.CacheManagerImplTest;
 import com.ibm.jaggr.service.impl.deps.BooleanFormulaTest;
-import com.ibm.jaggr.service.impl.deps.DepTreeNodeTests;
-import com.ibm.jaggr.service.impl.deps.DepUtilsTest;
-import com.ibm.jaggr.service.impl.deps.DependenciesTest;
 import com.ibm.jaggr.service.impl.deps.HasNodeTests;
 import com.ibm.jaggr.service.impl.layer.LayerBuilderTest;
 import com.ibm.jaggr.service.impl.layer.LayerCacheTest;

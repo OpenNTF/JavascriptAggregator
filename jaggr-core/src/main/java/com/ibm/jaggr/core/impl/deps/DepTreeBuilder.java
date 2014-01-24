@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.deps;
+package com.ibm.jaggr.core.impl.deps;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.resource.IResource;

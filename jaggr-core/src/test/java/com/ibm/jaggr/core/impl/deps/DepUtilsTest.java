@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.deps;
+package com.ibm.jaggr.core.impl.deps;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+
+import com.ibm.jaggr.core.impl.deps.DepTreeNode;
+import com.ibm.jaggr.core.impl.deps.DepUtils;
 
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
@@ -39,7 +42,7 @@ import java.util.Set;
 
 public class DepUtilsTest {
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#removeRedundantPaths(java.util.Collection)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepUtils#removeRedundantPaths(java.util.Collection)}.
 	 * @throws URISyntaxException
 	 */
 	@Test
@@ -67,7 +70,7 @@ public class DepUtilsTest {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#getNodeForResource(java.lang.String, java.util.Map)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepUtils#getNodeForResource(java.lang.String, java.util.Map)}.
 	 * @throws URISyntaxException
 	 */
 	@Test
@@ -107,7 +110,7 @@ public class DepUtilsTest {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepUtils#parseDependencies(com.google.javascript.rhino.Node)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepUtils#parseDependencies(com.google.javascript.rhino.Node)}.
 	 */
 	@Test
 	public void testParseDependencies() {

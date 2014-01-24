@@ -14,12 +14,15 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.deps;
+package com.ibm.jaggr.core.impl.deps;
 import static org.junit.Assert.assertEquals;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.deps.DepTree;
+import com.ibm.jaggr.core.impl.deps.DepTreeNode;
+import com.ibm.jaggr.core.impl.deps.DepTreeRoot;
 
 import com.ibm.jaggr.service.test.TestUtils;
 
@@ -79,7 +82,7 @@ public class DependenciesTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepTree#Dependencies(java.util.Collection, java.io.File, boolean, boolean)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepTree#Dependencies(java.util.Collection, java.io.File, boolean, boolean)}.
 	 * @throws ClassNotFoundException
 	 */
 	@Test
@@ -131,7 +134,7 @@ public class DependenciesTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.service.deps.impl.DepTree#mapDependencies(com.ibm.jaggr.service.modules.AMDConfig)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepTree#mapDependencies(com.ibm.jaggr.service.modules.AMDConfig)}.
 	 * @throws ClassNotFoundException
 	 * @throws CloneNotSupportedException
 	 */
