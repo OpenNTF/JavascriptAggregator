@@ -30,6 +30,7 @@ import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.cache.CacheManagerImpl;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
@@ -54,8 +55,8 @@ import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
+
 import com.ibm.jaggr.service.PlatformServicesImpl;
-import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.service.impl.layer.LayerImpl;

@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.test;
+package com.ibm.jaggr.core.test;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.cache.CacheManagerImpl;
 import com.ibm.jaggr.core.cache.ICache;
-import com.ibm.jaggr.service.impl.cache.CacheManagerImpl;
 
 import java.io.IOException;
 

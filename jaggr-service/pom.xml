@@ -347,6 +347,12 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-core</artifactId>
+      <classifier>tests</classifier>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
