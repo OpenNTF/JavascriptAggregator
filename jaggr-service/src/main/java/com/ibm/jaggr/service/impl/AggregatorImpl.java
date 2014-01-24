@@ -16,36 +16,6 @@
 
 package com.ibm.jaggr.service.impl;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Matcher;
-
-import org.apache.commons.io.FileUtils;
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
-import org.eclipse.core.runtime.IExtension;
-import org.eclipse.core.runtime.IExtensionRegistry;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.BundleListener;
-import org.osgi.framework.Constants;
-import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
-import org.osgi.util.tracker.ServiceTracker;
-
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IVariableResolver;
@@ -67,6 +37,36 @@ import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.service.impl.options.OptionsImpl;
+
+import org.apache.commons.io.FileUtils;
+import org.eclipse.core.runtime.CoreException;
+import org.eclipse.core.runtime.IConfigurationElement;
+import org.eclipse.core.runtime.IExecutableExtension;
+import org.eclipse.core.runtime.IExtension;
+import org.eclipse.core.runtime.IExtensionRegistry;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.Status;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
+import org.osgi.framework.BundleEvent;
+import org.osgi.framework.BundleException;
+import org.osgi.framework.BundleListener;
+import org.osgi.framework.Constants;
+import org.osgi.framework.InvalidSyntaxException;
+import org.osgi.framework.ServiceReference;
+import org.osgi.util.tracker.ServiceTracker;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
 
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
@@ -104,8 +104,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
     private ServiceTracker optionsServiceTracker = null;
     private ServiceTracker executorsServiceTracker = null;
 	private ServiceTracker variableResolverServiceTracker = null;
-	
-	
+
+
     @Override
     public IOptions getOptions() {
     	return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
@@ -138,9 +138,9 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					);
 			}
 		}
-        try {        	
+        try {
     		BundleContext bundleContext = contributingBundle.getBundleContext();
-    		platformServices = new PlatformServicesImpl(bundleContext); 
+    		platformServices = new PlatformServicesImpl(bundleContext);
     		bundle = bundleContext.getBundle();
             name = getAggregatorName(configElem);
             initParams = getInitParams(configElem);
@@ -185,7 +185,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 
         registerLayerListener();
 	}
-	
+
 	@Override
     synchronized protected void shutdown(){
     	super.shutdown();
@@ -195,7 +195,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		executorsServiceTracker.close();
 		variableResolverServiceTracker.close();
     }
-	
+
 	/* (non-Javadoc)
 	 * @see org.osgi.framework.BundleListener#bundleChanged(org.osgi.framework.BundleEvent)
 	 */
@@ -206,8 +206,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 	}
 
-	
-	
+
+
 	/**
 	 * Returns the name for the bundle containing the servlet code.  This is used
 	 * to look up services like IOptions and IExecutors that are registered by the
@@ -397,7 +397,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
     	callExtensionInitializers(getModuleBuilderExtensions(), reg);
     	reg.open = false;
     }
-	
+
 	/**
 	 * Returns the working directory for this aggregator.
 	 * <p>

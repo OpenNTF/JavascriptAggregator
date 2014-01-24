@@ -16,33 +16,6 @@
 
 package com.ibm.jaggr.service.impl;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.NotSerializableException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.StringReader;
-import java.net.URI;
-import java.text.MessageFormat;
-import java.util.Collections;
-import java.util.Dictionary;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.regex.Pattern;
-
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
@@ -83,6 +56,33 @@ import com.ibm.jaggr.service.impl.config.ConfigImpl;
 import com.ibm.jaggr.service.impl.layer.LayerImpl;
 import com.ibm.jaggr.service.impl.module.ModuleImpl;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.NotSerializableException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.StringReader;
+import java.net.URI;
+import java.text.MessageFormat;
+import java.util.Collections;
+import java.util.Dictionary;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
  *
@@ -99,16 +99,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	private static final Logger log = Logger.getLogger(AbstractAggregatorImpl.class.getName());
 
 	protected File workdir = null;
-    protected ICacheManager cacheMgr = null;
-    protected IConfig config = null;
-    
-    //protected Bundle bundle = null;
-    protected String name = null;
-    protected IDependencies deps = null;
-    protected List<Object> registrations = new LinkedList<Object>();
-    protected List<Object> serviceReferences = Collections.synchronizedList(new LinkedList<Object>());
-    protected InitParams initParams = null;
-    protected IOptions localOptions = null;
+	protected ICacheManager cacheMgr = null;
+	protected IConfig config = null;
+
+	//protected Bundle bundle = null;
+	protected String name = null;
+	protected IDependencies deps = null;
+	protected List<Object> registrations = new LinkedList<Object>();
+	protected List<Object> serviceReferences = Collections.synchronizedList(new LinkedList<Object>());
+	protected InitParams initParams = null;
+	protected IOptions localOptions = null;
 
 	private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
@@ -158,35 +158,35 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * may be called from the destroy method or the bundle listener or both.
 	 */
 	synchronized protected void shutdown() {
-    	if(getPlatformServices().isShuttingdown()){    		
-			Object[] refs = null;				
+		if(getPlatformServices().isShuttingdown()){
+			Object[] refs = null;
 			try {
 				refs = getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
 				}
-			}			
-	    	if (refs != null) {
-	    		for (Object ref : refs) {
-	    			IShutdownListener listener = (IShutdownListener)getPlatformServices().getService(ref);
-	    			if (listener != null) {
-	    				try {
-	    					listener.shutdown(this);
-	    				} catch (Exception e) {
-	    					if (log.isLoggable(Level.SEVERE)) {
-	    						log.log(Level.SEVERE, e.getMessage(), e);
-	    					}
-	    				} finally {
-	    					getPlatformServices().ungetService(ref);
-	    				}
-	    			}
-	    		}
-	    	}
+			}
+			if (refs != null) {
+				for (Object ref : refs) {
+					IShutdownListener listener = (IShutdownListener)getPlatformServices().getService(ref);
+					if (listener != null) {
+						try {
+							listener.shutdown(this);
+						} catch (Exception e) {
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, e.getMessage(), e);
+							}
+						} finally {
+							getPlatformServices().ungetService(ref);
+						}
+					}
+				}
+			}
 			for (Object registration : registrations) {
 				getPlatformServices().unRegisterService(registration);
-			}			
-    	}			
+			}
+		}
 	}
 
 	/* (non-Javadoc)
@@ -346,7 +346,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		return name;
 	}
 
-   
+
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#getConfig()
@@ -487,7 +487,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		return new ModuleImpl(mid, uri);
 	}
 
-	
+
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.IAggregator#newLayerCache()
@@ -517,7 +517,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	public void optionsUpdated(IOptions options, long sequence) {
 		// Options have been updated.  Notify any listeners that registered using this
 		// aggregator instance's name.
-		Object[] refs = null;		
+		Object[] refs = null;
 		try {
 			refs = getPlatformServices().getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 		} catch (PlatformServicesException e) {
@@ -525,7 +525,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-	
+
 		if (refs != null) {
 			for (Object ref : refs) {
 				IOptionsListener listener = (IOptionsListener)getPlatformServices().getService(ref);
@@ -539,10 +539,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				}
 			}
 		}
-	} 
-		
-	
-	
+	}
+
+
+
 
 	/**
 	 * Sets response status and headers for an error response based on the
@@ -612,7 +612,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		return substituteProps(str, null);
 	}
 
-	protected final Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}"); //$NON-NLS-1$	
+	protected final Pattern pattern = Pattern.compile("\\$\\{([^}]*)\\}"); //$NON-NLS-1$
 
 	/**
 	 * Loads the {@code IConfig} for this aggregator
@@ -644,9 +644,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	protected void notifyRequestListeners(RequestNotifierAction action, HttpServletRequest req, HttpServletResponse resp) throws IOException {
 		// notify any listeners that the config has been updated
-		Object[] refs = null;			
+		Object[] refs = null;
 		try {
-			refs = getPlatformServices().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
+			refs = getPlatformServices().getServiceReferences(IRequestListener.class.getName(),  "(name="+getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$
 		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
@@ -675,19 +675,19 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @throws IOException
 	 */
 	protected void notifyConfigListeners(long seq) throws IOException {
-		Object[] refs = null;		
+		Object[] refs = null;
 		try {
-			refs = getPlatformServices().getServiceReferences(IConfigListener.class.getName(),  "(name="+getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$ 
+			refs = getPlatformServices().getServiceReferences(IConfigListener.class.getName(),  "(name="+getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$
 		} catch (PlatformServicesException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		}
-		
+
 		if (refs != null) {
 			for (Object ref : refs) {
-				IConfigListener listener = 
-					(IConfigListener)getPlatformServices().getService(ref);
+				IConfigListener listener =
+						(IConfigListener)getPlatformServices().getService(ref);
 				if (listener != null) {
 					try {
 						listener.configLoaded(config, seq);
@@ -802,9 +802,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 	}
 
-	
-	
-    
+
+
+
 	// Instances of this class are NOT serializable
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		throw new NotSerializableException();
@@ -815,8 +815,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		throw new NotSerializableException();
 	}
 
-	
-	
+
+
 	/**
 	 * Instantiates a new dependencies object
 	 *
@@ -842,19 +842,19 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected ICacheManager newCacheManager(long stamp) throws IOException {
 		return new CacheManagerImpl(this, stamp);
 	}
-	
+
 	@Override
-    public abstract IOptions getOptions();
-	
+	public abstract IOptions getOptions();
+
 	@Override
-    public abstract IExecutors getExecutors();
-	
+	public abstract IExecutors getExecutors();
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.IAggregator#substituteProps(java.lang.String, com.ibm.jaggr.core.IAggregator.SubstitutionTransformer)
 	 */
 	@Override
 	public abstract String substituteProps(String str, SubstitutionTransformer transformer);
-	
+
 	@Override
 	public IPlatformServices getPlatformServices() {
 		return platformServices;
@@ -915,11 +915,11 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * Registers the layer listener
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	protected void registerLayerListener() {		
+	protected void registerLayerListener() {
 		Dictionary dict = new Properties();
-        dict.put("name", getName()); //$NON-NLS-1$        
-        registrations.add(getPlatformServices().registerService(
-        		ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
+		dict.put("name", getName()); //$NON-NLS-1$
+		registrations.add(getPlatformServices().registerService(
+				ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
 	}
 }
 
