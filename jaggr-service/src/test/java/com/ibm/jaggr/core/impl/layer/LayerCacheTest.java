@@ -25,13 +25,13 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.layer.CacheEntry;
 import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 import com.ibm.jaggr.core.impl.layer.LayerImpl;
+import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 
-import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.test.MockAggregatorWrapper;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;

@@ -35,6 +35,7 @@ import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
 import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.impl.layer.VariableGZIPOutputStream;
 import com.ibm.jaggr.core.impl.module.NotFoundModule;
+import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -45,7 +46,6 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
 
 import com.ibm.jaggr.service.impl.AggregatorLayerListener;
-import com.ibm.jaggr.service.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ibm.jaggr.service.impl.transport;
+package com.ibm.jaggr.core.impl.transport;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
@@ -21,9 +21,11 @@ import static org.junit.Assert.assertNull;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
+
 import com.ibm.jaggr.service.test.TestUtils;
 
 import org.apache.commons.codec.binary.Base64;

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.transport;
+package com.ibm.jaggr.core.impl.transport;
 
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
@@ -27,7 +27,6 @@ import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.impl.resource.ExceptionResource;
-import com.ibm.jaggr.core.impl.transport.Messages;
 import com.ibm.jaggr.core.readers.AggregationReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;

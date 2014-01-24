@@ -14,12 +14,13 @@
  * limitations under the License.
  */
 
-package com.ibm.jaggr.service.impl.transport;
+package com.ibm.jaggr.core.impl.transport;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 
 import com.ibm.jaggr.service.test.TestUtils;

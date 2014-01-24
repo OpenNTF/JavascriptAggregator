@@ -15,7 +15,9 @@
  */
 package com.ibm.jaggr.service.impl.transport;
 
+import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
 import com.ibm.jaggr.core.impl.transport.Messages;
+
 import com.ibm.jaggr.service.impl.Activator;
 
 import org.eclipse.core.runtime.CoreException;
