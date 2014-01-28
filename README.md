@@ -16,33 +16,56 @@
 
 [![Build Status](https://buildhive.cloudbees.com/job/OpenNTF/job/JavascriptAggregator/badge/icon)](https://buildhive.cloudbees.com/job/OpenNTF/job/JavascriptAggregator/)
 
-The JavaScript Aggregator is an OSGi servlet that provides aggregation and code minification 
-services to AMDs loaders that supports the loader extension API.  Features include:
+The JavaScript Aggregator is an OSGi servlet that provides aggregation and code
+minification services to AMDs loaders that supports the loader extension API.
+Features include:
 
 * JavaScript minification using the Google Closure compiler
 * Code trimming using has.js feature detection
-* Require list expansion to reduce the cascade of requests resulting from dependency discovery as modules are loaded on the client
+* Require list expansion to reduce the cascade of requests resulting from
+  dependency discovery as modules are loaded on the client
 * CSS Optimizations
 * i18n resource consolidation
-* Caching of previously built/minified output for quicker response on subsequent requests
+* Caching of previously built/minified output for quicker response on
+  subsequent requests
 
-The Aggregator supports the Eclipse plugin extension architecture to allow the addition of support for:
+The Aggregator supports the Eclipse plugin extension architecture to allow the
+addition of support for:
 * New types of resource repository locations on the server
 * New types of module builders/minifiers
 * New AMD loaders
 
-See the [wiki](https://github.com/OpenNTF/JavascriptAggregator/wiki) for more details.
+See the [wiki](https://github.com/OpenNTF/JavascriptAggregator/wiki) for more
+details.
 
 ###OPENNTF###
-This project is an OpenNTF project, and is available under the Apache License V2.0. All other aspects of the project, including contributions, defect reports, discussions, feature requests and reviews are subject to the [OpenNTF Terms of Use](http://openntf.org/Internal/home.nsf/dx/Terms_of_Use).
+This project is an OpenNTF project, and is available under the Apache License
+V2.0. All other aspects of the project, including contributions, defect
+reports, discussions, feature requests and reviews are subject to the
+[OpenNTF Terms of Use](http://openntf.org/Internal/home.nsf/dx/Terms_of_Use).
+
+###HELP###
+For help with this project, please visit the 
+[discussion forum](https://groups.google.com/forum/?fromgroups#!forum/jaggr) or
+ask a question on [Stack Overflow](http://stackoverflow.com/) with the tag 
+`jaggr`. *Remember to check the 
+[wiki](https://github.com/OpenNTF/JavascriptAggregator/wiki).*
 
 ###UPGRADING###
 
 ####From 1.0.0 to 1.1.1####
-* Resources defined in the server-side amd config file that use a "namedbundleresource" scheme url should leave the authority section of the uri blank and have the bundle name be the first segment in the path. (ex: namedbundleresource:///bundle.name/path/to/file)
-* Interface change in IResource (added IResource resolve(String relative);) will affect any third-party resource providers. 
+* Resources defined in the server-side amd config file that use a 
+  "namedbundleresource" scheme url should leave the authority section of the
+  uri blank and have the bundle name be the first segment in the path. 
+  (ex: namedbundleresource:///bundle.name/path/to/file)
+* Interface change in IResource (added IResource resolve(String relative);) 
+  will affect any third-party resource providers.
 
 ####From 1.1.7 to 1.1.8####
-The changes described below don't affect casual users.  Only implementors of JAGGR extensions that deal with calculation of expanded dependencies are affected.
-* com.ibm.jaggr.service.deps.IDependencies.getExpandedDependencies() has been removed.  Use com.ibm.jaggr.service.util.DependencyList instead
+The changes described below don't affect casual users. Only implementors of
+JAGGR extensions that deal with calculation of expanded dependencies are 
+affected:
+
+* com.ibm.jaggr.service.deps.IDependencies.getExpandedDependencies() has been
+  removed. Use com.ibm.jaggr.service.util.DependencyList instead.
 * com.ibm.jaggr.service.util.DependencyList constructor arguments have changed.
