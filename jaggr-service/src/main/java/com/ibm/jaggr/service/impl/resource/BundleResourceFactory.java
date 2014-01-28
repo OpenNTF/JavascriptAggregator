@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.impl.resource.FileResource;
+import com.ibm.jaggr.core.impl.resource.FileResourceFactory;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
@@ -36,20 +37,18 @@ import org.osgi.framework.ServiceReference;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BundleResourceFactory implements IResourceFactory, IExecutableExtension, IExtensionInitializer {
+public class BundleResourceFactory extends FileResourceFactory implements IExecutableExtension, IExtensionInitializer {
 	static final Logger log = Logger.getLogger(BundleResourceFactory.class.getName());
 
 	private BundleContext context;
 	private ServiceReference urlConverterSR;
-
-	public BundleResourceFactory() {
-	}
 
 	@Override
 	public IResource newResource(URI uri) {
@@ -58,27 +57,40 @@ public class BundleResourceFactory implements IResourceFactory, IExecutableExten
 		if ("bundleresource".equals(scheme) || "bundleentry".equals(scheme)) { //$NON-NLS-1$ //$NON-NLS-2$
 			URLConverter converter = (urlConverterSR != null)
 					? (URLConverter)context.getService(urlConverterSR) : null;
-					if (converter != null) {
-						URL fileUrl = null;
+
+			if (converter != null) {
+				URI fileUri = null;
+				try {
+					fileUri = PathUtil.url2uri(converter.toFileURL(toURL(uri)));
+					Constructor<?> constructor = getNIOFileResourceConstructor(URI.class, IResourceFactory.class, URI.class);
+					if (constructor != null) {
 						try {
-							fileUrl = converter.toFileURL(toURL(uri));
-							result = new FileResource(uri, this, PathUtil.url2uri(fileUrl));
-						} catch (FileNotFoundException e) {
-							if (log.isLoggable(Level.FINE)) {
-								log.log(Level.FINE, uri.toString(), e);
-							}
-							result = new BundleResource(uri, context);
+							result = (IResource)constructor.newInstance(uri, this, fileUri);
 						} catch (Throwable t) {
-							if (log.isLoggable(Level.WARNING)) {
-								log.log(Level.WARNING, uri.toString(), t);
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, t.getMessage(), t);
 							}
-							result = new BundleResource(uri, context);
-						} finally {
-							context.ungetService(urlConverterSR);
+							result = new FileResource(uri);
 						}
 					} else {
-						result = new BundleResource(uri, context);
+						result = new FileResource(uri);
 					}
+				} catch (FileNotFoundException e) {
+					if (log.isLoggable(Level.FINE)) {
+						log.log(Level.FINE, uri.toString(), e);
+					}
+					result = new BundleResource(uri, context);
+				} catch (Throwable t) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.log(Level.WARNING, uri.toString(), t);
+					}
+					result = new BundleResource(uri, context);
+				} finally {
+					context.ungetService(urlConverterSR);
+				}
+			} else {
+				result = new BundleResource(uri, context);
+			}
 		} else if ("namedbundleresource".equals(scheme)) { //$NON-NLS-1$
 			// Support aggregator specific URI scheme for named bundles
 			String bundleName = getNBRBundleName(uri);
