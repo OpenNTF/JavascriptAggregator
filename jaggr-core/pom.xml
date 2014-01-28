@@ -50,7 +50,13 @@
           <include>**/*.properties</include>
         </includes>
       </resource>
-      <!-- TODO: Add more resources as the project is filled out -->
+      <resource>
+        <directory>${basedir}</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>WebContent/**</include>
+        </includes>
+      </resource>
     </resources>
     <pluginManagement>
       <plugins>
