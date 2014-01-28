@@ -18,8 +18,6 @@ package com.ibm.jaggr.service.impl.transport;
 import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
 import com.ibm.jaggr.core.impl.transport.Messages;
 
-import com.ibm.jaggr.service.impl.Activator;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
@@ -38,7 +36,7 @@ import java.text.MessageFormat;
  */
 public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
 
-	static final String comboUriStr = "namedbundleresource://" + Activator.BUNDLE_NAME + "/WebContent/"; //$NON-NLS-1$ //$NON-NLS-2$
+	static final String comboUriStr = "namedbundleresource://com.ibm.jaggr.core/WebContent/"; //$NON-NLS-1$ //$NON-NLS-2$
 
 	private String resourcePathId = null;
 
