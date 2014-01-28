@@ -31,13 +31,11 @@ public class FileResourceTest {
 
 	@Test
 	public void testAuthority() throws Exception {
-		FileResource res = new FileResource(new URI("file://server/path/name.ext"));
-		if (File.separatorChar == '\\') {
+		if (File.separatorChar == '\\') {	// Authority component only supported on Windows
+			FileResource res = new FileResource(new URI("file://server/path/name.ext"));
 			Assert.assertEquals("\\\\server\\path\\name.ext", res.file.getAbsolutePath());
-		} else {
-			Assert.assertEquals("//server/path/name.ext", res.file.getAbsolutePath());
+			Assert.assertEquals("file://server/path/name.ext", res.getURI().toString());
 		}
-		Assert.assertEquals("file://server/path/name.ext", res.getURI().toString());
 	}
 
 	@Test
