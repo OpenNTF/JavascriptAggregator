@@ -31,8 +31,6 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
-import org.osgi.framework.BundleContext;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
@@ -123,15 +121,6 @@ public interface IAggregator {
 	 * @return the HTTP transport
 	 */
 	public IHttpTransport getTransport();
-
-	/**
-	 * Returns the {@link BundleContext} object for this aggregator. This is the
-	 * context of the bundle who's plugin.xml contains the &lt;servlet&gt; tag
-	 * used to define this instance of the aggregator.
-	 *
-	 * @return The bundle context of the instantiating bundle.
-	 */
-	public BundleContext getBundleContext();
 
 	/**
 	 * Returns a new {@link IResource} for the specified URI. The aggregator

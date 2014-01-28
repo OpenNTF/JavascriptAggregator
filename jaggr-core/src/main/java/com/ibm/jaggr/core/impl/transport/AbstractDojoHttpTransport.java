@@ -413,11 +413,11 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_3,
-						new Object[]{dojoTextPluginFullPath, getComboUri().resolve(textPluginPath)}
+						new Object[]{dojoTextPluginFullPath, getComboUri().resolve(textPluginPath).toString()}
 						));
 			}
 
-			paths.put(dojoTextPluginFullPath, paths, getComboUri().resolve(textPluginPath));
+			paths.put(dojoTextPluginFullPath, paths, getComboUri().resolve(textPluginPath).toString());
 
 			// Specify paths entry to map the dojo text plugin alias name to the original
 			// dojo text plugin
