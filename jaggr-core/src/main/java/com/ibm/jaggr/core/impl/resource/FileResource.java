@@ -34,6 +34,18 @@ import java.util.logging.Logger;
 
 /**
  * An implementation of {@link IResource} for File resources
+ * TODO: Using {@link File} objects returned from {@link File#listFiles()}
+ * is disappointingly slow for determining file last modified times. This is
+ * because the {@link File} object encapsulates only the file name and does
+ * not contain any of the directory listing meta-data (such as last-modified
+ * time) that is generally available from a file directory listing,
+ * necessitating additional file I/O in order to get the last-modified time
+ * of each file. Java 7 improves on this with the java.nio.file package.
+ * This implementation should be changed to use
+ * {@link java.nio.file.Files#walkFileTree()} instead of
+ * {@link File#listFiles()} as soon as Java 7 is available for use, in order
+ * to improve startup performance when validating a previously serialized
+ * dependency tree.
  */
 public class FileResource implements IResource {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());
@@ -190,19 +202,6 @@ public class FileResource implements IResource {
 
 	/**
 	 * Implementation of {@link IResourceVisitor.Resource} for files.
-	 * <p>
-	 * TODO: Using {@link File} objects returned from {@link File#listFiles()}
-	 * is disappointingly slow for determining file last modified times. This is
-	 * because the {@link File} object encapsulates only the file name and does
-	 * not contain any of the directory listing meta-data (such as last-modified
-	 * time) that is generally available from a file directory listing,
-	 * necessitating additional file I/O in order to get the last-modified time
-	 * of each file. Java 7 improves on this with the java.nio.file package.
-	 * This implementation should be changed to use
-	 * {@link java.noi.file.Files#walkFileTree()} instead of
-	 * {@link File#listFiles()} as soon as Java 7 is available for use, in order
-	 * to improve startup performance when validating a previously serialized
-	 * dependency tree.
 	 */
 	private static class VisitorResource implements IResourceVisitor.Resource {
 
