@@ -382,10 +382,7 @@ public class DependencyList {
 	 *            Use by require expansion logging.  Specifies the name of the
 	 *            module that includes this module in its dependencies.
 	 */
-	/* TODO: Temporarily making this public while refactoring to remove OSGi dependencies.
-	 *       Need to reduce visibility back to package visibility when done refactoring.
-	 */
-	public void processDep(String name, ModuleDeps deps, ModuleDepInfo callerInfo, Set<String> recursionCheck, String dependee) {
+	void processDep(String name, ModuleDeps deps, ModuleDepInfo callerInfo, Set<String> recursionCheck, String dependee) {
 		final String methodName = "processDep"; //$NON-NLS-1$
 		final boolean traceLogging = log.isLoggable(Level.FINEST);
 		final boolean entryExitLogging = log.isLoggable(Level.FINER);

@@ -29,7 +29,6 @@ import java.util.Properties;
 /**
  * Implementation  for {@link IAggregatorExtension} interface.
  */
-// TODO: Reduce visibility once AbstractAggregatorImpl is moved to jaggr-core
 public class AggregatorExtension  implements IAggregatorExtension {
 	private String extensionPointId;
 	private String uniqueId;
@@ -49,7 +48,6 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 * @param uniqueId
 	 *            the extension unique id
 	 */
-	// TODO: Reduce visibility once AbstractAggregatorImpl is moved to jaggr-core
 	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
 		this.extensionPointId = extensionPointId;
 		this.uniqueId = uniqueId;
