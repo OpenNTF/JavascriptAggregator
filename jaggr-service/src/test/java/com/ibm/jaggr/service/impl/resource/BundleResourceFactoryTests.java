@@ -126,7 +126,7 @@ public class BundleResourceFactoryTests {
 		assertEquals("Bundle matches.", "/file", factory.getNBRPath(factory.getNBRBundleName(uri), uri));
 	}
 
-	//@Test
+	@Test
 	public void testNewInstance() throws Exception {
 		URL fileUrl = new URL("file:///temp/path/name.ext");
 		URL bundleUrl = new URL(null, "bundleresource://25-5/path/name.ext", new DummyStreamHandler());
@@ -146,7 +146,7 @@ public class BundleResourceFactoryTests {
 		FileResource res = (FileResource)factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
 		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
-		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "res"));
+		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "ref"));
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
 
 		/*
@@ -184,7 +184,7 @@ public class BundleResourceFactoryTests {
 		res = (FileResource)factory.newResource(namedBundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter, mockBundle);
 		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
-		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "res"));
+		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "ref"));
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
 
 		/*
