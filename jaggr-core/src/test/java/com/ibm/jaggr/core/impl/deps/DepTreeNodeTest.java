@@ -40,7 +40,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Map;
 
-public class DepTreeNodeTests extends EasyMock {
+public class DepTreeNodeTest extends EasyMock {
 	File tmpdir = null;
 	TestUtils.Ref<IConfig> configRef = new TestUtils.Ref<IConfig>(null);
 	IAggregator mockAggregator;

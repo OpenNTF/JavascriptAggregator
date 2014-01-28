@@ -41,7 +41,7 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
-public class BundleResourceFactoryTests {
+public class BundleResourceFactoryTest {
 
 	static private Map<String, Bundle> bundleNameMap = new HashMap<String, Bundle>();
 	/**

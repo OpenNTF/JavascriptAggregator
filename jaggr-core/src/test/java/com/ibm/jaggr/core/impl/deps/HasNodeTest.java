@@ -31,7 +31,7 @@ import java.util.HashSet;
 
 import junit.framework.Assert;
 
-public class HasNodeTests extends EasyMock {
+public class HasNodeTest extends EasyMock {
 	Capture<String> containsFeature = new Capture<String>();
 	Capture<String> isFeature = new Capture<String>();
 	Features chooser = createMock(Features.class);

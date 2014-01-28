@@ -27,7 +27,7 @@ import java.net.URI;
 
 import junit.framework.Assert;
 
-public class FileResourceTests {
+public class FileResourceTest {
 
 	@Test
 	public void testAuthority() throws Exception {
