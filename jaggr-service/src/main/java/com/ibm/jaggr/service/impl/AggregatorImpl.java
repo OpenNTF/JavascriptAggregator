@@ -17,19 +17,31 @@
 package com.ibm.jaggr.service.impl;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
+import com.ibm.jaggr.core.impl.AggregatorExtension;
 import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
+import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
+import org.eclipse.core.runtime.IExtension;
+import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.osgi.framework.Bundle;
@@ -44,6 +56,8 @@ import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,7 +84,16 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	private ServiceTracker optionsServiceTracker = null;
 	private ServiceTracker executorsServiceTracker = null;
 	private ServiceTracker variableResolverServiceTracker = null;
+	private File workdir = null;
 
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IAggregator#getWorkingDirectory()
+	 */
+	@Override
+	public File getWorkingDirectory() {
+		return workdir;
+	}
 
 	@Override
 	public IOptions getOptions() {
@@ -139,7 +162,13 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
+			name = getAggregatorName(configMap);
+			initExtensions(configElem);
 			initialize(configMap, configInitParams);
+			workdir = initWorkingDirectory( // this must be after initOptions
+					Platform.getStateLocation(bundleContext.getBundle()).toFile(), configMap,
+					Long.toString(bundleContext.getBundle().getBundleId()));
+
 			// Notify listeners
 			notifyConfigListeners(1);
 
@@ -292,6 +321,120 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		tracker.open();
 		return tracker;
 	}
+
+	/**
+	 * Loads and initializes the resource factory, module builder and
+	 * http transport extensions specified in the configuration
+	 * element for this aggregator
+	 *
+	 * @param configElem The configuration element
+	 * @throws CoreException
+	 * @throws NotFoundException
+	 */
+	protected void initExtensions(IConfigurationElement configElem) throws CoreException, NotFoundException {
+		/*
+		 *  Init the resource factory extensions
+		 */
+		Collection<String> resourceFactories = getInitParams().getValues(InitParams.RESOURCEFACTORIES_INITPARAM);
+		if (resourceFactories.size() == 0) {
+			resourceFactories.add(DEFAULT_RESOURCEFACTORIES);
+		}
+		IExtensionRegistry registry = Platform.getExtensionRegistry();
+		for (String resourceFactory : resourceFactories) {
+			IExtension extension = registry.getExtension(
+					IResourceFactoryExtensionPoint.NAMESPACE,
+					IResourceFactoryExtensionPoint.NAME,
+					resourceFactory);
+			if (extension == null) {
+				throw new NotFoundException(resourceFactory);
+			}
+			for (IConfigurationElement member : extension.getConfigurationElements()) {
+				IResourceFactory factory = (IResourceFactory)member.createExecutableExtension("class"); //$NON-NLS-1$
+				Properties props = new Properties();
+				for (String name : member.getAttributeNames()) {
+					props.put(name, member.getAttribute(name));
+				}
+				registerResourceFactory(
+						new AggregatorExtension(factory, props,
+								extension.getExtensionPointUniqueIdentifier(),
+								extension.getUniqueIdentifier()
+								), null
+						);
+			}
+		}
+
+		/*
+		 *  Init the module builder extensions
+		 */
+		Collection<String> moduleBuilders = getInitParams().getValues(InitParams.MODULEBUILDERS_INITPARAM);
+		if (moduleBuilders.size() == 0) {
+			moduleBuilders.add(DEFAULT_MODULEBUILDERS);
+		}
+		for (String moduleBuilder : moduleBuilders) {
+			IExtension extension = registry.getExtension(
+					IModuleBuilderExtensionPoint.NAMESPACE,
+					IModuleBuilderExtensionPoint.NAME,
+					moduleBuilder);
+			if (extension == null) {
+				throw new NotFoundException(moduleBuilder);
+			}
+			for (IConfigurationElement member : extension.getConfigurationElements()) {
+				IModuleBuilder builder = (IModuleBuilder)member.createExecutableExtension("class"); //$NON-NLS-1$
+				Properties props = new Properties();
+				for (String name : member.getAttributeNames()) {
+					props.put(name, member.getAttribute(name));
+				}
+				registerModuleBuilder(
+						new AggregatorExtension(builder, props,
+								extension.getExtensionPointUniqueIdentifier(),
+								extension.getUniqueIdentifier()
+								), null
+						);
+			}
+		}
+
+		/*
+		 * Init the http transport extension
+		 */
+		Collection<String> transports = getInitParams().getValues(InitParams.TRANSPORT_INITPARAM);
+		if (transports.size() == 0) {
+			transports.add(DEFAULT_HTTPTRANSPORT);
+		}
+		if (transports.size() != 1) {
+			throw new IllegalStateException(transports.toString());
+		}
+		String transportName = transports.iterator().next();
+		IExtension extension = registry.getExtension(
+				IHttpTransportExtensionPoint.NAMESPACE,
+				IHttpTransportExtensionPoint.NAME,
+				transportName);
+		if (extension == null) {
+			throw new NotFoundException(transportName);
+		}
+		IConfigurationElement member = extension.getConfigurationElements()[0];
+		Properties props = new Properties();
+		IHttpTransport transport = (IHttpTransport)member.createExecutableExtension("class"); //$NON-NLS-1$
+		for (String attrname : member.getAttributeNames()) {
+			props.put(attrname, member.getAttribute(attrname));
+		}
+		registerHttpTransport(
+				new AggregatorExtension(transport, props,
+						extension.getExtensionPointUniqueIdentifier(),
+						extension.getUniqueIdentifier()
+						)
+				);
+
+		/*
+		 *  Now call setAggregator on the loaded extensions starting with the
+		 *  transport and then the rest of the extensions.
+		 */
+		ExtensionRegistrar reg = new ExtensionRegistrar();
+		callExtensionInitializers(Arrays.asList(new IAggregatorExtension[]{getHttpTransportExtension()}), reg);
+		callExtensionInitializers(getResourceFactoryExtensions(), reg);
+		callExtensionInitializers(getModuleBuilderExtensions(), reg);
+		reg.closeRegistration();
+	}
+
 
 }
 

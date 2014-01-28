@@ -59,7 +59,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Dictionary;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -555,16 +557,20 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		// register a config listener so that we get notified of changes to
 		// the server-side AMD config file.
 		String name = aggregator.getName();
-		Properties dict = new Properties();
+		Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("name", name); //$NON-NLS-1$
-		serviceRegistrations.add(aggregator.getBundleContext().registerService(
+		serviceRegistrations.add(aggregator.getPlatformServices().registerService(
 				IConfigModifier.class.getName(), this, dict
 				));
-		dict = new Properties();
+		dict = new Hashtable<String, String>();
 		dict.put("name", name); //$NON-NLS-1$
-		serviceRegistrations.add(aggregator.getBundleContext().registerService(
+		serviceRegistrations.add(aggregator.getPlatformServices().registerService(
 				IShutdownListener.class.getName(), this, dict
 				));
+		dict = new Hashtable<String, String>();
+		dict.put("name", aggregator.getName()); //$NON-NLS-1$
+		serviceRegistrations.add(aggregator.getPlatformServices().registerService(
+				IDependenciesListener.class.getName(), this, dict));
 
 		if (featureListResourceUri != null) {
 			depsInitialized = new CountDownLatch(1);
@@ -574,20 +580,15 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
 
 			// Register the featureMap resource factory
-			dict = new Properties();
-			dict.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+			Properties props = new Properties();
+			props.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
 			reg.registerExtension(
 					newFeatureListResourceFactory(featureListResourceUri),
-					dict,
+					props,
 					IResourceFactoryExtensionPoint.ID,
 					getTransportId(),
 					first);
 
-			// Register the dependencies listener
-			dict = new Properties();
-			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			serviceRegistrations.add(aggregator.getBundleContext().registerService(
-					IDependenciesListener.class.getName(), this, dict));
 		}
 	}
 
