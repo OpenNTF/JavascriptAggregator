@@ -328,6 +328,11 @@
       <scope>provided</scope>
     </dependency>
     <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-sample-dojo</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <scope>test</scope>
