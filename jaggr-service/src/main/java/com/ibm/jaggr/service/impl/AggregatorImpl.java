@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
+import com.ibm.jaggr.service.ServiceRegistrationOSGi;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -182,8 +183,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 
 		Properties dict = new Properties();
 		dict.put("name", getName()); //$NON-NLS-1$
-		registrations.add(getBundleContext().registerService(
-				IAggregator.class.getName(), this, dict));
+		registrations.add(new ServiceRegistrationOSGi(getBundleContext().registerService(
+				IAggregator.class.getName(), this, dict)));
 
 		registerLayerListener();
 	}
@@ -268,8 +269,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 		Properties dict = new Properties();
 		dict.put("name", registrationName); //$NON-NLS-1$
-		registrations.add(getBundleContext().registerService(
-				IOptionsListener.class.getName(), this, dict));
+		registrations.add(new ServiceRegistrationOSGi(getBundleContext().registerService(
+				IOptionsListener.class.getName(), this, dict)));
 
 	}
 

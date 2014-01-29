@@ -30,6 +30,7 @@ import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
@@ -128,7 +129,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	//protected Bundle bundle = null;
 	protected String name = null;
 	protected IDependencies deps = null;
-	protected List<Object> registrations = new LinkedList<Object>();
+	protected List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 	protected List<Object> serviceReferences = Collections.synchronizedList(new LinkedList<Object>());
 	protected InitParams initParams = null;
 	protected IOptions localOptions = null;
@@ -206,8 +207,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 					}
 				}
 			}
-			for (Object registration : registrations) {
-				getPlatformServices().unRegisterService(registration);
+			for (ServiceRegistration registration : registrations) {
+				registration.unregister();
 			}
 		}
 	}
