@@ -36,19 +36,19 @@
 
   <profiles>
     <profile>
-      <id>java7</id>
-      <activation>
-        <jdk>1.7</jdk>
-      </activation>
+      <id>java6</id>
       <build>
-        <resources>
-          <resource>
-            <directory>${basedir}/src/main/java7</directory>
-            <includes>
-              <include>**/*.java</include>
-            </includes>
-          </resource>
-        </resources>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <excludes>
+                <exclude>com/ibm/jaggr/core/impl/resource/NIOFileResource.java</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>
