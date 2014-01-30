@@ -16,7 +16,18 @@
 
 package com.ibm.jaggr.core;
 
+/**
+ * Interface to depict service registration functionality. This is implemented by classes which may
+ * leverage platform provided features for service registration. For eg. {@code com.ibm.jaggr.service.ServiceRegistrationOSGi}
+ * implements this interface for OSGi platform.
+ *
+ */
+
 public interface ServiceRegistration {
+	/**
+	 * Removes this service registration from the platform.
+	 *
+	 */
 
 	public void	unregister();
 }

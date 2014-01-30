@@ -210,6 +210,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			for (ServiceRegistration registration : registrations) {
 				registration.unregister();
 			}
+			for (Object ref : serviceReferences) {
+				getPlatformServices().ungetService(ref);
+			}
 		}
 	}
 
