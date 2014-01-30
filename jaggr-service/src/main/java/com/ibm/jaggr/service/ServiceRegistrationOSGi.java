@@ -18,6 +18,13 @@ package com.ibm.jaggr.service;
 
 import com.ibm.jaggr.core.ServiceRegistration;
 
+/**
+ * OSGi platform implementation for {@code com.ibm.jaggr.core.ServiceRegistration} interface.
+ * This class acts as a wrapper for {@code org.osgi.framework.ServiceRegistration} and uses this class
+ * as service registration on OSGi platform.
+ *
+ */
+
 public class ServiceRegistrationOSGi implements ServiceRegistration {
 
 	private org.osgi.framework.ServiceRegistration serviceRegistrationOSGi;
@@ -26,6 +33,11 @@ public class ServiceRegistrationOSGi implements ServiceRegistration {
 		serviceRegistrationOSGi = serviceRegistration;
 	}
 
+	/*
+	 * (non-Javadoc)
+	 *
+	 * @see com.ibm.jaggr.code.ServiceRegistration.unregister()
+	 */
 	@Override
 	public void unregister() {
 		serviceRegistrationOSGi.unregister();

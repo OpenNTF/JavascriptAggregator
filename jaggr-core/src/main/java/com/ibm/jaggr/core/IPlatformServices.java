@@ -42,9 +42,7 @@ public interface IPlatformServices {
 	 *            The service object
 	 * @param properties
 	 *            The properties for this service.
-	 * @return service registration object. For OSGi implementation, this object
-	 *         refers to implementation of {@code org.osgi.framework.ServiceRegistration}
-	 *         interface.
+	 * @return An instance of {@code com.ibm.jaggr.core.ServiceRegistration}
 	 *
 	 */
 	public ServiceRegistration registerService(String clazz, Object service,
