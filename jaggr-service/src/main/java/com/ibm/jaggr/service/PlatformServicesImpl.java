@@ -52,24 +52,16 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * Object service, Dictionary properties)
 	 */
 	@Override
-	public ServiceRegistration registerService(String clazz, Object service,
+	public com.ibm.jaggr.core.ServiceRegistration registerService(String clazz, Object service,
 			Dictionary<String, String> properties) {
+		ServiceRegistrationOSGi serviceRegistrationOSGi = null;
 		ServiceRegistration serviceRegistration = null;
 		if (bundleContext != null) {
 			serviceRegistration = bundleContext.registerService(clazz, service,
 					properties);
+			serviceRegistrationOSGi = new ServiceRegistrationOSGi(serviceRegistration);
 		}
-		return serviceRegistration;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.osgi.framework.ServiceRegistration#unRegisterService()
-	 */
-	@Override
-	public void unRegisterService(Object serviceRegistration) {
-		((ServiceRegistration) serviceRegistration).unregister();
+		return serviceRegistrationOSGi;
 	}
 
 	/*

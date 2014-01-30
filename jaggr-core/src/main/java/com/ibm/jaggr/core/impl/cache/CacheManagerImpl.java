@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
@@ -77,13 +78,13 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	private IAggregator _aggregator;
 
-	private Object _shutdownListener = null;
+	private ServiceRegistration _shutdownListener = null;
 
-	private Object _configUpdateListener = null;
+	private ServiceRegistration _configUpdateListener = null;
 
-	private Object _depsUpdateListener = null;
+	private ServiceRegistration _depsUpdateListener = null;
 
-	private Object _optionsUpdateListener = null;
+	private ServiceRegistration _optionsUpdateListener = null;
 
 	private long updateSequenceNumber = 0;
 
@@ -253,16 +254,16 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		if (_shutdownListener != null) {
-			_aggregator.getPlatformServices().unRegisterService(_shutdownListener);
+			_shutdownListener.unregister();
 		}
 		if (_configUpdateListener != null) {
-			_aggregator.getPlatformServices().unRegisterService(_configUpdateListener);
+			_configUpdateListener.unregister();
 		}
 		if (_depsUpdateListener != null) {
-			_aggregator.getPlatformServices().unRegisterService(_depsUpdateListener);
+			_depsUpdateListener.unregister();
 		}
 		if (_optionsUpdateListener != null) {
-			_aggregator.getPlatformServices().unRegisterService(_optionsUpdateListener);
+			_optionsUpdateListener.unregister();
 		}
 
 		// Serialize the cache metadata one last time

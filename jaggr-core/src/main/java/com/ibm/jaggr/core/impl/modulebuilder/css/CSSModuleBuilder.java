@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -200,7 +201,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	}
 
 	//private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
-	private List<Object> registrations = new LinkedList<Object>();
+	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
@@ -649,8 +650,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (Object reg : registrations) {
-			aggregator.getPlatformServices().unRegisterService(reg);
+		for (ServiceRegistration reg : registrations) {
+			reg.unregister();
 		}
 	}
 
