@@ -19,9 +19,9 @@ package com.ibm.jaggr.core.impl.transport;
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
-import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -127,7 +127,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
 	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
-	private List<Object> serviceRegistrations = new ArrayList<Object>();
+	private List<ServiceRegistration> serviceRegistrations = new ArrayList<ServiceRegistration>();
 	private IAggregator aggregator = null;
 	private List<String> extensionContributions = new LinkedList<String>();
 
@@ -598,10 +598,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		// unregister the service registrations
-		IPlatformServices platformServices = aggregator.getPlatformServices();
-		for (Object reg : serviceRegistrations) {
+		for (ServiceRegistration reg : serviceRegistrations) {
 			if (reg != null) {
-				platformServices.unRegisterService(reg);
+				reg.unregister();
 			}
 		}
 		serviceRegistrations.clear();

@@ -47,18 +47,8 @@ public interface IPlatformServices {
 	 *         interface.
 	 *
 	 */
-	public Object registerService(String clazz, Object service,
+	public ServiceRegistration registerService(String clazz, Object service,
 			Dictionary<String, String> properties);
-
-	/**
-	 * Removes the service registration from the platform.
-	 *
-	 * @param serviceRegistration
-	 *            Service registration object. For OSGi implementation, this
-	 *            object refers to implementation of
-	 *            {@code org.osgi.framework.ServiceRegistration} interface.
-	 */
-	public void unRegisterService(Object serviceRegistration);
 
 	/**
 	 * Returns an array of service references for the services that were

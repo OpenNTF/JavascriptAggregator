@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.PlatformServicesException;
+import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.options.IOptions;
@@ -94,7 +95,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
 
-	protected List<Object> serviceRegs = new LinkedList<Object>();
+	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
 
 	private static class ConfigContextFactory extends ContextFactory {
 		@Override
@@ -1218,9 +1219,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (Object reg : serviceRegs) {
+		for (ServiceRegistration reg : serviceRegs) {
 			if( aggregator.getPlatformServices() != null){
-				aggregator.getPlatformServices().unRegisterService(reg);
+				reg.unregister();
 			}
 		}
 	}

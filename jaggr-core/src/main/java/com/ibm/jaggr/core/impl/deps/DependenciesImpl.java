@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.impl.deps;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
+import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfig.Location;
 import com.ibm.jaggr.core.config.IConfigListener;
@@ -53,9 +54,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
 
-	private Object configUpdateListener;
-	private Object optionsUpdateListener;
-	private Object shutdownListener;
+	private ServiceRegistration configUpdateListener;
+	private ServiceRegistration optionsUpdateListener;
+	private ServiceRegistration shutdownListener;
 	private String servletName;
 	private long depsLastModified = -1;
 	private long initStamp;
@@ -100,9 +101,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		this.aggregator = null;
-		aggregator.getPlatformServices().unRegisterService(configUpdateListener);
-		aggregator.getPlatformServices().unRegisterService(optionsUpdateListener);
-		aggregator.getPlatformServices().unRegisterService(shutdownListener);
+		configUpdateListener.unregister();
+		optionsUpdateListener.unregister();
+		shutdownListener.unregister();
 
 	}
 
