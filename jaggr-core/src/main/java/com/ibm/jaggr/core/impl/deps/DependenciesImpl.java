@@ -34,7 +34,6 @@ import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 import java.io.IOException;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -178,6 +177,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 					try {
 						// Map of path names to URIs for locations to be scanned for js files
 						final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
+						final Map<String, URI> baseOverrideURIs = new LinkedHashMap<String, URI>();
 						final Map<String, URI> packageURIs = new LinkedHashMap<String, URI>();
 						final Map<String, URI> pathURIs = new LinkedHashMap<String, URI>();
 						final Map<String, URI> packageOverrideURIs = new LinkedHashMap<String, URI>();
@@ -189,29 +189,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						if (config.isDepsIncludeBaseUrl()) {
 							Location base = config.getBase();
 							if (base != null) {
-								List<IResource> list = new ArrayList<IResource>(2);
-								list.add(getAggregator().newResource(base.getPrimary()));
+								addFolderContents(getAggregator().newResource(base.getPrimary()), baseURIs);
 								if (base.getOverride() != null) {
-									list.add(getAggregator().newResource(base.getOverride()));
-								}
-								for (IResource baseres : list) {
-									if (baseres.exists()) {
-										baseres.walkTree(new IResourceVisitor() {
-											public boolean visitResource(IResourceVisitor.Resource resource,
-													String name) throws IOException {
-												if (name.startsWith(".")) { //$NON-NLS-1$
-													return false;
-												}
-												URI uri = resource.getURI();
-												if (resource.isFolder()) {
-													baseURIs.put(name, uri);
-												} else 	if (name.endsWith(".js")) { //$NON-NLS-1$
-													baseURIs.put(name.substring(0, name.length()-3), uri);
-												}
-												return false;		// don't recurse
-											}
-										});
-									}
+									addFolderContents(getAggregator().newResource(base.getOverride()), baseOverrideURIs);
 								}
 							}
 						}
@@ -230,9 +210,10 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 						Collection<URI> paths = new LinkedList<URI>();
 						paths.addAll(baseURIs.values());
+						paths.addAll(baseOverrideURIs.values());
 						paths.addAll(packageURIs.values());
-						paths.addAll(pathURIs.values());
 						paths.addAll(packageOverrideURIs.values());
+						paths.addAll(pathURIs.values());
 						paths.addAll(pathOverrideURIs.values());
 
 						boolean cleanCache = clean;
@@ -247,11 +228,12 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 										validate);
 
 								DepTreeRoot depTree = new DepTreeRoot(config);
-								deps.mapDependencies(depTree, baseURIs);
-								deps.mapDependencies(depTree, packageURIs);
-								deps.mapDependencies(depTree, packageOverrideURIs);
-								deps.mapDependencies(depTree, pathURIs);
-								deps.mapDependencies(depTree, pathOverrideURIs);
+								deps.mapDependencies(depTree, baseURIs, true);
+								deps.mapDependencies(depTree, baseOverrideURIs, false);
+								deps.mapDependencies(depTree, packageURIs, true);
+								deps.mapDependencies(depTree, packageOverrideURIs, false);
+								deps.mapDependencies(depTree, pathURIs, true);
+								deps.mapDependencies(depTree, pathOverrideURIs, false);
 								depTree.normalizeDependencies();
 								DependenciesImpl.this.depMap = new HashMap<String, DepTreeNode.DependencyInfo>();
 								depTree.populateDepMap(depMap);
@@ -322,6 +304,35 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		}
 	}
 
+	/**
+	 * Adds the contents of the directory specified by <code>res</code> to the map specified by
+	 * <code>baseURIs</code>. Only the top level contents of the directory are added.
+	 *
+	 * @param res
+	 *            a folder resource who's contents will be added to the map
+	 * @param baseURIs
+	 *            map of resource name/URI pairs
+	 * @throws IOException
+	 */
+	protected void addFolderContents(final IResource res, final Map<String, URI> baseURIs) throws IOException {
+		if (res.exists()) {
+			res.walkTree(new IResourceVisitor() {
+				public boolean visitResource(IResourceVisitor.Resource resource,
+						String name) throws IOException {
+					if (name.startsWith(".")) { //$NON-NLS-1$
+						return false;
+					}
+					URI uri = resource.getURI();
+					if (resource.isFolder()) {
+						baseURIs.put(name, uri);
+					} else 	if (name.endsWith(".js")) { //$NON-NLS-1$
+						baseURIs.put(name.substring(0, name.length()-3), uri);
+					}
+					return false;		// don't recurse
+				}
+			});
+		}
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.deps.IDependencies#getDelcaredDependencies(java.lang.String)
