@@ -21,6 +21,7 @@ package com.ibm.jaggr.core.impl.resource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -56,33 +57,49 @@ public class NIOFileResource extends FileResource {
 		}
 
 		java.nio.file.Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+
 			@Override
-			public FileVisitResult visitFile(final Path pathfile, final BasicFileAttributes attrs) throws IOException {
-				visitor.visitResource(new IResourceVisitor.Resource() {
-					@Override
-					public long lastModified() {
-						return attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS);
-					}
-					@Override
-					public boolean isFolder() {
-						return attrs.isDirectory();
-					}
-					@Override
-					public URI getURI() {
-						return FileResource.getURI(pathfile.toFile());
-					}
-					@Override
-					public Reader getReader() throws IOException {
-						return new InputStreamReader(new FileInputStream(pathfile.toFile()), "UTF-8"); //$NON-NLS-1$
-					}
-					@Override
-					public InputStream getInputStream() throws IOException {
-						return new FileInputStream(pathfile.toFile());
-					}
-				}, file.toPath().relativize(pathfile).toString());
+			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)	throws IOException {
+				visitor.visitResource(
+					getResource(dir.toFile(), attrs),
+					NIOFileResource.this.file.toPath().relativize(dir).toString()
+				);
+				return FileVisitResult.CONTINUE;
+			}
+
+			@Override
+			public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
+				visitor.visitResource(
+					getResource(file.toFile(), attrs),
+					NIOFileResource.this.file.toPath().relativize(file).toString()
+				);
 				return FileVisitResult.CONTINUE;
 			}
 		});
 	}
 
+	private IResourceVisitor.Resource getResource(final File file, final BasicFileAttributes attrs) {
+		return new IResourceVisitor.Resource() {
+			@Override
+			public long lastModified() {
+				return attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS);
+			}
+			@Override
+			public boolean isFolder() {
+				return attrs.isDirectory();
+			}
+			@Override
+			public URI getURI() {
+				return FileResource.getURI(file);
+			}
+			@Override
+			public Reader getReader() throws IOException {
+				return new InputStreamReader(new FileInputStream(file), "UTF-8"); //$NON-NLS-1$
+			}
+			@Override
+			public InputStream getInputStream() throws IOException {
+				return new FileInputStream(file);
+			}
+		};
+	}
 }
