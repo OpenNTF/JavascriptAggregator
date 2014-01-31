@@ -25,9 +25,9 @@ import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.StringBufferWriter;
+
 import com.ibm.jaggr.service.util.CIConsoleWriter;
 
-import org.apache.wink.json4j.JSONException;
 import org.eclipse.osgi.framework.console.CommandInterpreter;
 import org.eclipse.osgi.framework.console.CommandProvider;
 import org.osgi.framework.BundleContext;
@@ -428,7 +428,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 		return sb.toString();
 	}
 
-	protected String showconfig(String[] args) throws InvalidSyntaxException, JSONException {
+	protected String showconfig(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
 		ServiceReference ref = getServiceRef(args, sb);
 		if (ref != null) {

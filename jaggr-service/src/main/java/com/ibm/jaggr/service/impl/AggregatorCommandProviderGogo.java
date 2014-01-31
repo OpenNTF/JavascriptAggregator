@@ -20,7 +20,6 @@ import com.ibm.jaggr.service.util.CSConsoleWriter;
 
 import org.apache.felix.service.command.CommandSession;
 import org.apache.felix.service.command.Descriptor;
-import org.apache.wink.json4j.JSONException;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
 
@@ -143,7 +142,7 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	@Descriptor("displays the config for the servlet")
 	public String showconfig(
 			@Descriptor("<servlet>")String servlet
-			) throws InvalidSyntaxException, JSONException {
+			) throws InvalidSyntaxException {
 		return super.showconfig(new String[]{servlet});
 	}
 
