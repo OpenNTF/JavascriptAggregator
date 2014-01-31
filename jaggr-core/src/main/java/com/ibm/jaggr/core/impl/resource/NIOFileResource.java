@@ -60,11 +60,15 @@ public class NIOFileResource extends FileResource {
 
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)	throws IOException {
-				visitor.visitResource(
-					getResource(dir.toFile(), attrs),
-					NIOFileResource.this.file.toPath().relativize(dir).toString()
-				);
-				return FileVisitResult.CONTINUE;
+				String name = NIOFileResource.this.file.toPath().relativize(dir).toString();
+				boolean cont = true;
+				if (name.length() > 0) { // No need to visit root dir.
+					cont = visitor.visitResource(
+						getResource(dir.toFile(), attrs),
+						NIOFileResource.this.file.toPath().relativize(dir).toString()
+					);
+				}
+				return cont ? FileVisitResult.CONTINUE : FileVisitResult.SKIP_SUBTREE;
 			}
 
 			@Override
