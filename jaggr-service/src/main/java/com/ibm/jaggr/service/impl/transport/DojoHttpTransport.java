@@ -15,8 +15,13 @@
  */
 package com.ibm.jaggr.service.impl.transport;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
 import com.ibm.jaggr.core.impl.transport.Messages;
+import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport.LoaderExtensionResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -29,6 +34,7 @@ import org.osgi.framework.BundleException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
+import java.util.Properties;
 
 /**
  * Extends {@link AbstractDojoHttpTransport} for OSGi platform
@@ -89,6 +95,29 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 							e.getMessage(), e)
 					);
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
+	 */
+	@Override
+	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
+		super.initialize(aggregator, extension, reg);
+
+		// Get first resource factory extension so we can add to beginning of list
+		Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+		IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
+
+		// Register the loaderExt resource factory
+		Properties attributes = new Properties();
+		attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+		reg.registerExtension(
+				new LoaderExtensionResourceFactory(),
+				attributes,
+				IResourceFactoryExtensionPoint.ID,
+				getTransportId(),
+				first);
+
 	}
 
 	/* (non-Javadoc)

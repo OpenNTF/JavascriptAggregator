@@ -17,7 +17,6 @@
 package com.ibm.jaggr.core.impl.transport;
 
 import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -26,7 +25,6 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.AggregationResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
-import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.TypeUtil;
 
@@ -40,7 +38,6 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -237,28 +234,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension, com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
-	 */
-	@Override
-	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
-		super.initialize(aggregator, extension, reg);
 
-		// Get first resource factory extension so we can add to beginning of list
-		Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
-		IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
-
-		// Register the loaderExt resource factory
-		Properties attributes = new Properties();
-		attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
-		reg.registerExtension(
-				new LoaderExtensionResourceFactory(),
-				attributes,
-				IResourceFactoryExtensionPoint.ID,
-				getTransportId(),
-				first);
-
-	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getDynamicLoaderExtensionJavaScript()
@@ -484,7 +460,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	 * {@link AbstractHttpTransport.LoaderExtensionResource} for the dojo http
 	 * transport when the loader extension resource URI is requested
 	 */
-	private class LoaderExtensionResourceFactory implements IResourceFactory {
+	public class LoaderExtensionResourceFactory implements IResourceFactory {
 
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResourceFactory#handles(java.net.URI)

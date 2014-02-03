@@ -75,11 +75,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/** regular expression for detecting if a plugin name is the has! plugin */
 	static final Pattern HAS_PATTERN = Pattern.compile("(^|\\/)has$"); //$NON-NLS-1$
 
-	private final IAggregator aggregator;
-	private final Scriptable rawConfig;
+	protected  IAggregator aggregator;
+	protected  Scriptable rawConfig;
 	private String strConfig;
-	private final long lastModified;
-	private final URI configUri;
+	protected  long lastModified;
+	protected  URI configUri;
 
 	private Location base;
 	private Map<String, IPackage> packages;
@@ -93,7 +93,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private String cacheBust;
 	private Set<String> textPluginDelegators;
 	private Set<String> jsPluginDelegators;
-	private Scriptable sharedScope;
+	protected Scriptable sharedScope;
 
 	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
 
@@ -145,6 +145,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		} finally {
 			Context.exit();
 		}
+	}
+
+	// this constructor is created as constructors of ConfigImpl need to be extended by child classes
+	public ConfigImpl(){
+
 	}
 
 	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript) throws IOException {
