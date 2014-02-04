@@ -72,7 +72,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 					}
 
 					if (result == null)
-						result = new FileResource(uri);
+						result = new FileResource(uri, this, fileUri);
 
 				} catch (FileNotFoundException e) {
 					if (log.isLoggable(Level.FINE)) {
