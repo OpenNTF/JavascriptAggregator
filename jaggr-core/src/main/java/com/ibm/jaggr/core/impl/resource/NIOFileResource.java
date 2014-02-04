@@ -65,7 +65,7 @@ public class NIOFileResource extends FileResource {
 				if (name.length() > 0) { // No need to visit root dir.
 					cont = visitor.visitResource(
 						getResource(dir.toFile(), attrs),
-						NIOFileResource.this.file.toPath().relativize(dir).toString()
+						NIOFileResource.this.file.toPath().relativize(dir).toString().replace("\\", "/")
 					);
 				}
 				return cont ? FileVisitResult.CONTINUE : FileVisitResult.SKIP_SUBTREE;
@@ -75,7 +75,7 @@ public class NIOFileResource extends FileResource {
 			public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
 				visitor.visitResource(
 					getResource(file.toFile(), attrs),
-					NIOFileResource.this.file.toPath().relativize(file).toString()
+					NIOFileResource.this.file.toPath().relativize(file).toString().replace("\\", "/")
 				);
 				return FileVisitResult.CONTINUE;
 			}
