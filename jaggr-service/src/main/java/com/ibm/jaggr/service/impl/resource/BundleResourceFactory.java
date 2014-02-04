@@ -69,7 +69,6 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 						if (log.isLoggable(Level.SEVERE)) {
 							log.log(Level.SEVERE, t.getMessage(), t);
 						}
-						result = new FileResource(uri);
 					}
 
 					if (result == null)
