@@ -69,3 +69,12 @@ affected:
 * com.ibm.jaggr.service.deps.IDependencies.getExpandedDependencies() has been
   removed. Use com.ibm.jaggr.service.util.DependencyList instead.
 * com.ibm.jaggr.service.util.DependencyList constructor arguments have changed.
+
+####From 1.1.9 to 1.2.0####
+We've created a new bundle, `jaggr-core`, to house all non-osgi specific code.
+This is now where the vast majority of jaggr code is located. Bundle 
+dependencies may need to be updated.
+
+Developers running from within eclipse should use a java7 jre/jdk for 
+development and running the bundles out of the eclipse workspace. Maven will 
+generate java6 compatible jars from the command line.  
