@@ -250,7 +250,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 
 		// Register the loaderExt resource factory
 		Properties attributes = new Properties();
-		attributes.put("scheme", "namedbundleresource"); //$NON-NLS-1$ //$NON-NLS-2$
+		attributes.put("scheme", getComboUri().getScheme()); //$NON-NLS-1$ //$NON-NLS-2$
 		reg.registerExtension(
 				new LoaderExtensionResourceFactory(),
 				attributes,
@@ -484,7 +484,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	 * {@link AbstractHttpTransport.LoaderExtensionResource} for the dojo http
 	 * transport when the loader extension resource URI is requested
 	 */
-	private class LoaderExtensionResourceFactory implements IResourceFactory {
+	public class LoaderExtensionResourceFactory implements IResourceFactory {
 
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResourceFactory#handles(java.net.URI)
