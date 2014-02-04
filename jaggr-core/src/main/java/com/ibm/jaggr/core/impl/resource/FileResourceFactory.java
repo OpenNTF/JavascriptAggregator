@@ -30,7 +30,9 @@ import java.util.logging.Logger;
  * only file resources.
  */
 public class FileResourceFactory implements IResourceFactory {
-	static final Logger log = Logger.getLogger(FileResourceFactory.class.getName());
+	private static final String CLAZZ = FileResourceFactory.class.getName();
+	private static final Logger log = Logger.getLogger(CLAZZ);
+	private static final String WARN_MESSAGE = "Abandoning attempt to use nio."; //$NON-NLS-1$
 
 	private boolean tryNIO = true;
 	private Class<?> nioFileResourceClass = null; // access only through the getter
@@ -69,13 +71,17 @@ public class FileResourceFactory implements IResourceFactory {
 	 * asking the class loader every single time after we know it's not there.
 	 */
 	protected Class<?> getNIOFileResourceClass() {
+		final String method = "getNIOFileResourceClass"; //$NON-NLS-1$
+
 		if (tryNIO && nioFileResourceClass == null) {
 			try {
-				nioFileResourceClass = FileResourceFactory.class.getClassLoader().loadClass("com.ibm.jaggr.core.impl.resource.NIOFileResource");
+				nioFileResourceClass = FileResourceFactory.class.getClassLoader()
+						.loadClass("com.ibm.jaggr.core.impl.resource.NIOFileResource"); //$NON-NLS-1$
 			} catch (ClassNotFoundException e) {
 				tryNIO = false; // Don't try this again.
 				if (log.isLoggable(Level.WARNING)) {
-					log.log(Level.WARNING, e.getMessage(), e);
+					log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
+					log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
 				}
 			}
 		}
@@ -87,6 +93,8 @@ public class FileResourceFactory implements IResourceFactory {
 	 * without asking the class loader every single time after we know it's not there.
 	 */
 	protected Constructor<?> getNIOFileResourceConstructor(Class<?>... args) {
+		final String method = "getNIOFileResourceConstructor"; //$NON-NLS-1$
+
 		if (tryNIO && nioFileResourceConstructor == null) {
 			try {
 				Class<?> clazz = getNIOFileResourceClass();
@@ -97,11 +105,15 @@ public class FileResourceFactory implements IResourceFactory {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
 				}
+				if (log.isLoggable(Level.WARNING))
+					log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
 			} catch (SecurityException e) {
 				tryNIO = false; // Don't try this again.
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
 				}
+				if (log.isLoggable(Level.WARNING))
+					log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
 			}
 		}
 		return nioFileResourceConstructor;
@@ -120,20 +132,19 @@ public class FileResourceFactory implements IResourceFactory {
 	 * @throws InvocationTargetException
 	 */
 	protected Object getInstance(Constructor<?> constructor, Object... args) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		final String method = "getInstance"; //$NON-NLS-1$
+
 		Object ret = null;
 		if (tryNIO) {
 			if (constructor != null) {
 				try {
 					ret = (IResource)constructor.newInstance(args);
 				} catch (NoClassDefFoundError e) {
-					if (log.isLoggable(Level.SEVERE)) {
-						log.log(Level.SEVERE, e.getMessage(), e);
+					if (log.isLoggable(Level.WARNING)) {
+						log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
+						log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
 					}
 					tryNIO = false;
-
-					InstantiationException ie = new InstantiationException(e.getMessage());
-					ie.initCause(e);
-					throw ie;
 				}
 			}
 		}
