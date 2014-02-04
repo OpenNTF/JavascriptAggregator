@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -41,18 +42,18 @@ public class FileResourceFactory implements IResourceFactory {
 		String scheme = uri.getScheme();
 		if ("file".equals(scheme) || scheme == null) { //$NON-NLS-1$
 			Constructor<?> constructor = getNIOFileResourceConstructor(URI.class);
-			if (constructor != null) {
-				try {
-					result = (IResource)constructor.newInstance(uri);
-				} catch (Throwable t) {
-					if (log.isLoggable(Level.SEVERE)) {
-						log.log(Level.SEVERE, t.getMessage(), t);
-					}
-					result = new FileResource(uri);
+			try {
+				result = (IResource)getInstance(constructor, uri);
+			} catch (Throwable t) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, t.getMessage(), t);
 				}
-			} else {
 				result = new FileResource(uri);
 			}
+
+			if (result == null)
+				result = new FileResource(uri);
+
 		} else {
 			throw new UnsupportedOperationException(uri.getScheme());
 		}
@@ -107,4 +108,36 @@ public class FileResourceFactory implements IResourceFactory {
 		return nioFileResourceConstructor;
 	}
 
+	/**
+	 * Utility method to catch class loading issues and prevent repeated attempts to use reflection.
+	 *
+	 * @param constructor The constructor to invoke
+	 * @param args The args to pass the constructor
+	 * @return The instance.
+	 *
+	 * @throws InstantiationException
+	 * @throws IllegalAccessException
+	 * @throws IllegalArgumentException
+	 * @throws InvocationTargetException
+	 */
+	protected Object getInstance(Constructor<?> constructor, Object... args) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+		Object ret = null;
+		if (tryNIO) {
+			if (constructor != null) {
+				try {
+					ret = (IResource)constructor.newInstance(args);
+				} catch (NoClassDefFoundError e) {
+					if (log.isLoggable(Level.SEVERE)) {
+						log.log(Level.SEVERE, e.getMessage(), e);
+					}
+					tryNIO = false;
+
+					InstantiationException ie = new InstantiationException(e.getMessage());
+					ie.initCause(e);
+					throw ie;
+				}
+			}
+		}
+		return ret;
+	}
 }
