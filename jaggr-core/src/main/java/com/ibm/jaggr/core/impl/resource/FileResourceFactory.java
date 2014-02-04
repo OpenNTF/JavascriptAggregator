@@ -145,6 +145,12 @@ public class FileResourceFactory implements IResourceFactory {
 						log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
 					}
 					tryNIO = false;
+				} catch (UnsupportedClassVersionError e) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
+						log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
+					}
+					tryNIO = false;
 				}
 			}
 		}
