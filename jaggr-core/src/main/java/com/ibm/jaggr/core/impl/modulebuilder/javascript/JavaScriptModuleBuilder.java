@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -36,6 +37,7 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
+import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
@@ -201,7 +203,17 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					result = sb.toString();
 				}
 				layerDeps.addAll(configDeps);
-				request.setAttribute(EXPANDED_DEPENDENCIES, layerDeps);
+
+				// Now filter out any dependencies that aren't fully resolved (i.e. those that
+				// depend on any undefined features) because those aren't included in the layer.
+				ModuleDeps resolvedDeps = new ModuleDeps();
+				for (Map.Entry<String, ModuleDepInfo> entry : layerDeps.entrySet()) {
+					if (entry.getValue().containsTerm(BooleanTerm.TRUE)) {
+						resolvedDeps.add(entry.getKey(), entry.getValue());
+					}
+				}
+				// Save the resolved layer dependencies in the request.
+				request.setAttribute(EXPANDED_DEPENDENCIES, resolvedDeps);
 			}
 		}
 		return result;
