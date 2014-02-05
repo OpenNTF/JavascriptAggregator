@@ -1037,7 +1037,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * Implements the {@link IExtensionRegistrar} interface
 	 */
 	public class ExtensionRegistrar implements IExtensionRegistrar {
-		public boolean open = true;
+		 boolean open = true;
 
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar#registerExtension(java.lang.Object, java.util.Properties, java.lang.String, java.lang.String)
