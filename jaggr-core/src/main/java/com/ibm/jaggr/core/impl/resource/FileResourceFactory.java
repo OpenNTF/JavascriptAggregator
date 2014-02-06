@@ -34,9 +34,27 @@ public class FileResourceFactory implements IResourceFactory {
 	private static final Logger log = Logger.getLogger(CLAZZ);
 	private static final String WARN_MESSAGE = "Abandoning attempt to use nio."; //$NON-NLS-1$
 
+	private final ClassLoader classLoader;
+
 	private boolean tryNIO = true;
 	private Class<?> nioFileResourceClass = null; // access only through the getter
 	private Constructor<?> nioFileResourceConstructor = null; // access only through the getter
+
+
+	public FileResourceFactory() {
+		this(null);
+	}
+
+	/**
+	 * This constructor is primarily used by tests to mock the {@link ClassLoader}
+	 *
+	 * @param classLoader The class loader to use when looking for NIOFileResource
+	 */
+	protected FileResourceFactory(ClassLoader classLoader) {
+		if (classLoader == null)
+			classLoader = FileResourceFactory.class.getClassLoader();
+		this.classLoader = classLoader;
+	}
 
 	@Override
 	public IResource newResource(URI uri) {
@@ -45,7 +63,7 @@ public class FileResourceFactory implements IResourceFactory {
 		if ("file".equals(scheme) || scheme == null) { //$NON-NLS-1$
 			Constructor<?> constructor = getNIOFileResourceConstructor(URI.class);
 			try {
-				result = (IResource)getInstance(constructor, uri);
+				result = (IResource)getNIOInstance(constructor, uri);
 			} catch (Throwable t) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, t.getMessage(), t);
@@ -75,7 +93,7 @@ public class FileResourceFactory implements IResourceFactory {
 
 		if (tryNIO && nioFileResourceClass == null) {
 			try {
-				nioFileResourceClass = FileResourceFactory.class.getClassLoader()
+				nioFileResourceClass = classLoader
 						.loadClass("com.ibm.jaggr.core.impl.resource.NIOFileResource"); //$NON-NLS-1$
 			} catch (ClassNotFoundException e) {
 				tryNIO = false; // Don't try this again.
@@ -137,7 +155,7 @@ public class FileResourceFactory implements IResourceFactory {
 	 * @throws IllegalArgumentException
 	 * @throws InvocationTargetException
 	 */
-	protected Object getInstance(Constructor<?> constructor, Object... args) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+	protected Object getNIOInstance(Constructor<?> constructor, Object... args) throws InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 		final String method = "getInstance"; //$NON-NLS-1$
 
 		Object ret = null;

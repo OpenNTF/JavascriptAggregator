@@ -64,7 +64,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 					fileUri = PathUtil.url2uri(converter.toFileURL(toURL(uri)));
 					Constructor<?> constructor = getNIOFileResourceConstructor(URI.class, IResourceFactory.class, URI.class);
 					try {
-						result = (IResource)getInstance(constructor, uri, this, fileUri);
+						result = (IResource)getNIOInstance(constructor, uri, this, fileUri);
 					} catch (Throwable t) {
 						if (log.isLoggable(Level.SEVERE)) {
 							log.log(Level.SEVERE, t.getMessage(), t);
