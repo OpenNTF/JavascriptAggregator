@@ -110,13 +110,12 @@ public class FileResource implements IResource {
 			try {
 				result = (IResource) this.getClass()
 						.getConstructor(URI.class).newInstance(getURI().resolve(relative));
-			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
-					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+			} catch (Throwable t) {
 				// This should never happen.
 				if (log.isLoggable(Level.SEVERE)) {
-					log.log(Level.WARNING, e.getMessage(), e);
+					log.log(Level.WARNING, t.getMessage(), t);
 				}
-				throw new RuntimeException(e);
+				throw new RuntimeException(t);
 			}
 		} else {
 			result = factory.newResource(ref.resolve(relative));
