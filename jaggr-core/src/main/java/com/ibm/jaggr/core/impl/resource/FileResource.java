@@ -106,7 +106,7 @@ public class FileResource implements IResource {
 	public IResource resolve(String relative) {
 		IResource result = null;
 		if (ref == null) {
-			result = new FileResource(getURI().resolve(relative));
+			result = factory.newResource(getURI().resolve(relative));
 		} else {
 			result = factory.newResource(ref.resolve(relative));
 		}
