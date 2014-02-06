@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
@@ -106,7 +107,17 @@ public class FileResource implements IResource {
 	public IResource resolve(String relative) {
 		IResource result = null;
 		if (ref == null) {
-			result = factory.newResource(getURI().resolve(relative));
+			try {
+				result = (IResource) this.getClass()
+						.getConstructor(URI.class).newInstance(getURI().resolve(relative));
+			} catch (InstantiationException | IllegalAccessException | IllegalArgumentException
+					| InvocationTargetException | NoSuchMethodException | SecurityException e) {
+				// This should never happen.
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.WARNING, e.getMessage(), e);
+				}
+				throw new RuntimeException(e);
+			}
 		} else {
 			result = factory.newResource(ref.resolve(relative));
 		}
