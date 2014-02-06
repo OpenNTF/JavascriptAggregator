@@ -16,6 +16,9 @@
 
 package com.ibm.jaggr.service.impl.deps;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -176,7 +179,7 @@ public class DependenciesTest extends EasyMock {
 		configJson = "{paths: {p1Alias:'p1', p2Alias:'p2', p3Alias:'p3'}}"; 
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 		DepTreeRoot root = new DepTreeRoot(configRef.get());
-		deps.mapDependencies(root, map);
+		deps.mapDependencies(root, map, true);
 		
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
@@ -196,7 +199,7 @@ public class DependenciesTest extends EasyMock {
 		// Test validation
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, false, true);
 		root = new DepTreeRoot(configRef.get());
-		deps.mapDependencies(root, map);
+		deps.mapDependencies(root, map, true);
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
 		assertEquals(0, root.getChild("p3Alias").getChildren().size());
@@ -215,12 +218,27 @@ public class DependenciesTest extends EasyMock {
 		// the timestamps are identical to the file timestamps, but it should be updated by specifying
 		// the clean flag.
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, true, false);
-		deps.mapDependencies(root, map);
+		deps.mapDependencies(root, map, true);
 		assertEquals("[./b]",
 				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDepArray()).toString());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModified());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModifiedDep());
+
+		// Ensure that exception is thrown if a specified resource is not found
+		map.put("NoExist", tmpdir.toURI().resolve("NoExist"));
+		root = new DepTreeRoot(configRef.get());
+		try {
+			deps.mapDependencies(root, map, true);
+			fail("Expected exception not thrown");
+		} catch (IllegalStateException ex) {}
+
+		// try again with fail flag false
+		deps.mapDependencies(root, map, false);
+		assertNull(root.getChild("NoExist"));
+		assertNotNull(root.getChild("p1Alias"));
+
 	}
+
 	
 	private static class TestDependenciesWrapper extends DepTree {
 		private static final long serialVersionUID = 7700824773233302591L;

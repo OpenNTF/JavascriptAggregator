@@ -379,17 +379,22 @@ public class DepTree implements Serializable {
 	/**
 	 * Returns a new tree with an unnamed {@link DepTreeNode} object at the root
 	 * of the tree. Each of the keys specified in the map are children of the
-	 * returned node and those node's children are the children of the nodes 
+	 * returned node and those node's children are the children of the nodes
 	 * corresponding to the resource URIs specified by the map values.
 	 * The map values must be the same as, or a subset of, the paths that
 	 * were used to create this instance.
-	 * 
+	 *
+	 * @param root
+	 *            The root tree node
 	 * @param map
 	 *            A map of module names to resource URIs
-	 * 
+	 * @param failIfNoExist
+	 *            if true, then an {@link IllegalStateException} is thrown if
+	 *            any of the resources in <code>map</code> don't exist
+	 *
 	 * @return The root {@link DepTreeNode} for the new tree
 	 */
-	public DepTreeRoot mapDependencies(DepTreeRoot root, Map<String, URI> map) {
+	public DepTreeRoot mapDependencies(DepTreeRoot root, Map<String, URI> map, boolean failIfNoExist) {
 		// For each config path entry...
 		for (Entry<String, URI> configPathEntry : map.entrySet()) {
 			String name = configPathEntry.getKey();
@@ -417,8 +422,6 @@ public class DepTree implements Serializable {
 				}
 			}
 			
-			// Create the child node for this entry's package/path name
-			DepTreeNode target = root.createOrGet(name);
 			URI filePath = configPathEntry.getValue();
 			
 			/*
@@ -430,6 +433,8 @@ public class DepTree implements Serializable {
 			 */
 			DepTreeNode source = DepUtils.getNodeForResource(filePath, depMap);
 			if (source != null) {
+				// Create the child node for this entry's package/path name
+				DepTreeNode target = root.createOrGet(name);
 				/*
 				 * Clone the tree and copy the cloned node's children to the 
 				 * target node.
@@ -442,7 +447,7 @@ public class DepTree implements Serializable {
 					e.printStackTrace();
 				}
 				target.overlay(temp);
-			} else {
+			} else if (failIfNoExist) {
 				throw new IllegalStateException("Missing required resource: " + filePath); //$NON-NLS-1$
 			}
 		}
