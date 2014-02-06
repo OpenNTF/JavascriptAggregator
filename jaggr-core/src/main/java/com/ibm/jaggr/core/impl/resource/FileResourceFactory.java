@@ -95,13 +95,7 @@ public class FileResourceFactory implements IResourceFactory {
 			try {
 				nioFileResourceClass = classLoader
 						.loadClass("com.ibm.jaggr.core.impl.resource.NIOFileResource"); //$NON-NLS-1$
-			} catch (ClassNotFoundException e) {
-				tryNIO = false; // Don't try this again.
-				if (log.isLoggable(Level.WARNING)) {
-					log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
-					log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
-				}
-			} catch (UnsupportedClassVersionError e) {
+			} catch (ClassNotFoundException | UnsupportedClassVersionError e) {
 				tryNIO = false; // Don't try this again.
 				if (log.isLoggable(Level.WARNING)) {
 					log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
@@ -124,14 +118,7 @@ public class FileResourceFactory implements IResourceFactory {
 				Class<?> clazz = getNIOFileResourceClass();
 				if (clazz != null)
 					nioFileResourceConstructor = clazz.getConstructor(args);
-			} catch (NoSuchMethodException e) {
-				tryNIO = false; // Don't try this again.
-				if (log.isLoggable(Level.SEVERE)) {
-					log.log(Level.SEVERE, e.getMessage(), e);
-				}
-				if (log.isLoggable(Level.WARNING))
-					log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
-			} catch (SecurityException e) {
+			} catch (NoSuchMethodException | SecurityException e) {
 				tryNIO = false; // Don't try this again.
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
@@ -163,13 +150,7 @@ public class FileResourceFactory implements IResourceFactory {
 			if (constructor != null) {
 				try {
 					ret = (IResource)constructor.newInstance(args);
-				} catch (NoClassDefFoundError e) {
-					if (log.isLoggable(Level.WARNING)) {
-						log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
-						log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
-					}
-					tryNIO = false;
-				} catch (UnsupportedClassVersionError e) {
+				} catch (NoClassDefFoundError | UnsupportedClassVersionError e) {
 					if (log.isLoggable(Level.WARNING)) {
 						log.logp(Level.WARNING, CLAZZ, method, e.getMessage());
 						log.logp(Level.WARNING, CLAZZ, method, WARN_MESSAGE);
