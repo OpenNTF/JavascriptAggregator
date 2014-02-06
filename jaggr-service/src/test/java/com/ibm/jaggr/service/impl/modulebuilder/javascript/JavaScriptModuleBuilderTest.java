@@ -84,6 +84,7 @@ import com.ibm.jaggr.service.test.TestUtils;
 import com.ibm.jaggr.service.test.TestUtils.Ref;
 import com.ibm.jaggr.service.transport.IHttpTransport;
 import com.ibm.jaggr.service.transport.IHttpTransport.OptimizationLevel;
+import com.ibm.jaggr.service.util.BooleanTerm;
 import com.ibm.jaggr.service.util.CopyUtil;
 import com.ibm.jaggr.service.util.DependencyList;
 import com.ibm.jaggr.service.util.Features;
@@ -634,6 +635,22 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		ModuleDeps resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
+
+		// Add a conditioned module dependency and make sure that it doesn't get added to the result set
+		layerExpandedDeps.add("conditioneddep", new ModuleDepInfo("dojo/has", new BooleanTerm("condition"), null));
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
+
+		// Add the complementary condition, causing the combined condition to evaluate to true.
+		// The resulting resolved dependency should now show up in the result set.
+		layerExpandedDeps.add("conditioneddep", new ModuleDepInfo("dojo/has", new BooleanTerm("!condition"), null));
+		expectedDeps.add("conditioneddep", new ModuleDepInfo());
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
 	}
 	
 	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
