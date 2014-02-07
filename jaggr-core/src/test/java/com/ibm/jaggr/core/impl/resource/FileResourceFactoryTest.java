@@ -69,22 +69,6 @@ public class FileResourceFactoryTest {
 	}
 
 	@Test
-	public void testErrorLoadingClassConstructor() throws ClassNotFoundException {
-	  EasyMock.expect(classLoader.loadClass(EasyMock.isA(String.class)))
-			.andThrow(new ClassNotFoundException()).once();
-
-		control.replay();
-		Constructor<?> cons = factory.getNIOFileResourceConstructor();
-		Assert.assertNull(cons);
-
-		// Don't attempt it again.
-		cons = factory.getNIOFileResourceConstructor();
-		control.verify();
-
-		Assert.assertNull(cons);
-	}
-
-	@Test
 	public void testgetNIOResource() {
 		// sanity check for the reflection method.
 		factory = new FileResourceFactory();

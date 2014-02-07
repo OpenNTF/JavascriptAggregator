@@ -20,6 +20,8 @@ import static org.junit.Assert.assertEquals;
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 
+import com.google.common.collect.ImmutableList;
+
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
@@ -27,16 +29,21 @@ import org.junit.Test;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
+import org.powermock.api.easymock.PowerMock;
 import org.powermock.reflect.Whitebox;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import junit.framework.Assert;
@@ -213,6 +220,48 @@ public class BundleResourceFactoryTest {
 			exceptionThrown = true;
 		}
 		Assert.assertTrue(exceptionThrown);
+	}
+
+
+	@Test
+	public void testErrorLoadingClass() throws ClassNotFoundException, IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		List<Throwable> throwables = ImmutableList.<Throwable>builder()
+				.add(new ClassNotFoundException())
+				.add(new UnsupportedClassVersionError())
+		.build();
+
+		BundleResourceFactory factory;
+		ClassLoader classLoader = EasyMock.createMock(ClassLoader.class);
+
+		for (Throwable throwable : throwables) {
+			// Start with a brand new factory each time.
+			factory = new BundleResourceFactory(classLoader);
+
+			EasyMock.reset(classLoader);
+			EasyMock.expect(classLoader.loadClass(EasyMock.isA(String.class)))
+				.andThrow(throwable).once();
+
+			EasyMock.replay(classLoader);
+			Method m = PowerMock.method(BundleResourceFactory.class, "getNIOFileResourceConstructor", Class[].class);
+			Constructor<?> cons = (Constructor<?>)m.invoke(factory, new Object[]{new Class[]{}});
+			Assert.assertNull(cons);
+
+			// Don't attempt it again.
+			cons = (Constructor<?>)m.invoke(factory, new Object[]{new Class[]{}});
+			EasyMock.verify(classLoader);
+
+			Assert.assertNull(cons);
+		}
+	}
+
+
+	@Test
+	public void testgetNIOResource() throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
+		// sanity check for the reflection method.
+		factory = new TestBundleResourceFactory();
+		Method m = PowerMock.method(BundleResourceFactory.class, "getNIOFileResourceConstructor", Class[].class);
+		Constructor<?> cons = (Constructor<?>)m.invoke(factory, new Object[]{new Class[]{URI.class}});
+		Assert.assertNotNull(cons);
 	}
 
 }

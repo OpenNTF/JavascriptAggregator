@@ -50,6 +50,18 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 	private BundleContext context;
 	private ServiceReference urlConverterSR;
 
+	public BundleResourceFactory() {
+		super();
+	}
+
+	/**
+	 * Constructor for tests
+	 * @param classLoader
+	 */
+	protected BundleResourceFactory(ClassLoader classLoader) {
+		super(classLoader);
+	}
+
 	@Override
 	public IResource newResource(URI uri) {
 		IResource result = null;
