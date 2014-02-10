@@ -76,10 +76,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	static final Pattern HAS_PATTERN = Pattern.compile("(^|\\/)has$"); //$NON-NLS-1$
 
 	private final IAggregator aggregator;
-	private final Scriptable rawConfig;
+	private  Scriptable rawConfig;
 	private String strConfig;
-	private final long lastModified;
-	private final URI configUri;
+	private  long lastModified;
+	private  URI configUri;
 
 	private Location base;
 	private Map<String, IPackage> packages;
@@ -116,21 +116,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		Context.enter();
 
 		try {
-			configUri = loadConfigUri();
-			// Try to convert to an IResource in case the URI specifies
-			//  an IResource supported scheme like 'namedbundleresource'.
-			URI uri;
-			try {
-				uri = aggregator.newResource(configUri).getURI();
-			} catch (UnsupportedOperationException e) {
-				// Not fatal.  Just use the configUri as is
-				uri = configUri;
-			}
-			URLConnection connection = uri.toURL().openConnection();
-			lastModified = connection.getLastModified();
-
-			rawConfig = loadConfig(connection.getInputStream());
-
+			loadConfig();
 			// Call config modifiers to allow them to update the config
 			// before we parse it.
 			callConfigModifiers(rawConfig);
@@ -145,6 +131,22 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		} finally {
 			Context.exit();
 		}
+	}
+
+	protected void loadConfig() throws IOException, URISyntaxException {
+		configUri = loadConfigUri();
+		// Try to convert to an IResource in case the URI specifies
+		//  an IResource supported scheme like 'namedbundleresource'.
+		URI uri;
+		try {
+			uri = aggregator.newResource(configUri).getURI();
+		} catch (UnsupportedOperationException e) {
+			// Not fatal.  Just use the configUri as is
+			uri = configUri;
+		}
+		URLConnection connection = uri.toURL().openConnection();
+		lastModified = connection.getLastModified();
+		rawConfig = loadConfig(connection.getInputStream());
 	}
 
 	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript) throws IOException {
@@ -367,6 +369,19 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	public Scriptable getRawConfig() {
 		return rawConfig;
 	}
+
+	protected void setRawConfig(Scriptable rawConfig) {
+		this.rawConfig = rawConfig;
+	}
+
+	protected void setLastModified(long lastModified) {
+		this.lastModified = lastModified;
+	}
+
+	protected void setConfigUri(URI configUri) {
+		this.configUri = configUri;
+	}
+
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getPackageURIs()

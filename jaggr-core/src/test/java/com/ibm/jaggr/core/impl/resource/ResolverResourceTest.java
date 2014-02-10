@@ -31,7 +31,7 @@ public class ResolverResourceTest {
 		URI resolved = relativeRes.getURI();
 		EasyMock.verify(mockBundleResourceFactory);
 		Assert.assertEquals(new File(fileUri).toURI().resolve("../relative"), resolved);
-		Assert.assertEquals(relativeBundleUri, Whitebox.getInternalState(relativeRes, "originalUri"));
+		Assert.assertEquals(relativeBundleUri, Whitebox.getInternalState(relativeRes, "resolvableUri"));
 		Assert.assertTrue(mockBundleResourceFactory == Whitebox.getInternalState(relativeRes, "factory"));
 	}
 

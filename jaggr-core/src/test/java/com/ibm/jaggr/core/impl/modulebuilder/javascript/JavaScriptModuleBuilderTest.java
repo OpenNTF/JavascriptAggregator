@@ -32,7 +32,6 @@ import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
-import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.options.IOptions;
@@ -41,6 +40,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
+import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
@@ -636,6 +636,22 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		ModuleDeps resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
+
+		// Add a conditioned module dependency and make sure that it doesn't get added to the result set
+		layerExpandedDeps.add("conditioneddep", new ModuleDepInfo("dojo/has", new BooleanTerm("condition"), null));
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
+
+		// Add the complementary condition, causing the combined condition to evaluate to true.
+		// The resulting resolved dependency should now show up in the result set.
+		layerExpandedDeps.add("conditioneddep", new ModuleDepInfo("dojo/has", new BooleanTerm("!condition"), null));
+		expectedDeps.add("conditioneddep", new ModuleDepInfo());
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertNull(result);
+		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		Assert.assertEquals(expectedDeps, resultDeps);
 	}
 
 	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
