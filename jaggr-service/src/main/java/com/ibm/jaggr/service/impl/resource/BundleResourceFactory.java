@@ -78,7 +78,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 					FileResource fileResource = null;
 					Constructor<?> constructor = getNIOFileResourceConstructor(URI.class, IResourceFactory.class, URI.class);
 					try {
-						fileResource = (FileResource)getNIOInstance(constructor, uri);
+						fileResource = (FileResource)getNIOInstance(constructor, fileUri);
 					} catch (Throwable t) {
 						if (log.isLoggable(Level.SEVERE)) {
 							log.log(Level.SEVERE, t.getMessage(), t);
@@ -86,13 +86,13 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 					}
 
 					if (result == null) {
-						fileResource = new FileResource(uri);
+						fileResource = new FileResource(fileUri);
 					}
 					// Wrap the result in a ResolverResource so that this resource factory object
 					// will be used to construct new, resolved resources.  This is necessary since
 					// URLConverter.toFileURL needs to be invoked on any resolved resources to
 					// ensure that the resource the resolved URL points to exists.
-					result = new ResolverResource(fileResource, fileUri, this);
+					result = new ResolverResource(fileResource, uri, this);
 				} catch (FileNotFoundException e) {
 					if (log.isLoggable(Level.FINE)) {
 						log.log(Level.FINE, uri.toString(), e);
