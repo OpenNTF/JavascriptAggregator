@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
@@ -34,6 +35,7 @@ import java.util.logging.Logger;
 
 /**
  * An implementation of {@link IResource} for File resources
+ * that does not rely on java.nio
  */
 public class FileResource implements IResource {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());
@@ -105,7 +107,16 @@ public class FileResource implements IResource {
 	public IResource resolve(String relative) {
 		IResource result = null;
 		if (ref == null) {
-			result = new FileResource(getURI().resolve(relative));
+			try {
+				result = (IResource) this.getClass()
+						.getConstructor(URI.class).newInstance(getURI().resolve(relative));
+			} catch (Throwable t) {
+				// This should never happen.
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.WARNING, t.getMessage(), t);
+				}
+				throw new RuntimeException(t);
+			}
 		} else {
 			result = factory.newResource(ref.resolve(relative));
 		}
@@ -190,19 +201,6 @@ public class FileResource implements IResource {
 
 	/**
 	 * Implementation of {@link IResourceVisitor.Resource} for files.
-	 * <p>
-	 * TODO: Using {@link File} objects returned from {@link File#listFiles()}
-	 * is disappointingly slow for determining file last modified times. This is
-	 * because the {@link File} object encapsulates only the file name and does
-	 * not contain any of the directory listing meta-data (such as last-modified
-	 * time) that is generally available from a file directory listing,
-	 * necessitating additional file I/O in order to get the last-modified time
-	 * of each file. Java 7 improves on this with the java.nio.file package.
-	 * This implementation should be changed to use
-	 * {@link java.noi.file.Files#walkFileTree()} instead of
-	 * {@link File#listFiles()} as soon as Java 7 is available for use, in order
-	 * to improve startup performance when validating a previously serialized
-	 * dependency tree.
 	 */
 	private static class VisitorResource implements IResourceVisitor.Resource {
 
@@ -271,7 +269,7 @@ public class FileResource implements IResource {
 		}
 	}
 
-	private static URI getURI(File file) {
+	static URI getURI(File file) {
 		URI uri = file.toURI();
 		if (uri.toString().startsWith("file:////")) { //$NON-NLS-1$
 			// Special case for UNC filenames on Windows.  Convert back

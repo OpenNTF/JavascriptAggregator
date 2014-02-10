@@ -34,6 +34,41 @@
     <bundle.namespace>com.ibm.jaggr.core</bundle.namespace>
   </properties>
 
+  <profiles>
+    <profile>
+      <id>java7</id>
+      <activation>
+        <jdk>1.7</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>java7</id>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <configuration>
+                  <source>1.7</source>
+                  <target>1.7</target>
+                  <excludes>
+                    <exclude>foo</exclude><!-- This replaces the exclude in the parent config -->
+                  </excludes>
+                  <includes>
+                    <include>com/ibm/jaggr/core/impl/resource/NIOFileResource.java</include>
+                  </includes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+  
   <build>
     <resources>
       <resource>
@@ -99,6 +134,17 @@
       </plugins>
     </pluginManagement>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>1.6</source>
+          <target>1.6</target>
+          <excludes>
+            <exclude>com/ibm/jaggr/core/impl/resource/NIOFileResource.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -182,25 +228,17 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-compiler-plugin</artifactId>
+        <groupId>org.apache.rat</groupId>
+        <artifactId>apache-rat-plugin</artifactId>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
-       </configuration>
+          <excludes>
+            <exclude>src/main/java/com/ibm/jaggr/core/util/Term.java</exclude>
+            <exclude>src/main/java/com/ibm/jaggr/core/util/Formula.java</exclude>
+            <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
+            <exclude>src/test/resources/specRunner.htmltemplate</exclude>
+          </excludes>
+        </configuration>
       </plugin>
-      <plugin>
-          <groupId>org.apache.rat</groupId>
-          <artifactId>apache-rat-plugin</artifactId>
-          <configuration>
-            <excludes>
-              <exclude>src/main/java/com/ibm/jaggr/core/util/Term.java</exclude>
-              <exclude>src/main/java/com/ibm/jaggr/core/util/Formula.java</exclude>
-              <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
-              <exclude>src/test/resources/specRunner.htmltemplate</exclude>
-            </excludes>
-          </configuration>
-        </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
@@ -315,6 +353,11 @@
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr-sample-dojo</artifactId>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
