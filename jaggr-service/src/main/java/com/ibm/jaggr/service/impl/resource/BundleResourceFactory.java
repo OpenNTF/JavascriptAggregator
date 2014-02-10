@@ -76,7 +76,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 				try {
 					fileUri = PathUtil.url2uri(converter.toFileURL(toURL(uri)));
 					FileResource fileResource = null;
-					Constructor<?> constructor = getNIOFileResourceConstructor(URI.class, IResourceFactory.class, URI.class);
+					Constructor<?> constructor = getNIOFileResourceConstructor(URI.class);
 					try {
 						fileResource = (FileResource)getNIOInstance(constructor, fileUri);
 					} catch (Throwable t) {
