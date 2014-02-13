@@ -18,7 +18,6 @@
  */
 package com.ibm.jaggr.core.impl.resource;
 
-import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 import java.io.File;
@@ -43,8 +42,9 @@ public class NIOFileResource extends FileResource {
 		super(uri);
 	}
 
-	public NIOFileResource(URI ref, IResourceFactory factory, URI uri) {
-		super(ref, factory, uri);
+	@Override
+	protected FileResource newInstance(URI uri) {
+		return new NIOFileResource(uri);
 	}
 
 	@Override

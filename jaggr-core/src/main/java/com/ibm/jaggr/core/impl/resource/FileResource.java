@@ -17,7 +17,6 @@
 package com.ibm.jaggr.core.impl.resource;
 
 import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 import java.io.File;
@@ -27,7 +26,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.logging.Level;
@@ -41,8 +39,6 @@ public class FileResource implements IResource {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());
 
 	final File file;
-	URI ref;
-	IResourceFactory factory;
 
 	/**
 	 * Public constructor used by factory
@@ -56,17 +52,6 @@ public class FileResource implements IResource {
 			file = new File("\\\\" + uri.getAuthority() + '/' + uri.getPath()); //$NON-NLS-1$
 		} else {
 			file = new File(uri);
-		}
-		ref = null;
-		factory = null;
-	}
-
-	public FileResource(URI ref, IResourceFactory factory, URI uri) {
-		this(uri);
-		this.ref = ref;
-		this.factory = factory;
-		if (ref == null || factory == null) {
-			throw new IllegalArgumentException();
 		}
 	}
 
@@ -105,22 +90,7 @@ public class FileResource implements IResource {
 	 */
 	@Override
 	public IResource resolve(String relative) {
-		IResource result = null;
-		if (ref == null) {
-			try {
-				result = (IResource) this.getClass()
-						.getConstructor(URI.class).newInstance(getURI().resolve(relative));
-			} catch (Throwable t) {
-				// This should never happen.
-				if (log.isLoggable(Level.SEVERE)) {
-					log.log(Level.WARNING, t.getMessage(), t);
-				}
-				throw new RuntimeException(t);
-			}
-		} else {
-			result = factory.newResource(ref.resolve(relative));
-		}
-		return result;
+		return newInstance(getURI().resolve(relative));
 	}
 
 	/*
@@ -199,6 +169,10 @@ public class FileResource implements IResource {
 		}
 	}
 
+	protected FileResource newInstance(URI uri) {
+		return new FileResource(uri);
+	}
+
 	/**
 	 * Implementation of {@link IResourceVisitor.Resource} for files.
 	 */
@@ -268,6 +242,8 @@ public class FileResource implements IResource {
 			return new FileInputStream(file);
 		}
 	}
+
+
 
 	static URI getURI(File file) {
 		URI uri = file.toURI();

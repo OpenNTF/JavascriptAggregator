@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
+import com.ibm.jaggr.core.resource.IResource;
 
 import com.google.common.collect.ImmutableList;
 
@@ -150,10 +151,10 @@ public class BundleResourceFactoryTest {
 		EasyMock.expect(mockContext.ungetService(mockUrlConverterSR)).andReturn(true).once();
 		EasyMock.expect(mockUrlConverter.toFileURL(bundleUrl)).andReturn(fileUrl);
 		EasyMock.replay(mockContext, mockUrlConverterSR, mockUrlConverter);
-		FileResource res = (FileResource)factory.newResource(bundleUrl.toURI());
+		IResource res = factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
 		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
-		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "ref"));
+		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "resolvableUri"));
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
 
 		/*
@@ -188,10 +189,10 @@ public class BundleResourceFactoryTest {
 		}).once();
 		EasyMock.replay(mockBundle);
 		bundleNameMap.put("com.test.bundle", mockBundle);
-		res = (FileResource)factory.newResource(namedBundleUrl.toURI());
+		res = factory.newResource(namedBundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter, mockBundle);
 		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
-		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "ref"));
+		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "resolvableUri"));
 		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
 
 		/*
