@@ -144,6 +144,24 @@ public class DependencyList {
 	}
 
 	/**
+	 * Constructs a DependencyList from pre-specified values
+	 *
+	 * @param explicitDeps
+	 * @param expandedDeps
+	 * @param dependentFeatures
+	 */
+	public DependencyList(ModuleDeps explicitDeps, ModuleDeps expandedDeps, Set<String> dependentFeatures) {
+		this.explicitDeps = explicitDeps;
+		this.expandedDeps = expandedDeps;
+		this.dependentFeatures = dependentFeatures;
+		initialized = true;
+		names = null;
+		includeDetails = false;
+		features = null;
+		aggr = null;
+	}
+
+	/**
 	 * Returns the explicit dependencies for the modules specified in
 	 * <code>names</code>. This includes the specified modules, plus any module
 	 * names resulting from resolving has! plugin expressions and aliases for

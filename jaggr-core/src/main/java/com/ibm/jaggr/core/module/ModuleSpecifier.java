@@ -19,7 +19,7 @@ package com.ibm.jaggr.core.module;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
 /**
- * An enum specifying the possible sources from which a module 
+ * An enum specifying the possible sources from which a module
  * is specified.
  */
 public enum ModuleSpecifier {
@@ -27,12 +27,12 @@ public enum ModuleSpecifier {
 	 * The module was specified by {@link IHttpTransport#REQUESTEDMODULES_REQATTRNAME},
 	 * or is a dependency of such a module
 	 */
-	MODULES,	
+	MODULES,
 	/**
-	 * The module was specified by {@link IHttpTransport#REQUIRED_REQATTRNAME},
+	 * The module is a layer entry,
 	 * or is a dependency of such a module
 	 */
-	REQUIRED,
+	LAYER,
 	/**
 	 * The module was added by a module builder.
 	 */

@@ -28,6 +28,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.mozilla.javascript.Context;
@@ -123,15 +124,15 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		// Implement wrapping of modules required by dojo loader for modules that
 		// are loaded with the loader.
 		switch (type) {
-		case BEGIN_REQUIRED_MODULES:
+		case BEGIN_LAYER_MODULES:
 			return "require({cache:{"; //$NON-NLS-1$
-		case BEFORE_FIRST_REQUIRED_MODULE:
+		case BEFORE_FIRST_LAYER_MODULE:
 			return getBeforeRequiredModule(request, arg.toString());
-		case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
+		case BEFORE_SUBSEQUENT_LAYER_MODULE:
 			return "," + getBeforeRequiredModule(request, arg.toString()); //$NON-NLS-1$
-		case AFTER_REQUIRED_MODULE:
+		case AFTER_LAYER_MODULE:
 			return getAfterRequiredModule(request, arg.toString());
-		case END_REQUIRED_MODULES:
+		case END_LAYER_MODULES:
 		{
 			StringBuffer sb = new StringBuffer();
 			sb.append("}});require({cache:{}});require(["); //$NON-NLS-1$
@@ -145,8 +146,8 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			return sb.toString();
 		}
 		default:
+			return super.getLayerContribution(request, type, arg);
 		}
-		return null;
 	}
 
 	static final Pattern urlId = Pattern.compile("^[a-zA-Z]+\\:\\/\\/"); //$NON-NLS-1$
@@ -221,7 +222,12 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 		super.decorateRequest(request);
-		if (request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME) != null) {
+		boolean isLayerBuild = false;
+		RequestedModuleNames requestedModuleNames = (RequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		if (requestedModuleNames != null) {
+			isLayerBuild = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
+		}
+		if (isLayerBuild) {
 			// If we're building a pre-boot layer, then don't adorn text strings
 			// and don't export module names
 			request.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
@@ -229,7 +235,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		}
 		if (!(TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)) &&
 				(OptimizationLevel)request.getAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME) != OptimizationLevel.NONE ||
-				request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME) != null)) {
+				isLayerBuild)) {
 			// If we're not exporting module names and we aren't doing server side expansion
 			// of dependencies (i.e. using a prebuild cache), then we can't expand i18n
 			// resources.
@@ -250,7 +256,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 
 		// Register the loaderExt resource factory
 		Properties attributes = new Properties();
-		attributes.put("scheme", getComboUri().getScheme()); //$NON-NLS-1$ //$NON-NLS-2$
+		attributes.put("scheme", getComboUri().getScheme()); //$NON-NLS-1$
 		reg.registerExtension(
 				new LoaderExtensionResourceFactory(),
 				attributes,

@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
+import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.impl.resource.ExceptionResource;
 import com.ibm.jaggr.core.readers.AggregationReader;
 import com.ibm.jaggr.core.resource.IResource;
@@ -36,6 +37,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
@@ -60,7 +62,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
-import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -91,7 +92,39 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String REQUESTEDMODULES_REQPARAM = "modules"; //$NON-NLS-1$
 	public static final String REQUESTEDMODULESCOUNT_REQPARAM = "count"; //$NON-NLS-1$
+
+	public static final String CONSOLE_WARNING_MSG_FMT = "window.console && console.warn(\"{0}\");"; //$NON-NLS-1$
+
+	/**
+	 * Request param specifying the non-AMD script files to include in an application boot layer.
+	 * This typically includes the applications AMD loader config file, the aggregator loader
+	 * extension config and the AMD loader itself, as well as any other non-AMD script files
+	 * that the application wishes to include in the boot layer.
+	 */
+	public static final String SCRIPTS_REQPARAM = "scripts"; //$NON-NLS-1$
+
+	/**
+	 * Request param specifying the AMD modules to include in the boot layer.  These modules will
+	 * be 'required' by the AMD loader (i.e. a synthetic require call will be executed specifying
+	 * these modules after the loader has been initialized).
+	 */
+	public static final String DEPS_REQPARAM = "deps"; //$NON-NLS-1$
+
+	/**
+	 * @deprecated
+	 * Same as {@link #DEPS_REQPARAM}
+	 */
 	public static final String REQUIRED_REQPARAM = "required"; //$NON-NLS-1$
+
+	/**
+	 * Request param specifying the AMD modules to preload in the boot layer.  These modules
+	 * will be included in the boot layer, but will not be initialized (i.e. their define
+	 * function callbacks will not be invoked) unless they are direct or nested dependencies
+	 * of modules specified by the 'required' request param.  Instead, they will reside in the
+	 * loader's module cache, inactive, until needed by the loader to resolve a module
+	 * dependency.
+	 */
+	public static final String PRELOADS_REQPARAM = "preloads"; //$NON-NLS-1$
 
 	public static final String FEATUREMAP_REQPARAM = "has"; //$NON-NLS-1$
 	public static final String FEATUREMAPHASH_REQPARAM = "hashash"; //$NON-NLS-1$
@@ -116,6 +149,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
 	public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
+
+	static final String WARN_DEPRECATED_USE_OF_MODULES_QUERYARG = LayerImpl.class.getName() + ".DEPRECATED_USE_OF_MODULES"; //$NON-NLS-1$
+	static final String WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG = LayerImpl.class.getName() + ".DEPRECATED_USE_OF_REQUIRED"; //$NON-NLS-1$
+
 
 	static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
 	public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
@@ -160,8 +197,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 
-		// Get module list from request
-		request.setAttribute(REQUESTEDMODULES_REQATTRNAME, getModuleListFromRequest(request));
+		// Get module lists from request
+		setRequestedModuleNames(request);
 
 		// Get the feature list, if any
 		request.setAttribute(FEATUREMAP_REQATTRNAME, getFeaturesFromRequest(request));
@@ -190,6 +227,48 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 	}
 
+	protected void setRequestedModuleNames(HttpServletRequest request) throws IOException {
+		RequestedModuleNames requestedModuleNames = new RequestedModuleNames();
+		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
+
+		setModuleListFromRequest(request, requestedModuleNames);
+
+		// Get the deprecated require list
+		List<String> required = getNameListFromQueryArg(request, REQUIRED_REQPARAM);
+		if (required != null) {
+			requestedModuleNames.setDeps(required);
+			// Log console warning about deprecated query arg if in debug/dev mode
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			if (aggr.getOptions().isDebugMode() || aggr.getOptions().isDevelopmentMode()) {
+				request.setAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG, Boolean.TRUE);
+			}
+		}
+
+		// Get the scripts list
+		List<String> scripts = getNameListFromQueryArg(request, SCRIPTS_REQPARAM);
+		if (scripts != null) {
+			if (moduleQueryArg != null || required != null) {
+				throw new BadRequestException(request.getQueryString());
+			}
+			requestedModuleNames.setModules(scripts);
+		}
+		List<String> deps = getNameListFromQueryArg(request, DEPS_REQPARAM);
+		if (deps != null) {
+			if (moduleQueryArg != null || required != null) {
+				throw new BadRequestException(request.getQueryString());
+			}
+			requestedModuleNames.setDeps(deps);
+		}
+		List<String> preloads = getNameListFromQueryArg(request, PRELOADS_REQPARAM);
+		if (preloads != null) {
+			if (moduleQueryArg != null || required != null) {
+				throw new BadRequestException(request.getQueryString());
+			}
+			requestedModuleNames.setPreloads(preloads);
+		}
+		request.setAttribute(REQUESTEDMODULENAMES_REQATTRNAME, requestedModuleNames);
+	}
+
 	/**
 	 * Unfolds the folded module list in the request into a {@code Collection<String>}
 	 * of module names.
@@ -198,48 +277,72 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return the Collection of module names
 	 * @throws IOException
 	 */
-	protected Collection<String> getModuleListFromRequest(HttpServletRequest request) throws IOException {
+	protected void setModuleListFromRequest(HttpServletRequest request, RequestedModuleNames requestedModuleNames) throws IOException {
 		List<String> moduleList = new LinkedList<String>();
 		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
 		String countParam = request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM);
 		int count = 0;
-		if (countParam != null) {
-			count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
-		}
-
-		if (moduleQueryArg == null) {
-			return Collections.emptySet();
-		}
-
 		try {
-			moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
-		} catch (UnsupportedEncodingException e) {
-			throw new BadRequestException(e.getMessage());
-		}
-
-		if (count > 0) {
-			if (_encJsonMap.containsKey(moduleQueryArg))
-				moduleList.addAll(_encJsonMap.get(moduleQueryArg));
-			else {
-				try {
-					moduleList.addAll(Arrays.asList(unfoldModules(decodeModules(moduleQueryArg), count)));
-				} catch (JSONException e) {
-					throw new IOException(e);
+			if (moduleQueryArg == null) {
+				return;
+			}
+			if (countParam != null) {
+				count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
+				// put a reasonable upper limit on the value of count
+				if (count < 1 || count > 1000) {
+					throw new BadRequestException("count:" + count); //$NON-NLS-1$
 				}
+			}
+			try {
+				moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
+			} catch (UnsupportedEncodingException e) {
+				throw new BadRequestException(e.getMessage());
+			}
 
-				// Save buildReader so we don't have to do this again.
-				_encJsonMap.put(moduleQueryArg, moduleList);
+			if (count > 0) {
+				Collection<String> cached = _encJsonMap.get(moduleQueryArg);
+				if (cached != null && cached.size() == count) {
+					moduleList.addAll(cached);
+				} else {
+					moduleList.addAll(Arrays.asList(unfoldModules(decodeModules(moduleQueryArg), count)));
+
+					// Save buildReader so we don't have to do this again.
+					_encJsonMap.put(moduleQueryArg, moduleList);
+				}
+				requestedModuleNames.setString(moduleQueryArg);
+			} else {
+				// Hand crafted URL; get module names from one or more module query args (deprecated)
+				moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
+				// Set request attribute to warn about use of deprecated param
+				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+				if (aggr.getOptions().isDebugMode() || aggr.getOptions().isDevelopmentMode()) {
+					request.setAttribute(WARN_DEPRECATED_USE_OF_MODULES_QUERYARG, Boolean.TRUE);
+				}
 			}
-		} else {
-			// Hand crafted URL; get module names from one or more module query args
-			moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
-			String required = request.getParameter(REQUIRED_REQPARAM);
-			if (required != null) {
-				Set<String> requiredSet = new HashSet<String>(Arrays.asList(required.split("\\s*,\\s*"))); //$NON-NLS-1$
-				request.setAttribute(REQUIRED_REQATTRNAME, Collections.unmodifiableSet(requiredSet));
-			}
+		} catch (ArrayIndexOutOfBoundsException ex) {
+			_encJsonMap.remove(moduleQueryArg);
+			throw new BadRequestException(moduleQueryArg + " - " + count, ex); //$NON-NLS-1$
+		} catch (NumberFormatException ex) {
+			_encJsonMap.remove(moduleQueryArg);
+			throw new BadRequestException(moduleQueryArg + " - " + count, ex); //$NON-NLS-1$
+		} catch (JSONException ex) {
+			_encJsonMap.remove(moduleQueryArg);
+			throw new BadRequestException(moduleQueryArg + " - " + count, ex); //$NON-NLS-1$
+		} catch (RuntimeException ex) {
+			_encJsonMap.remove(moduleQueryArg);
+			throw ex;
 		}
-		return Collections.unmodifiableCollection(new ModuleList(moduleList, moduleQueryArg));
+		requestedModuleNames.setModules(Collections.unmodifiableList(moduleList));
+	}
+
+	protected List<String> getNameListFromQueryArg(HttpServletRequest request, String argName) throws IOException {
+		List<String> nameList = null;
+		String argValue = request.getParameter(argName);
+		if (argValue != null) {
+			nameList = new LinkedList<String>();
+			nameList.addAll(Arrays.asList(argValue.split("\\s*,\\s*", 0))); //$NON-NLS-1$
+		}
+		return nameList != null ? Collections.unmodifiableList(nameList) : null;
 	}
 
 	/**
@@ -265,8 +368,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *  Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
 	 *  Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
 	 *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
+	 * @throws JSONException
 	 */
-	protected  JSONObject decodeModules(String encstr) throws IOException {
+	protected  JSONObject decodeModules(String encstr) throws IOException, JSONException {
 		StringBuffer json = new StringBuffer(encstr.length() * 2);
 		Matcher m = DECODE_JSON.matcher(encstr);
 		while (m.find()) {
@@ -291,11 +395,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		String jsonstr = json.toString();
 		jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all keys //$NON-NLS-1$
 		jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all values //$NON-NLS-1$
-		try {
-			decoded = new JSONObject(jsonstr);
-		} catch (JSONException e) {
-			throw new BadRequestException(e);
-		}
+		decoded = new JSONObject(jsonstr);
 		return decoded;
 	}
 
@@ -344,6 +444,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				unfoldModulesHelper(modules.get(key), key, prefixes, ret);
 			}
 		}
+		// validate no empty array slots
+		for (String name : ret) {
+			if (name == null) throw new BadRequestException();
+		}
 		return ret;
 	}
 
@@ -366,16 +470,15 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		else if (obj instanceof String){
 			String[] values = ((String)obj).split("-"); //$NON-NLS-1$
-			try {
-				modules[Integer.parseInt(values[0])] = values.length > 1 ?
-						((aPrefixes != null ?
-								aPrefixes[Integer.parseInt(values[1])] : values[1])
-								+ "!" + path) : //$NON-NLS-1$
-									path;
-			} catch (Exception e) {
-				if (log.isLoggable(Level.SEVERE))
-					log.log(Level.SEVERE, e.getMessage(), e);
+			int idx = Integer.parseInt(values[0]);
+			if (modules[idx] != null) {
+				throw new BadRequestException();
 			}
+			modules[idx] = values.length > 1 ?
+					((aPrefixes != null ?
+							aPrefixes[Integer.parseInt(values[1])] : values[1])
+							+ "!" + path) : //$NON-NLS-1$
+								path;
 		} else {
 			throw new BadRequestException();
 		}
@@ -497,31 +600,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				level = OptimizationLevel.NONE;
 		}
 		return level;
-	}
-
-	/**
-	 * Extends the default implementation of {@link LinkedList} to override
-	 * the {@code toString) method (used in generating layer cache keys) so
-	 * that we can return the folded module name list (allowing for more
-	 * compact cache keys).
-	 */
-	protected static class ModuleList extends LinkedList<String> {
-		private static final long serialVersionUID = 1520863743688358581L;
-
-		private String stringized;
-
-		ModuleList(List<String> source, String stringized) {
-			super(source);
-			this.stringized = stringized;
-		}
-
-		/* (non-Javadoc)
-		 * @see java.util.AbstractCollection#toString()
-		 */
-		@Override
-		public String toString() {
-			return (stringized != null) ? stringized : super.toString();
-		}
 	}
 
 	/* (non-Javadoc)
@@ -654,8 +732,28 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, java.lang.String)
 	 */
 	@Override
-	public abstract String getLayerContribution(HttpServletRequest request,
-			LayerContributionType type, Object arg);
+	public String getLayerContribution(HttpServletRequest request,
+			LayerContributionType type, Object arg) {
+		String result = ""; //$NON-NLS-1$
+		if (type == LayerContributionType.END_RESPONSE) {
+			if (TypeUtil.asBoolean(request.getAttribute(WARN_DEPRECATED_USE_OF_MODULES_QUERYARG))) {
+				result += MessageFormat.format(CONSOLE_WARNING_MSG_FMT,
+						new Object[]{
+							Messages.AbstractHttpTransport_2
+						}
+				);
+			}
+			if (TypeUtil.asBoolean(request.getAttribute(WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG))) {
+				result += MessageFormat.format(CONSOLE_WARNING_MSG_FMT,
+						new Object[]{
+							Messages.AbstractHttpTransport_3
+						}
+				);
+			}
+
+		}
+		return result;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#isServerExpandable(javax.servlet.http.HttpServletRequest, java.lang.String)
@@ -754,41 +852,41 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				throw new IllegalStateException();
 			}
 			break;
-		case BEGIN_REQUIRED_MODULES:
+		case BEGIN_LAYER_MODULES:
 			if (previousType != LayerContributionType.BEGIN_RESPONSE &&
 			previousType != LayerContributionType.END_MODULES ||
 			!(arg instanceof Set)) {
 				throw new IllegalStateException();
 			}
 			break;
-		case BEFORE_FIRST_REQUIRED_MODULE:
-			if (previousType != LayerContributionType.BEGIN_REQUIRED_MODULES ||
+		case BEFORE_FIRST_LAYER_MODULE:
+			if (previousType != LayerContributionType.BEGIN_LAYER_MODULES ||
 			!(arg instanceof String)) {
 				throw new IllegalStateException();
 			}
 			break;
-		case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
-			if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
+		case BEFORE_SUBSEQUENT_LAYER_MODULE:
+			if (previousType != LayerContributionType.AFTER_LAYER_MODULE ||
 			!(arg instanceof String)) {
 				throw new IllegalStateException();
 			}
 			break;
-		case AFTER_REQUIRED_MODULE:
-			if (previousType != LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE &&
-			previousType != LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE ||
+		case AFTER_LAYER_MODULE:
+			if (previousType != LayerContributionType.BEFORE_FIRST_LAYER_MODULE &&
+			previousType != LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE ||
 			!(arg instanceof String)) {
 				throw new IllegalStateException();
 			}
 			break;
-		case END_REQUIRED_MODULES:
-			if (previousType != LayerContributionType.AFTER_REQUIRED_MODULE ||
+		case END_LAYER_MODULES:
+			if (previousType != LayerContributionType.AFTER_LAYER_MODULE ||
 			!(arg instanceof Set)) {
 				throw new IllegalStateException();
 			}
 			break;
 		case END_RESPONSE:
 			if (previousType != LayerContributionType.END_MODULES &&
-			previousType != LayerContributionType.END_REQUIRED_MODULES) {
+			previousType != LayerContributionType.END_LAYER_MODULES) {
 				throw new IllegalStateException();
 			}
 			break;
@@ -849,9 +947,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		// Validate the input - first two bytes specify length of feature list on the client
 		if (len != (decoded[0]&0xFF)+((decoded[1]&0xFF)<< 8) || decoded.length != len/5 + (len%5==0?0:1) + 2) {
 			if (log.isLoggable(Level.FINER)) {
-				log.finer("Invalid encoded feature list.  Expected feature list length = " + len); //$NON-NLS-1$ //$NON-NLS-2$
+				log.finer("Invalid encoded feature list.  Expected feature list length = " + len); //$NON-NLS-1$
 			}
-			throw new BadRequestException("Invalid encoded feature list");
+			throw new BadRequestException("Invalid encoded feature list"); //$NON-NLS-1$
 		}
 		// Now decode the trit map
 		for (int i = 2; i < decoded.length; i++) {
@@ -1110,5 +1208,4 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			throw new UnsupportedOperationException();
 		}
 	}
-
 }

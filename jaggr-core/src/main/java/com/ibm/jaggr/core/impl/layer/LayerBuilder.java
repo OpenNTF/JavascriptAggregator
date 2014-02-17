@@ -154,7 +154,7 @@ public class LayerBuilder {
 
 		if (count > 0) {
 			addTransportContribution(request, transport, sb,
-					required ? LayerContributionType.END_REQUIRED_MODULES : LayerContributionType.END_MODULES,
+					required ? LayerContributionType.END_LAYER_MODULES : LayerContributionType.END_MODULES,
 							required ? moduleList.getRequiredModules() : null);
 		}
 		addTransportContribution(request, transport, sb,
@@ -211,7 +211,7 @@ public class LayerBuilder {
 			throw new IOException(e.getCause());
 		}
 		ModuleSpecifier source = future.getModuleSpecifier();
-		if (source == ModuleSpecifier.REQUIRED) {
+		if (source == ModuleSpecifier.LAYER) {
 			if (!required && count > 0) {
 				addTransportContribution(request, transport, sb,
 						LayerContributionType.END_MODULES, null);
@@ -236,7 +236,7 @@ public class LayerBuilder {
 
 		if (count == 0) {
 			addTransportContribution(request, transport, sb,
-					required ? LayerContributionType.BEGIN_REQUIRED_MODULES : LayerContributionType.BEGIN_MODULES,
+					required ? LayerContributionType.BEGIN_LAYER_MODULES : LayerContributionType.BEGIN_MODULES,
 							required ? moduleList.getRequiredModules() : null);
 		}
 		String str = notifyLayerListeners(EventType.BEGIN_MODULE, request, future.getModule());
@@ -250,9 +250,9 @@ public class LayerBuilder {
 		// modules in the iteration.
 		LayerContributionType type;
 		if (count == 0) {
-			type = required ? LayerContributionType.BEFORE_FIRST_REQUIRED_MODULE : LayerContributionType.BEFORE_FIRST_MODULE;
+			type = required ? LayerContributionType.BEFORE_FIRST_LAYER_MODULE : LayerContributionType.BEFORE_FIRST_MODULE;
 		} else {
-			type = required ? LayerContributionType.BEFORE_SUBSEQUENT_REQUIRED_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
+			type = required ? LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
 		}
 		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
 
@@ -264,8 +264,8 @@ public class LayerBuilder {
 		hasErrors |= reader.isError();
 
 		// Add post-module transport contribution
-		type = (source == ModuleSpecifier.REQUIRED || source == ModuleSpecifier.BUILD_ADDED && required) ?
-				LayerContributionType.AFTER_REQUIRED_MODULE : LayerContributionType.AFTER_MODULE;
+		type = (source == ModuleSpecifier.LAYER || source == ModuleSpecifier.BUILD_ADDED && required) ?
+				LayerContributionType.AFTER_LAYER_MODULE : LayerContributionType.AFTER_MODULE;
 		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
 
 		// Process any after modules by recursively calling this method

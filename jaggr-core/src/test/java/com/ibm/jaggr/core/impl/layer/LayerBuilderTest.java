@@ -131,15 +131,15 @@ public class LayerBuilderTest {
 							return ",\"<"+arg+">";
 						case AFTER_MODULE:
 							return "<"+arg+">\"";
-						case BEGIN_REQUIRED_MODULES:
+						case BEGIN_LAYER_MODULES:
 							return arg.toString()+"{";
-						case END_REQUIRED_MODULES:
+						case END_LAYER_MODULES:
 							return "}"+arg;
-						case BEFORE_FIRST_REQUIRED_MODULE:
+						case BEFORE_FIRST_LAYER_MODULE:
 							return "'<"+arg+">";
-						case BEFORE_SUBSEQUENT_REQUIRED_MODULE:
+						case BEFORE_SUBSEQUENT_LAYER_MODULE:
 							return ",'<"+arg+">";
-						case AFTER_REQUIRED_MODULE:
+						case AFTER_LAYER_MODULE:
 							return "<"+arg+">'";
 						}
 						throw new IllegalArgumentException();
@@ -228,7 +228,7 @@ public class LayerBuilderTest {
 		// 1 required module
 		options.setOption("debugMode", "false");
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.REQUIRED)
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER)
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
@@ -238,8 +238,8 @@ public class LayerBuilderTest {
 
 		// two required modules
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.REQUIRED),
-				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.REQUIRED),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.LAYER),
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1", "m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
@@ -250,7 +250,7 @@ public class LayerBuilderTest {
 		// one module and one required modules
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
-				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.REQUIRED),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.LAYER),
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
@@ -260,7 +260,7 @@ public class LayerBuilderTest {
 
 		// one required module followed by one module (throws exception)
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.REQUIRED),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
 				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
@@ -275,7 +275,7 @@ public class LayerBuilderTest {
 
 		// Test addBefore with required module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.REQUIRED),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
@@ -330,7 +330,7 @@ public class LayerBuilderTest {
 
 		// test addAfter with required module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.REQUIRED),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
@@ -398,7 +398,7 @@ public class LayerBuilderTest {
 		// required and non-required modules with before and after modules
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
-				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.REQUIRED)
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.LAYER)
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
@@ -435,7 +435,7 @@ public class LayerBuilderTest {
 		requestAttributes.put(IHttpTransport.NOADDMODULES_REQATTRNAME, Boolean.TRUE);
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
-				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.REQUIRED)
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.LAYER)
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
@@ -532,7 +532,7 @@ public class LayerBuilderTest {
 		IModule module1 = new ModuleImpl("module1", new URI("file://module1.js")),
 				module2 = new ModuleImpl("module2", new URI("file://module2.js"));
 		moduleList.add(new ModuleListEntry(module1, ModuleSpecifier.MODULES));
-		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.REQUIRED));
+		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.LAYER));
 		LayerBuilder builder = new LayerBuilder(mockRequest, null, moduleList);
 		List<ModuleBuildFuture> futures = builder.collectFutures(moduleList, mockRequest);
 		Assert.assertEquals(2, futures.size());
@@ -542,7 +542,7 @@ public class LayerBuilderTest {
 		Assert.assertEquals("module1 build", toString(future.get()));
 		future = futures.get(1);
 		Assert.assertEquals("module2", future.getModule().getModuleId());
-		Assert.assertEquals(ModuleSpecifier.REQUIRED, future.getModuleSpecifier());
+		Assert.assertEquals(ModuleSpecifier.LAYER, future.getModuleSpecifier());
 		Assert.assertEquals("module2 build", toString(future.get()));
 
 		// Verfity
@@ -565,7 +565,7 @@ public class LayerBuilderTest {
 		IModule module1 = new ModuleImpl("module1", new URI("file://module1.js")),
 				module2 = new ModuleImpl("module2", new URI("file://module2.js"));
 		moduleList.add(new ModuleListEntry(module1, ModuleSpecifier.MODULES));
-		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.REQUIRED));
+		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.LAYER));
 		ILayerListener testListener1 = new ILayerListener() {
 			@Override public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
 				Assert.assertEquals(expectedModuleList, modules);

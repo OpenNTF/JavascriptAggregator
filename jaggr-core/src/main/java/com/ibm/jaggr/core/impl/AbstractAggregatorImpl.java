@@ -268,7 +268,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			if (modifiedSince >= lastModified) {
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning Not Modified response for layer in servlet" +  //$NON-NLS-1$
-							getName() + ":" + req.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString()); //$NON-NLS-1$
+							getName() + ":" + req.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME).toString()); //$NON-NLS-1$
 				}
 				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
 			}
@@ -955,8 +955,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected InitParams getInitParams(Map<String, String> configMap) {
 		List<InitParam> initParams = new LinkedList<InitParam>();
 		for (Entry<String, String> child : configMap.entrySet()) {
-			String name = (String)child.getKey(); //$NON-NLS-1$
-			String value = (String)child.getValue(); //$NON-NLS-1$
+			String name = (String)child.getKey();
+			String value = (String)child.getValue();
 			initParams.add(new InitParam(name, value));
 		}
 		return new InitParams(initParams);

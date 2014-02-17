@@ -157,13 +157,9 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		cloneLock.readLock().lock();
 		try {
 			String key = request
-					.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME)
+					.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME)
 					.toString();
 
-			Object requiredModules = request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
-			if (requiredModules != null) {
-				key += requiredModules.toString();
-			}
 			ILayer result = null;
 			boolean ignoreCached = RequestUtil.isIgnoreCached(request);
 			if (!ignoreCached) {
