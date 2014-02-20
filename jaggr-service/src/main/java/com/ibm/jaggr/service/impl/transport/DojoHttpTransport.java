@@ -37,12 +37,18 @@ import java.text.MessageFormat;
 public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
 
 	static final String comboUriStr = "namedbundleresource://com.ibm.jaggr.core/WebContent/"; //$NON-NLS-1$ //$NON-NLS-2$
+	protected static String loaderExtensionPath; //$NON-NLS-1$
 
 	private String resourcePathId = null;
 
 	private URI comboUri = null;
 
 	private String pluginUniqueId = null;
+
+	@Override
+	 protected String getLoaderExtensionPath() {
+	    return loaderExtensionPath;
+	 }
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
@@ -89,6 +95,8 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 							e.getMessage(), e)
 					);
 		}
+		loaderExtensionPath = comboUri.getPath() + "/loaderExt.js";
+		FEATUREMAP_JS_PATH = comboUri.getPath() + "/featureList.js";
 	}
 
 	/* (non-Javadoc)
@@ -113,6 +121,10 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 	@Override
 	protected String getResourcePathId() {
 		return resourcePathId;
+	}
+
+	protected String getTextPluginProxyUriStr(){
+		return comboUriStr + textPluginPath ;
 	}
 
 }

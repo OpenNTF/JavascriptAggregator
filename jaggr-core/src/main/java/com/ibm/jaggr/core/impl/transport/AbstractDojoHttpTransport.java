@@ -55,8 +55,8 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
-	static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
-	static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
+	protected static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
+	//static final String loaderExtensionPath = "/WebContent/js/loaderExt.js"; //$NON-NLS-1$
 	static final String[] loaderExtensionResources = {
 		"./loaderExtCommon.js", //$NON-NLS-1$
 		"./dojo/_loaderExt.js" //$NON-NLS-1$
@@ -85,9 +85,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	 *
 	 * @return the loader extension path
 	 */
-	protected String getLoaderExtensionPath() {
-		return loaderExtensionPath;
-	}
+	protected abstract String getLoaderExtensionPath();
 
 	/**
 	 * Property accessor for the loaderExtensionResources property
@@ -285,6 +283,8 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		return sb.toString();
 	}
 
+	protected abstract String getTextPluginProxyUriStr();
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
@@ -413,11 +413,11 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_3,
-						new Object[]{dojoTextPluginFullPath, getComboUri().resolve(textPluginPath).toString()}
+						new Object[]{dojoTextPluginFullPath, getTextPluginProxyUriStr()}
 						));
 			}
 
-			paths.put(dojoTextPluginFullPath, paths, getComboUri().resolve(textPluginPath).toString());
+			paths.put(dojoTextPluginFullPath, paths, getTextPluginProxyUriStr());
 
 			// Specify paths entry to map the dojo text plugin alias name to the original
 			// dojo text plugin

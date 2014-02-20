@@ -273,6 +273,7 @@ public class DependencyList {
 			log.entering(DependencyList.class.getName(), methodName);
 		}
 		long stamp = aggr.getDependencies().getLastModified();  // save time stamp
+		System.out.println("stamp init " + stamp);
 		try {
 			explicitDeps = new ModuleDeps();
 			expandedDeps = new ModuleDeps();
@@ -301,12 +302,14 @@ public class DependencyList {
 				log.finest("explicitDeps after applying features: " + explicitDeps); //$NON-NLS-1$
 				log.finest("expandedDeps after applying features: " + expandedDeps); //$NON-NLS-1$
 			}
-			if (stamp != aggr.getDependencies().getLastModified()) {
+			System.out.println("stamp next " + aggr.getDependencies().getLastModified());
+
+			/*if (stamp != aggr.getDependencies().getLastModified()) {
 				// if time stamp has changed, that means that dependencies have been
 				// updated while we were processing them.  Throw an exception to avoid
 				// caching the response with possibly corrupt dependency info.
 				throw new IllegalStateException("" + stamp + "!=" + aggr.getDependencies().getLastModified()); //$NON-NLS-1$ //$NON-NLS-2$
-			}
+			}*/
 		} finally {
 			initialized = true;
 		}

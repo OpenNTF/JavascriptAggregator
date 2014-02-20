@@ -452,5 +452,13 @@ public class TestUtils {
 		protected String getResourcePathId() {
 			return "combo";
 		}
+		@Override
+		protected String getLoaderExtensionPath() {
+			return "/WebContent/loaderExt.js";
+		}
+		@Override
+		protected String getTextPluginProxyUriStr() {
+			return "namedbundleresource://com.ibm.jaggr.sample.dojo/" + textPluginPath;
+		}
 	}
 }
