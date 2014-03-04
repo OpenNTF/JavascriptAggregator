@@ -101,14 +101,14 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 				for (int i = 0; i < m.groupCount(); i++) {
 					groups.add(m.group(i));
 				}
-				log.finer("matched groups =" + groups.toString());
+				log.finer("matched groups =" + groups.toString()); //$NON-NLS-1$
 			}
 			boolean isLog = false;
 			if (strIdx == null) {
 				strIdx = m.group(4);
 				isLog = true;
 				if (isDebugLogging) {
-					log.finer("Console logging is enabled");
+					log.finer("Console logging is enabled"); //$NON-NLS-1$
 				}
 			}
 			int depIdx = Integer.parseInt(strIdx);
@@ -116,12 +116,12 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			m.appendReplacement(sb, ""); //$NON-NLS-1$
 			contentFragments.add(sb.toString());
 			if (isTraceLogging) {
-				log.finest("Adding to contentFragments - " + sb.toString());
+				log.finest("Adding to contentFragments - " + sb.toString()); //$NON-NLS-1$
 			}
 			ModuleDeps expandedDep = depsList.get(depIdx);
 			expandedDeps.add(expandedDep);
 			if (isTraceLogging) {
-				log.finest("Adding to expandedDeps - " + expandedDeps);
+				log.finest("Adding to expandedDeps - " + expandedDeps); //$NON-NLS-1$
 			}
 			if (isReqExpLogging) {
 				isLogOutput.add(isLog);
@@ -131,7 +131,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 		m.appendTail(sb);
 		contentFragments.add(sb.toString());
 		if (isTraceLogging) {
-			log.finest("Adding to contentFragments - " + sb.toString());
+			log.finest("Adding to contentFragments - " + sb.toString()); //$NON-NLS-1$
 		}
 		if (isDebugLogging) {
 			log.exiting(JavaScriptBuildRenderer.class.getName(), methodName);
@@ -147,7 +147,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			log.entering(JavaScriptBuildRenderer.class.getName(), methodName, new Object[]{request, dependentFeatures});
 		}
 		if (isDebugLogging) {
-			log.finer("Rendering expanded dependencies for " + mid);
+			log.finer("Rendering expanded dependencies for " + mid); //$NON-NLS-1$
 		}
 		String result = null;
 		ModuleDeps enclosingDeps = (ModuleDeps)request.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
@@ -155,7 +155,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			result = contentFragments.get(0);
 		} else {
 			if (contentFragments.size() != expandedDeps.size() + 1) {
-				throw new IllegalStateException(mid + "(" + contentFragments.size() + "," + expandedDeps.size() + ")");
+				throw new IllegalStateException(mid + "(" + contentFragments.size() + "," + expandedDeps.size() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			StringBuffer sb = new StringBuffer();
 			int i;
@@ -166,8 +166,8 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 				}
 				Set<String> moduleIds = expanded.getModuleIds();
 				if (isTraceLogging) {
-					log.finest("contentFragment = " + contentFragments.get(i));
-					log.finest("moduleIds = " + moduleIds);
+					log.finest("contentFragment = " + contentFragments.get(i)); //$NON-NLS-1$
+					log.finest("moduleIds = " + moduleIds); //$NON-NLS-1$
 				}
 				sb.append(contentFragments.get(i));
 				boolean isLog = isLogOutput != null && isLogOutput.get(i);
@@ -184,7 +184,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			}
 			sb.append(contentFragments.get(i));
 			if (isTraceLogging) {
-				log.finest("contentFragment = " + contentFragments.get(i));
+				log.finest("contentFragment = " + contentFragments.get(i)); //$NON-NLS-1$
 			}
 			result = sb.toString();
 		}

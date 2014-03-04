@@ -30,11 +30,6 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.layer.CacheEntry;
-import com.ibm.jaggr.core.impl.layer.LayerBuildsAccessor;
-import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
-import com.ibm.jaggr.core.impl.layer.LayerImpl;
-import com.ibm.jaggr.core.impl.layer.VariableGZIPOutputStream;
 import com.ibm.jaggr.core.impl.module.NotFoundModule;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -47,6 +42,7 @@ import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.RequestedModuleNames;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
@@ -75,10 +71,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -234,8 +229,9 @@ public class LayerTest extends EasyMock {
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		long totalSize = 0;
-		Collection<String> modules = Arrays.asList(new String[]{"p1/a"});
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		RequestedModuleNames modules = new RequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/a"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
 		List<String> layerCacheInfo = new LinkedList<String>();
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
@@ -254,8 +250,8 @@ public class LayerTest extends EasyMock {
 		// Request two modules
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		modules.setModules(Arrays.asList(new String[]{"p1/b", "p1/a"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(modules.toString(), mockAggregator);
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -276,8 +272,8 @@ public class LayerTest extends EasyMock {
 		// Add a text resource
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		modules = Arrays.asList(new String[]{"p1/b","p1/a","p1/hello.txt"});
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		modules.setModules(Arrays.asList(new String[]{"p1/b","p1/a","p1/hello.txt"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(modules.toString(), mockAggregator);
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -302,7 +298,7 @@ public class LayerTest extends EasyMock {
 		layer = newLayerImpl(modules.toString(), mockAggregator);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -327,7 +323,7 @@ public class LayerTest extends EasyMock {
 		// Requst the same layer again and make sure it comes from the layer cache
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -346,7 +342,7 @@ public class LayerTest extends EasyMock {
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
@@ -374,7 +370,7 @@ public class LayerTest extends EasyMock {
 		new File(tmpdir, "p1/a.js.save").renameTo(new File(tmpdir, "p1/a.js"));
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -397,7 +393,7 @@ public class LayerTest extends EasyMock {
 		new File(tmpdir, "p1/b.js").setLastModified(new Date().getTime());
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		in = layer.getInputStream(mockRequest, mockResponse);
@@ -435,7 +431,9 @@ public class LayerTest extends EasyMock {
 		// Test required request parameter
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUIRED_REQATTRNAME, new HashSet<String>(Arrays.asList(new String[]{"p1/a"})));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+		modules.setModules(Collections.<String>emptyList());
+		modules.setDeps(Arrays.asList(new String[]{"p1/a"}));
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
@@ -453,7 +451,8 @@ public class LayerTest extends EasyMock {
 		// Ensure that package name in require list get's translated to package main module
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUIRED_REQATTRNAME, new HashSet<String>(Arrays.asList(new String[]{"foo"})));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+		modules.setDeps(Arrays.asList(new String[]{"foo"}));
 		in = layer.getInputStream(mockRequest, mockResponse);
 		writer = new StringWriter();
 		CopyUtil.copy(in, writer);
@@ -481,8 +480,9 @@ public class LayerTest extends EasyMock {
 		Long lastMod = Math.max(new File(tmpdir, "p1/a.js").lastModified(),
 				new File(tmpdir, "p1/b.js").lastModified());
 
-		Collection<String> modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		RequestedModuleNames modules = new RequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/b", "p1/a"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
 		long testLastMod = layer.getLastModified(mockRequest);
 		assertEquals("Last-modifieds don't match", lastMod, testLastMod, 0);
@@ -493,7 +493,7 @@ public class LayerTest extends EasyMock {
 		assertNotSame("Last modifieds shouldn't match", lastMod,  testLastMod);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		testLastMod = layer.getLastModified(mockRequest);
 		assertEquals("Last modifieds don't match", lastMod, testLastMod, 0);
 		assertNotNull(requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
@@ -505,7 +505,7 @@ public class LayerTest extends EasyMock {
 		new File(tmpdir, "p1/b.js").setLastModified(lastMod);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		testLastMod = layer.getLastModified(mockRequest);
 		assertEquals("Last modifieds don't match", testLastMod, configRef.get().lastModified());
 	}
@@ -521,9 +521,10 @@ public class LayerTest extends EasyMock {
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 
-		Collection<String> modules = Arrays.asList(new String[]{"p1/b", "p1/a"});
+		RequestedModuleNames modules = new RequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/b", "p1/a"}));
 		requestAttributes.put(
-				IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+				IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
 		InputStream in = layer.getInputStream(mockRequest, mockResponse);
 		in.close();
@@ -567,8 +568,9 @@ public class LayerTest extends EasyMock {
 		configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 
-		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		RequestedModuleNames modules = new RequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/a", "p1/p1"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, IHttpTransport.OptimizationLevel.NONE);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 
@@ -679,8 +681,9 @@ public class LayerTest extends EasyMock {
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 
-		Collection<String> modules = Arrays.asList(new String[]{"p1/a", "p1/p1"});
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		RequestedModuleNames modules = new RequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/a", "p1/p1"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
 
@@ -737,7 +740,7 @@ public class LayerTest extends EasyMock {
 		cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(modules.toString(), mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, modules);
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		in = layer.getInputStream(mockRequest, mockResponse);
 		bos = new ByteArrayOutputStream();
 		CopyUtil.copy(in, bos);

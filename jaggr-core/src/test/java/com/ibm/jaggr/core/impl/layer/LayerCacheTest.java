@@ -22,9 +22,6 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.layer.CacheEntry;
-import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
-import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
@@ -34,6 +31,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.RequestedModuleNames;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.Weigher;
@@ -103,7 +101,9 @@ public class LayerCacheTest {
 
 		LayerCacheImpl layerCache = (LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers();
 		Assert.assertEquals(0, layerCache.getLayerBuildMap().size());
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[]{"layer1"}));
+		RequestedModuleNames modules = new RequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"layer1"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		ILayer layer = layerCache.getLayer(mockRequest);
 		Assert.assertEquals("[layer1]", layer.getKey());
 		Assert.assertEquals(1, layerCache.size());
@@ -124,7 +124,8 @@ public class LayerCacheTest {
 
 		// Add another layer that will cause the cache to overflow
 		requestAttributes.clear();
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/b", "p1/c", "p1/a"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+		modules.setModules(Arrays.asList(new String[] {"p1/b", "p1/c", "p1/a"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		layer = layerCache.getLayer(mockRequest);
 		Assert.assertEquals(6, layerCache.size());
@@ -161,7 +162,8 @@ public class LayerCacheTest {
 		// Get a layer that's already in the cache, causing the cache entry to be
 		// promoted to the tail of the LRU cache
 		requestAttributes.clear();
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/b"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+		modules.setModules(Arrays.asList(new String[] {"p1/b"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		layer = layerCache.getLayer(mockRequest);
 		Assert.assertEquals(5, layerCache.size());
@@ -175,7 +177,8 @@ public class LayerCacheTest {
 		// Make sure the de-serialized cache works as expected
 		// Add another layer that will cause the cache to overflow
 		requestAttributes.clear();
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/b", "p1/c", "p2/a"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+		modules.setModules(Arrays.asList(new String[] {"p1/b", "p1/c", "p2/a"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		layer = layerCache.getLayer(mockRequest);
 		Assert.assertEquals(6, layerCache.size());
@@ -232,7 +235,8 @@ public class LayerCacheTest {
 		// to recognize that the file has changed
 		TestUtils.createTestFile(tmpdir, "p1/a.js", TestUtils.a.replace("hello", "Hello"));
 		requestAttributes.clear();
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(new String[] {"p1/a"}));
+		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+		modules.setModules(Arrays.asList(new String[] {"p1/a"}));
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		String key = layerCache.getLayerBuildKeys().iterator().next();
 		String filename = layerCache.getLayerBuildMap().get(key).getFilename();
@@ -332,7 +336,9 @@ public class LayerCacheTest {
 		int i = 1;
 		for (String[] l : layers) {
 			requestAttributes.clear();
-			requestAttributes.put(IHttpTransport.REQUESTEDMODULES_REQATTRNAME, Arrays.asList(l));
+			RequestedModuleNames modules = new RequestedModuleNames();
+			requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
+			modules.setModules(Arrays.asList(l));
 			requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 			ILayer layer = layerCache.getLayer(mockRequest);
 			Assert.assertEquals(i, layerCache.size());

@@ -38,6 +38,7 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import java.io.ByteArrayOutputStream;
@@ -49,7 +50,6 @@ import java.io.StringReader;
 import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -581,21 +581,21 @@ public class LayerImpl implements ILayer {
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning calculated last modified "  //$NON-NLS-1$
 							+ lastModified + " for layer " +  //$NON-NLS-1$
-							request.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString());
+							request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME).toString());
 				}
 			} else {
 				lastModified = (Long)obj;
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning last modified "  //$NON-NLS-1$
 							+ lastModified + " from request for layer " +  //$NON-NLS-1$
-							request.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString());
+							request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME).toString());
 				}
 			}
 		} else {
 			if (log.isLoggable(Level.FINER)) {
 				log.finer("Returning cached last modified "  //$NON-NLS-1$
 						+ lastModified + " for layer " + //$NON-NLS-1$
-						request.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME).toString());
+						request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME).toString());
 			}
 		}
 		return lastModified;
@@ -672,13 +672,13 @@ public class LayerImpl implements ILayer {
 		ModuleList result = (ModuleList)request.getAttribute(MODULE_FILES_PROPNAME);
 		if (result == null) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			@SuppressWarnings("unchecked")
-			Collection<String> moduleNames = (Collection<String>)request.getAttribute(IHttpTransport.REQUESTEDMODULES_REQATTRNAME);
+			RequestedModuleNames requestedModuleNames = (RequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+
 			result = new ModuleList();
-			Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-			Set<String> dependentFeatures = new HashSet<String>();
-			if (moduleNames != null) {
-				for (String name : moduleNames) {
+			if (requestedModuleNames != null) {
+				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
+				Set<String> dependentFeatures = new HashSet<String>();
+				for (String name : requestedModuleNames.getModules()) {
 					if (name != null) {
 						name = aggr.getConfig().resolve(name, features, dependentFeatures, null,
 								false,	// Don't resolve aliases when locating modules requested by the loader
@@ -689,45 +689,67 @@ public class LayerImpl implements ILayer {
 						result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
 					}
 				}
-			}
-			// See if we need to add required modules.
-			@SuppressWarnings("unchecked")
-			Set<String> required = (Set<String>)request.getAttribute(IHttpTransport.REQUIRED_REQATTRNAME);
-			if (required != null) {
+				// See if we need to add required modules.
+				DependencyList requiredList = null, preloadList = null;
+				ModuleDeps combined = new ModuleDeps();
+				if (!requestedModuleNames.getDeps().isEmpty()) {
 
-				// If there's a required module, then add it and its dependencies
-				// to the module list.
-				final DependencyList depList = new DependencyList(
-						required,
-						aggr,
-						features,
-						true, 	// resolveAliases
-						RequestUtil.isRequireExpLogging(request)	// include details
-						);
-				dependentFeatures.addAll(depList.getDependentFeatures());
+					// If there's a required module, then add it and its dependencies
+					// to the module list.
+					requiredList = new DependencyList(
+							requestedModuleNames.getDeps(),
+							aggr,
+							features,
+							true, 	// resolveAliases
+							RequestUtil.isRequireExpLogging(request)	// include details
+							);
+					dependentFeatures.addAll(requiredList.getDependentFeatures());
 
-				result.setRequiredModules(depList.getExplicitDeps().getModuleIds());
+					result.setRequiredModules(requiredList.getExplicitDeps().getModuleIds());
 
-				ModuleDeps combined = new ModuleDeps(depList.getExplicitDeps());
-				combined.addAll(depList.getExpandedDeps());
+					combined.addAll(requiredList.getExplicitDeps());
+					combined.addAll(requiredList.getExpandedDeps());
+				}
+				if (!requestedModuleNames.getPreloads().isEmpty()) {
+					preloadList = new DependencyList(
+							requestedModuleNames.getPreloads(),
+							aggr,
+							features,
+							true, 	// resolveAliases
+							RequestUtil.isRequireExpLogging(request)	// include details
+							);
+					dependentFeatures.addAll(preloadList.getDependentFeatures());
+
+					combined.addAll(preloadList.getExplicitDeps());
+					combined.addAll(preloadList.getExpandedDeps());
+				}
 				for (String name : combined.getModuleIds()) {
 					if (aggr.getTransport().isServerExpandable(request, name)) {
 						result.add(
 								new ModuleList.ModuleListEntry(
 										newModule(request, name),
-										ModuleSpecifier.REQUIRED
+										ModuleSpecifier.LAYER
 										)
 								);
 					}
 				}
-				if (RequestUtil.isRequireExpLogging(request)) {
-					request.setAttribute(BOOTLAYERDEPS_PROPNAME, depList);
+				if ((requiredList != null || preloadList != null) && RequestUtil.isRequireExpLogging(request)) {
+					ModuleDeps explicit = new ModuleDeps(), expanded = new ModuleDeps();
+					if (requiredList != null) {
+						explicit.addAll(requiredList.getExplicitDeps());
+						expanded.addAll(requiredList.getExpandedDeps());
+					}
+					if (preloadList != null) {
+						explicit.addAll(preloadList.getExplicitDeps());
+						expanded.addAll(preloadList.getExpandedDeps());
+					}
+					request.setAttribute(BOOTLAYERDEPS_PROPNAME, new DependencyList(explicit, expanded, dependentFeatures));
 				}
+				result.setDependenentFeatures(dependentFeatures);
 			}
 			if (result.isEmpty()) {
-				throw new BadRequestException();
+				throw new BadRequestException(request.getQueryString());
 			}
-			result.setDependenentFeatures(dependentFeatures);
 			request.setAttribute(MODULE_FILES_PROPNAME, result);
 		}
 		return result;

@@ -27,16 +27,16 @@
 (function() {
 	var href = location.href,
 		isDebugLoader = /[&?]debugLoader=1/.test(href),
-		modules = [
-			"js/loaderConfig",	// Our loader config
-			"combo/loaderExt",  // The aggregator loader extension code
-			"dojo/dojo"			// The loader
-		],
 		params = {
-			expandRequire: 1,
-			//exportNames: 1,
-			required: "js/bootstrap" // required module that will be loaded
-											// along with all of it's nested dependencies
+			scripts: [
+				"js/loaderConfig",	// Our loader config
+				"combo/loaderExt",  // The aggregator loader extension code
+				"dojo/dojo"			// The loader
+			].join(","),
+			
+			deps: "js/bootstrap", // required module that will be loaded
+				                  // along with all of it's nested dependencies
+			expandRequire: 1 
 		},
 		features = {
 			"dojo-combo-api" : 1,
@@ -61,12 +61,11 @@
 		}
 	}
 	// write out the script tag to use the aggregator to load our modules
-	document.write('<script src="../../test/aggr?modules=');
-	for (var s in modules) {
-		document.write((i++ ? "," : "") + encodeURIComponent(modules[s]));
-	}
+	document.write('<script src="../../test/aggr');
+	var delim = "?";
 	for (var s in params) {
-		document.write("&" + s + "=" + encodeURIComponent(params[s]));
+		document.write(delim + s + "=" + encodeURIComponent(params[s]));
+		delim = "&";
 	}
 	i = 0;
 	document.write("&has=");

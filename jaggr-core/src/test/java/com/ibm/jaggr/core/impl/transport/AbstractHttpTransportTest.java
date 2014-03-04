@@ -16,16 +16,22 @@
 package com.ibm.jaggr.core.impl.transport;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
+import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.IDependencies;
-import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
+import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.RequestedModuleNames;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.wink.json4j.JSONObject;
@@ -36,12 +42,14 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +77,301 @@ public class AbstractHttpTransportTest {
 	public void tearDown() throws Exception {
 	}
 
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testSetRequestedModuleNamesWithEncodedModules() throws Exception {
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParams = new HashMap<String, String[]>();
+		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		EasyMock.replay(mockAggregator, request);
+		AbstractHttpTransport transport = new TestHttpTransport();
+		Map<String, Collection<String>> encJsonMap = (Map<String, Collection<String>>)Whitebox.getInternalState(transport, "_encJsonMap");
+		transport.setRequestedModuleNames(request);
+		RequestedModuleNames requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertTrue(requestedNames.getModules().isEmpty());
+		assertTrue(requestedNames.getDeps().isEmpty());
+		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertEquals("", requestedNames.toString());
+
+		// Test with encoded modules param
+		String encModules = "(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!3)";
+		requestParams.put("modules", new String[]{encModules});
+		requestParams.put("count", new String[]{"4"});
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		List<String> expected = Arrays.asList(new String[]{"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir"});
+		assertEquals(expected, requestedNames.getModules());
+		assertTrue(requestedNames.getDeps().isEmpty());
+		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertEquals(encModules, requestedNames.toString());
+		assertEquals(expected, encJsonMap.get(encModules));
+
+		// Make sure subsequent request for same arg is obtained form cache
+		encJsonMap.get(encModules).add("added");
+		transport.setRequestedModuleNames(request);
+		assertEquals(Arrays.asList(new String[]{"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir", "added"}), requestedNames.getModules());
+
+
+		encJsonMap.clear();
+
+		// Test with invalid count param
+		requestParams.put("count", new String[]{"5"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+		}
+		requestParams.put("count", new String[]{"3"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+		}
+		// Test with non-numeric count param
+		requestParams.put("count", new String[]{"abc"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+		}
+		// test with count out of range
+		requestParams.put("count", new String[]{"10000"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+			assertEquals(ex.getMessage(), "count:10000");
+		}
+		requestParams.put("count", new String[]{"0"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+			assertEquals(ex.getMessage(), "count:0");
+		}
+
+		// test with invalid encoding indices
+		requestParams.put("modules", new String[]{"(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!2)"});
+		requestParams.put("count", new String[]{"4"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+		}
+		// test with unused encoding index
+		requestParams.put("modules", new String[]{"(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!4)"});
+		requestParams.put("count", new String[]{"5"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+		}
+		// test with illegal encoding syntax
+		requestParams.put("modules", new String[]{"(foo!(bar0*baz!(xxx!2*yyy!1))*dir!4)"});
+		requestParams.put("count", new String[]{"5"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertTrue(encJsonMap.isEmpty());
+		}
+		// test invalid count param when retrieving from cache
+		requestParams.put("modules", new String[]{encModules});
+		requestParams.put("count", new String[]{"4"});
+		transport.setRequestedModuleNames(request);
+		assertEquals(expected, encJsonMap.get(encModules));
+		requestParams.put("count", new String[]{"5"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+			assertEquals(1, encJsonMap.size());
+		}
+
+	}
+
+	@Test
+	public void testSetRequestedModuleNames() throws Exception {
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParams = new HashMap<String, String[]>();
+		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		EasyMock.replay(mockAggregator, request);
+		AbstractHttpTransport transport = new TestHttpTransport();
+
+		// test with scripts only
+		requestParams.put(AbstractHttpTransport.SCRIPTS_REQPARAM, new String[]{"script/a, script/b"});
+		transport.setRequestedModuleNames(request);
+		RequestedModuleNames requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getModules());
+		assertTrue(requestedNames.getDeps().isEmpty());
+		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertEquals("[script/a, script/b]", requestedNames.toString());
+
+		// test with deps only
+		requestParams.remove(AbstractHttpTransport.SCRIPTS_REQPARAM);
+		requestParams.put(AbstractHttpTransport.DEPS_REQPARAM, new String[]{"dep/a,dep/b"});
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"dep/a", "dep/b"}), requestedNames.getDeps());
+		assertTrue(requestedNames.getModules().isEmpty());
+		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertEquals("deps:[dep/a, dep/b]", requestedNames.toString());
+
+		// test with preloads only
+		requestParams.remove(AbstractHttpTransport.DEPS_REQPARAM);
+		requestParams.put(AbstractHttpTransport.PRELOADS_REQPARAM, new String[]{"preload/a,preload/b"});
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"preload/a", "preload/b"}), requestedNames.getPreloads());
+		assertTrue(requestedNames.getModules().isEmpty());
+		assertTrue(requestedNames.getDeps().isEmpty());
+		assertEquals("preloads:[preload/a, preload/b]", requestedNames.toString());
+
+		// test with all three
+		requestParams.put(AbstractHttpTransport.DEPS_REQPARAM, new String[]{"dep/a,dep/b"});
+		requestParams.put(AbstractHttpTransport.SCRIPTS_REQPARAM, new String[]{"script/a, script/b"});
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getModules());
+		assertEquals(Arrays.asList(new String[]{"dep/a", "dep/b"}), requestedNames.getDeps());
+		assertEquals(Arrays.asList(new String[]{"preload/a", "preload/b"}), requestedNames.getPreloads());
+		assertEquals("[script/a, script/b];deps:[dep/a, dep/b];preloads:[preload/a, preload/b]", requestedNames.toString());
+
+	}
+
+	@SuppressWarnings("deprecation")
+	@Test
+	public void testSetRequestedModuleNamesExceptions() throws Exception {
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParams = new HashMap<String, String[]>();
+		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		EasyMock.replay(mockAggregator, request);
+		AbstractHttpTransport transport = new TestHttpTransport();
+
+		// test exceptions with scripts param
+		requestParams.put(AbstractHttpTransport.SCRIPTS_REQPARAM, new String[]{"script/a"});
+		requestParams.put(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM, new String[]{"module/a"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {}
+		requestParams.remove(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM);
+		requestParams.put(AbstractHttpTransport.REQUIRED_REQPARAM, new String[]{"required/a"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {}
+
+		// test exceptions with deps param
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestParams.clear();
+		requestParams.put(AbstractHttpTransport.DEPS_REQPARAM, new String[]{"deps/a"});
+		requestParams.put(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM, new String[]{"module/a"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {}
+		requestParams.remove(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM);
+		requestParams.put(AbstractHttpTransport.REQUIRED_REQPARAM, new String[]{"required/a"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {}
+
+		// test exceptions with preloads param
+		requestAttributes.clear();
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestParams.clear();
+		requestParams.put(AbstractHttpTransport.PRELOADS_REQPARAM, new String[]{"preloads/a"});
+		requestParams.put(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM, new String[]{"module/a"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {}
+		requestParams.remove(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM);
+		requestParams.put(AbstractHttpTransport.REQUIRED_REQPARAM, new String[]{"required/a"});
+		try {
+			transport.setRequestedModuleNames(request);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {}
+
+	}
+
+	@SuppressWarnings("deprecation")
+	@Test
+	public void testSetRequestedModuleNamesWithDeprecatedParams() throws Exception {
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParams = new HashMap<String, String[]>();
+		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		EasyMock.replay(mockAggregator, request);
+		AbstractHttpTransport transport = new TestHttpTransport();
+
+		// check the warn deprecated flag when using 'modules' (dev/debug only)
+		requestParams.put(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM, new String[]{"foo/a,bar/b"});
+		transport.setRequestedModuleNames(request);
+		RequestedModuleNames requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getModules());
+		assertFalse(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
+		// now enable debug mode
+		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		request.removeAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG);
+		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, true);
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getModules());
+		assertTrue(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
+		// make sure it works for development mode as well
+		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		request.removeAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG);
+		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, false);
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getModules());
+		assertTrue(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
+
+		// check the warn deprecated flag when using 'require' (dev/debug only)
+		requestParams.clear();
+		requestAttributes.clear();
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, false);
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+		requestParams.put(AbstractHttpTransport.REQUIRED_REQPARAM, new String[]{"foo/a,bar/b"});
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getDeps());
+		assertFalse(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG)));
+		// now enable debug mode
+		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		request.removeAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG);
+		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, true);
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getDeps());
+		assertTrue(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG)));
+		// make sure it works for development mode as well
+		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		request.removeAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG);
+		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, false);
+		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
+		transport.setRequestedModuleNames(request);
+		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getDeps());
+		assertTrue(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG)));
+
+
+	}
 	/**
 	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getHasReaturesFromRequest(javax.servlet.http.HttpServletRequest)}.
 	 * @throws ServletException

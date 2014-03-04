@@ -22,6 +22,8 @@ public class Messages extends NLS {
 	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
 	public static String AbstractHttpTransport_0;
 	public static String AbstractHttpTransport_1;
+	public static String AbstractHttpTransport_2;
+	public static String AbstractHttpTransport_3;
 	public static String DojoHttpTransport_0;
 	public static String DojoHttpTransport_1;
 	public static String DojoHttpTransport_2;
