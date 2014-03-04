@@ -85,8 +85,12 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	 *
 	 * @return the loader extension path
 	 */
-	protected String getLoaderExtensionPath() {
+	protected String getLoaderExtensionPath(){
 		return loaderExtensionPath;
+	}
+
+	protected String getTextPluginPath(){
+		return textPluginPath;
 	}
 
 	/**
@@ -285,6 +289,10 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		return sb.toString();
 	}
 
+	protected String getTextPluginProxyUriStr(){
+		return getComboUri().resolve(textPluginPath).toString();
+	}
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
@@ -413,11 +421,11 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			if (log.isLoggable(Level.INFO)) {
 				log.info(MessageFormat.format(
 						Messages.DojoHttpTransport_3,
-						new Object[]{dojoTextPluginFullPath, getComboUri().resolve(textPluginPath).toString()}
+						new Object[]{dojoTextPluginFullPath, getTextPluginProxyUriStr()}
 						));
 			}
 
-			paths.put(dojoTextPluginFullPath, paths, getComboUri().resolve(textPluginPath).toString());
+			paths.put(dojoTextPluginFullPath, paths, getTextPluginProxyUriStr());
 
 			// Specify paths entry to map the dojo text plugin alias name to the original
 			// dojo text plugin
