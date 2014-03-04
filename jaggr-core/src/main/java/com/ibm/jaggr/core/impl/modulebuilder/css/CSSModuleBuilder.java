@@ -72,7 +72,8 @@ import javax.servlet.http.HttpServletRequest;
  * </ul>
  * This module works by extending TextModuleBuilder and processing the text stream
  * associated with the Reader that is returned by the overridden method
- * {@link #getContentReader(HttpServletRequest)}. <h2>Comment removal</h2>
+ * {@link #getContentReader(String, com.ibm.jaggr.core.resource.IResource, javax.servlet.http.HttpServletRequest, java.util.List)}.
+ * <h2>Comment removal</h2>
  * <p>
  * Removes comments identified by /* ... *&#047; comment tags
  * <h2>Unnecessary white-space and token removal</h2>
@@ -261,7 +262,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * some unneeded tokens.
 	 *
 	 * @param css The contents of a CSS file as a String
-	 * @param uri The URI for the CSS file
+	 * @param res The resource for the CSS file
 	 * @return
 	 */
 	protected String minify(String css, IResource res) {
@@ -319,11 +320,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * URLs in-lined, and this method recursively called to in-line nested
 	 * &#064;imports.
 	 *
+	 * @param req
+	 *            The request associated with the call.
 	 * @param css
 	 *            The current CSS containing &#064;import statements to be
 	 *            processed
-	 * @param uri
-	 *            The URI for the current CSS
+	 * @param res
+	 *            The resource for the CSS file.
 	 * @param path
 	 *            The path, as specified in the &#064;import statement used to
 	 *            import the current CSS, or null if this is the top level CSS.
@@ -477,10 +480,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * ). The conversion is controlled by option settings as described in
 	 * {@link CSSModuleBuilder}.
 	 *
+	 * @param req
+	 *            The request associated with the call.
 	 * @param css
 	 *            The input CSS
-	 * @param uri
-	 *            The URI for the input CSS
+	 * @param res
+	 *            The resource for the CSS file
 	 * @return The transformed CSS with images in-lined as determined by option
 	 *         settings.
 	 */
