@@ -55,8 +55,8 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
-	protected static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
-	//static final String loaderExtensionPath = "/WebContent/js/loaderExt.js"; //$NON-NLS-1$
+	static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
+	static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
 	static final String[] loaderExtensionResources = {
 		"./loaderExtCommon.js", //$NON-NLS-1$
 		"./dojo/_loaderExt.js" //$NON-NLS-1$
@@ -85,7 +85,13 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	 *
 	 * @return the loader extension path
 	 */
-	protected abstract String getLoaderExtensionPath();
+	protected String getLoaderExtensionPath(){
+		return loaderExtensionPath;
+	}
+
+	protected String getTextPluginPath(){
+		return textPluginPath;
+	}
 
 	/**
 	 * Property accessor for the loaderExtensionResources property
@@ -283,7 +289,9 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		return sb.toString();
 	}
 
-	protected abstract String getTextPluginProxyUriStr();
+	protected String getTextPluginProxyUriStr(){
+		return getComboUri().resolve(textPluginPath).toString();
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)

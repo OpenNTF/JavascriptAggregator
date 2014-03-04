@@ -117,7 +117,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
 	public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
 
-	protected static String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
+	protected static String FEATUREMAP_JS_NAME = "featureList.js"; //$NON-NLS-1$
+
 	public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
 	public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
 
@@ -622,7 +623,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return null
 	 */
 	protected URI getFeatureListResourceUri() {
-		return getComboUri().resolve(FEATUREMAP_JS_PATH);
+		return getComboUri().resolve(FEATUREMAP_JS_NAME);
 	}
 
 	/**
