@@ -174,6 +174,7 @@ public class DependencyList {
 	 *
 	 * @return The explicit dependencies for the modules specified in
 	 *         <code>names</code>.
+	 * @throws IOException
 	 */
 	public ModuleDeps getExplicitDeps() throws IOException {
 		final boolean entryExitLogging = log.isLoggable(Level.FINER);
@@ -205,6 +206,7 @@ public class DependencyList {
 	 *
 	 * @return The expanded dependencies for the modules specified in
 	 *         <code>names</code>.
+	 * @throws IOException
 	 */
 	public ModuleDeps getExpandedDeps() throws IOException {
 		final boolean entryExitLogging = log.isLoggable(Level.FINER);
@@ -228,6 +230,7 @@ public class DependencyList {
 	 * idenify cached responses.
 	 *
 	 * @return The set of discovered feature names.
+	 * @throws IOException
 	 */
 	public Set<String> getDependentFeatures() throws IOException {
 		final boolean entryExitLogging = log.isLoggable(Level.FINER);
@@ -279,6 +282,7 @@ public class DependencyList {
 	 * accessor methods is called.  This is done in order to make object creation
 	 * light-weight and to avoid the possibility of throwing an exception in the
 	 * object constructor.
+	 * @throws IOException
 	 */
 	synchronized void initialize() throws IOException {
 		if (initialized) {
@@ -341,8 +345,8 @@ public class DependencyList {
 	 *            Alias name resolution and has! loader plugin branching is
 	 *            assumed to have been already performed.
 	 * @param depInfo
-	 *            the {@link ModuleDepInfo} for the module provided by
-	 *            {@link #processDep(String, ModuleDeps, ModuleDepInfo, Set)}.
+	 *            the {@link ModuleDepInfo} for the module, obtained from processing
+	 *            the module's explicit dependencies
 	 * @param expandedDependencies
 	 *            Output - the map that the expanded dependencies are written to.
 	 * @throws IOException

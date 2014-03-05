@@ -42,9 +42,6 @@ import java.util.concurrent.locks.ReadWriteLock;
  */
 class LayerBuildsAccessor {
 
-	/**
-	 *
-	 */
 	private final ConcurrentMap<String, CacheEntry> map;
 	private final ICacheManager cacheMgr;
 	private final LatchingCounter evictionLatch;

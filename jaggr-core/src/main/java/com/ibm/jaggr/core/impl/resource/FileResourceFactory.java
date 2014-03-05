@@ -87,6 +87,8 @@ public class FileResourceFactory implements IResourceFactory {
 	/**
 	 * Utility method for acquiring a reference to the NIOFileResource class without
 	 * asking the class loader every single time after we know it's not there.
+	 *
+	 * @return the NIO class object
 	 */
 	protected Class<?> getNIOFileResourceClass() {
 		final String method = "getNIOFileResourceClass"; //$NON-NLS-1$
@@ -115,6 +117,10 @@ public class FileResourceFactory implements IResourceFactory {
 	/**
 	 * Utility method for acquiring a reference to the NIOFileResource class constructor
 	 * without asking the class loader every single time after we know it's not there.
+	 *
+	 * @param args
+	 *            The constructor argument types
+	 * @return the constructor object
 	 */
 	protected Constructor<?> getNIOFileResourceConstructor(Class<?>... args) {
 		final String method = "getNIOFileResourceConstructor"; //$NON-NLS-1$

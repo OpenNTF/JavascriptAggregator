@@ -56,7 +56,7 @@ import java.util.logging.Logger;
  * {@code define(...)} function call for the AMD module and the list of module
  * dependencies specified in the define are associated with file.
  * <p>
- * The {@link #mapDependencies(Map)} function can then be called to obtain a
+ * The {@link #mapDependencies(DepTreeRoot, Map, boolean)} function can then be called to obtain a
  * {@link DepTreeNode} which maps module references to the exploded module
  * dependencies (the dependencies declared in the module, plus nested
  * dependencies) for the module.

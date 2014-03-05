@@ -423,10 +423,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * Overrideable method for getting the source modules to compile
 	 *
 	 * @param mid
+	 *            the module id
 	 * @param resource
+	 *            the resource
 	 * @param request
+	 *            the request object
 	 * @param keyGens
-	 * @return
+	 *            the list of cache key generators
+	 * @return the list of source files
 	 * @throws IOException
 	 */
 	protected List<JSSourceFile> getJSSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
@@ -475,19 +479,15 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		/**
 		 * Calculates a string in the form
-		 * <code>&lt;<i>level</i>&gt;:&lt;0|1&gt;{&lt;<i>has-conditions</i>&gt;}</code>
-		 * where <i>level</i> is the {@link CompilationLevel} specified by the
-		 * request attribute {@link #COMPILATION_LEVEL} or {@code NONE} if null, and
-		 * the {@code 0|1} is the value returned by {@link RequestUtil#isExplodeRequires(HttpServletRequest)}. The
-		 * has-conditions are listed in alphabetical order. The key will contain
-		 * only has-conditions from {@code hasMap} that are also members of
-		 * {@code includedHas} (i.e. only has-conditions that are relevant to this
+		 * <code>&lt;<i>level</i>&gt;:&lt;0|1&gt;{&lt;<i>has-conditions</i>&gt;}</code> where
+		 * <i>level</i> is the {@link CompilationLevel} or {@code NONE}, and the {@code 0|1}
+		 * specifies if require list expansion is enabled. The has-conditions are listed in
+		 * alphabetical order. The key will contain only has-conditions from {@code hasMap} that are
+		 * also members of {@code includedHas} (i.e. only has-conditions that are relevant to this
 		 * module).
 		 *
 		 * @param request
 		 *            The request
-		 * @param includedHas
-		 *            Set of has-conditionals actually tested in the module, or null
 		 * @return The cache key
 		 */
 		@Override

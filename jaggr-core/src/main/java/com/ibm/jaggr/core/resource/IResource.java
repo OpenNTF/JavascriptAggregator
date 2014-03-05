@@ -64,6 +64,11 @@ public interface IResource {
 	 * {@link #getURI()} to ensure that the cached resource for the URI
 	 * exists as {@link URI#resolve(String)} can be unreliable when dealing with
 	 * bundle resources.
+	 *
+	 * @param relative
+	 *            the path to resolve against
+	 * @return
+	 *        the resolved path
 	 */
 	public IResource resolve(String relative);
 

@@ -67,7 +67,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 	private final AtomicInteger parserCount = new AtomicInteger(0);
 
 	/**
-	 * Result type returned by the {@link DepTreeBuilder#call()} method.
+	 * Result type returned by the {@link #call()} method.
 	 */
 	public static class Result {
 		public final String dirName;
@@ -92,9 +92,6 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 	 *            The {@link DepTreeNode} corresponding to {@code path}.
 	 * @param cached
 	 *            The cached dependency tree.  Used when validating dependencies
-	 * @param dependentFeatures
-	 *            Output - the set of dependent features discovered while building
-	 *            the dependency tree.
 	 */
 	DepTreeBuilder(IAggregator aggregator, CompletionService<URI> parserCs,
 			URI path, DepTreeNode node, DepTreeNode cached) {

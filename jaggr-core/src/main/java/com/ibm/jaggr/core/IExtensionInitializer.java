@@ -64,6 +64,8 @@ public interface IExtensionInitializer {
 		 *            {@link IModuleBuilder}.
 		 * @param attributes
 		 *            the extension attributes.
+		 * @param extensionPointId
+		 *            the extension point identifier
 		 * @param uniqueId
 		 *            a unique identifier for the extension
 		 * @param before

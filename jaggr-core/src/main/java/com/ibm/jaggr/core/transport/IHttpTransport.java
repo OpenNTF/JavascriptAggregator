@@ -314,8 +314,8 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            <li>{@link LayerContributionType#AFTER_LAYER_MODULE}</li>
 	 *            </ul>
 	 *            For the following values of {@code type}, {@code arg} specifies
-	 *            a {@code Set<String>} of required modules specified in the
-	 *            request via the {@link #REQUIRED_REQATTRNAME} request attribute.
+	 *            a {@code Set<String>} of modules which are to be required by the
+	 *            loader via a synthetically generated require() call.
 	 *            <ul>
 	 *            <li>{@link LayerContributionType#BEGIN_LAYER_MODULES}</li>
 	 *            <li>{@link LayerContributionType#END_LAYER_MODULES}</li>
@@ -330,10 +330,9 @@ public interface IHttpTransport extends IExtensionInitializer {
 
 	/**
 	 * Returns true if the specified module can be included in a server expanded
-	 * layer (i.e. a layer constructed from the modules specified using by
-	 * {@link #REQUIRED_REQATTRNAME} plus it's dependencies).
+	 * layer (i.e. a bootstrap layer).
 	 * <p>
-	 * Excluded modules include those that specify a loader plugin that is not
+	 * Excluded modules consist of those that specify a loader plugin that is not
 	 * included in {@link IConfig#TEXTPLUGINDELEGATORS_CONFIGPARAM} or
 	 * {@link IConfig#JSPLUGINDELEGATORS_CONFIGPARAM}, and modules that specify
 	 * an absolute or server relative URL.

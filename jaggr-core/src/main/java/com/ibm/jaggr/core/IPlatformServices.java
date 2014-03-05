@@ -61,6 +61,7 @@ public interface IPlatformServices {
 	 * @return A array of objects of service references. For OSGi
 	 *         implementation, this object refers to implementation of
 	 *         {@code org.osgi.framework.ServiceReference} interface.
+	 * @throws PlatformServicesException
 	 */
 	public Object[] getServiceReferences(String clazz, String filter) throws PlatformServicesException;
 
@@ -115,6 +116,7 @@ public interface IPlatformServices {
 	 * This method returns the URI pointing to the context root of the consuming application.
 	 *
 	 * @return URI object pointing to the context root of the consuming application.
+	 * @throws URISyntaxException
 	 */
 	public URI getAppContextURI() throws URISyntaxException;
 

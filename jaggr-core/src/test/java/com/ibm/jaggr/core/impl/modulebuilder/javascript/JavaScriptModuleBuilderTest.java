@@ -148,13 +148,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		}
 	}
 	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getBuild(javax.servlet.http.HttpServletRequest)}.
+	 * Test method for {@link JavaScriptModuleBuilder#build(String, com.ibm.jaggr.core.resource.IResource, HttpServletRequest, List)}.
+	 * @throws Exception
 	 * @throws ExecutionException
 	 * @throws InterruptedException
 	 * @throws ClassNotFoundException
 	 */
 	@Test
-	public void testGet() throws Exception {
+	public void testBuild() throws Exception {
 		TestUtils.createTestFiles(tmpdir);
 
 		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "/p1/p1.js").toURI());
@@ -339,22 +340,13 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		future.get();
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getModuleName()}.
-	 * @throws URISyntaxException
-	 */
+	/* This should really be moved to ModuleImplTest */
 	@Test
-	public void testGetName() throws URISyntaxException {
+	public void testGetModuleId() throws URISyntaxException {
 		ModuleImpl module = new ModuleImpl("foo", new File("foo.js").toURI());
 		assertEquals("foo", module.getModuleId());
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#clear()}.
-	 * @throws IOException
-	 * @throws ExecutionException
-	 * @throws InterruptedException
-	 */
 	@Test
 	public void testClear() throws Exception {
 		TestUtils.createTestFiles(tmpdir);
@@ -372,12 +364,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		assertEquals(2, p1.getKeys().size());
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#clear(com.ibm.jaggr.service.cache.ICacheManager, int)}.
-	 * @throws IOException
-	 * @throws InterruptedException
-	 * @throws ExecutionException
-	 */
 	@Test
 	public void testClearCached() throws Exception {
 		TestUtils.createTestFiles(tmpdir);
@@ -415,10 +401,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		}
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#toString()}.
-	 * @throws Exception
-	 */
 	@Test
 	public void testToString() throws Exception {
 		TestUtils.createTestFiles(tmpdir);
@@ -446,10 +428,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		assertTrue(Pattern.compile("\\texpn:0;js:S:0:0:1;has\\{\\} : .*p1\\..*\\.cache").matcher(s).find());
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#s_generateCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
-	 * @throws IOException
-	 */
 	@Test
 	public void testGenerateCacheKey() throws IOException {
 		TestUtils.createTestFiles(tmpdir);
@@ -486,19 +464,12 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	}
 
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.modulebuilder.impl.javascript.JavaScriptModuleBuilder#getCacheKey(com.google.javascript.jscomp.CompilationLevel, java.util.Map, java.util.Set, javax.servlet.http.HttpServletRequest)}.
-	 */
 	@Test
 	public void testGetCacheKey() {
 		// JavaScriptModuleBuilder.getCacheKey() trivially calls JavaScriptModuleBuilder.s_generateCacheKey()
 		// so no need to test it separately
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.servlets.amd.aggregator.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isHasFiltering(javax.servlet.http.HttpServletRequest)}.
-	 * @throws IOException
-	 */
 	@Test
 	public void testIsHasFiltering() throws Exception {
 		assertTrue(RequestUtil.isHasFiltering(mockRequest));
@@ -508,10 +479,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		assertFalse(RequestUtil.isHasFiltering(mockRequest));
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.javascript.servlets.amd.aggregator.modulebuilder.impl.javascript.JavaScriptModuleBuilder#isExplodeRequires(javax.servlet.http.HttpServletRequest)}.
-	 * @throws IOException
-	 */
 	@Test
 	public void testIsExplodeRequires() throws Exception {
 		assertFalse(RequestUtil.isExplodeRequires(mockRequest));

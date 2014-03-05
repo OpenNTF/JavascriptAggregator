@@ -176,8 +176,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 
 	/**
-	 *
 	 * This constructor is just for testing purpose. It should not be used for production.
+	 * @param aggregator
+	 * @param forTest
+	 * @throws URISyntaxException
+	 * @throws FileNotFoundException
 	 */
 	protected ConfigImpl(IAggregator aggregator, boolean forTest) throws URISyntaxException, FileNotFoundException {
 		this.aggregator = aggregator;
@@ -189,6 +192,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/**
 	 *
 	 * This constructor is just for testing purpose. It should not be used for production.
+	 * @param aggregator
+	 * @param configUri
+	 * @param configScript
+	 * @param forTest
+	 * @throws IOException
 	 */
 	public ConfigImpl(IAggregator aggregator, URI configUri, String configScript, boolean forTest) throws IOException {
 		Context.enter();
@@ -226,6 +234,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/**
 	 *
 	 * This method is for test purposes and should not be used for production.
+	 * @throws IOException
 	 */
 	protected void initForTest() throws IOException {
 		try {
@@ -648,11 +657,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *
 	 * @return The module name with alias mappings applied, or {@code name} if there is
 	 *         not mapping for this module name.
+	 * @throws IOException
 	 * @throws InstantiationException
 	 * @throws IllegalAccessException
 	 * @throws ClassNotFoundException
-	 *
-	 * @see IAliasResolver
 	 */
 	protected String resolveAliases(
 			String name,
@@ -778,8 +786,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 	/**
 	 * Add any processing logic to the config file like replacing any place holders from a
-	 * properties file.
+	 * properties file.  This method is provided for subclasses to override
 	 *
+	 * @param configScript
+	 *            The javascript config as a text string
 	 * @return the processed config script
 	 */
 
@@ -789,7 +799,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	/**
 	 * Loads the config JavaScript and returns the parsed config in a Map
-	 *
+	 * @param configScript
+	 *            The javascript config as a text string
 	 * @return the parsed config in a properties map
 	 * @throws IOException
 	 */
@@ -1043,6 +1054,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @param cfg
 	 *            The parsed config JavaScript as a properties map
 	 * @return the {@code notice} property value
+	 * @throws IOException
 	 * @throws URISyntaxException
 	 */
 	protected String loadNotice(Scriptable cfg) throws IOException, URISyntaxException {
@@ -1071,6 +1083,12 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 	/**
 	 * Common routine to load text or js plugin delegators
+	 *
+	 * @param cfg
+	 *            the config object as a {@link Scriptable}
+	 * @param name
+	 *            the name of the plugin delegator selector
+	 * @return the set of plugin delegators for the selector
 	 */
 	protected Set<String> loadPluginDelegators(Scriptable cfg, String name) {
 		Set<String> result = null;

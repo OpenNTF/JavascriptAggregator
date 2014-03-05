@@ -24,7 +24,6 @@ import com.ibm.jaggr.core.impl.resource.FileResourceFactory;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.impl.resource.ResolverResource;
 import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.util.PathUtil;
 
 import org.eclipse.core.runtime.CoreException;

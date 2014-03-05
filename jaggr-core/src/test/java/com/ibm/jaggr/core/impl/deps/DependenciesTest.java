@@ -16,16 +16,13 @@
 
 package com.ibm.jaggr.core.impl.deps;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.fail;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.deps.DepTree;
-import com.ibm.jaggr.core.impl.deps.DepTreeNode;
-import com.ibm.jaggr.core.impl.deps.DepTreeRoot;
 import com.ibm.jaggr.core.test.TestUtils;
 
 import com.google.common.io.Files;
@@ -84,7 +81,8 @@ public class DependenciesTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepTree#Dependencies(java.util.Collection, java.io.File, boolean, boolean)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.DependenciesImpl}.
+	 * @throws Exception
 	 * @throws ClassNotFoundException
 	 */
 	@Test
@@ -136,9 +134,8 @@ public class DependenciesTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.deps.impl.DepTree#mapDependencies(com.ibm.jaggr.service.modules.AMDConfig)}.
-	 * @throws ClassNotFoundException
-	 * @throws CloneNotSupportedException
+	 * Test method for {@link com.ibm.jaggr.core.impl.deps.DepTree#mapDependencies(DepTreeRoot, Map, boolean)}.
+	 * @throws Exception
 	 */
 	@Test
 	public void testGetDependencyMap() throws Exception {
@@ -252,8 +249,7 @@ public class DependenciesTest extends EasyMock {
 			super(getPathURIs(aggregator.getConfig().getPaths().values()), aggregator, 0, clean, validateDeps);
 		}
 
-		/** For unit testing
-		 * @throws CloneNotSupportedException */
+		/* For unit testing*/
 		public TestDependenciesWrapper(ConcurrentMap<URI, DepTreeNode> depMap, IConfig config) throws IOException {
 			this.depMap = depMap;
 			this.rawConfig = config.toString();

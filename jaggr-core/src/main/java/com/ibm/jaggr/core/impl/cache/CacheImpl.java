@@ -36,9 +36,6 @@ public class CacheImpl implements ICache {
 
 	private final long _created;
 
-	/**
-	 * @param initialSize The initial size of the cache
-	 */
 	public CacheImpl(ILayerCache layerCache, IModuleCache moduleCache, Object control) {
 		_layerCache = layerCache;
 		_moduleCache = moduleCache;

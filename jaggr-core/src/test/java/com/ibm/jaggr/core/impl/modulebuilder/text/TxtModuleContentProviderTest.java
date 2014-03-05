@@ -20,7 +20,6 @@ import static org.junit.Assert.assertEquals;
 
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -35,7 +34,6 @@ import org.junit.Test;
 
 import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
 import java.io.Writer;
 import java.util.List;
 
@@ -67,9 +65,6 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		}
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.text.modulebuilder.impl.text.TextModuleBuilder#getCacheKey(javax.servlet.http.HttpServletRequest, java.util.Set)}.
-	 */
 	@Test
 	public void testGetCacheKeyGenerator() {
 		TextModuleBuilder builder = new TextModuleBuilder();
@@ -83,10 +78,6 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		Assert.assertEquals("expn:1", key);
 	}
 
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.modulebuilder.text.modulebuilder.impl.text.TextModuleBuilder#getJSSource()}.
-	 * @throws IOException 
-	 */
 	@Test
 	public void testGetContentReader() throws Exception {
 		tmpdir = Files.createTempDir();
@@ -96,8 +87,8 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		ow.close();
 		TextModuleBuilder builder = new TextModuleBuilder();
 		String code = builder.build(
-				"test.txt", 
-				new FileResource(test.toURI()), 
+				"test.txt",
+				new FileResource(test.toURI()),
 				mockRequest, null).getBuildOutput().toString();
 		System.out.println(code);
 		assertEquals("define('\\'This is a test\\'. \\'\\'  Test\\'s\\'');", code);

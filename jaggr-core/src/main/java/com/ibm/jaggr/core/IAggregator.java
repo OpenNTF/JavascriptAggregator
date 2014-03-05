@@ -157,10 +157,6 @@ public interface IAggregator {
 	 * @param uri
 	 *            The URI for the resource
 	 * @return The newly created resource object.
-	 *
-	 * @throws UnsupporteOperationException
-	 *             if there is no {@link IResourceFactory} registered to handle the
-	 *             specified uri.
 	 */
 	public IResource newResource(URI uri);
 

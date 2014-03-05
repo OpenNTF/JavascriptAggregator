@@ -194,7 +194,7 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getInputStream(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse, com.ibm.jaggr.core.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getInputStream(HttpServletRequest, HttpServletResponse)}.
 	 * @throws Exception
 	 */
 	@SuppressWarnings("unchecked")
@@ -466,7 +466,8 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getLastModified(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.core.config.IConfig, long)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getLastModified(HttpServletRequest)}.
+	 * @throws Exception
 	 */
 	@Test
 	public void testGetLastModified() throws Exception {
@@ -513,6 +514,7 @@ public class LayerTest extends EasyMock {
 
 	/**
 	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#toString()}.
+	 * @throws Exception
 	 */
 	@Test
 	public void testToString() throws Exception {
@@ -534,7 +536,8 @@ public class LayerTest extends EasyMock {
 	}
 
 	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getResourceURI(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.core.config.IConfig)}.
+	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#newModule(HttpServletRequest, String)}.
+	 * @throws IOException
 	 */
 	@Test
 	public void testGetResourceURI() throws IOException {

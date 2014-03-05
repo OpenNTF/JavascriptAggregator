@@ -239,7 +239,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * of any nodes from the specified node replacing the dependencies of
 	 * the corresponding node in this node's tree.
 	 *
-	 * @param child
+	 * @param node
 	 */
 	public void overlay(DepTreeNode node) {
 		if (node.dependencies != null) {
@@ -297,7 +297,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * @param path
 	 *            The node with the specified path relative to this node, or
 	 *            null
-	 * @return
+	 * @return the descendant node or null
 	 */
 	public DepTreeNode getDescendent(String path) {
 		if (path.startsWith("/")) { //$NON-NLS-1$
