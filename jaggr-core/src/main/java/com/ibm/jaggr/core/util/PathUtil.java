@@ -55,7 +55,8 @@ public class PathUtil {
 	 *            The array of paths that are to be normalized. The paths are
 	 *            normalized in-place (i.e. each array element is replaced by
 	 *            the normalized path)
-	 * @throws IllegalArugmentException
+	 * @return the array of normalized paths
+	 * @throws IllegalArgumentException
 	 */
 	public static String[] normalizePaths(String ref, String[] paths) throws IllegalArgumentException {
 		List<String> result = new ArrayList<String>();

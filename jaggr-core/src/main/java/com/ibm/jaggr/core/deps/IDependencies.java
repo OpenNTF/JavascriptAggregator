@@ -26,7 +26,7 @@ import java.util.List;
 /**
  * This class encapsulates the dependency graph of a collection of AMD modules.
  * The modules included in the graph are those modules found when scanning the
- * locations returned by {@link IConfig#getPaths()()} and
+ * locations returned by {@link IConfig#getPaths()} and
  * {@link IConfig#getPackageLocations()}. The dependencies of a module are those
  * modules listed in the require list of the define() function call within the
  * module. The expanded dependencies for a module include the explicitly
@@ -46,12 +46,13 @@ public interface IDependencies {
 	 * Returns the dependencies for the specified module. This is the list of
 	 * modules listed in the module's define function. The module ids are
 	 * normalized to remove relative paths.
-	 * 
+	 *
 	 * @param mid
 	 *            The module id
 	 * @return An unmodifiable list of explicitly specified dependent modules,
 	 *         or null if the specified module was not found when the
 	 *         dependencies were processed.
+	 * @throws ProcessingDependenciesException
 	 */
 	List<String> getDelcaredDependencies(String mid)
 			throws ProcessingDependenciesException;
@@ -73,10 +74,13 @@ public interface IDependencies {
 	 * based on defined features may not be safely performed if the result of a
 	 * feature evaluation is used as a type other than boolean.
 	 * <p>
-	 * 
+	 *
+	 * @param
+	 *            mid the module id
 	 * @return an unmodifiable list of the dependent features, or null if the
 	 *         specified module was not found when the dependencies were
 	 *         processed.
+	 * @throws ProcessingDependenciesException
 	 */
 	public List<String> getDependentFeatures(String mid)
 			throws ProcessingDependenciesException;
@@ -87,8 +91,9 @@ public interface IDependencies {
 	 * {@link #getDelcaredDependencies(String)} or
 	 * {@link #getDependentFeatures(String)} with any of the module names
 	 * returned by this method is guaranteed to return a non-null value.
-	 * 
+	 *
 	 * @return the module names in the dependency map.
+	 * @throws ProcessingDependenciesException
 	 */
 	public Iterable<String> getDependencyNames()
 			throws ProcessingDependenciesException;
@@ -100,7 +105,7 @@ public interface IDependencies {
 	 * dependencies within a dependent file cause the value returned from this
 	 * method to reflect the most recent last-modified date of those files
 	 * containing such changes at the time that they are detected.
-	 * 
+	 *
 	 * @return The cumulative last modified date of the module dependencies
 	 */
 	public long getLastModified();
@@ -110,7 +115,7 @@ public interface IDependencies {
 	 * {@link IConfig#getPaths()} and {@link IConfig#getPackageLocations()}
 	 * looking for new/changed/removed files and updating the dependency graph,
 	 * including the dependency graph last-modified timestamp, as needed.
-	 * 
+	 *
 	 * @param clean
 	 *            If true, then any cached or previously calculated dependency
 	 *            graph is discarded and a new graph is generated from scratch.

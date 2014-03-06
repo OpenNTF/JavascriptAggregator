@@ -263,7 +263,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 *
 	 * @param css The contents of a CSS file as a String
 	 * @param res The resource for the CSS file
-	 * @return
+	 * @return the minified css
 	 */
 	protected String minify(String css, IResource res) {
 

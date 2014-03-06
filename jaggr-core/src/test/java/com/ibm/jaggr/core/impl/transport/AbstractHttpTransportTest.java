@@ -55,7 +55,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
@@ -372,10 +371,7 @@ public class AbstractHttpTransportTest {
 
 
 	}
-	/**
-	 * Test method for {@link com.ibm.jaggr.core.impl.layer.LayerImpl#getHasReaturesFromRequest(javax.servlet.http.HttpServletRequest)}.
-	 * @throws ServletException
-	 */
+
 	@Test
 	public void testGetFeaturesFromRequest() throws Exception {
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
@@ -543,10 +539,10 @@ public class AbstractHttpTransportTest {
 	 * Method to encode a feature string the same way that the JavaScript code
 	 * in featureMap.js does it.
 	 *
-	 * @param featureString
+	 * @param features
 	 *            the '*' delimited list of features. Null features are
 	 *            preceeded by the '!' character.
-	 * @return
+	 * @return the encoded result
 	 */
 	String encode(Features features) {
 		ByteArrayOutputStream bos = new ByteArrayOutputStream();

@@ -268,7 +268,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * Logically ands the provided terms with the terms in the formula,
 	 * replacing this formula with the result
 	 *
-	 * @param terms
+	 * @param other
 	 *            the terms to and with this formula
 	 * @return this object.
 	 */

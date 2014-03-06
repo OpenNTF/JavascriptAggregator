@@ -83,7 +83,7 @@ public interface ILayer extends Serializable {
 	 * @param response
 	 *            The response object
 	 * @return LayerInputStream The object encapsulating the built layer
-	 * @throws Exception
+	 * @throws IOException
 	 */
 	public InputStream getInputStream(HttpServletRequest request,
 			HttpServletResponse response) throws IOException;
@@ -103,6 +103,7 @@ public interface ILayer extends Serializable {
 	 *
 	 * @param request
 	 *            The http request object
+	 * @return the last modified time stamp for the layer
 	 * @throws IOException
 	 */
 	public long getLastModified(HttpServletRequest request)

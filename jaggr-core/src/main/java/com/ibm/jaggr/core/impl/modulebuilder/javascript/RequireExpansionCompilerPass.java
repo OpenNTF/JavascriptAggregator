@@ -45,9 +45,7 @@ import java.util.Set;
 /**
  * Custom Compiler pass for Google Closure compiler to do require list explosion.
  * Scans the AST for require calls and explodes any require lists it finds to
- * include nested dependencies.  Nested dependencies for modules specified in
- * the require list are obtained from the {@link IDepTreeNode} object passed
- * in the constructor.
+ * include nested dependencies.
  */
 public class RequireExpansionCompilerPass implements CompilerPass {
 
@@ -94,13 +92,18 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	/**
 	 * Constructs a instance of this class for a specific module that is being compiled.
 	 *
-	 * @param moduleName The name of the module
-	 * @param deps
-	 * @param config
-	 * @param features The set of features for the request
+	 * @param aggregator
+	 *            The aggregator object
+	 * @param features
+	 *            The set of features specified in the request
 	 * @param dependentFeatures
-	 * @param configDeps
+	 *            Output - the dependent features identified during the expansion
+	 * @param expandedDepsList
+	 *            Output - the list of expanded dependencies
+	 * @param configVarName
+	 *            the name of the loader config var (e.g. dojoConfig or require, etc.)
 	 * @param logDebug
+	 *            true if debug logging to the browser console is enabled
 	 */
 	public RequireExpansionCompilerPass(
 			IAggregator aggregator,
@@ -178,6 +181,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 * @param enclosingDependencies
 	 *            The set of dependencies specified by enclosing define or
 	 *            require calls.
+	 * @throws IOException
 	 */
 	public void processChildren(Node node, List<DependencyList> enclosingDependencies)
 			throws IOException

@@ -564,14 +564,18 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 
 
 	/**
-	 * Sets response status and headers for an error response based on the
-	 * information in the specified exception.  If development mode is
-	 * enabled, then returns a 200 status with a console.error() message
-	 * specifying the exception message
+	 * Sets response status and headers for an error response based on the information in the
+	 * specified exception. If development mode is enabled, then returns a 200 status with a
+	 * console.error() message specifying the exception message
 	 *
-	 * @param resp The response object
-	 * @param t The exception object
-	 * @param status The response status
+	 * @param req
+	 *            the request object
+	 * @param resp
+	 *            The response object
+	 * @param t
+	 *            The exception object
+	 * @param status
+	 *            The response status
 	 */
 	protected void exceptionResponse(HttpServletRequest req, HttpServletResponse resp, Throwable t, int status) {
 		resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -877,14 +881,17 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	/**
 	 * Returns the working directory for this aggregator.
 	 * <p>
-	 * This method is called during aggregator intialization.  Subclasses may
-	 * override this method to initialize the aggregator using a different
-	 * working directory.  Use the public {@link #getWorkingDirectory()} method
-	 * to get the working directory from an initialized aggregator.
+	 * This method is called during aggregator intialization. Subclasses may override this method to
+	 * initialize the aggregator using a different working directory. Use the public
+	 * {@link #getWorkingDirectory()} method to get the working directory from an initialized
+	 * aggregator.
 	 *
-	 * @param configElem
-	 *            The configuration element. Not used by this class but provided
-	 *            for use by subclasses.
+	 * @param defaultLocation
+	 *            the default, unversioned, directory location
+	 * @param configMap
+	 *            the map of config name/value pairs
+	 * @param versionString
+	 *            the version string to qualify the directory location
 	 * @return The {@code File} object for the working directory
 	 * @throws FileNotFoundException
 	 */
@@ -923,7 +930,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
 	 * override this method to initialize the aggregator using a different
-	 * name.  Use the public {@link AggregatorImpl#getName()} method
+	 * name.  Use the public {@link IAggregator#getName()} method
 	 * to get the name of an initialized aggregator.
 	 *
 	 * @param configMap
@@ -945,7 +952,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * <p>
 	 * This method is called during aggregator intialization.  Subclasses may
 	 * override this method to initialize the aggregator using different
-	 * init params.  Use the public {@link AggregatorImpl#getInitParams()} method
+	 * init params.  Use the public {@link IAggregator#getInitParams()} method
 	 * to get the init params for an initialized aggregator.
 	 *
 	 * @param configMap
@@ -964,7 +971,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 
 	/**
 	 * Instantiates a new dependencies object
-	 *
+	 * @param stamp
+	 *            the time stamp
 	 * @return The new dependencies
 	 */
 	protected IDependencies newDependencies(long stamp) {
@@ -983,8 +991,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 
 	/**
 	 * Instantiates a new cache manager
-	 *
+	 * @param stamp
+	 *            the time stamp
 	 * @return The new cache manager
+	 * @throws IOException
 	 */
 	protected ICacheManager newCacheManager(long stamp) throws IOException {
 		return new CacheManagerImpl(this, stamp);
@@ -1011,6 +1021,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 *            A Map having key-value pairs denoting configuration settings for the aggregator servlet
 	 * @param configInitParams
 	 *            A Map having key-value pairs denoting servlet init parameters for the aggregator servlet
+	 * @throws Exception
 	 */
 
 	public void initialize(Map<String, String> configMap, Map<String, String> configInitParams)

@@ -49,6 +49,13 @@ public interface IModuleCache extends Serializable {
 	 * already exists in the cache, then a completed future for the reader to the
 	 * cached build is returned.  Otherwise, a new build is started, and a future
 	 * that will complete when the build has finished is returned.
+	 *
+	 * @param request
+	 *            the request object
+	 * @param module
+	 *            the module to build
+	 * @return a {@link Future} to the build reader for the module
+	 * @throws IOException
 	 */
 	Future<ModuleBuildReader> getBuild(HttpServletRequest request, IModule module) throws IOException;
 

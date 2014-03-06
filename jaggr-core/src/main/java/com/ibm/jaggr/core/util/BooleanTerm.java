@@ -133,7 +133,7 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	 * term.
 	 *
 	 * @param other the term to and this term with.
-	 * @return
+	 * @return the result of ANDing this term with the specified term
 	 */
 	public BooleanTerm andWith(BooleanTerm other) {
 		if (isFalse() || other.isFalse()) {

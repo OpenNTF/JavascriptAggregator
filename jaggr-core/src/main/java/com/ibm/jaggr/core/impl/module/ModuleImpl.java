@@ -119,8 +119,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	/**
 	 * Constructor
 	 *
-	 * @param source
-	 *            The module source
+	 * @param mid
+	 *            the module id
+	 * @param uri
+	 *            the module {@link URI}
 	 */
 	public ModuleImpl(String mid, URI uri) {
 		super(mid);
@@ -161,20 +163,17 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	/**
 	 * Returns the compiled (minified, has-filtered) output for this JavaScript
-	 * module. AggregatorOptions such as compilation level and has-conditions
-	 * are specified as attributes in the request object using the
-	 * {@link #COMPILATION_LEVEL}, {@link #HASMAP_REQATTRNAME} and
-	 * {@link #COERCE_UNDEFINED_TO_FALSE} request attribute name constants.
+	 * module.
 	 * <p>
-	 * This function returns a {@link Future}{@code <}{@link ModuleReader}
+	 * This function returns a {@link Future}{@code <}{@link ModuleBuildReader}
 	 * {@code >} which can be used to obtain a reference to the
-	 * {@link ModuleReader} when it is available. If the minified version of
+	 * {@link ModuleBuildReader} when it is available. If the minified version of
 	 * this module with the requested compilation level and has-filtering
 	 * conditions already exists in the cache, then a completed {@link Future}
 	 * will be returned. If the module needs to be compiled, then the
 	 * compilation will be performed by an asynchronous thread and a
 	 * {@link Future} will be returned which can be used to access the
-	 * {@link ModuleReader} when it is available.
+	 * {@link ModuleBuildReader} when it is available.
 	 * <p>
 	 * The caller of this function is responsible for closing the reader
 	 * associated with the build object.
@@ -182,7 +181,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @param request
 	 *            The http servlet request object
 	 *
-	 * @return A {@link Future}{@code <}{@link ModuleReader}{@code >} that can
+	 * @return A {@link Future}{@code <}{@link ModuleBuildReader}{@code >} that can
 	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
 	 */
@@ -201,9 +200,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @param fromCacheOnly
 	 *            If true, an exception is thrown if the the requested module
 	 *            cannot be returned from cache.  Used by unit tests.
-	 * @return
+
+	 * @return A {@link Future}{@code <}{@link ModuleBuildReader}{@code >} that can
+	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
-	 *             if source resource OR cached output file is not found
 	 */
 	protected Future<ModuleBuildReader> getBuild(final HttpServletRequest request,
 			boolean fromCacheOnly) throws IOException {
@@ -471,9 +471,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	/**
 	 * For any extra modules specified by {@code cacheEntry}, obtain a build
-	 * future from the module cache manager and add it to the build futures
-	 * queue specified by {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME}.
+	 * future from the module cache manager and add it to the {@link ModuleBuildReader}
+	 * specified by {@code reader}.
 	 *
+	 * @param reader
+	 *            the {@link ModuleBuildReader} to add the extra modules to
 	 * @param request
 	 *            The http request
 	 * @param cacheEntry
@@ -693,18 +695,20 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		}
 
 		/**
+		 * @param cacheDir
+		 *            the location of the cache directory
+		 * @param request
+		 *            the request obect
 		 * @return A ModuleReader for the build output
+		 * @throws IOException
 		 * @throws FileNotFoundException
 		 */
 		public Reader getReader(File cacheDir, HttpServletRequest request) throws IOException {
 			Reader reader = null;
 			// Make local copies of volatile instance variables so that we can
-			// check
-			// and then use the values without locking. Note that it's important
-			// to get
-			// the value of this.content before this.filepath because
-			// this.filepath is
-			// set before this.content is cleared in persist().
+			// check and then use the values without locking. Note that it's important
+			// to get the value of this.content before this.filepath because
+			// this.filepath is set before this.content is cleared in persist().
 			Object content = this.content;
 			String filename = this.filename;
 			if (isString) {
@@ -782,7 +786,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 		/**
 		 * A version of getReader that can fail, but won't throw
-		 *
+		 * @param cacheDir
+		 *         The location of the cache directory on the server
+		 * @param request
+		 *         the request object
 		 * @return A ModuleReader for the output, or null if no output is
 		 *         available
 		 */
@@ -871,8 +878,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 * @param mgr
 		 *            The {@link ICacheManager} object from which to get the
 		 *            {@link ScheduledExecutorService} to submit the delete task
-		 * @param delay
-		 *            The number of minutes to wait before performing the delete
 		 */
 		public void delete(ICacheManager mgr) {
 			if (filename != null) {

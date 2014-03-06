@@ -48,8 +48,9 @@ public class DepUtils {
 	 * Removes URIs containing duplicate and non-orthogonal paths so that the
 	 * collection contains only unique and non-overlapping paths.
 	 *
-	 * @param paths
-	 *            List of URIs to be culled
+	 * @param uris collection of URIs
+	 *
+	 * @return a new collection with redundant paths removed
 	 */
 	static public Collection<URI> removeRedundantPaths(Collection<URI> uris) {
 		List<URI> result = new ArrayList<URI>();
@@ -147,6 +148,9 @@ public class DepUtils {
 	 *
 	 * @param node
 	 *            A parsed AST {@link Node} for a javascript file
+	 * @param dependentFeatures
+	 *            Output - any features specified using the has! loader plugin
+	 *            will be added to this set.
 	 * @return The String array of module dependencies.
 	 */
 	static public Collection<String> parseDependencies(Node node, Set<String> dependentFeatures) {

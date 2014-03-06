@@ -23,11 +23,14 @@ public class RuntimeProcessingDependenciesException extends RuntimeException {
 	private static final long serialVersionUID = 1L;
 	/**
 	 * This class is thrown by custom compiler pass modules when a
-	 * {@link ProcessingDependenciesException is caught. The interface for
+	 * {@link ProcessingDependenciesException} is caught. The interface for
 	 * custom compiler pass modules doesn't allow them to throw checked
 	 * exceptions, so this class inherits from RuntimeException. Instances of
 	 * this exception are caught by the JavaScript module builder which in turn
 	 * throws {@link ProcessingDependenciesException}.
+	 *
+	 * @param cause
+	 *            The originating exception
 	 */
 	RuntimeProcessingDependenciesException(ProcessingDependenciesException cause) {
 		super(cause);

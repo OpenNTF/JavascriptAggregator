@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
@@ -56,7 +57,7 @@ import javax.servlet.http.HttpServletRequest;
 
 /**
  * Layer builder class used to aggregate the output from the list of
- * {@link ModuleBuildFuture}s into the {@link BuildListReader} for the response
+ * {@link ModuleBuildFuture}s into the response stream.
  */
 public class LayerBuilder {
 	private static final Logger log = Logger.getLogger(LayerBuilder.class.getName());
@@ -77,20 +78,18 @@ public class LayerBuilder {
 
 	/**
 	 * Indicates the current contribution type. True if processing required
-	 * modules. Required modules (or their dependencies) specified by the
-	 * {@link IHttpTransport#REQUIRED_REQATTRNAME} query arg
+	 * modules. Required modules (or their dependencies) are specified by the
+	 * {@link AbstractHttpTransport#DEPS_REQPARAM} query arg
 	 */
 	boolean required = false;
 
 	/**
-	 * @param futures
-	 *            List of {@link ModuleBuildFutures}
-	 * @param requiredModules
-	 *            Set of modules specified by the required query arg
 	 * @param request
 	 *            The servlet request object
 	 * @param keyGens
 	 *            The list of cache key generators for the response
+	 * @param moduleList
+	 *            The list of modules in the layer
 	 */
 	LayerBuilder(HttpServletRequest request, List<ICacheKeyGenerator> keyGens,
 			ModuleList moduleList) {
@@ -193,6 +192,8 @@ public class LayerBuilder {
 	 *
 	 * @param future
 	 *            The module build future
+	 * @param sb
+	 *            Output - the output buffer to write the processed future to
 	 * @throws IOException
 	 */
 	protected void processFuture(ModuleBuildFuture future, StringBuffer sb)
@@ -313,7 +314,8 @@ public class LayerBuilder {
 	 * Dispatch the modules specified in the request to the module builders and
 	 * collect the build futures returned by the builders into the returned
 	 * list.
-	 *
+	 * @param moduleList
+	 *            The list of modules in the layer
 	 * @param request
 	 *            The request object
 	 * @return The list of {@link ModuleBuildFuture} objects.
@@ -343,8 +345,13 @@ public class LayerBuilder {
 	/**
 	 * Calls the registered layer listeners.
 	 *
-	 * @param type The type of notification (begin or end)
-	 * @param req The request object.
+	 * @param type
+	 *            The type of notification (begin or end)
+	 * @param request
+	 *            The request object.
+	 * @param module
+	 *            the associated module reference, depending on the value of {@code type}.
+	 * @return The string to include in the layer output
 	 * @throws IOException
 	 */
 	protected String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {

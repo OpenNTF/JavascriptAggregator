@@ -176,7 +176,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	/** default constructor */
 	public AbstractHttpTransport() {}
 
-	/** For unit tests */
+	/** For unit tests
+	 * @param depsInitialized
+	 * @param dependentFeatures
+	 * @param depsLastMod */
 	AbstractHttpTransport(CountDownLatch depsInitialized, List<String> dependentFeatures, long depsLastMod) {
 		this.depsInitialized = depsInitialized;
 		this.dependentFeatures = dependentFeatures;
@@ -273,8 +276,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * Unfolds the folded module list in the request into a {@code Collection<String>}
 	 * of module names.
 	 *
-	 * @param request the request object
-	 * @return the Collection of module names
+	 * @param request
+	 *            the request object
+	 * @param requestedModuleNames
+	 *            Output - the processed results
 	 * @throws IOException
 	 */
 	protected void setModuleListFromRequest(HttpServletRequest request, RequestedModuleNames requestedModuleNames) throws IOException {
@@ -368,6 +373,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *  Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
 	 *  Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
 	 *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
+	 *
+	 * @param encstr
+	 *            the encoded module name list
+	 * @return the decoded string as a JSON object
+	 *
+	 * @throws IOException
 	 * @throws JSONException
 	 */
 	protected  JSONObject decodeModules(String encstr) throws IOException, JSONException {
@@ -425,6 +436,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @param count
 	 *            The count of modules in the list
 	 * @return The unfolded module name list
+	 * @throws IOException
+	 * @throws JSONException
 	 */
 	protected String[] unfoldModules(JSONObject modules, int count) throws IOException, JSONException {
 		String[] ret = new String[count];
@@ -455,8 +468,15 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * Helper routine to unfold folded module names
 	 *
 	 * @param obj
+	 *            The folded path list of names, as a string or JSON object
 	 * @param path
+	 *            The reference path
+	 * @param aPrefixes
+	 *            Array of loader plugin prefixes
 	 * @param modules
+	 *            Output - the list of unfolded modlue names
+	 * @throws IOException
+	 * @throws JSONException
 	 */
 	protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, String[] modules) throws IOException, JSONException {
 		if (obj instanceof JSONObject) {
@@ -487,9 +507,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	/**
 	 * Returns a map containing the has-condition/value pairs specified in the request
 	 *
-	 * @param request The http request object
+	 * @param request
+	 *            The http request object
 	 * @return The map containing the has-condition/value pairs.
-	 * @throws
+	 * @throws IOException
 	 */
 	protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
 		Features features = getFeaturesFromRequestEncoded(request);
@@ -520,7 +541,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * This method checks the request for the has conditions which may either be contained in URL
 	 * query arguments or in a cookie sent from the client.
 	 *
+	 * @param request
+	 *            the request object
 	 * @return The has conditions from the request.
+	 * @throws IOException
 	 * @throws UnsupportedEncodingException
 	 */
 	protected String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
@@ -801,7 +825,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	}
 
 	/**
-	 * Validate the {@link LayerContributionState} and argument type specified
+	 * Validate the {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType} and argument type specified
 	 * in a call to
 	 * {@link #getLayerContribution(HttpServletRequest, com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType, Object)}
 	 *
@@ -809,7 +833,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *            The http request object
 	 * @param type
 	 *            The layer contribution (see
-	 *            {@link IHttpTransport.LayerContributionType})
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType})
 	 * @param arg
 	 *            The argument value
 	 */
@@ -976,8 +1000,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	/**
 	 * Returns an instance of a FeatureMapJSResourceFactory.
 	 *
-	 * @param resourcePath
-	 *            the resource path
+	 * @param resourceUri
+	 *            the resource {@link URI}
 	 * @return a new factory object
 	 */
 	protected FeatureListResourceFactory newFeatureListResourceFactory(URI resourceUri) {

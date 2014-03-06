@@ -17,7 +17,6 @@ package com.ibm.jaggr.service.impl.resource;
 
 import static org.junit.Assert.assertEquals;
 
-import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.resource.IResource;
 

@@ -295,9 +295,6 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	 * actually serialize a clone of the specified cache because some of the objects
 	 * that are serialized require synchronization and we don't want to cause service
 	 * threads to block while we are doing file I/O.
-	 *
-	 * @param cache The object to serialize
-	 * @param directory The target directory
 	 */
 	protected void serializeCache() {
 		try {

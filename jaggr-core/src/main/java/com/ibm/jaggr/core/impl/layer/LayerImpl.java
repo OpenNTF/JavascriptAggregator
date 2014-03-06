@@ -530,6 +530,8 @@ public class LayerImpl implements ILayer {
 	 *
 	 * @param request
 	 *            the request object
+	 * @param cacheKeyGenerators
+	 *            map of cache key generator class names to instance objects
 	 * @return the cache key
 	 * @throws IOException
 	 */
@@ -769,7 +771,9 @@ public class LayerImpl implements ILayer {
 	/**
 	 * Returns the newest last modified time of the files in the list
 	 *
-	 * @param files The list of ModuleFile objects
+	 * @param aggregator
+	 * @param modules
+	 *            The list of ModuleFile objects
 	 * @return The newest last modified time of all the files in the list
 	 */
 	protected long getLastModified(IAggregator aggregator, ModuleList modules) {

@@ -60,7 +60,7 @@ public interface IModuleBuildRenderer {
 	 *
 	 * @param request
 	 *            the request object
-	 * @param dependent
+	 * @param dependentFeatures
 	 *            features - Output. Features that will be included in the
 	 *            construction of the cache key for the layer being assembled.
 	 * @return the rendered build

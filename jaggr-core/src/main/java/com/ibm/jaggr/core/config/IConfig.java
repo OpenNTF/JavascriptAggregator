@@ -20,7 +20,6 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
 
 import org.mozilla.javascript.Scriptable;
@@ -322,31 +321,24 @@ public interface IConfig {
 	public URI getConfigUri();
 
 	/**
-	 * Returns the list of plugin names specified with the
-	 * {@link #TEXTPLUGINDELEGATORS_CONFIGPARAM} config param. Loader plugins
-	 * specified here delegate the loading of the resources they handle to the
-	 * text module loader. When doing server-side expansion of module
-	 * dependencies (see {@link IHttpTransport#REQUIRED_REQATTRNAME}, resources
-	 * specifying loader plugins included in this list will be included in the
-	 * response as a text resource.
+	 * Returns the list of plugin names specified with the {@link #TEXTPLUGINDELEGATORS_CONFIGPARAM}
+	 * config param. Loader plugins specified here delegate the loading of the resources they handle
+	 * to the text module loader. When doing server-side expansion of module dependencies for a
+	 * bootstrap layer, resources specifying loader plugins included in this list will be included
+	 * in the response as a text resource.
 	 *
-	 * @return The list of loader plugins that delegate to the text module
-	 *         loader.
+	 * @return The list of loader plugins that delegate to the text module loader.
 	 */
 	public Set<String> getTextPluginDelegators();
 
 	/**
-	 * Returns the list of plugin names specified with the
-	 * {@link #JSPLUGINDELEGATORS_CONFIGPARAM} config param. Loader plugins
-	 * specified here delegate the loading of the resources they handle to the
-	 * javascript module loader (e.g. the i18n plugin). When doing server-side
-	 * expansion of module dependencies (see
-	 * {@link IHttpTransport#REQUIRED_REQATTRNAME}, resources specifying loader
-	 * plugins included in this list will be included in the response as a
-	 * javascript resources.
+	 * Returns the list of plugin names specified with the {@link #JSPLUGINDELEGATORS_CONFIGPARAM}
+	 * config param. Loader plugins specified here delegate the loading of the resources they handle
+	 * to the javascript module loader (e.g. the i18n plugin). When doing server-side expansion of
+	 * module dependencies for a bootstrap layer, resources specifying loader plugins included in
+	 * this list will be included in the response as a javascript resources.
 	 *
-	 * @return The list of loader plugins that delegate to the javascript module
-	 *         loader.
+	 * @return The list of loader plugins that delegate to the javascript module loader.
 	 */
 	public Set<String> getJsPluginDelegators();
 
@@ -436,6 +428,7 @@ public interface IConfig {
 	 *            missing required feature.
 	 * @param resolveAliases
 	 *            If true, then module name aliases will be resolved
+	 * @return  the resolved module name
 	 */
 	public String resolve(String name, Features features,
 			Set<String> dependentFeatures, StringBuffer sb,

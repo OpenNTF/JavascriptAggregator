@@ -73,6 +73,8 @@ class CacheEntry implements Serializable {
 	 * appropriate Content-Type, Content-Length and Content-Encoding headers
 	 * in the response.
 	 *
+	 * @param request
+	 *            the request object
 	 * @return The InputStream for the built layer
 	 * @throws IOException
 	 */
@@ -95,7 +97,10 @@ class CacheEntry implements Serializable {
 	 * Can fail by returning null, but won't throw an exception.  Will also return null
 	 * if no data is available after waiting for 10 seconds.
 	 *
+	 * @param request
+	 *             the request object
 	 * @return The LayerInputStream, or null if data is not available
+	 * @throws IOException
 	 */
 	public InputStream tryGetInputStream(HttpServletRequest request) throws IOException {
 		InputStream in = null;
@@ -162,6 +167,7 @@ class CacheEntry implements Serializable {
 	 * name of the cache files when done.
 	 *
 	 * @param mgr The cache manager
+	 * @throws IOException
 	 */
 	public void persist(final ICacheManager mgr) throws IOException {
 		if (delete) return;
