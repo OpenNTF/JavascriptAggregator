@@ -47,35 +47,8 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 	public static final boolean COMPRESS_DEFAULT_VALUE = false;
 	private static Boolean compress;
 
-	@SuppressWarnings("serial")
-	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new
-			AbstractCacheKeyGenerator() {
-				// This is a singleton, so default equals() is sufficient
-				private final String eyecatcher = "less"; //$NON-NLS-1$
-
-				@Override
-				public String generateKey(HttpServletRequest request) {
-					return eyecatcher + (compress ? ":1" : ":0");
-				}
-
-				@Override
-				public String toString() {
-					return eyecatcher;
-				}
-			};
-
-	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators;
-
 	private List<ServiceRegistration> registrations = new
 			LinkedList<ServiceRegistration>();
-
-	static {
-		List<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>
-				(TextModuleBuilder.s_cacheKeyGenerators.size());
-		keyGens.addAll(TextModuleBuilder.s_cacheKeyGenerators);
-		keyGens.add(s_cacheKeyGenerator);
-		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
-	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.impl.text
@@ -114,16 +87,6 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 		StringWriter out = new StringWriter();
 		CopyUtil.copy(in, out);
 		return out.toString();
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.modulebuilder
-	 * .IModuleBuilder#getCacheKeyGenerator(com.ibm.jaggr.service.IAggregator)
-	 */
-	@Override
-	public final List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator
-																																	aggregator) {
-		return s_cacheKeyGenerators;
 	}
 
 	/* (non-Javadoc)
