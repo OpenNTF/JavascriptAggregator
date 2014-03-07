@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.*;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
+import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -38,32 +39,25 @@ import java.util.LinkedList;
 import java.util.List;
 
 /**
- * This class compiles LESS resources that are loaded by the AMD aggregator. If
- * {@link #COMPRESS_PARAM} is true, then the output will be compressed.
+ * This class compiles LESS resources that are loaded by the AMD aggregator.
  */
-public class LessModuleBuilder extends TextModuleBuilder implements IExtensionInitializer, IConfigListener, IShutdownListener {
-	// Configuration Fields
-	public static final String COMPRESS_PARAM = "lessCompressOutput";
-	public static final boolean COMPRESS_DEFAULT_VALUE = false;
-	private static Boolean compress;
+public class LessModuleBuilder extends CSSModuleBuilder {
 
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	public static final LessEngine LESS_ENGINE = new LessEngine();
 
 	/*
 	 * (non-Javadoc)
 	 *
-	 * @see com.ibm.jaggr.service.modulebuilder.impl.text
-	 * .TextModuleBuilder#getContentReader(java.lang.String,
+	 * @see com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getContentReader(java.lang.String,
 	 * com.ibm.jaggr.service.resource.IResource,
-	 * javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.module
-	 * .ICacheKeyGenerator)
+	 * javax.servlet.http.HttpServletRequest,
+	 * com.ibm.jaggr.service.module.ICacheKeyGenerator)
 	 */
 	@Override
 	protected Reader getContentReader(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		String less = readToString(resource.getReader());
-		LessEngine engine = new LessEngine();
 		try {
-			return new StringReader(engine.compile(less, resource.getURI().toString(), compress));
+			return processCss(resource, request, LESS_ENGINE.compile(less, resource.getURI().toString()));
 		} catch (LessException e) {
 			throw new RuntimeException(e);
 		}
@@ -91,48 +85,5 @@ public class LessModuleBuilder extends TextModuleBuilder implements IExtensionIn
 	@Override
 	public boolean handles(String mid, IResource resource) {
 		return mid.endsWith(".less"); //$NON-NLS-1$
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IExtensionInitializer#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension,com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
-	 */
-	@Override
-	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		Hashtable<String, String> props = new Hashtable<String, String>();
-		props.put("name", aggregator.getName());
-		registrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
-		props = new Hashtable<String, String>();
-		props.put("name", aggregator.getName());
-		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
-		IConfig config = aggregator.getConfig();
-		if (config != null) {
-			configLoaded(config, 1);
-		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see com.ibm.jaggr.service.config.IConfigListener#configLoaded(com.ibm
-	 * .jaggr.service.config.IConfig, long)
-	 */
-	@Override
-	public void configLoaded(IConfig conf, long sequence) {
-		Scriptable config = conf.getRawConfig();
-		/** True if the output should be compressed **/
-		Object obj = config.get(COMPRESS_PARAM, config);
-		compress = TypeUtil.asBoolean(obj == Scriptable.NOT_FOUND ? null : obj.toString(), COMPRESS_DEFAULT_VALUE);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IShutdownListener#shutdown(com.ibm.jaggr.service.IAggregator)
-	 */
-	@Override
-	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
-			reg.unregister();
-		}
 	}
 }

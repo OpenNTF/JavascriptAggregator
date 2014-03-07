@@ -94,29 +94,11 @@ public class LessModuleBuilderTest extends EasyMock {
 	}
 
 	@Test
-	public void testImportWithCompression() throws Exception {
+	public void testLessCompilationWithImport() throws Exception {
 		String output;
 		URI resUri = testdir.toURI();
-		configScript.put(LessModuleBuilder.COMPRESS_PARAM, configScript,
-				Boolean.TRUE);
-		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(),
-				configScript);
-		builder.configLoaded(config, seq++);
 		output = buildLess(new StringResource(LESS, resUri));
-		Assert.assertEquals("body{background:#f00}", output);
-	}
-
-	@Test
-	public void testImportWithoutCompression() throws Exception {
-		String output;
-		URI resUri = testdir.toURI();
-		configScript.put(LessModuleBuilder.COMPRESS_PARAM, configScript,
-				Boolean.FALSE);
-		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(),
-				configScript);
-		builder.configLoaded(config, seq++);
-		output = buildLess(new StringResource(LESS, resUri));
-		Assert.assertEquals("body {\n  background: #ff0000;\n}\n", output);
+		Assert.assertEquals("body{background:#ff0000}", output);
 	}
 
 	private String buildLess(StringResource less) throws IOException {
