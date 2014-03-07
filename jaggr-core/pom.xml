@@ -334,6 +334,10 @@
       <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
+      <groupId>com.asual.lesscss</groupId>
+      <artifactId>lesscss-engine</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.google.javascript</groupId>
       <artifactId>closure-compiler</artifactId>
     </dependency>
