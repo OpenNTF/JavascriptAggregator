@@ -43,7 +43,7 @@ import java.util.List;
  */
 public class LessModuleBuilder extends TextModuleBuilder implements IExtensionInitializer, IConfigListener, IShutdownListener {
 	// Configuration Fields
-	public static final String COMPRESS_PARAM = "compress";
+	public static final String COMPRESS_PARAM = "lessCompressOutput";
 	public static final boolean COMPRESS_DEFAULT_VALUE = false;
 	private static Boolean compress;
 
