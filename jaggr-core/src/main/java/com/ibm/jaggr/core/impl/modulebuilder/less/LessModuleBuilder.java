@@ -19,7 +19,6 @@ package com.ibm.jaggr.core.impl.modulebuilder.less;
 import com.asual.lesscss.LessEngine;
 import com.asual.lesscss.LessException;
 import com.ibm.jaggr.core.*;
-import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
@@ -34,23 +33,25 @@ import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
-import java.util.*;
+import java.util.Hashtable;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
- * This class compiles LESS resources that are loaded by the AMD aggregator.
- * If {@link #COMPRESS_PARAM} is true, then the output will be compressed.
+ * This class compiles LESS resources that are loaded by the AMD aggregator. If
+ * {@link #COMPRESS_PARAM} is true, then the output will be compressed.
  */
-public class LessModuleBuilder extends TextModuleBuilder implements
-		IExtensionInitializer, IConfigListener, IShutdownListener {
+public class LessModuleBuilder extends TextModuleBuilder implements IExtensionInitializer, IConfigListener, IShutdownListener {
 	// Configuration Fields
 	public static final String COMPRESS_PARAM = "compress";
 	public static final boolean COMPRESS_DEFAULT_VALUE = false;
 	private static Boolean compress;
 
-	private List<ServiceRegistration> registrations = new
-			LinkedList<ServiceRegistration>();
+	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see com.ibm.jaggr.service.modulebuilder.impl.text
 	 * .TextModuleBuilder#getContentReader(java.lang.String,
 	 * com.ibm.jaggr.service.resource.IResource,
@@ -58,18 +59,11 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 	 * .ICacheKeyGenerator)
 	 */
 	@Override
-	protected Reader getContentReader(
-			String mid,
-			IResource resource,
-			HttpServletRequest request,
-			List<ICacheKeyGenerator> keyGens)
-			throws IOException {
-
+	protected Reader getContentReader(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		String less = readToString(resource.getReader());
 		LessEngine engine = new LessEngine();
 		try {
-			return new StringReader(engine.compile(less, resource.getURI().toString
-					(), compress));
+			return new StringReader(engine.compile(less, resource.getURI().toString(), compress));
 		} catch (LessException e) {
 			throw new RuntimeException(e);
 		}
@@ -88,7 +82,9 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 		return out.toString();
 	}
 
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilder#handles(java.lang
 	 * .String, com.ibm.jaggr.service.resource.IResource)
 	 */
@@ -97,30 +93,27 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 		return mid.endsWith(".less"); //$NON-NLS-1$
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IExtensionInitializer#initialize(com.ibm.jaggr
-	 * .service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension,
-	 * com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
+	/*
+	 * (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IExtensionInitializer#initialize(com.ibm.jaggr.service.IAggregator, com.ibm.jaggr.service.IAggregatorExtension,com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar)
 	 */
 	@Override
-	public void initialize(IAggregator aggregator, IAggregatorExtension
-			extension, IExtensionRegistrar registrar) {
+	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		Hashtable<String, String> props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName());
-		registrations.add(aggregator.getPlatformServices().registerService
-				(IConfigListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName());
-		registrations.add(aggregator.getPlatformServices().registerService
-				(IShutdownListener.class.getName(), this, props));
+		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
 		IConfig config = aggregator.getConfig();
 		if (config != null) {
 			configLoaded(config, 1);
 		}
 	}
 
-
-	/* (non-Javadoc)
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see com.ibm.jaggr.service.config.IConfigListener#configLoaded(com.ibm
 	 * .jaggr.service.config.IConfig, long)
 	 */
@@ -129,13 +122,12 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 		Scriptable config = conf.getRawConfig();
 		/** True if the output should be compressed **/
 		Object obj = config.get(COMPRESS_PARAM, config);
-		compress = TypeUtil.asBoolean(obj == Scriptable.NOT_FOUND ? null : obj
-				.toString(), COMPRESS_DEFAULT_VALUE);
+		compress = TypeUtil.asBoolean(obj == Scriptable.NOT_FOUND ? null : obj.toString(), COMPRESS_DEFAULT_VALUE);
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IShutdownListener#shutdown(com.ibm.jaggr
-	 * .service.IAggregator)
+	/*
+	 * (non-Javadoc)
+	 * @see com.ibm.jaggr.service.IShutdownListener#shutdown(com.ibm.jaggr.service.IAggregator)
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
