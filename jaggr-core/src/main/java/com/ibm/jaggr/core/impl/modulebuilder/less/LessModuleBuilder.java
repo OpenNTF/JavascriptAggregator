@@ -71,9 +71,8 @@ public class LessModuleBuilder extends TextModuleBuilder implements
 			return new StringReader(engine.compile(less, resource.getURI().toString
 					(), compress));
 		} catch (LessException e) {
-			e.printStackTrace();
+			throw new RuntimeException(e);
 		}
-		return new StringReader("/*COMPILATIONERROR*/\n" + less);
 	}
 
 	/**
