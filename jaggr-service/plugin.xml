@@ -52,6 +52,8 @@
 		         class="com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder"/>
 		<builder extension="css"
 		         class="com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder"/>
+		<builder extension="less"
+		         class="com.ibm.jaggr.core.impl.modulebuilder.less.LessModuleBuilder"/>
 		<builder extension="*"
 		         class="com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder"/>
 	</extension>
