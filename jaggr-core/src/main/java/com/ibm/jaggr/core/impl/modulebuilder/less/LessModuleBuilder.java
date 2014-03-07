@@ -18,24 +18,13 @@ package com.ibm.jaggr.core.impl.modulebuilder.less;
 
 import com.asual.lesscss.LessEngine;
 import com.asual.lesscss.LessException;
-import com.ibm.jaggr.core.*;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
-import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
-import org.mozilla.javascript.Scriptable;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.Hashtable;
-import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -61,19 +50,6 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 		} catch (LessException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	/**
-	 * Copies the contents of the specified {@link Reader} to a String.
-	 *
-	 * @param in The input Reader
-	 * @return The contents of the Reader as a String
-	 * @throws IOException
-	 */
-	protected String readToString(Reader in) throws IOException {
-		StringWriter out = new StringWriter();
-		CopyUtil.copy(in, out);
-		return out.toString();
 	}
 
 	/*
