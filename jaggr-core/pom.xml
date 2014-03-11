@@ -173,7 +173,8 @@
               concurrentlinkedhashmap-lru,
               guava,
               js,
-              wink-json4j
+              wink-json4j,
+              lesscss-engine
             </Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
