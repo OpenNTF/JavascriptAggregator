@@ -46,6 +46,11 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 	protected Reader getContentReader(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		String less = readToString(resource.getReader());
 		try {
+			// We pass the output of `LESS_ENGINE.compile(..)` to the parent
+			// `processCss(...)` method so that we can use existing code to inline
+			// remaining CSS imports, inline images, and minify the resulting CSS.
+			// Please note that LESS will only import less files or casted less
+			// imports (e.g., `@import (less) "file.css";`).
 			return processCss(resource, request, LESS_ENGINE.compile(less, resource.getURI().toString()));
 		} catch (LessException e) {
 			throw new RuntimeException(e);
