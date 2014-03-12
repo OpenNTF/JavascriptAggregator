@@ -13,18 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["dojo/ready",
-       "dojo/parser", 
-       "dijit/layout/TabContainer",
-       "js/LazyContentPane",
-       "js/css!dijit/themes/claro/claro.css",
-       "dojo/has!dojo-combo-api?combo/dojo/featureMap",
-       /*
-        * preload selector lite implementation which is used by dojo/query and 
-        * supports modern browsers.  If the emulation library is required, it 
-        * will be required by the loader.
-        */
-       "dojo/selector/lite"		
+define([
+	"dojo/ready",
+	"dojo/parser", 
+	"dijit/layout/TabContainer",
+	"js/LazyContentPane",
+	"js/css!dijit/themes/claro/claro.css",
+	"dojo/has!dojo-combo-api?combo/dojo/featureMap",
+	/*
+	 * preload selector lite implementation which is used by dojo/query and 
+	 * supports modern browsers.  If the emulation library is required, it 
+	 * will be required by the loader.
+	 */
+	"dojo/selector/lite"
 ], function() {
 	return {};
 });
