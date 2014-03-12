@@ -59,6 +59,7 @@ public class DependencyListTest_processDep {
 		mockAggregator = TestUtils.createMockAggregator(configRef, null);
 		mockDependencies = createMock(IDependencies.class);
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
+		expect(mockDependencies.getDelcaredDependencies("require")).andReturn(null).anyTimes();
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		replay(mockAggregator, mockDependencies);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{}"));
