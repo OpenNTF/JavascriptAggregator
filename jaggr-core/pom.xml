@@ -172,7 +172,7 @@
               commons-lang,
               concurrentlinkedhashmap-lru,
               guava,
-              js,
+              rhino,
               wink-json4j,
               lesscss-engine,
 	            commons-logging
@@ -348,8 +348,8 @@
       <artifactId>closure-compiler</artifactId>
     </dependency>
     <dependency>
-      <groupId>rhino</groupId>
-      <artifactId>js</artifactId>
+      <groupId>org.mozilla</groupId>
+      <artifactId>rhino</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
