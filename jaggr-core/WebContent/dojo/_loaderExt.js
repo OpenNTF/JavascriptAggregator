@@ -172,7 +172,7 @@ combo.add = function (prefix, name, url, config) {
 };
 
 combo.reg = function(ary) {
-	registerModuleNameIds(ary, idMap);
+	registerModuleNameIds(ary, moduleIdMap);
 };
 
 setTimeout(function() {
