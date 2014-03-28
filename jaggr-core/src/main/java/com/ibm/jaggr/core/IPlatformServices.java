@@ -45,7 +45,7 @@ public interface IPlatformServices {
 	 * @return An instance of {@code com.ibm.jaggr.core.ServiceRegistration}
 	 *
 	 */
-	public ServiceRegistration registerService(String clazz, Object service,
+	public IServiceRegistration registerService(String clazz, Object service,
 			Dictionary<String, String> properties);
 
 	/**
@@ -63,7 +63,7 @@ public interface IPlatformServices {
 	 *         {@code org.osgi.framework.ServiceReference} interface.
 	 * @throws PlatformServicesException
 	 */
-	public Object[] getServiceReferences(String clazz, String filter) throws PlatformServicesException;
+	public IServiceReference[] getServiceReferences(String clazz, String filter) throws PlatformServicesException;
 
 	/**
 	 * Returns the service object corresponding to the service registration.
@@ -74,7 +74,7 @@ public interface IPlatformServices {
 	 *            {@code org.osgi.framework.ServiceReference} interface.
 	 * @return service object
 	 */
-	public Object getService(Object serviceReference);
+	public Object getService(IServiceReference serviceReference);
 
 	/**
 	 * Removes the service reference from the platform
@@ -86,7 +86,7 @@ public interface IPlatformServices {
 	 * @return true if the operation was successful else false
 	 */
 
-	public boolean ungetService(Object serviceReference);
+	public boolean ungetService(IServiceReference serviceReference);
 
 	/**
 	 * A method to access a resource within an application

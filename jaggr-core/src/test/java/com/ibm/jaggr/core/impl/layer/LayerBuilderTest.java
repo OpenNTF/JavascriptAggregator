@@ -26,14 +26,11 @@ import static org.easymock.EasyMock.reset;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
-import com.ibm.jaggr.core.impl.layer.CompletedFuture;
-import com.ibm.jaggr.core.impl.layer.LayerBuilder;
-import com.ibm.jaggr.core.impl.layer.Messages;
-import com.ibm.jaggr.core.impl.layer.ModuleList;
 import com.ibm.jaggr.core.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -553,9 +550,9 @@ public class LayerBuilderTest {
 		IAggregator mockAggregator = TestUtils.createMockAggregator();
 		final IPlatformServices mockPlatformServices = createMock(IPlatformServices.class);
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
-		Object mockServiceRef1 = createMock(Object.class),
-				mockServiceRef2 = createMock(Object.class);
-		Object[] serviceReferences = new Object[]{mockServiceRef1, mockServiceRef2};
+		IServiceReference mockServiceRef1 = createMock(IServiceReference.class),
+				mockServiceRef2 = createMock(IServiceReference.class);
+		IServiceReference[] serviceReferences = new IServiceReference[]{mockServiceRef1, mockServiceRef2};
 		final String[] listener1Result = new String[1], listener2Result = new String[1];
 		final List<IModule> expectedModuleList = new ArrayList<IModule>();
 		final Set<String> dependentFeatures1 = new HashSet<String>(),

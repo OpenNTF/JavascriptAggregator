@@ -18,7 +18,7 @@ package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IShutdownListener;
-import com.ibm.jaggr.core.ServiceRegistration;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
@@ -78,13 +78,13 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	private IAggregator _aggregator;
 
-	private ServiceRegistration _shutdownListener = null;
+	private IServiceRegistration _shutdownListener = null;
 
-	private ServiceRegistration _configUpdateListener = null;
+	private IServiceRegistration _configUpdateListener = null;
 
-	private ServiceRegistration _depsUpdateListener = null;
+	private IServiceRegistration _depsUpdateListener = null;
 
-	private ServiceRegistration _optionsUpdateListener = null;
+	private IServiceRegistration _optionsUpdateListener = null;
 
 	private long updateSequenceNumber = 0;
 

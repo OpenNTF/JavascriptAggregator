@@ -17,9 +17,10 @@
 package com.ibm.jaggr.core.impl.deps;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
-import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfig.Location;
 import com.ibm.jaggr.core.config.IConfigListener;
@@ -54,9 +55,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
 
-	private ServiceRegistration configUpdateListener;
-	private ServiceRegistration optionsUpdateListener;
-	private ServiceRegistration shutdownListener;
+	private IServiceRegistration configUpdateListener;
+	private IServiceRegistration optionsUpdateListener;
+	private IServiceRegistration shutdownListener;
 	private String servletName;
 	private long depsLastModified = -1;
 	private long initStamp;
@@ -252,12 +253,12 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 							break;
 						}
 						// Notify listeners that dependencies have been updated
-						Object[] refs = null;
+						IServiceReference[] refs = null;
 
 						refs = aggregator.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
 
 						if (refs != null) {
-							for (Object ref : refs) {
+							for (IServiceReference ref : refs) {
 								IDependenciesListener listener = (IDependenciesListener)(aggregator.getPlatformServices().getService(ref));
 								if (listener != null) {
 									try {

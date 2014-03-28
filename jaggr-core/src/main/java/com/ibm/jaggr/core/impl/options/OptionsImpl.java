@@ -17,6 +17,7 @@
 package com.ibm.jaggr.core.impl.options;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
@@ -302,12 +303,12 @@ public class OptionsImpl  implements IOptions {
 	 */
 	protected void updateNotify (long sequence) {
 
-		Object[] refs = null;
+		IServiceReference[] refs = null;
 		try {
 			if(aggregator != null && aggregator.getPlatformServices() != null){
 				refs = aggregator.getPlatformServices().getServiceReferences(IOptionsListener.class.getName(),"(name=" + registrationName + ")");	//$NON-NLS-1$ //$NON-NLS-2$
 				if (refs != null) {
-					for (Object ref : refs) {
+					for (IServiceReference ref : refs) {
 						IOptionsListener listener = (IOptionsListener)aggregator.getPlatformServices().getService(ref);
 						if (listener != null) {
 							try {
