@@ -41,6 +41,7 @@ import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.ConcurrentAddOnlyList;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
@@ -99,10 +100,13 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	File tmpdir = null;
 	IAggregator mockAggregator;
 	HttpServletRequest mockRequest;
+	IHttpTransport mockTransport;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	IDependencies mockDependencies = createMock(IDependencies.class);
 	Map<String, List<String>> dependentFeaturesMap = new HashMap<String, List<String>>();
+	@SuppressWarnings("unchecked")
+	final Map<String, Integer>[] moduleIdMap = (Map<String, Integer>[])new Map[]{null};
 
 
 
@@ -131,12 +135,21 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		}).anyTimes();
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
-		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		mockTransport = EasyMock.createMock(IHttpTransport.class);
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir, null, null, mockTransport);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes);
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
+		expect(mockTransport.getModuleIdMap()).andAnswer(new IAnswer<Map<String, Integer>>() {
+			@Override
+			public Map<String, Integer> answer() throws Throwable {
+				return moduleIdMap[0];
+			}
+		}).anyTimes();
+		expect(mockTransport.getModuleIdRegFunctionName()).andReturn("require.combo.reg").anyTimes();
 		replay(mockAggregator);
 		replay(mockRequest);
 		replay(mockDependencies);
+		replay(mockTransport);
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}"));
 	}
 
@@ -599,7 +612,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				new ModuleImpl("bar", new URI("file://bar.js"))
 		});
 		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		ModuleDeps resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
@@ -607,7 +620,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		// Add a conditioned module dependency and make sure that it doesn't get added to the result set
 		layerExpandedDeps.add("conditioneddep", new ModuleDepInfo("dojo/has", new BooleanTerm("condition"), null));
 		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 
@@ -616,7 +629,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		layerExpandedDeps.add("conditioneddep", new ModuleDepInfo("dojo/has", new BooleanTerm("!condition"), null));
 		expectedDeps.add("conditioneddep", new ModuleDepInfo());
 		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 	}
@@ -686,7 +699,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				new ModuleImpl("bar", new URI("file://bar.js"))
 		});
 		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);	// no output if debug mode is not enabled
+		Assert.assertEquals("", result);	// no output if debug mode is not enabled
 		ModuleDeps resultDeps = (ModuleDeps)mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
 		Assert.assertEquals(expectedDeps, resultDeps);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
@@ -702,6 +715,143 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), dependentFeatures);
 
 	}
+
+	@Test
+	public void testLayerBeginEndNotifier_moduleIdEncoding() {
+		List<IModule> modules = new ArrayList<IModule>();
+		Set<String> dependentFeatures = new HashSet<String>();
+		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder() {
+			@Override protected String moduleNameIdEncodingBeginLayer(HttpServletRequest request, List<IModule> modules) {
+				return "[moduleNameIdEncodingBeginLayer]";
+			}
+			@Override protected String moduleNameIdEncodingEndLayer(HttpServletRequest request, List<IModule> modules) {
+				return "[moduleNameIdEncodingEndLayer]";
+			}
+		};
+		String result = builder.layerBeginEndNotifier(EventType.BEGIN_AMD, mockRequest, modules, dependentFeatures);
+		Assert.assertEquals(null, result);
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_AMD, mockRequest, modules, dependentFeatures);
+		Assert.assertEquals(null, result);
+		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_AMD, mockRequest, modules, dependentFeatures);
+		Assert.assertEquals("[moduleNameIdEncodingBeginLayer]", result);
+		result = builder.layerBeginEndNotifier(EventType.END_LAYER, mockRequest, modules, dependentFeatures);
+		Assert.assertEquals("[moduleNameIdEncodingEndLayer]", result);
+	}
+
+	@Test
+	public void testModuleNameEncodingIdBeginLayer() throws Exception {
+		List<IModule> modules = new ArrayList<IModule>();
+
+		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
+		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest, modules));
+		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
+
+		moduleIdMap[0] = new HashMap<String, Integer>();
+		String result = builder.moduleNameIdEncodingBeginLayer(mockRequest, modules);
+		Assert.assertEquals("(function(){var " + JavaScriptModuleBuilder.EXPDEPS_VARNAME + ";", result);
+		Assert.assertNotNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
+
+		mockRequest.removeAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
+		IAggregator aggr = (IAggregator)mockRequest.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		options.setOption(IOptions.DISABLE_MODULENAMEIDENCODING, true);
+		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest, modules));
+		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
+	}
+
+	@Test
+	public void testModuleNameEncodingIdEndLayer() throws Exception {
+		List<IModule> modules = new ArrayList<IModule>();
+		moduleIdMap[0] = new HashMap<String, Integer>();
+		moduleIdMap[0].put("dep1", 100);
+		moduleIdMap[0].put("dep2", 102);
+		moduleIdMap[0].put("foodep", 500);
+		moduleIdMap[0].put("feature/dep1", 511);
+		moduleIdMap[0].put("feature/dep2", 512);
+		moduleIdMap[0].put("feature1/dep", 513);
+
+		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
+		Assert.assertEquals("", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
+
+		ConcurrentAddOnlyList<String[]> expDeps = new ConcurrentAddOnlyList<String[]>();
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+
+		// empty deps list
+		String result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		Assert.assertEquals("})();", result);
+		System.out.println(result);
+
+		// with some values
+		expDeps.add(new String[]{"dep1"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\"]],[[100]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+		expDeps = new ConcurrentAddOnlyList<String[]>();
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		expDeps.add(new String[]{"dep1", "dep2"});
+		expDeps.add(new String[]{"foodep"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dep2\"],[\"foodep\"]],[[100,102],[500]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+		// including a dep which has no mapping
+		expDeps.add(new String[]{"nodep"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dep2\"],[\"foodep\"],[\"nodep\"]],[[100,102],[500],[0]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+		expDeps.add(new String[]{"dojo/has!feature?feature/dep1"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dep2\"],[\"foodep\"],[\"nodep\"],[\"dojo/has!feature?feature/dep1\"]],[[100,102],[500],[0],[511]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+		// Test compound module ids with has! plugin
+		expDeps = new ConcurrentAddOnlyList<String[]>(2);
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		expDeps.add(new String[]{"dep1", "dojo/has!feature?feature/dep1"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dojo/has!feature?feature/dep1\"]],[[100,511]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+		expDeps = new ConcurrentAddOnlyList<String[]>(2);
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		expDeps.add(new String[]{"dep1", "dojo/has!feature?feature/dep1:feature/dep2"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dojo/has!feature?feature/dep1:feature/dep2\"]],[[100,[511,512]]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+		expDeps = new ConcurrentAddOnlyList<String[]>(2);
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		expDeps.add(new String[]{"dep1", "dojo/has!feature1?feature1/dep:feature?feature/dep1:feature/dep2", "dep2"});
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dojo/has!feature1?feature1/dep:feature?feature/dep1:feature/dep2\",\"dep2\"]],[[100,[513,511,512],102]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+
+	}
+
 	/**
 	 * Tester class that extends JavaScriptModuleBuilder to expose protected methods for testing
 	 */
@@ -755,6 +905,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		public List<ICacheKeyGenerator> getCacheKeyGenerators(
 				Set<String> dependentFeatures) {
 			return super.getCacheKeyGenerators(dependentFeatures);
+		}
+		@Override
+		public String moduleNameIdEncodingBeginLayer(HttpServletRequest request, List<IModule> modules) {
+			return super.moduleNameIdEncodingBeginLayer(request, modules);
+		}
+		@Override
+		public String moduleNameIdEncodingEndLayer(HttpServletRequest request, List<IModule> modules) {
+			return super.moduleNameIdEncodingEndLayer(request, modules);
 		}
 	}
 }

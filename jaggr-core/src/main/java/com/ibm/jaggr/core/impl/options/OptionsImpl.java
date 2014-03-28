@@ -47,6 +47,7 @@ public class OptionsImpl  implements IOptions {
 		map.put(DISABLE_HASFILTERING,	Boolean.FALSE.toString());
 		map.put(DISABLE_REQUIRELISTEXPANSION,	Boolean.FALSE.toString());
 		map.put(DISABLE_HASPLUGINBRANCHING, Boolean.FALSE.toString());
+		map.put(DISABLE_MODULENAMEIDENCODING, Boolean.FALSE.toString());
 		map.put(VERIFY_DEPS,		Boolean.TRUE.toString());
 		map.put(DELETE_DELAY, 		Integer.toString(DEFAULT_DELETE_DELAY));
 		defaults = Collections.unmodifiableMap(map);
@@ -122,6 +123,11 @@ public class OptionsImpl  implements IOptions {
 	@Override
 	public boolean isDisableHasPluginBranching() {
 		return Boolean.parseBoolean(getOption(DISABLE_HASPLUGINBRANCHING));
+	}
+
+	@Override
+	public boolean isDisableModuleNameIdEncoding() {
+		return Boolean.parseBoolean(getOption(DISABLE_MODULENAMEIDENCODING));
 	}
 
 	@Override

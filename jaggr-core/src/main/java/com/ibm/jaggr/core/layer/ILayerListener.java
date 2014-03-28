@@ -47,6 +47,14 @@ public interface ILayerListener {
 		END_LAYER,
 
 		/**
+		 * Fires before the first AMD module is added to the layer, but after
+		 * all non-AMD scripts (if any) have been included.  Non-AMD scripts
+		 * may be included in application requested boot layers using the
+		 * <code>scripts</code> URL query arg.
+		 */
+		BEGIN_AMD,
+
+		/**
 		 * This event fires before each module is added to the layer.
 		 */
 		BEGIN_MODULE

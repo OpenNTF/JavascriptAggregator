@@ -27,6 +27,7 @@ import com.ibm.jaggr.core.util.RequestedModuleNames;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -358,4 +359,44 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *         transport.
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators();
+
+	/**
+	 * Returns a map of module name to module id pairs that can be used to encode the module names
+	 * when requesting modules.
+	 *
+	 * @return an unmodifiable collection of module name to module id pairs or null if the transport
+	 *         doesn't support id mapping of module names.
+	 */
+	public Map<String, Integer> getModuleIdMap();
+
+	/**
+	 * Returns the name of the client side registration function used to register module-name/module-id
+	 * mappings.  The function takes a single 2-element array parameter, the first element being an
+	 * array of module name arrays and the second element being the corresponding array of module ids
+	 * arrays for the modules named by the first array.
+	 * <p><pre>
+	 * [
+	 *     [
+	 *         ["module1", "module2", "module3"],
+	 *         ["module4"],
+	 *         ["module5", "module6"]
+	 *     ],
+	 *     [
+	 *         [1,2,3],
+	 *         [4],
+	 *         [5,6]
+	 *     ]
+	 * ]
+	 * </pre>
+	 * <p>The JavaScript module builder emits code to register module-ids for expanded dependencies on the
+	 * client, using the string arrays (the first element) both to specify the expanded dependencies and
+	 * as part of the id mappings.
+	 * <p>The id mappings are used by the client to encode requested module names when requesting
+	 * modules from the aggregator in order to minimize URL lengths.
+	 *
+	 * @return the client-side registration function name, or null if the transport doesn't support
+	 *         id mapping of module names.
+	 */
+	public String getModuleIdRegFunctionName();
+
 }

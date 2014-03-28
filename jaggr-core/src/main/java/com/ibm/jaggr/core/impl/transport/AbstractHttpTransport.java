@@ -26,7 +26,8 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.impl.layer.LayerImpl;
+import com.ibm.jaggr.core.deps.ModuleDepInfo;
+import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.resource.ExceptionResource;
 import com.ibm.jaggr.core.readers.AggregationReader;
 import com.ibm.jaggr.core.resource.IResource;
@@ -37,6 +38,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
@@ -62,6 +64,8 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -70,7 +74,6 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -91,9 +94,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
 
 	public static final String REQUESTEDMODULES_REQPARAM = "modules"; //$NON-NLS-1$
+	public static final String REQUESTEDMODULEIDS_REQPARAM = "moduleIds"; //$NON-NLS-1$
 	public static final String REQUESTEDMODULESCOUNT_REQPARAM = "count"; //$NON-NLS-1$
 
 	public static final String CONSOLE_WARNING_MSG_FMT = "window.console && console.warn(\"{0}\");"; //$NON-NLS-1$
+	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
+
 
 	/**
 	 * Request param specifying the non-AMD script files to include in an application boot layer.
@@ -150,16 +156,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
 	public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
 
-	static final String WARN_DEPRECATED_USE_OF_MODULES_QUERYARG = LayerImpl.class.getName() + ".DEPRECATED_USE_OF_MODULES"; //$NON-NLS-1$
-	static final String WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG = LayerImpl.class.getName() + ".DEPRECATED_USE_OF_REQUIRED"; //$NON-NLS-1$
+	static final String WARN_DEPRECATED_USE_OF_MODULES_QUERYARG = AbstractHttpTransport.class.getName() + ".DEPRECATED_USE_OF_MODULES"; //$NON-NLS-1$
+	static final String WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG = AbstractHttpTransport.class.getName() + ".DEPRECATED_USE_OF_REQUIRED"; //$NON-NLS-1$
 
 
 	static final String FEATUREMAP_JS_PATH = "/WebContent/featureList.js"; //$NON-NLS-1$
 	public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
 	public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
-
-	/** A cache of folded module list strings to expanded file name lists.  Used by LayerImpl cache */
-	private Map<String, Collection<String>> _encJsonMap = new ConcurrentHashMap<String, Collection<String>>();
 
 	private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
 	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
@@ -172,6 +175,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private IResource depFeatureListResource = null;
 
 	private CountDownLatch depsInitialized = null;
+
+	private Map<String, Integer> moduleIdMap = null;
+	private List<String> moduleIdList = null;
 
 	/** default constructor */
 	public AbstractHttpTransport() {}
@@ -193,6 +199,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return the combo resource URI
 	 */
 	protected abstract URI getComboUri();
+
+	/**
+	 * Returns the name of the aggregator text plugin module name (e.g. combo/text)
+	 *
+	 * @return the name of the plugin
+	 */
+	protected abstract String getAggregatorTextPluginName();
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#decorateRequest(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.IAggregator)
@@ -230,6 +243,35 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.transport.IHttpTransport#getModuleIdMap()
+	 */
+	@Override
+	public Map<String, Integer> getModuleIdMap() {
+		return moduleIdMap;
+	}
+
+	/**
+	 * Returns the module id list used to map module name ids to module names.  The
+	 * id corresponds to the postion of the name in the list.  The list element at
+	 * offset 0 is unused.
+	 *
+	 * @return the module id list
+	 */
+	protected List<String> getModuleIdList() {
+		return moduleIdList;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.transport.IHttpTransport#getModuleIdRegFunctionName()
+	 */
+	@Override
+	public String getModuleIdRegFunctionName() {
+		// Loader specific subclass provides implementation.  If not overridden, then
+		// module name id encoding is effectively disabled.
+		return null;
+	}
+
 	protected void setRequestedModuleNames(HttpServletRequest request) throws IOException {
 		RequestedModuleNames requestedModuleNames = new RequestedModuleNames();
 		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
@@ -253,7 +295,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			if (moduleQueryArg != null || required != null) {
 				throw new BadRequestException(request.getQueryString());
 			}
-			requestedModuleNames.setModules(scripts);
+			requestedModuleNames.setScripts(scripts);
 		}
 		List<String> deps = getNameListFromQueryArg(request, DEPS_REQPARAM);
 		if (deps != null) {
@@ -285,12 +327,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	protected void setModuleListFromRequest(HttpServletRequest request, RequestedModuleNames requestedModuleNames) throws IOException {
 		List<String> moduleList = new LinkedList<String>();
 		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
+		String moduleIdsQueryArg = request.getParameter(REQUESTEDMODULEIDS_REQPARAM);
 		String countParam = request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM);
 		int count = 0;
+		if (moduleQueryArg == null) moduleQueryArg = ""; //$NON-NLS-1$
+		if (moduleIdsQueryArg == null) moduleIdsQueryArg = ""; //$NON-NLS-1$
 		try {
-			if (moduleQueryArg == null) {
-				return;
-			}
 			if (countParam != null) {
 				count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
 				// put a reasonable upper limit on the value of count
@@ -305,17 +347,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 
 			if (count > 0) {
-				Collection<String> cached = _encJsonMap.get(moduleQueryArg);
-				if (cached != null && cached.size() == count) {
-					moduleList.addAll(cached);
-				} else {
-					moduleList.addAll(Arrays.asList(unfoldModules(decodeModules(moduleQueryArg), count)));
-
-					// Save buildReader so we don't have to do this again.
-					_encJsonMap.put(moduleQueryArg, moduleList);
+				String[] modules = new String[count];
+				unfoldModules(decodeModules(moduleQueryArg), modules);
+				decodeModuleIds(moduleIdsQueryArg, modules);
+				// make sure no empty slots
+				for (String mid : modules) {
+					if (mid == null) {
+						throw new BadRequestException();
+					}
 				}
-				requestedModuleNames.setString(moduleQueryArg);
-			} else {
+				requestedModuleNames.setString(moduleQueryArg+((moduleQueryArg.length() > 0 && moduleIdsQueryArg.length() > 0) ? ":" : "") + moduleIdsQueryArg); //$NON-NLS-1$ //$NON-NLS-2$
+				moduleList.addAll(Arrays.asList(modules));
+			} else if (moduleQueryArg.length() > 0){
 				// Hand crafted URL; get module names from one or more module query args (deprecated)
 				moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
 				// Set request attribute to warn about use of deprecated param
@@ -325,19 +368,19 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				}
 			}
 		} catch (ArrayIndexOutOfBoundsException ex) {
-			_encJsonMap.remove(moduleQueryArg);
 			throw new BadRequestException(moduleQueryArg + " - " + count, ex); //$NON-NLS-1$
 		} catch (NumberFormatException ex) {
-			_encJsonMap.remove(moduleQueryArg);
 			throw new BadRequestException(moduleQueryArg + " - " + count, ex); //$NON-NLS-1$
 		} catch (JSONException ex) {
-			_encJsonMap.remove(moduleQueryArg);
 			throw new BadRequestException(moduleQueryArg + " - " + count, ex); //$NON-NLS-1$
 		} catch (RuntimeException ex) {
-			_encJsonMap.remove(moduleQueryArg);
 			throw ex;
 		}
-		requestedModuleNames.setModules(Collections.unmodifiableList(moduleList));
+		if (count == 0) {
+			requestedModuleNames.setScripts(Collections.unmodifiableList(moduleList));
+		} else {
+			requestedModuleNames.setModules(Collections.unmodifiableList(moduleList));
+		}
 	}
 
 	protected List<String> getNameListFromQueryArg(HttpServletRequest request, String argName) throws IOException {
@@ -382,6 +425,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @throws JSONException
 	 */
 	protected  JSONObject decodeModules(String encstr) throws IOException, JSONException {
+		if (encstr.length() == 0) {
+			return new JSONObject("{}"); //$NON-NLS-1$
+		}
 		StringBuffer json = new StringBuffer(encstr.length() * 2);
 		Matcher m = DECODE_JSON.matcher(encstr);
 		while (m.find()) {
@@ -411,6 +457,77 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	}
 
 	/**
+	 * Decodes the module names specified by {@code encoded} and adds the module names to the
+	 * appropriate positions in {@code resultArray}. {@code encoded} is specified as a base64
+	 * encoded id list. The id list consists of a sequence of segments, with each segment having the
+	 * form:
+	 * <p>
+	 * <code>[position][count][moduleid-1][moduleid-2]...[moduleid-(count-1)]</code>
+	 * <p>
+	 * where position specifies the position in the module list of the first module in the segment,
+	 * count specifies the number of modules in the segment who's positions contiguously follow the
+	 * start position, and the module ids specify the ids for the modules from the id map. Position
+	 * and count are 16-bit numbers, and the module ids are specified as follows:
+	 * <p>
+	 * <code>[id]|[0][plugin id][id]</code>
+	 * <p>
+	 * If the module name doesn't specify a loader plugin, then it is represented by the id for the
+	 * module name. If the module name specifies a loader plugin, then it is represetned by a zero,
+	 * followed by the id for the loader plugin, followed by the id for the module name without the
+	 * loader plugin. All values are 16-bit numbers.
+	 *
+	 * @param encoded
+	 *            the base64 encoded id list
+	 * @param resultArray
+	 *            the array to which the decoded module names will be added
+	 * @throws IOException
+	 */
+	protected void decodeModuleIds(String encoded, String[] resultArray) throws IOException {
+		if (encoded == null || encoded.length() == 0) {
+			return;
+		}
+		List<String> idList = getModuleIdList();
+		byte[] decoded = Base64.decodeBase64(encoded);
+		// convert to int array
+		int[] intArray = new int[decoded.length/2];
+		for (int i = 0; i < intArray.length; i ++) {
+			intArray[i] = (((int)(decoded[i*2])&0xFF) << 8) + ((int)(decoded[i*2+1])&0xFF);
+		}
+		for (int i = 0, position = -1, length = 0; i < intArray.length;) {
+			if (position == -1) {
+				// read the position and length values
+				position = intArray[i++];
+				length = intArray[i++];
+			}
+			for (int j = 0; j < length; j++) {
+				String pluginName = null, moduleName = null;
+				int id = intArray[i++];
+				if (id == 0) {
+					// 0 means the next two ints specify plugin and modulename
+					id = intArray[i++];
+					pluginName = idList.get(id);
+					if (pluginName == null) {
+						throw new BadRequestException();
+					}
+					id = intArray[i++];
+					moduleName = id != 0 ? idList.get(id) : ""; //$NON-NLS-1$
+
+				} else {
+					moduleName = idList.get(id);
+				}
+				if (moduleName == null) {
+					throw new BadRequestException();
+				}
+				if (resultArray[position+j] != null) {
+					throw new BadRequestException();
+				}
+				resultArray[position+j] = (pluginName != null ? (pluginName + "!") : "") + moduleName; //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			position = -1;
+		}
+	}
+
+	/**
 	 * Regular expression for a non-path property (i.e. auxiliary information or processing
 	 * instruction) of a folded path json object.
 	 */
@@ -433,14 +550,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @param modules
 	 *            The folded module name list
-	 * @param count
-	 *            The count of modules in the list
-	 * @return The unfolded module name list
+	 * @param resultArray
+	 *            The result array.  Note that there may be holes in the result
+	 *            array when this method is done because some of the modules may
+	 *            have been specified using a different mechanism.
 	 * @throws IOException
 	 * @throws JSONException
 	 */
-	protected String[] unfoldModules(JSONObject modules, int count) throws IOException, JSONException {
-		String[] ret = new String[count];
+	protected void unfoldModules(JSONObject modules, String[] resultArray) throws IOException, JSONException {
 		Iterator<?> it = modules.keys();
 		String[] prefixes = null;
 		if (modules.containsKey(PLUGIN_PREFIXES_PROP_NAME)) {
@@ -454,14 +571,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		while (it.hasNext()) {
 			String key = (String) it.next();
 			if (!NON_PATH_PROP_PATTERN.matcher(key).find()) {
-				unfoldModulesHelper(modules.get(key), key, prefixes, ret);
+				unfoldModulesHelper(modules.get(key), key, prefixes, resultArray);
 			}
 		}
-		// validate no empty array slots
-		for (String name : ret) {
-			if (name == null) throw new BadRequestException();
-		}
-		return ret;
 	}
 
 	/**
@@ -491,6 +603,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		else if (obj instanceof String){
 			String[] values = ((String)obj).split("-"); //$NON-NLS-1$
 			int idx = Integer.parseInt(values[0]);
+			if (modules[idx] != null) {
+				throw new BadRequestException();
+			}
 			if (modules[idx] != null) {
 				throw new BadRequestException();
 			}
@@ -818,9 +933,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 					(cacheBust + "-" + optionsCb) : optionsCb; //$NON-NLS-1$
 		}
 		if (cacheBust != null && cacheBust.length() > 0) {
-			sb.append("if (!combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
+			sb.append("if (!require.combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
+		sb.append(clientRegisterSyntheticModules());
 		return sb.toString();
 	}
 
@@ -1126,6 +1242,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			dependentFeatures = Collections.unmodifiableList(Arrays.asList(features.toArray(new String[features.size()])));
 			depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), deps.getLastModified());
 			depsInitialized.countDown();
+			generateModuleIdMap();
 		} catch (ProcessingDependenciesException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
@@ -1143,6 +1260,116 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		}
 	}
+
+	/**
+	 * Returns a collection of the names of synthetic modules that may be used by the transport.
+	 * Module names provided here will be assigned module name unique ids and can be requested by
+	 * the client using module id encoding.
+	 * <p>
+	 * Synthetic modules are those which don't have physical source files that will be discovered
+	 * when building the dependency map.
+	 *
+	 * @return the collection of synthetic names used by the transport
+	 */
+	protected Collection<String> getSyntheticModuleNames() {
+		Collection<String> result = new HashSet<String>();
+		result.add(getAggregatorTextPluginName());
+		return result;
+	}
+
+	/**
+	 * Returns the JavaScript code for calling the client-side module name id registration function
+	 * to register name ids for the transport synthetic modules.
+	 *
+	 * @return the registration JavaScript or an empty string if no synthetic modules.
+	 */
+	protected String clientRegisterSyntheticModules() {
+		StringBuffer sb = new StringBuffer();
+		Map<String, Integer> map = getModuleIdMap();
+		if (map != null || getModuleIdRegFunctionName() == null) {
+			Collection<String> names = getSyntheticModuleNames();
+			if (names != null && names.size() > 0) {
+				// register the text plugin name (combo/text) and name id with the client
+				sb.append(getModuleIdRegFunctionName()).append("([[["); //$NON-NLS-1$
+				int i = 0;
+				for (String name : names) {
+					if (map.get(name) != null) {
+						sb.append(i++==0 ?"":",").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+					}
+				}
+				sb.append("]],[["); //$NON-NLS-1$
+				i = 0;
+				for (String name : names) {
+					Integer id = map.get(name);
+					if (id != null) {
+						sb.append(i++==0?"":",").append(id.intValue()); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+				}
+				sb.append("]]]);"); //$NON-NLS-1$
+			}
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Generates the module id map used by the transport to encode/decode module names
+	 * using assigned module name ids.
+	 *
+	 * @throws IOException
+	 */
+	protected void generateModuleIdMap() throws IOException {
+		if (getModuleIdRegFunctionName() == null) {
+			return;
+		}
+		Set<String> names = new TreeSet<String>(); // Use TreeSet to get consistent ordering
+		IDependencies deps = aggregator.getDependencies();
+
+		for (String name : deps.getDependencyNames()) {
+			names.add(name);
+			for (String dep : deps.getDelcaredDependencies(name)) {
+				Matcher m = hasPluginPattern.matcher(dep);
+				if (m.find()) {
+					// mid specifies the has! loader plugin.  Process the
+					// constituent mids separately
+					HasNode hasNode = new HasNode(m.group(2));
+					ModuleDeps hasDeps = hasNode.evaluateAll(
+							"has", Features.emptyFeatures, //$NON-NLS-1$
+							new HashSet<String>(),
+							(ModuleDepInfo)null, null);
+					for (Map.Entry<String, ModuleDepInfo> entry : hasDeps.entrySet()) {
+						dep = entry.getKey();
+						int idx = dep.lastIndexOf('!');
+						if (idx != -1) {
+							names.add(dep.substring(0, idx));
+							dep = dep.substring(idx+1);
+						}
+						names.add(dep);
+					}
+
+				} else {
+					int idx = dep.lastIndexOf('!');
+					if (idx != -1) {
+						names.add(dep.substring(0, idx));
+						dep = dep.substring(idx+1);
+					}
+					names.add(dep);
+				}
+			}
+		}
+		names.addAll(getSyntheticModuleNames());
+
+		Map<String, Integer> idMap = new HashMap<String, Integer>(names.size());
+		List<String> idList = new ArrayList<String>(names.size()+1);
+		idList.add("");	// slot 0 is unused //$NON-NLS-1$
+		idList.addAll(names);
+		for (int i = 1; i < idList.size(); i++) {
+			idMap.put(idList.get(i), i);
+		}
+
+		moduleIdMap = Collections.unmodifiableMap(idMap);
+		moduleIdList = idList;
+	}
+
 	/**
 	 * Implementation of an {@link IResource} that aggregates the various
 	 * sources (dynamic and static content) of the loader extension

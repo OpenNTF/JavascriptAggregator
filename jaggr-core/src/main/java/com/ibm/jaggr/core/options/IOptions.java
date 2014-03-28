@@ -102,6 +102,23 @@ public interface IOptions {
 	public static final String DISABLE_HASPLUGINBRANCHING = "disableHasPluginBranching"; //$NON-NLS-1$
 
 	/**
+	 * Name of property that specifies if module name id encoding should be disabled.
+	 * <p>
+	 * Module name id encoding is used to reduce the amount of space required to specify module
+	 * names in request URLs. When module name encoding is enabled (the default), the aggregator
+	 * specifies number id values for the names of expanded dependencies and when the client needs
+	 * to request these modules, it does so using the ids instead of the module names.
+	 * <p>
+	 * Because the ids assigned to module names are subject to change as modules are added or
+	 * removed during application development, it can be useful to disable this feature while
+	 * actively developing an application in order to reduce the need to clear the browser cache.
+	 * <p>
+	 * Note that disabling this feature can affect application performance, resulting in increased
+	 * request splitting in order to keep URL lengths within maximum length limits.
+	 */
+	public static final String DISABLE_MODULENAMEIDENCODING = "disableModuleNameIdEncoding"; //$NON-NLS-1$
+
+	/**
 	 * Name of property that specifies a cache bust string. This is an arbitrary
 	 * string that is associated with the serialized meta-data for aggregator
 	 * caches and the module dependency maps. When these data structures are
@@ -209,6 +226,14 @@ public interface IOptions {
 	 */
 	public boolean isDisableHasPluginBranching();
 
+	/**
+	 * Convenience method for reading the {@link #DISABLE_MODULENAMEIDENCODING}
+	 * options property.
+	 *
+	 * @return The value of the {@link #DISABLE_MODULENAMEIDENCODING} property
+	 * as a boolean
+	 */
+	public boolean isDisableModuleNameIdEncoding();
 	/**
 	 * Convenience method for reading the {@link #CACHEBUST} options
 	 * property.

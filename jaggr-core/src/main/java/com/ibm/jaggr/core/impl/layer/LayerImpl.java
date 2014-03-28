@@ -680,7 +680,13 @@ public class LayerImpl implements ILayer {
 			if (requestedModuleNames != null) {
 				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
 				Set<String> dependentFeatures = new HashSet<String>();
-				for (String name : requestedModuleNames.getModules()) {
+				List<String> names = requestedModuleNames.getModules();
+				boolean isScripts = false;
+				if (names.isEmpty()) {
+					names = requestedModuleNames.getScripts();
+					isScripts = true;
+				}
+				for (String name : names) {
 					if (name != null) {
 						name = aggr.getConfig().resolve(name, features, dependentFeatures, null,
 								false,	// Don't resolve aliases when locating modules requested by the loader
@@ -688,7 +694,7 @@ public class LayerImpl implements ILayer {
 								//  we can't rename a requested module.
 								true	// Resolve has! loader plugin
 								);
-						result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
+						result.add(new ModuleList.ModuleListEntry(newModule(request, name), isScripts ? ModuleSpecifier.SCRIPTS : ModuleSpecifier.MODULES));
 					}
 				}
 				// See if we need to add required modules.

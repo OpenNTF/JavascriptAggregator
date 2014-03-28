@@ -160,10 +160,11 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			platformServices = new PlatformServicesImpl(bundleContext);
 			bundle = bundleContext.getBundle();
 			initParams = getInitParams(configInitParams);
+			name = getAggregatorName(configMap);
+			registerLayerListener();
 			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
-			name = getAggregatorName(configMap);
 			initExtensions(configElem);
 			initialize(configMap, configInitParams);
 			workdir = initWorkingDirectory( // this must be after initOptions
@@ -185,8 +186,6 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		dict.put("name", getName()); //$NON-NLS-1$
 		registrations.add(new ServiceRegistrationOSGi(getBundleContext().registerService(
 				IAggregator.class.getName(), this, dict)));
-
-		registerLayerListener();
 	}
 
 	@Override

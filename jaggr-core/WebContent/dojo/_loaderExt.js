@@ -46,6 +46,9 @@ var depmap = {},
     // include features that evaluate to undefined
     includeUndefinedFeatures;
 
+    // Map of module name to number id pairs
+    moduleIdMap = {};
+
 // Copy config params from the combo config property
 for (var s in params) {
 	if (typeof combo[s] !== 'undefined') {
@@ -83,16 +86,13 @@ urlProcessors.push(function(url){
 });
 
 // require.combo needs to be defined before this code is loaded
-combo.done = function(load, config, opt_deps, opt_depmap) {
-	var asNames = [];
+combo.done = function(load, config, opt_deps) {
+	var mids = [];
 	opt_deps = opt_deps || deps;
-	opt_depmap = opt_depmap || depmap;
 	for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
-		asNames[i] = dep.name;
+		mids[i] = dep.prefix ? (dep.prefix + "!" + dep.name) : dep.name;
 	}
-	asNames.sort();
 	
-	var oFolded = foldModuleNames(asNames, opt_depmap);
 	var hasArg = "";
 	
 	if (!combo.serverOptions.skipHasFiltering) {
@@ -117,9 +117,14 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 		hasArg = featureCookie.setCookie(hasArg, contextPath);
 	}
 
-	var url = contextPath + '?count=' + asNames.length +
-	  '&modules=' + encodeURIComponent(encodeModules(oFolded)) +
-	  (hasArg ? '&' + hasArg : "");
+	var base64;
+	try {
+		base64 = require('dojox/encoding/base64');
+	} catch (ignore) {}
+	
+	var url = contextPath;
+	url = addRequestedModulesToUrl(url, opt_deps, moduleIdMap, base64 ? base64.encode : null);
+	url += (hasArg ? '&' + hasArg : "");
 	
 	// Allow any externally provided URL processors to make their contribution
 	// to the URL
@@ -128,24 +133,23 @@ combo.done = function(load, config, opt_deps, opt_depmap) {
 	}
 	
 	if (config.has("dojo-trace-api")) {
-		config.trace("loader-inject-combo", [asNames.join(', ')]);
+		config.trace("loader-inject-combo", [mids.join(', ')]);
 	}
 	if (maxUrlLength && url.length > maxUrlLength) {
 		var parta = opt_deps.slice(0, opt_deps.length/2),
-		    partb = opt_deps.slice(opt_deps.length/2, opt_deps.length),
-		    map = opt_depmap;
+		    partb = opt_deps.slice(opt_deps.length/2, opt_deps.length);
 		deps = [];
 		depmap = {};
-		arguments.callee(load, config, parta, map);
-		arguments.callee(load, config, partb, map);
+		arguments.callee(load, config, parta);
+		arguments.callee(load, config, partb);
 	} else {
-		if (deps === opt_deps && depmap === opt_depmap) {
+		if (deps === opt_deps) {
 			// we have not split the module list to trim url size, so we can clear this safely.
 			// otherwise clearing these is the responsibility of the initial function.
 			deps = [];
 			depmap = {};
 		}
-		load(asNames, url);			
+		load(mids, url);			
 	}
 };
 
@@ -165,6 +169,10 @@ combo.add = function (prefix, name, url, config) {
 		config.trace("loader-inject-combo-reject", ["can't handle: " + prefix + "!" + name]);
 	}
 	return canHandle;
+};
+
+combo.reg = function(ary) {
+	registerModuleNameIds(ary, idMap);
 };
 
 setTimeout(function() {

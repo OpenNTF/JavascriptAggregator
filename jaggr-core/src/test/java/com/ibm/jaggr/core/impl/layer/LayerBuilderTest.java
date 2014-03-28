@@ -490,6 +490,9 @@ public class LayerBuilderTest {
 				} else if (type == EventType.BEGIN_MODULE) {
 					result = "interlude " + module.getURI();
 					layerDependentFeatures.add("interludeFeature");
+				} else if (type == EventType.BEGIN_AMD) {
+					layerDependentFeatures.add("AMDFeature");
+					result = "AMD";
 				}
 				return result;
 			}
@@ -502,10 +505,10 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("prologue[(interlude file:/c:/m1.js\"<m1>foo<m1>\"interlude file:/c:/m2.js,\"<m2>bar<m2>\")]epilogue", output);
+		Assert.assertEquals("prologue[AMD(interlude file:/c:/m1.js\"<m1>foo<m1>\"interlude file:/c:/m2.js,\"<m2>bar<m2>\")epilogue]", output);
 		Assert.assertEquals(
 				(Set<String>)new HashSet<String>(Arrays.asList(new String[]{
-						"prologueFeature", "interludeFeature", "processFuture", "epilogueFeature"
+						"prologueFeature", "AMDFeature", "interludeFeature", "processFuture", "epilogueFeature"
 				})),
 				moduleList.getDependentFeatures());
 		System.out.println(output);
@@ -561,6 +564,8 @@ public class LayerBuilderTest {
 		final Set<String> dependentFeatures1 = new HashSet<String>(),
 				dependentFeatures2 = new HashSet<String>();
 
+		final List<String> checkpoints = new ArrayList<String>();
+
 		ModuleList moduleList = new ModuleList();
 		IModule module1 = new ModuleImpl("module1", new URI("file://module1.js")),
 				module2 = new ModuleImpl("module2", new URI("file://module2.js"));
@@ -570,12 +575,14 @@ public class LayerBuilderTest {
 			@Override public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
 				Assert.assertEquals(expectedModuleList, modules);
 				dependentFeatures.addAll(dependentFeatures1);
+				checkpoints.add("Listener1_" + type.toString());
 				return listener1Result[0];
 			}
 		}, testListener2 = new ILayerListener() {
 			@Override public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
 				Assert.assertEquals(expectedModuleList, modules);
 				dependentFeatures.addAll(dependentFeatures2);
+				checkpoints.add("Listener2_" + type.toString());
 				return listener2Result[0];
 			}
 		};
@@ -602,6 +609,7 @@ public class LayerBuilderTest {
 		String result = builder.notifyLayerListeners(EventType.BEGIN_LAYER, mockRequest, module1);
 		Assert.assertEquals("foobar", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
+		Assert.assertEquals(Arrays.asList(new String[]{"Listener1_BEGIN_LAYER", "Listener2_BEGIN_LAYER"}), checkpoints);
 
 		reset(mockPlatformServices);
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
@@ -611,10 +619,12 @@ public class LayerBuilderTest {
 		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
 		replay(mockPlatformServices);
 		listener2Result[0] = null;
+		checkpoints.clear();
 		// Test END_LAYER with one null and one string contributions
 		result = builder.notifyLayerListeners(EventType.END_LAYER, mockRequest, module1);
 		Assert.assertEquals("foo", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
+		Assert.assertEquals(Arrays.asList(new String[]{"Listener2_END_LAYER", "Listener1_END_LAYER"}), checkpoints);  // ensure reverse order
 
 		reset(mockPlatformServices);
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
@@ -624,10 +634,12 @@ public class LayerBuilderTest {
 		expect(mockPlatformServices.ungetService(mockServiceRef2)).andReturn(true);
 		replay(mockPlatformServices);
 		listener1Result[0] = null;
+		checkpoints.clear();
 		// Test END_LAYER with two null contributions
 		result = builder.notifyLayerListeners(EventType.END_LAYER, mockRequest, module1);
 		Assert.assertNull(result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
+		Assert.assertEquals(Arrays.asList(new String[]{"Listener2_END_LAYER", "Listener1_END_LAYER"}), checkpoints);  // ensure reverse order
 
 		reset(mockPlatformServices);
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
@@ -640,10 +652,12 @@ public class LayerBuilderTest {
 		listener2Result[0] = "bar";
 		expectedModuleList.clear();
 		expectedModuleList.add(module2);
+		checkpoints.clear();
 		// Test BEGIN_MODULE with two string contributions
 		result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module2);
 		Assert.assertEquals("foobar", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
+		Assert.assertEquals(Arrays.asList(new String[]{"Listener1_BEGIN_MODULE", "Listener2_BEGIN_MODULE"}), checkpoints);
 
 		reset(mockPlatformServices);
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andReturn(serviceReferences).anyTimes();
@@ -667,10 +681,12 @@ public class LayerBuilderTest {
 		replay(mockPlatformServices);
 		dependentFeatures1.add("feature1");
 		dependentFeatures2.add("feature2");
+		checkpoints.clear();
 		// Verify that dependent features can be updated by listeners
 		result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module2);
 		Assert.assertEquals("foobar", result);
 		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), moduleList.getDependentFeatures());
+		Assert.assertEquals(Arrays.asList(new String[]{"Listener1_BEGIN_MODULE", "Listener2_BEGIN_MODULE"}), checkpoints);
 	}
 
 	String toString(Reader reader) throws IOException {

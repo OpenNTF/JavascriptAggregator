@@ -68,7 +68,14 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	static final String dojoTextPluginAliasFullPath = dojo+"/"+dojoTextPluginAlias; //$NON-NLS-1$
 	static final String dojoTextPluginName = "text"; //$NON-NLS-1$
 	static final String dojoTextPluginFullPath = dojo+"/"+dojoTextPluginName; //$NON-NLS-1$
+	static final String idRegFunctionName = "require.combo.reg"; //$NON-NLS-1$
 	static final URI dojoPluginUri;
+
+	/**
+	 * Name of request attribute used for temporary storage of required modules so we can use it
+	 * during {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#END_RESPONSE} processing
+	 */
+	static final String ADD_REQUIRE_DEPS_REQATTRNAME = AbstractDojoHttpTransport.class.getName() + ".addRequireDeps"; //$NON-NLS-1$
 
 	static {
 		try {
@@ -108,9 +115,22 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		return clientConfigAliases;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.impl.transport.AbstractHttpTransport#getAggregatorTextPluginName()
+	 */
+	@Override
 	protected String getAggregatorTextPluginName() {
 		return getResourcePathId() + "/text"; //$NON-NLS-1$
 	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.impl.transport.AbstractHttpTransport#getModuleIdRegFunctionName()
+	 */
+	@Override
+	public String getModuleIdRegFunctionName() {
+		return idRegFunctionName;
+	}
+
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getLayerContribution(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.transport.IHttpTransport.LayerContributionType, java.lang.String)
@@ -125,26 +145,17 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		// are loaded with the loader.
 		switch (type) {
 		case BEGIN_LAYER_MODULES:
-			return "require({cache:{"; //$NON-NLS-1$
+			return beginLayerModules(request, arg);
 		case BEFORE_FIRST_LAYER_MODULE:
-			return getBeforeRequiredModule(request, arg.toString());
+			return beforeLayerModule(request, arg.toString());
 		case BEFORE_SUBSEQUENT_LAYER_MODULE:
-			return "," + getBeforeRequiredModule(request, arg.toString()); //$NON-NLS-1$
+			return "," + beforeLayerModule(request, arg.toString()); //$NON-NLS-1$
 		case AFTER_LAYER_MODULE:
-			return getAfterRequiredModule(request, arg.toString());
+			return afterLayerModule(request, arg.toString());
 		case END_LAYER_MODULES:
-		{
-			StringBuffer sb = new StringBuffer();
-			sb.append("}});require({cache:{}});require(["); //$NON-NLS-1$
-			int i = 0;
-			@SuppressWarnings("unchecked")
-			Set<String> requiredModules = (Set<String>)arg;
-			for (String name : requiredModules) {
-				sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-			}
-			sb.append("]);"); //$NON-NLS-1$
-			return sb.toString();
-		}
+			return endLayerModules(request, arg);
+		case END_RESPONSE:
+			return endResponse(request, arg);
 		default:
 			return super.getLayerContribution(request, type, arg);
 		}
@@ -172,7 +183,20 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		return true;
 	}
 
-	protected String getBeforeRequiredModule(HttpServletRequest request, String mid) {
+	/**
+	 * Handles
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_FIRST_LAYER_MODULE}
+	 * and
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_SUBSEQUENT_LAYER_MODULE}
+	 * layer listener events.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param mid
+	 *            the module identifier
+	 * @return the layer contribution
+	 */
+	protected String beforeLayerModule(HttpServletRequest request, String mid) {
 		String result;
 		int idx = mid.indexOf("!"); //$NON-NLS-1$
 		if (idx == -1) {
@@ -192,7 +216,18 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		return result;
 	}
 
-	protected String getAfterRequiredModule(HttpServletRequest request, String mid) {
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#AFTER_LAYER_MODULE}
+	 * layer listener event.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param mid
+	 *            the module id
+	 * @return the layer contribution
+	 */
+	protected String afterLayerModule(HttpServletRequest request, String mid) {
 		int idx = mid.indexOf("!"); //$NON-NLS-1$
 		String plugin = idx == -1 ? null : mid.substring(0, idx);
 		String result = "}";//$NON-NLS-1$
@@ -202,6 +237,67 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			if (config.getTextPluginDelegators().contains(plugin)) {
 				result = ""; //$NON-NLS-1$
 			}
+		}
+		return result;
+	}
+
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEGIN_LAYER_MODULES}
+	 * layer listener event.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param arg
+	 *            the set of required modules
+	 * @return the layer contribution
+	 */
+	protected String beginLayerModules(HttpServletRequest request, Object arg) {
+		return "require({cache:{"; //$NON-NLS-1$
+	}
+
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#END_LAYER_MODULES}
+	 * layer listener event.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param arg
+	 *            the set of required modules
+	 * @return the layer contribution
+	 */
+	protected String endLayerModules(HttpServletRequest request, Object arg) {
+		// Save module list in request attribute for processing during {@code END_RESPONSE}
+		request.setAttribute(ADD_REQUIRE_DEPS_REQATTRNAME, arg);
+		return "}});require({cache:{}});"; //$NON-NLS-1$
+	}
+
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#END_RESPONSE} layer
+	 * listener event
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param arg
+	 *            null
+	 * @return the layer contribution
+	 */
+	protected String endResponse(HttpServletRequest request, Object arg) {
+		String result = ""; //$NON-NLS-1$
+		@SuppressWarnings("unchecked")
+		Set<String> requiredModules = (Set<String>)request.getAttribute(ADD_REQUIRE_DEPS_REQATTRNAME);
+		if (requiredModules != null && !requiredModules.isEmpty()) {
+			// issue a require call for the required modules
+			StringBuffer sb = new StringBuffer();
+			sb.append("require(["); //$NON-NLS-1$
+			int i = 0;
+			for (String name : requiredModules) {
+				sb.append(i++ > 0 ? "," : "").append("\"").append(name).append("\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			}
+			sb.append("]);"); //$NON-NLS-1$
+			result = sb.toString();
 		}
 		return result;
 	}
@@ -271,23 +367,23 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	 */
 	@Override
 	protected String getDynamicLoaderExtensionJavaScript() {
-		StringBuffer sb = new StringBuffer();
-		sb.append("plugins[\"") //$NON-NLS-1$
+		StringBuffer sb = new StringBuffer("(function(require){"); //$NON-NLS-1$
+		sb.append("require.combo.plugins[\"") //$NON-NLS-1$
 		.append(getResourcePathId())
 		.append("/text") //$NON-NLS-1$
 		.append("\"] = 1;\r\n"); //$NON-NLS-1$
 		for (String[] alias : getClientConfigAliases()) {
-			sb.append("aliases.push([\"" + alias[0] + "\", \"" + alias[1] + "\"]);\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			sb.append("require.aliases.push([\"" + alias[0] + "\", \"" + alias[1] + "\"]);\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 		// Add server option settings that we care about
 		IOptions options = getAggregator().getOptions();
-		sb.append("combo.serverOptions={skipHasFiltering:") //$NON-NLS-1$
+		sb.append("require.combo.serverOptions={skipHasFiltering:") //$NON-NLS-1$
 		.append(Boolean.toString(options.isDisableHasFiltering()))
 		.append("};\r\n"); //$NON-NLS-1$
 
 		// add in the super class's contribution
 		sb.append(super.getDynamicLoaderExtensionJavaScript());
-
+		sb.append("})(userConfig);"); //$NON-NLS-1$
 		return sb.toString();
 	}
 
