@@ -152,7 +152,7 @@
         <configuration>
           <manifestLocation>META-INF</manifestLocation>
           <instructions>
-            <Bundle-Name>jaggr</Bundle-Name>
+            <Bundle-Name>jaggr-core</Bundle-Name>
             <Bundle-SymbolicName>${project.groupId}.core;singleton:=true</Bundle-SymbolicName>
             <Bundle-ActivationPolicy>lazy</Bundle-ActivationPolicy>           
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>  
