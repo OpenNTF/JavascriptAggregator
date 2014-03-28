@@ -84,7 +84,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 						}
 					}
 
-					if (result == null) {
+					if (fileResource == null) {
 						fileResource = new FileResource(fileUri);
 					}
 					// Wrap the result in a ResolverResource so that this resource factory object
