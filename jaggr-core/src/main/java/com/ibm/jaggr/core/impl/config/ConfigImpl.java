@@ -17,10 +17,11 @@
 package com.ibm.jaggr.core.impl.config;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.PlatformServicesException;
-import com.ibm.jaggr.core.ServiceRegistration;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.options.IOptions;
@@ -95,7 +96,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
 
-	protected List<ServiceRegistration> serviceRegs = new LinkedList<ServiceRegistration>();
+	protected List<IServiceRegistration> serviceRegs = new LinkedList<IServiceRegistration>();
 
 	private static class ConfigContextFactory extends ContextFactory {
 		@Override
@@ -1191,7 +1192,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
 		if( aggregator.getPlatformServices() != null){
-			Object[] refs = null;
+			IServiceReference[] refs = null;
 			try {
 				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
 			} catch (PlatformServicesException e) {
@@ -1201,7 +1202,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 
 			if (refs != null) {
-				for (Object ref : refs) {
+				for (IServiceReference ref : refs) {
 					IConfigModifier modifier =
 							(IConfigModifier) aggregator.getPlatformServices().getService(ref);
 					if (modifier != null) {
@@ -1252,7 +1253,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : serviceRegs) {
+		for (IServiceRegistration reg : serviceRegs) {
 			if( aggregator.getPlatformServices() != null){
 				reg.unregister();
 			}

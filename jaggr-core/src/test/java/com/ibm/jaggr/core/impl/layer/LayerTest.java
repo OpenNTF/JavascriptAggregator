@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -203,15 +204,15 @@ public class LayerTest extends EasyMock {
 
 		final AggregatorLayerListener layerListener = new AggregatorLayerListener(mockAggregator);
 		mockPlatformServices = createMock(IPlatformServices.class);
-		Object mockServiceReference = createMock(Object.class);
-		final Object[] serviceReferences = new Object[]{mockServiceReference};
-		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<Object[]>() {
-			@Override public Object[] answer() throws Throwable {
+		IServiceReference mockServiceReference = createMock(IServiceReference.class);
+		final IServiceReference[] serviceReferences = new IServiceReference[]{mockServiceReference};
+		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<IServiceReference[]>() {
+			@Override public IServiceReference[] answer() throws Throwable {
 				return serviceReferences;
 			}
 		}).anyTimes();
-		expect(mockPlatformServices.getServiceReferences(IOptionsListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<Object[]>() {
-			@Override public Object[] answer() throws Throwable {
+		expect(mockPlatformServices.getServiceReferences(IOptionsListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<IServiceReference[]>() {
+			@Override public IServiceReference[] answer() throws Throwable {
 				return null;
 			}
 		}).anyTimes();

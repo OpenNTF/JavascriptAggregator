@@ -17,6 +17,8 @@
 package com.ibm.jaggr.service;
 
 import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.PlatformServicesException;
 
 import org.osgi.framework.Bundle;
@@ -52,7 +54,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * Object service, Dictionary properties)
 	 */
 	@Override
-	public com.ibm.jaggr.core.ServiceRegistration registerService(String clazz, Object service,
+	public IServiceRegistration registerService(String clazz, Object service,
 			Dictionary<String, String> properties) {
 		ServiceRegistrationOSGi serviceRegistrationOSGi = null;
 		ServiceRegistration serviceRegistration = null;
@@ -71,11 +73,17 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * String filter)
 	 */
 	@Override
-	public ServiceReference[] getServiceReferences(String clazz, String filter) throws PlatformServicesException {
-		ServiceReference[] refs = null;
+	public IServiceReference[] getServiceReferences(String clazz, String filter) throws PlatformServicesException {
+		ServiceReferenceOSGi[] refs = null;
 		try {
 			if (bundleContext != null) {
-				refs = bundleContext.getServiceReferences(clazz, filter);
+				ServiceReference[] platformRefs = bundleContext.getServiceReferences(clazz, filter);
+				if (platformRefs != null) {
+					refs = new ServiceReferenceOSGi[platformRefs.length];
+					for (int i = 0; i < platformRefs.length; i++) {
+						refs[i] = new ServiceReferenceOSGi(platformRefs[i]);
+					}
+				}
 			}
 		} catch (InvalidSyntaxException e) {
 			throw new PlatformServicesException(e);
@@ -91,10 +99,10 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * reference)
 	 */
 	@Override
-	public Object getService(Object serviceReference) {
+	public Object getService(IServiceReference serviceReference) {
 		if (bundleContext != null) {
 			return bundleContext
-					.getService((ServiceReference) serviceReference);
+					.getService((ServiceReference) serviceReference.getPlatformObject());
 		} else {
 			return null;
 		}
@@ -107,10 +115,10 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 * reference)
 	 */
 	@Override
-	public boolean ungetService(Object serviceReference) {
+	public boolean ungetService(IServiceReference serviceReference) {
 		if (bundleContext != null) {
 			return bundleContext
-					.ungetService((ServiceReference) serviceReference);
+					.ungetService((ServiceReference) serviceReference.getPlatformObject());
 		} else {
 			return false;
 		}
