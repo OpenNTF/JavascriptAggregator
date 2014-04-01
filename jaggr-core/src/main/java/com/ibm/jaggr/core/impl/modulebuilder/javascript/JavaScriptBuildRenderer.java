@@ -18,7 +18,7 @@ package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
-import com.ibm.jaggr.core.util.ConcurrentAddOnlyList;
+import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -160,7 +160,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			}
 
 			@SuppressWarnings("unchecked")
-			ConcurrentAddOnlyList<String[]> expDeps = (ConcurrentAddOnlyList<String[]>)request.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
+			ConcurrentListBuilder<String[]> expDeps = (ConcurrentListBuilder<String[]>)request.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
 			StringBuffer sb = new StringBuffer();
 			int i;
 			for (i = 0; i < expandedDeps.size(); i++) {

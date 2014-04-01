@@ -41,7 +41,7 @@ import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.ConcurrentAddOnlyList;
+import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
@@ -774,7 +774,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		Assert.assertEquals("", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
 
-		ConcurrentAddOnlyList<String[]> expDeps = new ConcurrentAddOnlyList<String[]>();
+		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 
 		// empty deps list
@@ -791,7 +791,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
 				");})();", result);
 
-		expDeps = new ConcurrentAddOnlyList<String[]>();
+		expDeps = new ConcurrentListBuilder<String[]>();
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		expDeps.add(new String[]{"dep1", "dep2"});
 		expDeps.add(new String[]{"foodep"});
@@ -820,7 +820,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				");})();", result);
 
 		// Test compound module ids with has! plugin
-		expDeps = new ConcurrentAddOnlyList<String[]>(2);
+		expDeps = new ConcurrentListBuilder<String[]>(2);
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		expDeps.add(new String[]{"dep1", "dojo/has!feature?feature/dep1"});
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
@@ -830,7 +830,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
 				");})();", result);
 
-		expDeps = new ConcurrentAddOnlyList<String[]>(2);
+		expDeps = new ConcurrentListBuilder<String[]>(2);
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		expDeps.add(new String[]{"dep1", "dojo/has!feature?feature/dep1:feature/dep2"});
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
@@ -840,7 +840,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
 				");})();", result);
 
-		expDeps = new ConcurrentAddOnlyList<String[]>(2);
+		expDeps = new ConcurrentListBuilder<String[]>(2);
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		expDeps.add(new String[]{"dep1", "dojo/has!feature1?feature1/dep:feature?feature/dep1:feature/dep2", "dep2"});
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);

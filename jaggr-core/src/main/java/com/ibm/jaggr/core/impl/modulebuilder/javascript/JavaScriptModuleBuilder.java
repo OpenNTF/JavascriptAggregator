@@ -37,7 +37,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.core.util.BooleanTerm;
-import com.ibm.jaggr.core.util.ConcurrentAddOnlyList;
+import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
@@ -508,7 +508,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		if (aggr.getTransport().getModuleIdMap() != null && !aggr.getOptions().isDisableModuleNameIdEncoding()) {
 			// Set the request attribute that will be populated by the build renderers
-			request.setAttribute(MODULE_EXPANDED_DEPS, new ConcurrentAddOnlyList<String[]>(modules.size()));
+			request.setAttribute(MODULE_EXPANDED_DEPS, new ConcurrentListBuilder<String[]>(modules.size()));
 			// Open the scoping function and declare the var
 			return "(function(){var " + EXPDEPS_VARNAME + ";"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
@@ -533,8 +533,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		String result = ""; //$NON-NLS-1$
 		@SuppressWarnings("unchecked")
-		ConcurrentAddOnlyList<String[]> expDeps = (ConcurrentAddOnlyList<String[]>)request.getAttribute(MODULE_EXPANDED_DEPS);
-		if (expDeps != null) {
+		ConcurrentListBuilder<String[]> expDepsBuilder = (ConcurrentListBuilder<String[]>)request.getAttribute(MODULE_EXPANDED_DEPS);
+		if (expDepsBuilder != null) {
+			List<String[]> expDeps = expDepsBuilder.toList();
 			StringBuffer sb = new StringBuffer();
 			if (expDeps.size() > 0) {
 				// First, specify the module names array
