@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
+import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -56,7 +57,7 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 	 * to stand in for the expanded require list.
 	 */
 	static final Pattern REQUIRE_EXPANSION_PLACEHOLDER_PAT =
-			Pattern.compile("(,\\s*\"\\$/\\{jaggr expand require,([0-9]+)\\};/\\$\")|(\\$/\\{jaggr expand require,([0-9]+)\\}log;/\\$)", Pattern.MULTILINE); //$NON-NLS-1$
+			Pattern.compile("(,\\s*\"\\$/\\{jaggr expand require,([0-9]+)\\};/\\$\"\\s*\\])|(\\$/\\{jaggr expand require,([0-9]+)\\}log;/\\$)", Pattern.MULTILINE); //$NON-NLS-1$
 
 	private static final long serialVersionUID = -2475505194723490517L;
 
@@ -157,6 +158,9 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			if (contentFragments.size() != expandedDeps.size() + 1) {
 				throw new IllegalStateException(mid + "(" + contentFragments.size() + "," + expandedDeps.size() + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
+
+			@SuppressWarnings("unchecked")
+			ConcurrentListBuilder<String[]> expDeps = (ConcurrentListBuilder<String[]>)request.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
 			StringBuffer sb = new StringBuffer();
 			int i;
 			for (i = 0; i < expandedDeps.size(); i++) {
@@ -173,13 +177,27 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 				boolean isLog = isLogOutput != null && isLogOutput.get(i);
 				int j = 0;
 				if (!moduleIds.isEmpty()) {
-					for (String s : moduleIds) {
-						if (isLog) {
-							sb.append(j++ > 0 ? ", " : "").append(s); //$NON-NLS-1$ //$NON-NLS-2$
-						} else {
-							sb.append(",\"").append(s).append("\""); //$NON-NLS-1$ //$NON-NLS-2$
+					if (expDeps != null && !isLog) {
+						// use concat to append list of modules specified elsewhere to dependency list
+						int idx = expDeps.add(moduleIds.toArray(new String[moduleIds.size()]));
+						sb.append("].concat(" + JavaScriptModuleBuilder.EXPDEPS_VARNAME + "[0][" + idx + "])"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					} else {
+						// expand dependencies in-line
+						for (String s : moduleIds) {
+							if (isLog) {
+								sb.append(j++ > 0 ? ", " : "").append(s); //$NON-NLS-1$ //$NON-NLS-2$
+							} else {
+								sb.append(",\"").append(s).append("\""); //$NON-NLS-1$ //$NON-NLS-2$
+							}
+						}
+						if (!isLog) {
+							// Add closing bracket that was eaten by regex
+							sb.append("]"); //$NON-NLS-1$
 						}
 					}
+				} else if (!isLog) {
+					// Add closing bracket that was eaten by regex
+					sb.append("]"); //$NON-NLS-1$
 				}
 			}
 			sb.append(contentFragments.get(i));

@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.util.TypeUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
+import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -48,6 +49,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -76,7 +78,6 @@ public class AbstractHttpTransportTest {
 	public void tearDown() throws Exception {
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testSetRequestedModuleNamesWithEncodedModules() throws Exception {
 		IAggregator mockAggregator = TestUtils.createMockAggregator();
@@ -85,7 +86,6 @@ public class AbstractHttpTransportTest {
 		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
 		EasyMock.replay(mockAggregator, request);
 		AbstractHttpTransport transport = new TestHttpTransport();
-		Map<String, Collection<String>> encJsonMap = (Map<String, Collection<String>>)Whitebox.getInternalState(transport, "_encJsonMap");
 		transport.setRequestedModuleNames(request);
 		RequestedModuleNames requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 		assertTrue(requestedNames.getModules().isEmpty());
@@ -104,15 +104,6 @@ public class AbstractHttpTransportTest {
 		assertTrue(requestedNames.getDeps().isEmpty());
 		assertTrue(requestedNames.getPreloads().isEmpty());
 		assertEquals(encModules, requestedNames.toString());
-		assertEquals(expected, encJsonMap.get(encModules));
-
-		// Make sure subsequent request for same arg is obtained form cache
-		encJsonMap.get(encModules).add("added");
-		transport.setRequestedModuleNames(request);
-		assertEquals(Arrays.asList(new String[]{"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir", "added"}), requestedNames.getModules());
-
-
-		encJsonMap.clear();
 
 		// Test with invalid count param
 		requestParams.put("count", new String[]{"5"});
@@ -120,14 +111,12 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 		}
 		requestParams.put("count", new String[]{"3"});
 		try {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 		}
 		// Test with non-numeric count param
 		requestParams.put("count", new String[]{"abc"});
@@ -135,7 +124,6 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 		}
 		// test with count out of range
 		requestParams.put("count", new String[]{"10000"});
@@ -143,7 +131,6 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 			assertEquals(ex.getMessage(), "count:10000");
 		}
 		requestParams.put("count", new String[]{"0"});
@@ -151,7 +138,6 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 			assertEquals(ex.getMessage(), "count:0");
 		}
 
@@ -162,7 +148,6 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 		}
 		// test with unused encoding index
 		requestParams.put("modules", new String[]{"(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!4)"});
@@ -171,7 +156,6 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 		}
 		// test with illegal encoding syntax
 		requestParams.put("modules", new String[]{"(foo!(bar0*baz!(xxx!2*yyy!1))*dir!4)"});
@@ -180,19 +164,16 @@ public class AbstractHttpTransportTest {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertTrue(encJsonMap.isEmpty());
 		}
 		// test invalid count param when retrieving from cache
 		requestParams.put("modules", new String[]{encModules});
 		requestParams.put("count", new String[]{"4"});
 		transport.setRequestedModuleNames(request);
-		assertEquals(expected, encJsonMap.get(encModules));
 		requestParams.put("count", new String[]{"5"});
 		try {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertEquals(1, encJsonMap.size());
 		}
 
 	}
@@ -210,10 +191,11 @@ public class AbstractHttpTransportTest {
 		requestParams.put(AbstractHttpTransport.SCRIPTS_REQPARAM, new String[]{"script/a, script/b"});
 		transport.setRequestedModuleNames(request);
 		RequestedModuleNames requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getModules());
+		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getScripts());
+		assertTrue(requestedNames.getModules().isEmpty());
 		assertTrue(requestedNames.getDeps().isEmpty());
 		assertTrue(requestedNames.getPreloads().isEmpty());
-		assertEquals("[script/a, script/b]", requestedNames.toString());
+		assertEquals("scripts:[script/a, script/b]", requestedNames.toString());
 
 		// test with deps only
 		requestParams.remove(AbstractHttpTransport.SCRIPTS_REQPARAM);
@@ -240,10 +222,10 @@ public class AbstractHttpTransportTest {
 		requestParams.put(AbstractHttpTransport.SCRIPTS_REQPARAM, new String[]{"script/a, script/b"});
 		transport.setRequestedModuleNames(request);
 		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getModules());
+		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getScripts());
 		assertEquals(Arrays.asList(new String[]{"dep/a", "dep/b"}), requestedNames.getDeps());
 		assertEquals(Arrays.asList(new String[]{"preload/a", "preload/b"}), requestedNames.getPreloads());
-		assertEquals("[script/a, script/b];deps:[dep/a, dep/b];preloads:[preload/a, preload/b]", requestedNames.toString());
+		assertEquals("scripts:[script/a, script/b];deps:[dep/a, dep/b];preloads:[preload/a, preload/b]", requestedNames.toString());
 
 	}
 
@@ -321,7 +303,7 @@ public class AbstractHttpTransportTest {
 		requestParams.put(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM, new String[]{"foo/a,bar/b"});
 		transport.setRequestedModuleNames(request);
 		RequestedModuleNames requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getModules());
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getScripts());
 		assertFalse(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
 		// now enable debug mode
 		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
@@ -329,7 +311,7 @@ public class AbstractHttpTransportTest {
 		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, true);
 		transport.setRequestedModuleNames(request);
 		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getModules());
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getScripts());
 		assertTrue(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
 		// make sure it works for development mode as well
 		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
@@ -338,7 +320,7 @@ public class AbstractHttpTransportTest {
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		transport.setRequestedModuleNames(request);
 		requestedNames = (RequestedModuleNames)request.getAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getModules());
+		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getScripts());
 		assertTrue(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
 
 		// check the warn deprecated flag when using 'require' (dev/debug only)
@@ -417,17 +399,20 @@ public class AbstractHttpTransportTest {
 		AbstractHttpTransport transport = new TestHttpTransport();
 		// basic folded paths  with no plugin prefixes
 		JSONObject obj = new JSONObject("{foo:{bar:'0', baz:{xxx:'2', yyy:'1'}}, dir:'3'}");
-		String[] paths = transport.unfoldModules(obj, 4);
+		String[] paths = new String[4];
+		transport.unfoldModules(obj, paths);
 		Assert.assertArrayEquals(new String[] {"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir" }, paths);
 
 		// folded paths with plugin prefixes
 		obj = new JSONObject("{'"+AbstractHttpTransport.PLUGIN_PREFIXES_PROP_NAME+"':{'combo/text':'0', abc:'1'},foo:{bar:'0', baz:{xxx.txt:'1-0', yyy.txt:'2-1'}}}");
-		paths = transport.unfoldModules(obj, 3);
+		paths = new String[3];
+		transport.unfoldModules(obj, paths);
 		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
 
 		// make sure legacy format for specifying plugin prefixes works
 		obj = new JSONObject("{foo:{bar:'0', baz:{xxx.txt:'1-combo/text', yyy.txt:'2-abc'}}}");
-		paths = transport.unfoldModules(obj, 3);
+		paths = new String[3];
+		transport.unfoldModules(obj, paths);
 		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
 	}
 
@@ -510,6 +495,153 @@ public class AbstractHttpTransportTest {
 		}
 	}
 
+	@Test
+	public void testDecodeModuleIds() throws Exception {
+		final List<String> idList = new ArrayList<String>();
+		TestHttpTransport transport = new TestHttpTransport() {
+			@Override public List<String> getModuleIdList() { return idList; }
+		};
+		idList.add(null);
+		idList.add("module1");
+		idList.add("module2");
+		idList.add("foo");
+		idList.add("bar");
+		idList.add("plugin");
+
+		int ids[] = new int [] {
+			// specifies the following {,,,"module1",,"module2","plugin!foo",,,"bar"}
+			// first segment
+			3,		// start at third slot in module list
+			1,		// one module id to follow
+			// start of module id
+			1,		// "module1"
+			// new segment
+			5,		// fifth slot in module list
+			2,		// two module ids to follow
+			2,	// module2
+			// second module id in segment specifies "plugin!foo"
+			0,
+			5,	// "plugin"
+			3,	// "foo"
+			// third segment
+			10,		// slot 10 in modulelist
+			1,		// one module id to follow
+			4		// "bar"
+		};
+
+		byte[] bytes = new byte[24];
+		for (int i = 0; i < ids.length; i++) {
+			bytes[i*2] = (byte)(ids[i] >> 8);
+			bytes[i*2+1] = (byte)(ids[i] & 0xFF);
+		}
+		String encoded = Base64.encodeBase64URLSafeString(bytes);
+		String resultArray[] = new String[11];
+		transport.decodeModuleIds(encoded, resultArray);
+		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar"},  resultArray);
+	}
+
+	@Test
+	public void testclientRegisterSyntheticModules() {
+		final Map<String, Integer> moduleIdMap = new HashMap<String, Integer>();
+		final Collection<String> syntheticModuleNames = new ArrayList<String>();
+		moduleIdMap.put("combo/text", 100);
+		moduleIdMap.put("fooplugin", 200);
+		TestHttpTransport transport = new TestHttpTransport() {
+			@Override public Map<String, Integer> getModuleIdMap() { return moduleIdMap; }
+			@Override public String getModuleIdRegFunctionName() { return "reg"; }
+			@Override public Collection<String> getSyntheticModuleNames() { return syntheticModuleNames; }
+		};
+		String result = transport.clientRegisterSyntheticModules();
+		Assert.assertEquals("", result);
+
+		syntheticModuleNames.add("combo/text");
+		result = transport.clientRegisterSyntheticModules();
+		Assert.assertEquals("reg([[[\"combo/text\"]],[[100]]]);", result);
+
+		syntheticModuleNames.add("noid");
+		result = transport.clientRegisterSyntheticModules();
+		Assert.assertEquals("reg([[[\"combo/text\"]],[[100]]]);", result);
+
+		syntheticModuleNames.add("fooplugin");
+		result = transport.clientRegisterSyntheticModules();
+		Assert.assertEquals("reg([[[\"combo/text\",\"fooplugin\"]],[[100,200]]]);", result);
+	}
+
+	@Test
+	public void testGenerateModuleIdMap() throws Exception {
+		final String[] moduleIdRegFunctionName = new String[]{"reg"};
+		final Collection<String> syntheticModuleNames = new ArrayList<String>();
+		final Map<String, List<String>> dependencyNames = new HashMap<String, List<String>>();
+		TestHttpTransport transport = new TestHttpTransport() {
+			@Override public String getModuleIdRegFunctionName() { return moduleIdRegFunctionName[0]; }
+			@Override public Collection<String> getSyntheticModuleNames() { return syntheticModuleNames; }
+		};
+		IDependencies mockDependencies = EasyMock.createMock(IDependencies.class);
+		EasyMock.expect(mockDependencies.getDependencyNames()).andAnswer(new IAnswer<Iterable<String>>() {
+			@Override
+			public Iterable<String> answer() throws Throwable {
+				return dependencyNames.keySet();
+			}
+		}).anyTimes();
+		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.isA(String.class))).andAnswer(new IAnswer<List<String>>() {
+			@Override
+			public List<String> answer() throws Throwable {
+				String mid = (String)EasyMock.getCurrentArguments()[0];
+				return dependencyNames.get(mid);
+			}
+		}).anyTimes();
+		IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
+		EasyMock.expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
+		Whitebox.setInternalState(transport, "aggregator", mockAggregator);
+		EasyMock.replay(mockAggregator, mockDependencies);
+
+		// verify an empty id map is created with no dependencies
+		transport.generateModuleIdMap();
+		Assert.assertEquals(0, transport.getModuleIdMap().size());
+		Assert.assertEquals(Arrays.asList(new String[]{""}), transport.getModuleIdList());
+
+		// now add some dependencies
+		List<String> declaredDeps = Arrays.asList(new String[]{"foo", "bar"});
+		dependencyNames.put("foobar", declaredDeps);
+		transport.generateModuleIdMap();
+		List<String> idList = transport.getModuleIdList();
+		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "foo", "foobar"}), idList);
+		for (int i = 1; i < idList.size(); i++) {
+			Assert.assertEquals(i, transport.getModuleIdMap().get(idList.get(i)).intValue());
+		}
+		Assert.assertEquals(idList.size()-1, transport.getModuleIdMap().size());
+
+		// add some synthetic modules
+		syntheticModuleNames.add("combo/text");
+		syntheticModuleNames.add("combo/other");
+		transport.generateModuleIdMap();
+		idList = transport.getModuleIdList();
+		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "foo", "foobar"}), idList);
+		for (int i = 1; i < idList.size(); i++) {
+			Assert.assertEquals(i, transport.getModuleIdMap().get(idList.get(i)).intValue());
+		}
+		Assert.assertEquals(idList.size()-1, transport.getModuleIdMap().size());
+
+		// add some more deps
+		declaredDeps = Arrays.asList(new String[]{"dep1", "dep2", "dep3"});
+		dependencyNames.put("module", declaredDeps);
+		transport.generateModuleIdMap();
+		System.out.println(transport.getModuleIdList());
+		idList = transport.getModuleIdList();
+		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "dep1", "dep2", "dep3", "foo", "foobar", "module"}), idList);
+		for (int i = 1; i < idList.size(); i++) {
+			Assert.assertEquals(i, transport.getModuleIdMap().get(idList.get(i)).intValue());
+		}
+		Assert.assertEquals(idList.size()-1, transport.getModuleIdMap().size());
+
+		// Ensure nothing is generated if no reg function name
+		moduleIdRegFunctionName[0] = null;
+		Whitebox.setInternalState(transport, "moduleIdMap", (Map<String, Integer>)null);
+		Whitebox.setInternalState(transport, "moduleIdList", (List<String>)null);
+		transport.generateModuleIdMap();
+		Assert.assertNull(transport.getModuleIdMap());
+		Assert.assertNull(transport.getModuleIdList());
+	}
 
 	class TestHttpTransport extends AbstractHttpTransport {
 		TestHttpTransport() {}
@@ -520,6 +652,7 @@ public class AbstractHttpTransportTest {
 		@Override public List<ICacheKeyGenerator> getCacheKeyGenerators() { return null; }
 		@Override protected String getTransportId() { return null; }
 		@Override protected String getResourcePathId() { return "combo"; }
+		@Override protected String getAggregatorTextPluginName() { return "combo/text"; }
 	};
 
 	static List<String> featureList = Arrays.asList(new String[]{

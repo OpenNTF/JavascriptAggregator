@@ -18,27 +18,28 @@ package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
-import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 
 import org.easymock.EasyMock;
 import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
 
 public class JavaScriptBuildRendererTest {
-	static final String content = "define([],function() {require(\"foo\",\"" +
+	static final String content = "define([],function() {require([\"foo\",\"" +
 			String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, 0) +
-			"\");require(\"bar\", \"" +
+			"\"]);require([\"bar\", \"" +
 			String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, 1) +
-			"\")});";
+			"\"])});";
 
 	@Test
 	public void testRenderBuild() throws Exception {
@@ -49,21 +50,52 @@ public class JavaScriptBuildRendererTest {
 		deps2.add("bardep", new ModuleDepInfo());
 		List<ModuleDeps> depsList = Arrays.asList(new ModuleDeps[]{deps1, deps2});
 		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer("test", content, depsList, false);
+		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 
-		// validate the rendered output
-		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
+		// validate the rendered output (inline expansion)
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator(), requestAttributes);
 		EasyMock.replay(mockRequest);
 		String result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
-		Assert.assertEquals("define([],function() {require(\"foo\",\"foodep1\",\"foodep2\");require(\"bar\",\"bardep\")});", result);
+		Assert.assertEquals("define([],function() {require([\"foo\",\"foodep1\",\"foodep2\"]);require([\"bar\",\"bardep\"])});", result);
 
+		// validate the rendered output (layer expansion)
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
+		System.out.println(result);
+		Assert.assertEquals("define([],function() {require([\"foo\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][0]));require([\"bar\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][1]))});", result);
+		System.out.println(expDeps);
+		Assert.assertEquals(expDeps.size(), 2);
+		Assert.assertEquals(Arrays.asList(new String[]{"foodep1","foodep2"}), Arrays.asList(expDeps.toList().get(0)));
+		Assert.assertEquals(Arrays.asList(new String[]{"bardep"}), Arrays.asList(expDeps.toList().get(1)));
+
+		// validate the rendered output (inline expansion - logging)
+		requestAttributes.remove(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
 		ModuleDeps enclosingDeps = new ModuleDeps();
 		enclosingDeps.add("foodep2", new ModuleDepInfo());
 		enclosingDeps.add("bardep", new ModuleDepInfo());
 		mockRequest.setAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES, enclosingDeps);
 		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
-		Assert.assertEquals("define([],function() {require(\"foo\",\"foodep1\");require(\"bar\")});", result);
+		Assert.assertEquals("define([],function() {require([\"foo\",\"foodep1\"]);require([\"bar\"])});", result);
+
+		// validate the rendered output (layer expansion - logging)
+		expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+
+		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
+		System.out.println(result);
+		Assert.assertEquals("define([],function() {require([\"foo\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][0]));require([\"bar\"])});", result);
+		System.out.println(expDeps);
+		Assert.assertEquals(expDeps.size(), 1);
+		Assert.assertEquals(Arrays.asList(new String[]{"foodep1"}), Arrays.asList(expDeps.toList().get(0)));
 	}
 
 	@Test
@@ -81,24 +113,54 @@ public class JavaScriptBuildRendererTest {
 		deps2.add("bardep", new ModuleDepInfo());
 		List<ModuleDeps> depsList = Arrays.asList(new ModuleDeps[]{deps1, deps2, deps1, deps2});
 		JavaScriptBuildRenderer compiled = new JavaScriptBuildRenderer("test", contentWithComments, depsList, true);
+		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 
 		// validate the rendered output
-		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator(), requestAttributes);
 		EasyMock.replay(mockRequest);
 		String result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		System.out.println(result);
 		Assert.assertEquals(
-				"define([],function() {require(\"foo\",\"foodep1\",\"foodep2\");require(\"bar\",\"bardep\")});console.log(\"deps1=foodep1, foodep2\");console.log(\"deps2=bardep\");",
+				"define([],function() {require([\"foo\",\"foodep1\",\"foodep2\"]);require([\"bar\",\"bardep\"])});console.log(\"deps1=foodep1, foodep2\");console.log(\"deps2=bardep\");",
 				result);
 
+		// validate the rendered output (layer expansion)
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
+		System.out.println(result);
+		Assert.assertEquals("define([],function() {require([\"foo\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][0]));require([\"bar\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][1]))});console.log(\"deps1=foodep1, foodep2\");console.log(\"deps2=bardep\");", result);
+		Assert.assertEquals(expDeps.size(), 2);
+		Assert.assertEquals(Arrays.asList(new String[]{"foodep1","foodep2"}), Arrays.asList(expDeps.toList().get(0)));
+		Assert.assertEquals(Arrays.asList(new String[]{"bardep"}), Arrays.asList(expDeps.toList().get(1)));
+
+		// validate the rendered output (inline expansion - logging)
+		requestAttributes.remove(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
 		ModuleDeps enclosingDeps = new ModuleDeps();
 		enclosingDeps.add("foodep2", new ModuleDepInfo());
 		enclosingDeps.add("bardep", new ModuleDepInfo());
 		mockRequest.setAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES, enclosingDeps);
 		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
 		Assert.assertEquals(
-				"define([],function() {require(\"foo\",\"foodep1\");require(\"bar\")});console.log(\"deps1=foodep1\");console.log(\"deps2=\");",
+				"define([],function() {require([\"foo\",\"foodep1\"]);require([\"bar\"])});console.log(\"deps1=foodep1\");console.log(\"deps2=\");",
 				result);
 		System.out.println(result);
+
+		// validate the rendered output (layer expansion - logging)
+		expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+
+		result = compiled.renderBuild(mockRequest, Collections.<String>emptySet());
+		System.out.println(result);
+		Assert.assertEquals("define([],function() {require([\"foo\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][0]));require([\"bar\"])});console.log(\"deps1=foodep1\");console.log(\"deps2=\");", result);
+		Assert.assertEquals(expDeps.size(), 1);
+		Assert.assertEquals(Arrays.asList(new String[]{"foodep1"}), Arrays.asList(expDeps.toList().get(0)));
+
 	}
 }

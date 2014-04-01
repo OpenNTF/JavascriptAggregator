@@ -35,6 +35,7 @@ public class RequestedModuleNames {
 	private List<String> modules = Collections.emptyList();
 	private List<String> deps = Collections.emptyList();
 	private List<String> preloads = Collections.emptyList();
+	private List<String> scripts = Collections.emptyList();
 	private String strRep = null;
 
 	/**
@@ -132,6 +133,17 @@ public class RequestedModuleNames {
 		this.preloads = preloads;
 	}
 
+	public List<String> getScripts() {
+		return scripts;
+	}
+
+	public void setScripts(List<String> scripts) {
+		if (scripts == null) {
+			throw new NullPointerException();
+		}
+		this.scripts = scripts;
+	}
+
 	/**
 	 * Sets the value returned by this object's {@link #toString()} method.
 	 *
@@ -156,6 +168,9 @@ public class RequestedModuleNames {
 			StringBuffer sb = new StringBuffer();
 			if (modules != null && !modules.isEmpty()) {
 				sb.append(modules);
+			}
+			if (scripts != null && !scripts.isEmpty()) {
+				sb.append(sb.length() > 0 ? ";":"").append("scripts:").append(scripts); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			if (deps != null && !deps.isEmpty()) {
 				sb.append(sb.length() > 0 ? ";":"").append("deps:").append(deps); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

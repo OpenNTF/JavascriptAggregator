@@ -22,6 +22,12 @@ package com.ibm.jaggr.core.module;
  * is specified.
  */
 public enum ModuleSpecifier {
+
+	/**
+	 * The module is a non-AMD script file
+	 */
+	SCRIPTS,
+
 	/**
 	 * The module was requested explicitly
 	 */

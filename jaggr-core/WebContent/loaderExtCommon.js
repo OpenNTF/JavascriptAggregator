@@ -80,60 +80,140 @@ var params = {
 	 */
 	pluginPrefixesPropName = "/pre/",
 
+	sizeofObject = function(obj) {
+		var size = 0;
+		for (var s in obj) {
+			if (obj.hasOwnProperty(s)) {
+				size++;
+			}
+		}
+		return size;
+	},
+	
 	/**
-	 * Folds the list of module names provided in asNames into a compacted
-	 * list that minimizes redundant path names.
+	 * Adds the module specified by dep to the list of folded module names
+	 * in oFolded.  
 	 * 
-	 * @param asNames the list of modules
-	 * @param opt_depmap
-	 * @returns the folded module names list
+	 * @param dep
+	 *            object containing the module information
+	 * @param position
+	 *            the position in the requested modules list for the module
+	 * @param oFolded
+	 *            the folded module as an object of the form {dir1:{foo:0, bar:[1,0]}}
+	 *            where the obect nesting is representative of the module path hierarchy 
+	 *            and an ordinal value represents the position of the module in the 
+	 *            module list and an ordinal pair array value represents the list position
+	 *            and plugin ordinal (in oPrefixes) for modules that specify a plugin.
+	 * @param oPrefixes
+	 *            map of module prefixes/ordinal pairs.  If dep specifies a loader
+	 *            plugin, then the plugin name and its ordinal are added to this
+	 *            map.
 	 */
-	foldModuleNames = function(asNames, opt_depmap) {
-		// Fold modules paths into an object to reduce duplication
-		var oFolded = {},
-		    oPrefixes = {},
-		    iPrefixes = 0;
-		for (var i = 0, name; !!(name = asNames[i]); i++) {
-			// This list of invalid chars should be the same as the list used
-			// on the server in PathUtil.invalidChars.
-			if (/[{},:|<>*]/.test(name)) {
-				throw new Error("Invalid module name: " + name);
+	addFoldedModuleName = function(dep, position, oFolded, oPrefixes) {
+		var name = dep.name,
+		    segments = name.split('/'),
+		    len = segments.length,
+		    oChild = oFolded;
+		
+		for (var i = 0; i < len; i++) {
+			var segment = segments[i];
+			if (i == len - 1) {
+				// Last segment.  finalize the insertion.
+				if (dep.prefix) {
+					var idx = oPrefixes[dep.prefix];
+					if (!idx && idx !== 0) {
+						oPrefixes[dep.prefix] = sizeofObject(oPrefixes);
+						oFolded[pluginPrefixesPropName] = oPrefixes;
+					}
+				}
+				oChild[segment] = dep.prefix ? [position, oPrefixes[dep.prefix]] : position;
 			}
-			var dep = opt_depmap[name];
-			var segments = name.split('/');
-			var len = segments.length;
+			else if (segment != '.') {
+				// add path component to folded modules
+				var old = oChild[segment];
+				if (typeof(old) == 'number') {
+					oChild = oChild[segment] = {'.': old};
+				} else {
+					oChild = oChild[segment] || (oChild[segment] = {});
+				}
+			}
+		}
+	},
+	
+	/**
+	 * Adds the module specified by dep to the encoded module id list at the specified
+	 * list position.  The encoded module id list uses the mapping of module name to 
+	 * unique ids provided by the server in moduleIdMap.  The encoded id list consists
+	 * of a sequence of segments, with each segment having the form:
+	 * <p><code>[position][count][moduleid-1][moduleid-2]...[moduleid-(count-1)]</code>
+	 * <p>
+	 * where position specifies the position in the module list of the first module
+	 * in the segment, count specifies the number of modules in the segment who's positions
+	 * contiguously follow the start position, and
+	 * the module ids specify the ids for the modules from the id map.  Position and 
+	 * count are 16-bit numbers, and the module ids are specified as follows:
+	 * <p><code>[id]|[0][plugin id][id]</code>
+	 * <p>
+	 * If the module name doesn't specify a loader plugin, then it is represented by 
+	 * the id for the module name.  If the module name specifies a loader plugin, then
+	 * it is represetned by a zero, followed by the id for the loader plugin, followed
+	 * by the id for the module name without the loader plugin.  All values are 16-bit 
+	 * numbers.  If an id is greater than what can be represented in a 16-bit number, 
+	 * then the module is not added to the encoded list.
+	 * 
+	 * @param dep
+	 *            object containing the module information
+	 * @param position
+	 *            the position in the requested modules list for the module
+	 * @param encodedIds
+	 *            the encoded id list that that the module specified by dep
+	 *            will be added to
+	 * @param moduleIdMap
+	 *            The mapping of module name to numeric module id provided by
+	 *            the server.
+	 * @return true if the module was added to the encoded list
+	 */
+	addModuleIdEncoded = function(dep, position, encodedIds, moduleIdMap) {
+		
+		var nameId = moduleIdMap[dep.name], result = false,
+			pluginNameId = dep.prefix ? moduleIdMap[dep.prefix] : 0;
 			
-			var oChild = oFolded;
-			for (var j = 0; j < len; j++) {
-				var segment = segments[j];
-				if (j == len - 1) {
-					if (dep.prefix) {
-						var idx = oPrefixes[dep.prefix];
-						if (!idx && idx !== 0) {
-							oPrefixes[dep.prefix] = iPrefixes++;
-						}
-					}
-					oChild[segment] = dep.prefix ? [i, oPrefixes[dep.prefix]] : i;
-					// Fix up asNames name.  We use this later to tell the loader we've loaded resource.
-					// It's expecting the name to be what it was when it came in.  ex: combo/text!foo/bar.txt not foo/bar.txt
-					if (dep.prefix) {
-						asNames[i] = [dep.prefix, '!', dep.name].join('');
-					}
-				}
-				else if (segment != '.') {
-					var old = oChild[segment];
-					if (typeof(old) == 'number') {
-						oChild = oChild[segment] = {'.': old};
-					} else {
-						oChild = oChild[segment] || (oChild[segment] = {});
-					}
+		// validate ids
+		if (nameId && (dep.prefix && pluginNameId || !dep.prefix) && 
+				!(nameId >> 16) && !(pluginNameId >> 16)) {	// only 16-bit id mappings currently supported
+			
+			// encodedIds.segStartIdx holds the index in the array for the start of 
+			// the current segment.
+			if (!encodedIds.length) {
+				encodedIds.segStartIdx = 0;
+				encodedIds.push(position);
+				encodedIds.push(1);
+			} else {
+				// We have an existing segment.  Determine if the current module
+				// can be added to the existing segment or if we need to start 
+				// a new one.
+				var segStartIdx = encodedIds.segStartIdx,
+				    start = encodedIds[segStartIdx],
+				    len = encodedIds[segStartIdx+1];
+				if (start + len == position) {
+					// Add to current segment
+					encodedIds[segStartIdx+1]++;
+				} else {
+					// Start a new segment
+					encodedIds.segStartIdx = encodedIds.length;
+					encodedIds.push(position);
+					encodedIds.push(1);
 				}
 			}
+			// Now add the module id(s)
+			if (pluginNameId) {
+				encodedIds.push(0);
+				encodedIds.push(pluginNameId);
+			}
+			encodedIds.push(nameId);
+			result = true;
 		}
-		if (iPrefixes) {
-			oFolded[pluginPrefixesPropName] = oPrefixes;
-		}
-		return oFolded;
+		return result;
 	},
 
 	/**
@@ -183,6 +263,68 @@ var params = {
 	},
 	
 	/**
+	 * Performs base64 encoding of the encoded module id list
+	 * 
+	 * @param ids
+	 *            the encoded module id list as a 16-bit number array.
+	 * @param encoder
+	 *            the base64 encoder
+	 * @return the URL safe base64 encoded representation of the number array
+	 */
+	base64EncodeModuleIds = function(ids, encoder) {
+		// convert from number array to byte array for base64 encoding
+		var bytes = [];
+		for (var i = 0; i < ids.length; i++) {
+			bytes.push((ids[i] >> 8) & 0xFF);
+			bytes.push(ids[i] & 0xFF);
+		}
+		// do the encoding, converting for URL safe characters
+		return encoder(bytes).replace(/[+=\/]/g, function(c) {
+			return (c=='+')?'-':((c=='/')?'_':'');
+		});
+	},
+	
+	/**
+	 * Adds the list of modules specified in opt_deps to the request as 
+	 * request URL query args.  For each module in the list, we will try
+	 * to add it to the encoded module id list first because that consumes 
+	 * less URL space per module.  If we can't do that because we don't
+	 * have a number id for the module, then we add it to the folded module
+	 * list.  The module list is re-assembled from these two lists on 
+	 * the server.
+	 * 
+	 * @param url
+	 *             the URL to add the requested modules to
+	 * @param opt_deps
+	 *             the list of modules as dep objects (i.e. {name:, prefix:})
+	 * @param moduleIdMap
+	 *             the mapping of module name to number ids provided by the server
+	 * @param base64Encoder
+	 *             the base64 encoder to use for encoding the encoded module id
+	 *             list.
+	 */
+	addRequestedModulesToUrl = function(url, opt_deps, modleIdMap, base64Encoder) {
+		var oFolded = {},
+	    oPrefixes = {},
+	    ids = [];
+
+		for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
+			// This list of invalid chars should be the same as the list used
+			// on the server in PathUtil.invalidChars.
+			if (/[{},:|<>*]/.test(dep.name)) {
+				throw new Error("Invalid module name: " + name);
+			}
+			if (!base64Encoder || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
+				addFoldedModuleName(dep, i, oFolded, oPrefixes);
+			}
+		}
+		return url + (url.indexOf("?") === -1 ? "?" : "&") + "count=" + i + 
+		             (sizeofObject(oFolded) ? ("&modules="+encodeURIComponent(encodeModules(oFolded))):"") + 
+		             (ids.length ? ("&moduleIds=" + base64EncodeModuleIds(ids, base64Encoder)):"");
+		
+	},
+	
+	/**
 	 * Builds the has argument to put in a URL.  In the case that we have dojo/cookie and dojox's MD5 module, it
 	 * will place the has-list in a cookie and put the hash of the has-list in the url. 
 	 */
@@ -207,8 +349,65 @@ var params = {
 		hasArr.sort();  // All has args must be represented in the same order for every request.
 		
 		return (hasArr.length ? ('has='+hasArr.join("*")): "");
+	},
+	
+	moduleIdsFromHasLoaderExpression = function(expression, moduleIds) {
+		var tokens = expression.match(/[\?:]|[^:\?]*/g), i = 0,
+		    get = function(){
+				var term = tokens[i++];
+				if(term == ":") {
+					return;
+				} else if (tokens[i++] == "?") {
+					get();
+					get();
+					return;
+				}
+				if (term) moduleIds.push(term);
+			};
+		return get();
+	},
+	
+	registerModuleNameIds = function(ary, moduleIdMap) {
+		// registers module-name/[module-numeric-id pairs provided by the server
+		// This function is called directly by aggregator responses.
+		// ary is a two element array of the form 
+		// [[[module-names],[module-names]...],[[numeric-ids],[numeric-ids]...]]]
+		var nameAry = ary[0];
+		var idAry = ary[1],
+		    add = function(name, id) {
+				var idx = name.lastIndexOf("!");
+				if (idx !== -1) {
+					name = name.substring(idx+1);
+				}
+				if (!(name in moduleIdMap && moduleIdMap[name])) {
+					moduleIdMap[name] = id;
+				} else {
+					if (moduleIdMap[name] !== id) {
+						throw new Error("Module name id re-assignment: " + name);
+					}
+				}
+			};
+		for (var i = 0; i < nameAry.length; i++) {
+			var names = nameAry[i];
+			var ids = idAry[i], id;
+			for (var j = 0; j < names.length; j++) {
+				var name = names[j];
+				if (/(^|\/)has!/.test(name)) {
+					var mids = [], exprIds = ids[j];
+					moduleIdsFromHasLoaderExpression(name, mids);
+					if (mids.length == 1 && typeof ids[j].length !== "undefined" || mids.length > 1 && mids.length !== ids[j].length) {
+						if (console) console.warn("invalid module name id specifier: " + name + " = " + ids[j]);
+						continue;
+					}
+					for (var k = 0; k < mids.length; k++) {
+						add(mids[k], (mids.length > 1) ? ids[j][k] : ids[j]);
+					}
+				} else {
+					add(name, ids[j]);
+				}
+			}
+		}
 	};
-
 
 urlProcessors.push(function(url) {
 	for (var s in params) {

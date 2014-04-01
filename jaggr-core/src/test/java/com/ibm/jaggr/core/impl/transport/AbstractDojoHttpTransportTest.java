@@ -20,9 +20,9 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -36,12 +36,21 @@ import org.mozilla.javascript.Scriptable;
 
 import java.io.File;
 import java.net.URI;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+
+import javax.servlet.http.HttpServletRequest;
 
 import junit.framework.Assert;
 
 public class AbstractDojoHttpTransportTest {
+
+	File tmpDir = null;
+	IAggregator mockAggregator;
+	HttpServletRequest mockRequest;
+	Ref<IConfig> configRef = new Ref<IConfig>(null);
 
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
@@ -52,7 +61,11 @@ public class AbstractDojoHttpTransportTest {
 	}
 
 	@Before
-	public void setUp() throws Exception {
+	public void setup() throws Exception {
+		tmpDir = new File(System.getProperty("user.dir"));
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpDir);
+		mockRequest = TestUtils.createMockRequest(mockAggregator);
+		EasyMock.replay(mockAggregator, mockRequest);
 	}
 
 	@After
@@ -180,5 +193,74 @@ public class AbstractDojoHttpTransportTest {
 		Assert.assertEquals(AbstractDojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
 		Context.exit();
+	}
+
+	@Test
+	public void testBeforeLayerModule() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{textPluginDelegators:[\"dojo/text\"],jsPluginDelegators:[\"dojo/i18n\"]}"));
+		String result = transport.beforeLayerModule(mockRequest, "module");
+		Assert.assertEquals("\"module\":function(){", result);
+		result = transport.beforeLayerModule(mockRequest, "plugin!module");
+		Assert.assertEquals("\"plugin!module\":function(){", result);
+		// Test output modified by text plugin delegators
+		result = transport.beforeLayerModule(mockRequest, "dojo/text!module");
+		Assert.assertEquals("\"url:module\":", result);
+		// Test output modified by js plugin delegators
+		result = transport.beforeLayerModule(mockRequest, "dojo/i18n!module");
+		Assert.assertEquals("\"module\":function(){", result);
+	}
+
+	@Test
+	public void testAfterLayerModule() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{textPluginDelegators:[\"dojo/text\"]}"));
+		String result = transport.afterLayerModule(mockRequest, "module");
+		Assert.assertEquals("}", result);
+		result = transport.afterLayerModule(mockRequest, "plugin!module");
+		Assert.assertEquals("}", result);
+		// Test output modified by text plugin delegators
+		result = transport.afterLayerModule(mockRequest, "dojo/text!module");
+		Assert.assertEquals("", result);
+	}
+
+	@Test
+	public void testBeginLayerModules() {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		String result = transport.beginLayerModules(mockRequest, null);
+		Assert.assertEquals("require({cache:{", result);
+	}
+
+	@Test
+	public void testEndLayerModules() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		Object arg = new Object();
+		String result = transport.endLayerModules(mockRequest, arg);
+		Assert.assertEquals("}});require({cache:{}});", result);
+		Assert.assertSame(arg, mockRequest.getAttribute(AbstractDojoHttpTransport.ADD_REQUIRE_DEPS_REQATTRNAME));
+	}
+
+	@Test
+	public void testEndResponse() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		String result = transport.endResponse(mockRequest, null);
+		Assert.assertEquals("", result);
+
+		// Add required modules
+		Set<String> required = new LinkedHashSet<String>();
+		mockRequest.setAttribute(AbstractDojoHttpTransport.ADD_REQUIRE_DEPS_REQATTRNAME, required);
+		result = transport.endResponse(mockRequest, null);
+		Assert.assertEquals("", result);
+
+		required.add("module1");
+		required.add("module2");
+		result = transport.endResponse(mockRequest, null);
+		Assert.assertEquals("require([\"module1\",\"module2\"]);", result);
+	}
+
+	class TestDojoHttpTransport extends AbstractDojoHttpTransport {
+		@Override protected URI getComboUri() { return null; }
+		@Override protected String getTransportId() {return null; }
+		@Override protected String getResourcePathId() { return null; }
 	}
 }

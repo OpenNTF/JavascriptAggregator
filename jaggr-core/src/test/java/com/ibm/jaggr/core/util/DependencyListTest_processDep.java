@@ -29,9 +29,6 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
-import com.ibm.jaggr.core.util.DependencyList;
-import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.Messages;
 
 import com.google.common.io.Files;
 
@@ -41,6 +38,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 
 public class DependencyListTest_processDep {
@@ -59,7 +57,7 @@ public class DependencyListTest_processDep {
 		mockAggregator = TestUtils.createMockAggregator(configRef, null);
 		mockDependencies = createMock(IDependencies.class);
 		expect(mockDependencies.getLastModified()).andReturn(0L).anyTimes();
-		expect(mockDependencies.getDelcaredDependencies("require")).andReturn(null).anyTimes();
+		expect(mockDependencies.getDelcaredDependencies("require")).andReturn(Collections.<String>emptyList()).anyTimes();
 		expect(mockAggregator.getDependencies()).andReturn(mockDependencies).anyTimes();
 		replay(mockAggregator, mockDependencies);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{}"));

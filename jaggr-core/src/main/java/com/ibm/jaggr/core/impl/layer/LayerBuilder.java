@@ -41,6 +41,7 @@ import com.ibm.jaggr.core.util.TypeUtil;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -78,9 +79,10 @@ public class LayerBuilder {
 	int count = 0;
 
 	/**
-	 * Indicates the current contribution type. True if processing required
-	 * modules. Required modules (or their dependencies) are specified by the
-	 * {@link AbstractHttpTransport#DEPS_REQPARAM} query arg
+	 * Indicates the current contribution type. True if processing layer
+	 * modules.  Layer modules (or their dependencies) are specified by the
+	 * {@link AbstractHttpTransport#DEPS_REQPARAM}  and
+	 * {@link AbstractHttpTransport#PRELOADS_REQPARAM} query args.
 	 */
 	boolean required = false;
 
@@ -157,13 +159,14 @@ public class LayerBuilder {
 					required ? LayerContributionType.END_LAYER_MODULES : LayerContributionType.END_MODULES,
 							required ? moduleList.getRequiredModules() : null);
 		}
-		addTransportContribution(request, transport, sb,
-				LayerContributionType.END_RESPONSE, null);
 
 		String epilogue = notifyLayerListeners(EventType.END_LAYER, request, null);
 		if (epilogue != null) {
 			sb.append(epilogue);
 		}
+
+		addTransportContribution(request, transport, sb,
+				LayerContributionType.END_RESPONSE, null);
 
 		if (dependentFeatures.size() > 0) {
 			moduleList.getDependentFeatures().addAll(dependentFeatures);
@@ -237,6 +240,12 @@ public class LayerBuilder {
 		}
 
 		if (count == 0) {
+			if (required && source == ModuleSpecifier.LAYER || !required && source == ModuleSpecifier.MODULES) {
+				String prologue = notifyLayerListeners(EventType.BEGIN_AMD, request, null);
+				if (prologue != null) {
+					sb.append(prologue);
+				}
+			}
 			addTransportContribution(request, transport, sb,
 					required ? LayerContributionType.BEGIN_LAYER_MODULES : LayerContributionType.BEGIN_MODULES,
 							required ? moduleList.getRequiredModules() : null);
@@ -359,16 +368,22 @@ public class LayerBuilder {
 		StringBuffer sb = new StringBuffer();
 		// notify any listeners that the config has been updated
 
-		IServiceReference[] refs = null;
+		List<IServiceReference> refs = null;
 		if(aggr.getPlatformServices() != null){
 			try {
-				refs = aggr.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$
+				IServiceReference[] ary = aggr.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$
+				if (ary != null) refs = Arrays.asList(ary);
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
 				}
 			}
 			if (refs != null) {
+				if (type == EventType.END_LAYER) {
+					// for END_LAYER, invoke the listeners in reverse order
+					refs = new ArrayList<IServiceReference>(refs);
+					Collections.reverse(refs);
+				}
 				for (IServiceReference ref : refs) {
 					ILayerListener listener = (ILayerListener)aggr.getPlatformServices().getService(ref);
 					try {
