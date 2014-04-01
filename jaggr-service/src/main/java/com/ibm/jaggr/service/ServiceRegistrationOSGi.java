@@ -16,7 +16,7 @@
 
 package com.ibm.jaggr.service;
 
-import com.ibm.jaggr.core.ServiceRegistration;
+import com.ibm.jaggr.core.IServiceRegistration;
 
 /**
  * OSGi platform implementation for {@code com.ibm.jaggr.core.ServiceRegistration} interface.
@@ -25,7 +25,7 @@ import com.ibm.jaggr.core.ServiceRegistration;
  *
  */
 
-public class ServiceRegistrationOSGi implements ServiceRegistration {
+public class ServiceRegistrationOSGi implements IServiceRegistration {
 
 	private org.osgi.framework.ServiceRegistration serviceRegistrationOSGi;
 

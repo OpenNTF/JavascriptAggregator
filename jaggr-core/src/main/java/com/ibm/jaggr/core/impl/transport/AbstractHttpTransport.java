@@ -21,7 +21,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
-import com.ibm.jaggr.core.ServiceRegistration;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -167,7 +167,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
 	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
-	private List<ServiceRegistration> serviceRegistrations = new ArrayList<ServiceRegistration>();
+	private List<IServiceRegistration> serviceRegistrations = new ArrayList<IServiceRegistration>();
 	private IAggregator aggregator = null;
 	private List<String> extensionContributions = new LinkedList<String>();
 
@@ -815,7 +815,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		// unregister the service registrations
-		for (ServiceRegistration reg : serviceRegistrations) {
+		for (IServiceRegistration reg : serviceRegistrations) {
 			if (reg != null) {
 				reg.unregister();
 			}

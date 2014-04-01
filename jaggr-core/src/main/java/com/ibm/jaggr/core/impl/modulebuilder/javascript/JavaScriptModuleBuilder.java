@@ -22,7 +22,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.NotFoundException;
-import com.ibm.jaggr.core.ServiceRegistration;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -124,7 +124,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Compiler.setLoggingLevel(Level.WARNING);
 	}
 
-	private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
+	private List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
 		CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
@@ -253,7 +253,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		for (ServiceRegistration reg : registrations) {
+		for (IServiceRegistration reg : registrations) {
 			reg.unregister();
 		}
 	}

@@ -13,21 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package com.ibm.jaggr.core;
 
 /**
- * Interface to depict service registration functionality. This is implemented by classes which may
- * leverage platform provided features for service registration. For eg. {@code com.ibm.jaggr.service.ServiceRegistrationOSGi}
- * implements this interface for OSGi platform.
- *
+ * Wrapper for platform specific service reference implementation
  */
+public interface IServiceReference {
 
-public interface ServiceRegistration {
 	/**
-	 * Removes this service registration from the platform.
-	 *
+	 * @return the platform service reference object
 	 */
-
-	public void	unregister();
+	Object getPlatformObject();
 }

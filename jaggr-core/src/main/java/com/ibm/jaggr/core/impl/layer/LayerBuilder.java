@@ -17,6 +17,7 @@
 package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
@@ -367,10 +368,10 @@ public class LayerBuilder {
 		StringBuffer sb = new StringBuffer();
 		// notify any listeners that the config has been updated
 
-		List<Object> refs = null;
+		List<IServiceReference> refs = null;
 		if(aggr.getPlatformServices() != null){
 			try {
-				Object[] ary = aggr.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$
+				IServiceReference[] ary = aggr.getPlatformServices().getServiceReferences(ILayerListener.class.getName(),  "(name="+aggr.getName()+")"); //$NON-NLS-1$ //$NON-NLS-2$
 				if (ary != null) refs = Arrays.asList(ary);
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
@@ -380,10 +381,10 @@ public class LayerBuilder {
 			if (refs != null) {
 				if (type == EventType.END_LAYER) {
 					// for END_LAYER, invoke the listeners in reverse order
-					refs = new ArrayList<Object>(refs);
+					refs = new ArrayList<IServiceReference>(refs);
 					Collections.reverse(refs);
 				}
-				for (Object ref : refs) {
+				for (IServiceReference ref : refs) {
 					ILayerListener listener = (ILayerListener)aggr.getPlatformServices().getService(ref);
 					try {
 						Set<String> dependentFeatures = new HashSet<String>();
