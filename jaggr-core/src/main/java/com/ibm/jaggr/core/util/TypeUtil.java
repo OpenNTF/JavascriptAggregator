@@ -52,4 +52,21 @@ public class TypeUtil {
 		}
 		return result;
 	}
+
+	/**
+	 * Returns a string representation of the byte array as an unsigned array of bytes
+	 * (e.g. "[1, 2, 3]" - Not a conversion of the byte array to a string).
+	 *
+	 * @param bytes the byte array
+	 * @return the byte array as a string
+	 */
+	public static String byteArray2String(byte[] bytes) {
+		StringBuffer sb = new StringBuffer("["); //$NON-NLS-1$
+		int i = 0;
+		for (byte b : bytes) {
+			sb.append(i++ == 0 ? "" : ", ").append(((int)b)&0xFF); //$NON-NLS-1$ //$NON-NLS-2$
+		}
+		return sb.append("]").toString(); //$NON-NLS-1$
+	}
+
 }

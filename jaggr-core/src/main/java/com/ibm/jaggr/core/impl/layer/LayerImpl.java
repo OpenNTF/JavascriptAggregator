@@ -34,11 +34,11 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import java.io.ByteArrayOutputStream;
@@ -579,6 +579,12 @@ public class LayerImpl implements ILayer {
 				lastModified = Math.max(
 						lastModified,
 						aggregator.getConfig().lastModified());
+				synchronized(this) {
+					if (_lastModified == -1) {
+						// Initialize value of instance property
+						_lastModified = lastModified;
+					}
+				}
 				request.setAttribute(LAST_MODIFIED_PROPNAME, lastModified);
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning calculated last modified "  //$NON-NLS-1$
@@ -674,7 +680,7 @@ public class LayerImpl implements ILayer {
 		ModuleList result = (ModuleList)request.getAttribute(MODULE_FILES_PROPNAME);
 		if (result == null) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			RequestedModuleNames requestedModuleNames = (RequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+			IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 
 			result = new ModuleList();
 			if (requestedModuleNames != null) {

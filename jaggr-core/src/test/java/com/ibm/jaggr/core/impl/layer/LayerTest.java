@@ -38,12 +38,12 @@ import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
+import com.ibm.jaggr.core.test.MockRequestedModuleNames;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
@@ -230,7 +230,7 @@ public class LayerTest extends EasyMock {
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 		long totalSize = 0;
-		RequestedModuleNames modules = new RequestedModuleNames();
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
 		modules.setModules(Arrays.asList(new String[]{"p1/a"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
@@ -482,7 +482,7 @@ public class LayerTest extends EasyMock {
 		Long lastMod = Math.max(new File(tmpdir, "p1/a.js").lastModified(),
 				new File(tmpdir, "p1/b.js").lastModified());
 
-		RequestedModuleNames modules = new RequestedModuleNames();
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
 		modules.setModules(Arrays.asList(new String[]{"p1/b", "p1/a"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
@@ -524,7 +524,7 @@ public class LayerTest extends EasyMock {
 		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 
-		RequestedModuleNames modules = new RequestedModuleNames();
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
 		modules.setModules(Arrays.asList(new String[]{"p1/b", "p1/a"}));
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
@@ -572,7 +572,7 @@ public class LayerTest extends EasyMock {
 		configJson = "{paths:{p1:'p1',p2:'p2'}, aliases:[[/\\/aliased\\//, function(s){if (has('foo')) return '/foo/'; else if (has('bar')) return '/bar/'; has('non'); return '/non/'}]]}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 
-		RequestedModuleNames modules = new RequestedModuleNames();
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
 		modules.setModules(Arrays.asList(new String[]{"p1/a", "p1/p1"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, IHttpTransport.OptimizationLevel.NONE);
@@ -685,7 +685,7 @@ public class LayerTest extends EasyMock {
 		File cacheDir = mockAggregator.getCacheManager().getCacheDir();
 		ConcurrentLinkedHashMap<String, CacheEntry> cacheMap = (ConcurrentLinkedHashMap<String, CacheEntry>)((LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers()).getLayerBuildMap();
 
-		RequestedModuleNames modules = new RequestedModuleNames();
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
 		modules.setModules(Arrays.asList(new String[]{"p1/a", "p1/p1"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);

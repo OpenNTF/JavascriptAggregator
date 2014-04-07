@@ -17,6 +17,8 @@ package com.ibm.jaggr.core.util;
 
 import static org.junit.Assert.assertEquals;
 
+import com.ibm.jaggr.core.test.MockRequestedModuleNames;
+
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -27,7 +29,7 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testSetString() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		assertEquals("", names.toString());
 		names.setString("foobar");
 		assertEquals("foobar", names.toString());
@@ -39,7 +41,7 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testToString() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		assertEquals("", names.toString());
 		names.setModules(Arrays.asList(new String[]{"foo","bar"}));
 		assertEquals("[foo, bar]", names.toString());
@@ -59,7 +61,7 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testSetModule() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		assertEquals(Collections.emptyList(), names.getModules());
 		List<String> list = Arrays.asList(new String[]{"a", "b"});
 		names.setModules(list);
@@ -70,7 +72,7 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testSetDeps() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		assertEquals(Collections.emptyList(), names.getDeps());
 		List<String> list = Arrays.asList(new String[]{"a", "b"});
 		names.setDeps(list);
@@ -81,7 +83,7 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testSetPreloads() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		assertEquals(Collections.emptyList(), names.getPreloads());
 		List<String> list = Arrays.asList(new String[]{"a", "b"});
 		names.setPreloads(list);
@@ -92,19 +94,19 @@ public class RequestedModuleNamesTest {
 
 	@Test(expected=NullPointerException.class)
 	public void testSetModulesNull() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		names.setModules(null);
 	}
 
 	@Test(expected=NullPointerException.class)
 	public void testSetDepsNull() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		names.setModules(null);
 	}
 
 	@Test(expected=NullPointerException.class)
 	public void testSetPreloadsNull() {
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		names.setModules(null);
 	}
 
