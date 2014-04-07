@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 define([
-    "dojo/_base/lang", 			// lang
+	"dojo/_base/lang", 			// lang
 	"dojo/_base/declare",		// declare
 	"dijit/layout/ContentPane"	// parent
 ], function(lang, declare, ContentPane){

@@ -221,6 +221,18 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					throws IOException {
 
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
+		return processCss(resource, request, css);
+	}
+
+	/**
+	 * Runs CSS through minification, image inlining, and import inlining.
+	 * @param resource The resource representing the CSS file.
+	 * @param request The request for the CSS file.
+	 * @param css The actual CSS {@link java.lang.String} to process.
+	 * @return A {@link java.io.StringReader} for the resulting CSS.
+	 * @throws IOException
+	 */
+	protected Reader processCss(IResource resource, HttpServletRequest request, String css) throws IOException {
 		// whitespace
 		css = minify(css, resource);
 

@@ -144,6 +144,7 @@
               ${project.groupId}.core.impl.layer;version="${project.version}",
               ${project.groupId}.core.impl.module;version="${project.version}",
               ${project.groupId}.core.impl.modulebuilder.css;version="${project.version}",
+              ${project.groupId}.core.impl.modulebuilder.less;version="${project.version}",
               ${project.groupId}.core.impl.modulebuilder.i18n;version="${project.version}",
               ${project.groupId}.core.impl.modulebuilder.javascript;version="${project.version}",
               ${project.groupId}.core.impl.modulebuilder.text;version="${project.version}",
