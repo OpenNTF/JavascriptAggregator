@@ -278,6 +278,8 @@ var params = {
 			bytes.push((ids[i] >> 8) & 0xFF);
 			bytes.push(ids[i] & 0xFF);
 		}
+		// now add the module id list hash to the beginning of the data
+		bytes = require.combo.midListHash.concat(bytes);
 		// do the encoding, converting for URL safe characters
 		return encoder(bytes).replace(/[+=\/]/g, function(c) {
 			return (c=='+')?'-':((c=='/')?'_':'');
@@ -314,7 +316,7 @@ var params = {
 			if (/[{},:|<>*]/.test(dep.name)) {
 				throw new Error("Invalid module name: " + name);
 			}
-			if (!base64Encoder || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
+			if (!base64Encoder || !require.combo.midListHash || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
 				addFoldedModuleName(dep, i, oFolded, oPrefixes);
 			}
 		}

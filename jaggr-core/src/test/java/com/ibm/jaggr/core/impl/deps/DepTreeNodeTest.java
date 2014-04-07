@@ -67,15 +67,15 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testDepTreeNode() {
-		DepTreeNode node = new DepTreeNode("foo");
+		DepTreeNode node = new DepTreeNode("foo", null);
 		assertNotNull(node);
 		try {
-			node = new DepTreeNode("foo/bar");
+			node = new DepTreeNode("foo/bar", null);
 			fail("Exception not thrown");
 		} catch (IllegalArgumentException e) {
 		}
 		try {
-			node = new DepTreeNode(null);
+			node = new DepTreeNode(null, null);
 			fail("Exception not thrown");
 		} catch (NullPointerException e) {
 		}
@@ -88,13 +88,13 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testGetName() {
-		DepTreeNode node = new DepTreeNode("foo");
+		DepTreeNode node = new DepTreeNode("foo", null);
 		assertEquals(node.getName(), "foo");
 	}
 
 	@Test
 	public void testLastModified() {
-		DepTreeNode node = new DepTreeNode("foo");
+		DepTreeNode node = new DepTreeNode("foo", null);
 		assertEquals(node.lastModified(), -1);
 		node.setDependencies(new String[]{"dep1", "dep2"}, new String[0], 1234567890L, 0L);
 		assertEquals(node.lastModified(), 1234567890L);
@@ -102,7 +102,7 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testLastModifiedDep() {
-		DepTreeNode node = new DepTreeNode("foo");
+		DepTreeNode node = new DepTreeNode("foo", null);
 		assertEquals(node.lastModifiedDep(), -1);
 		node.setDependencies(new String[]{"dep1", "dep2"}, new String[0], 0L, 1234567890L);
 		assertEquals(node.lastModifiedDep(), 1234567890L);
@@ -110,9 +110,9 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testLastModifiedDepTree() {
-		DepTreeNode a = new DepTreeNode("a");
-		DepTreeNode aa = new DepTreeNode("aa");
-		DepTreeNode ab = new DepTreeNode("ab");
+		DepTreeNode a = new DepTreeNode("a", null);
+		DepTreeNode aa = new DepTreeNode("aa", null);
+		DepTreeNode ab = new DepTreeNode("ab", null);
 		a.add(aa);
 		a.add(ab);
 		a.setDependencies(new String[]{"b", "c"}, new String[0], 1234567890L, 1234567890L);
@@ -123,8 +123,8 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testGetParent() {
-		DepTreeNode parent = new DepTreeNode("parent");
-		DepTreeNode child = new DepTreeNode("child");
+		DepTreeNode parent = new DepTreeNode("parent", null);
+		DepTreeNode child = new DepTreeNode("child", null);
 		parent.add(child);
 		assertEquals(parent, child.getParent());
 		assertEquals(null, parent.getParent());
@@ -132,9 +132,9 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testGetRoot() {
-		DepTreeNode parent = new DepTreeNode("parent");
-		DepTreeNode child = new DepTreeNode("child");
-		DepTreeNode grandchild = new DepTreeNode("grandchild");
+		DepTreeNode parent = new DepTreeNode("parent", null);
+		DepTreeNode child = new DepTreeNode("child", null);
+		DepTreeNode grandchild = new DepTreeNode("grandchild", null);
 		parent.add(child);
 		child.add(grandchild);
 		assertEquals(parent, parent.getRoot());
@@ -145,16 +145,16 @@ public class DepTreeNodeTest extends EasyMock {
 	@Test
 	public void testGetDepArray() {
 		String[] deps = new String[] { "dep1", "dep2" };
-		DepTreeNode node = new DepTreeNode("node");
+		DepTreeNode node = new DepTreeNode("node", null);
 		node.setDependencies(deps, new String[0], 1234567890L, 1234567890L);
 		assert(Arrays.equals(node.getDepArray(), deps));
 	}
 
 	@Test
 	public void testGetParentPath() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode child = new DepTreeNode("child");
-		DepTreeNode grandchild = new DepTreeNode("grandchild");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode child = new DepTreeNode("child", null);
+		DepTreeNode grandchild = new DepTreeNode("grandchild", null);
 		root.add(child);
 		child.add(grandchild);
 		assertNull(root.getParentPath());
@@ -164,9 +164,9 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testGetFullPathName() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode child = new DepTreeNode("child");
-		DepTreeNode grandchild = new DepTreeNode("grandchild");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode child = new DepTreeNode("child", null);
+		DepTreeNode grandchild = new DepTreeNode("grandchild", null);
 		root.add(child);
 		child.add(grandchild);
 		assertEquals("root", root.getFullPathName());
@@ -176,37 +176,37 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testAdd() {
-		DepTreeNode parent = new DepTreeNode("parent");
-		DepTreeNode child = new DepTreeNode("child");
+		DepTreeNode parent = new DepTreeNode("parent", null);
+		DepTreeNode child = new DepTreeNode("child", null);
 		assertEquals(null, child.getParent());
 		parent.add(child);
 		assertEquals(parent, child.getParent());
 		assertEquals(child, parent.getChild("child"));
 		try {
-			parent.add(new DepTreeNode(""));
+			parent.add(new DepTreeNode("", null));
 			fail("Exception not thrown");
 		} catch (IllegalStateException ex) {}
 	}
 
 	@Test
 	public void testCreateOrGet() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode grandchild = root.createOrGet("child/grandchild");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode grandchild = root.createOrGet("child/grandchild", null);
 		DepTreeNode child = root.getChild("child");
 		assertEquals(child.getParent(), root);
 		assertEquals(grandchild.getParent(), child);
-		DepTreeNode node = root.createOrGet("child/grandchild");
+		DepTreeNode node = root.createOrGet("child/grandchild", null);
 		assertEquals(node, grandchild);
 		try {
-			root.createOrGet("/badpath");
+			root.createOrGet("/badpath", null);
 			fail("Exception not thrown");
 		} catch (IllegalArgumentException ex) {}
 	}
 
 	@Test
 	public void testGetDecendent() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode grandchild = root.createOrGet("child/grandchild");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode grandchild = root.createOrGet("child/grandchild", null);
 		assertEquals(grandchild, root.getDescendent("child/grandchild"));
 		assertEquals(null, root.getDescendent("noexist"));
 		assertEquals(null, root.getDescendent("child/noexist"));
@@ -214,10 +214,10 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testRemove() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode child = root.createOrGet("child");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode child = root.createOrGet("child", null);
 		assertEquals(root, child.getParent());
-		root.remove(new DepTreeNode("child"));
+		root.remove(new DepTreeNode("child", null));
 		assertEquals(root, child.getParent());
 		root.remove(child);
 		assertEquals(null, root.getChild("child"));
@@ -228,12 +228,12 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testGetChildren() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode a = root.createOrGet("a");
-		root.createOrGet("a/a");
-		root.createOrGet("a/b");
-		DepTreeNode b = root.createOrGet("b");
-		DepTreeNode c = root.createOrGet("c");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode a = root.createOrGet("a", null);
+		root.createOrGet("a/a", null);
+		root.createOrGet("a/b", null);
+		DepTreeNode b = root.createOrGet("b", null);
+		DepTreeNode c = root.createOrGet("c", null);
 		Map<String, DepTreeNode> map = root.getChildren();
 		assertEquals(3, map.size());
 		assertEquals(a, map.get("a"));
@@ -250,9 +250,9 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testGetChild() {
-		DepTreeNode root = new DepTreeNode("root");
+		DepTreeNode root = new DepTreeNode("root", null);
 		assertEquals(null, root.getChild("child"));
-		DepTreeNode child = root.createOrGet("child");
+		DepTreeNode child = root.createOrGet("child", null);
 		assertEquals(child, root.getChild("child"));
 		root.remove(child);
 		assertEquals(null, root.getChild("child"));
@@ -260,14 +260,14 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testPrune() {
-		DepTreeNode root = new DepTreeNode("root");
-		root.createOrGet("a");
-		root.createOrGet("b");
-		root.createOrGet("c");
-		root.createOrGet("d");
-		root.createOrGet("a/a");
-		root.createOrGet("a/b");
-		root.createOrGet("a/b/a");
+		DepTreeNode root = new DepTreeNode("root", null);
+		root.createOrGet("a", null);
+		root.createOrGet("b", null);
+		root.createOrGet("c", null);
+		root.createOrGet("d", null);
+		root.createOrGet("a/a", null);
+		root.createOrGet("a/b", null);
+		root.createOrGet("a/b/a", null);
 		root.getDescendent("a/b").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
 		root.getDescendent("c").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
 		root.getDescendent("a/b/a").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
@@ -283,7 +283,7 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testSetDependencies() {
-		DepTreeNode root = new DepTreeNode("root");
+		DepTreeNode root = new DepTreeNode("root", null);
 		String[] deps = new String[]{"dep1", "dep2"};
 		root.setDependencies(deps, new String[0], 0L, 1L);
 		assert(Arrays.equals(root.getDepArray(), deps));
@@ -293,18 +293,18 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testToString() {
-		DepTreeNode root = new DepTreeNode("root");
+		DepTreeNode root = new DepTreeNode("root", null);
 		root.setDependencies(new String[] {"a", "b"}, new String[0], 0L, 1L);
-		root.createOrGet("child");
+		root.createOrGet("child", null);
 		String str = root.toString();
 		assertEquals(str, "root = [a, b]\n");
 	}
 
 	@Test
 	public void testToStringTree() {
-		DepTreeNode root = new DepTreeNode("root");
+		DepTreeNode root = new DepTreeNode("root", null);
 		root.setDependencies(new String[] {"a", "b"}, new String[0], 0L, 1L);
-		DepTreeNode child = root.createOrGet("child");
+		DepTreeNode child = root.createOrGet("child", null);
 		child.setDependencies(new String[] {"b", "c"}, new String[0], 0L, 1L);
 		String str = root.toStringTree();
 		assertEquals("root = [a, b]\nroot/child = [b, c]\n", str);
@@ -312,8 +312,8 @@ public class DepTreeNodeTest extends EasyMock {
 
 	@Test
 	public void testClone() {
-		DepTreeNode root = new DepTreeNode("root");
-		DepTreeNode child = root.createOrGet("child");
+		DepTreeNode root = new DepTreeNode("root", null);
+		DepTreeNode child = root.createOrGet("child", null);
 		root.setDependencies(new String[]{"a", "b"}, new String[0], 0L, 1L);
 		child.setDependencies(new String[]{"c", "d"}, new String[0], 0L, 1L);
 		DepTreeNode clone = null;

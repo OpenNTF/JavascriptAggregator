@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.deps;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.config.IConfig;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -84,6 +85,20 @@ public interface IDependencies {
 	 */
 	public List<String> getDependentFeatures(String mid)
 			throws ProcessingDependenciesException;
+
+	/**
+	 * Returns the resource URI for the specified module id. Module ids returned by
+	 * {@link #getDependencyNames()} will return a non-null value. Any other value passed for
+	 * <code>mid</code> will result in a return value of null.
+	 *
+	 * @param mid the module id
+	 *
+	 * @return the resource URI for the module, or null
+	 * @throws ProcessingDependenciesException
+	 */
+	public URI getURI(String mid)
+			throws ProcessingDependenciesException;
+
 
 	/**
 	 * Returns an {@link Iterable} over the module names for witch dependency
