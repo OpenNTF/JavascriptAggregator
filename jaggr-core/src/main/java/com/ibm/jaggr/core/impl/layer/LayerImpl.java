@@ -210,7 +210,7 @@ public class LayerImpl implements ILayer {
 					// See if we need to discard previously built LayerBuilds
 					if (lastModified > _lastModified) {
 						if (cacheInfoReport != null) {
-							cacheInfoReport.add("update_lastmod"); //$NON-NLS-1$
+							cacheInfoReport.add("update_lastmod2"); //$NON-NLS-1$
 						}
 						if (lastModified != Long.MAX_VALUE) {
 							// max value means missing requested source
@@ -560,6 +560,7 @@ public class LayerImpl implements ILayer {
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.layer.ILayer#getLastModified(javax.servlet.http.HttpServletRequest)
 	 */
+	@SuppressWarnings("unchecked")
 	@Override
 	public long getLastModified(HttpServletRequest request) throws IOException {
 		long lastModified = _lastModified;
@@ -579,10 +580,17 @@ public class LayerImpl implements ILayer {
 				lastModified = Math.max(
 						lastModified,
 						aggregator.getConfig().lastModified());
+				List<String> cacheInfoReport = null;
+				if (_isReportCacheInfo) {
+					cacheInfoReport = (List<String>)request.getAttribute(LAYERCACHEINFO_PROPNAME);
+				}
 				synchronized(this) {
 					if (_lastModified == -1) {
 						// Initialize value of instance property
 						_lastModified = lastModified;
+						if (cacheInfoReport != null) {
+							cacheInfoReport.add("update_lastmod1"); //$NON-NLS-1$
+						}
 					}
 				}
 				request.setAttribute(LAST_MODIFIED_PROPNAME, lastModified);
