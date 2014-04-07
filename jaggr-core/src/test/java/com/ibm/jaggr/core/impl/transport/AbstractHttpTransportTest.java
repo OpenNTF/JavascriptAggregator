@@ -34,6 +34,7 @@ import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang.ArrayUtils;
 import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -126,12 +127,12 @@ public class AbstractHttpTransportTest {
 		} catch (BadRequestException ex) {
 		}
 		// test with count out of range
-		requestParams.put("count", new String[]{"10000"});
+		requestParams.put("count", new String[]{new Integer(AbstractHttpTransport.REQUESTED_MODULES_MAX_COUNT + 1).toString()});
 		try {
 			transport.setRequestedModuleNames(request);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
-			assertEquals(ex.getMessage(), "count:10000");
+			assertEquals(ex.getMessage(), "count:" + (AbstractHttpTransport.REQUESTED_MODULES_MAX_COUNT+1));
 		}
 		requestParams.put("count", new String[]{"0"});
 		try {
@@ -529,15 +530,28 @@ public class AbstractHttpTransportTest {
 			4		// "bar"
 		};
 
+		byte hash[] = new byte[]{1, 2, 3};
+
+		Whitebox.setInternalState(transport, "moduleIdListHash", hash);
+
 		byte[] bytes = new byte[24];
 		for (int i = 0; i < ids.length; i++) {
 			bytes[i*2] = (byte)(ids[i] >> 8);
 			bytes[i*2+1] = (byte)(ids[i] & 0xFF);
 		}
-		String encoded = Base64.encodeBase64URLSafeString(bytes);
+		String encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(hash, bytes));
 		String resultArray[] = new String[11];
 		transport.decodeModuleIds(encoded, resultArray);
 		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar"},  resultArray);
+
+		// Make sure exception is thrown if hash is not correct
+		try {
+			encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(new byte[]{3, 2, 1}, bytes));
+			transport.decodeModuleIds(encoded, new String[11]);
+			fail("Expected exception");
+		} catch (BadRequestException ex) {
+
+		}
 	}
 
 	@Test

@@ -126,7 +126,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				if (pathname.endsWith(".js")) {  //$NON-NLS-1$
 					pathname = pathname.substring(0, pathname.length()-3);
 				}
-				DepTreeNode node = (pathname.length() > 0) ? root.createOrGet(pathname) : root;
+				DepTreeNode node = (pathname.length() > 0) ? root.createOrGet(pathname, resource.getURI()) : root;
 				DepTreeNode cachedNode = null;
 				if (cached != null) {
 					cachedNode = (pathname.length() > 0) ? cached.getDescendent(pathname) : cached;

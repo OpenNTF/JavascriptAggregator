@@ -152,8 +152,8 @@ public class DependenciesTest extends EasyMock {
 		p1Node.getChild("a").setDependencies(new String[]{"foo/bar"}, new String[0], yesterday, yesterday);
 		// Leave deps the same to test that lastModifiedDep doesn't change
 		p1Node.getChild("b").setDependencies(p1Node.getChild("b").getDepArray(), new String[0], yesterday, yesterday);
-		DepTreeNode p3Node = new DepTreeNode("p3");
-		p3Node.add(new DepTreeNode("a"));
+		DepTreeNode p3Node = new DepTreeNode("p3", null);
+		p3Node.add(new DepTreeNode("a", null));
 		// create a node that is not on the file system
 		p3Node.getChild("a").setDependencies(new String[]{"./b"}, new String[0], yesterday, yesterday);
 		depMap.put(p3Path, p3Node);

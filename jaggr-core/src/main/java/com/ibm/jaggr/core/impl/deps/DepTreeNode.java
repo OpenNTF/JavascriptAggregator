@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.lang.ref.WeakReference;
+import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -64,6 +65,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 	private String[] dependentFeatures;
 	/** The file last modified date if this node is for a module */
 	private long lastModified = -1;
+
+	private URI uri;
 	/**
 	 * The last modified date of the dependency list if this node is for a
 	 * module. Used to keep track of when caches need to be invalidated as a
@@ -83,16 +86,19 @@ public class DepTreeNode implements Cloneable, Serializable {
 	class DependencyInfo {
 		private List<String> declaredDependencies;
 		private List<String> dependentFeatures;
-		private DependencyInfo(String[] declaredDependencies, String[] dependentFeatures) {
+		private URI uri;
+		private DependencyInfo(String[] declaredDependencies, String[] dependentFeatures, URI uri) {
 			this.declaredDependencies = declaredDependencies != null ?
 					Collections.unmodifiableList(Arrays.asList(declaredDependencies)) :
 						Collections.<String>emptyList();
 					this.dependentFeatures = dependentFeatures != null ?
 							Collections.unmodifiableList(Arrays.asList(dependentFeatures)) :
 								Collections.<String>emptyList();
+					this.uri = uri;
 		}
 		public List<String> getDeclaredDependencies() { return declaredDependencies; }
 		public List<String> getDepenedentFeatures() { return dependentFeatures; }
+		public URI getURI() { return uri; }
 	}
 
 	/**
@@ -100,8 +106,10 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 *
 	 * @param name
 	 *            The module name. Must not contain '/' characters.
+	 * @param uri
+	 *            The source URI
 	 */
-	public DepTreeNode(String name) {
+	public DepTreeNode(String name, URI uri) {
 		if (name.contains("/")) { //$NON-NLS-1$
 			throw new IllegalArgumentException(name);
 		}
@@ -109,6 +117,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		dependencies = null;
 		parent = new WeakReference<DepTreeNode>(null);
 		this.name = name;
+		this.uri = uri;
 	}
 
 	/**
@@ -245,6 +254,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		if (node.dependencies != null) {
 			setDependencies(node.dependencies, node.dependentFeatures, node.lastModified(), node.lastModifiedDep());
 		}
+		node.uri = uri;
 		if (node.getChildren() == null) {
 			return;
 		}
@@ -271,9 +281,11 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 *
 	 * @param path
 	 *            The path name, relative to this node, of the node to return.
+	 * @param uri
+	 *            the source URI
 	 * @return The node at the specified path.
 	 */
-	public DepTreeNode createOrGet(String path) {
+	public DepTreeNode createOrGet(String path, URI uri) {
 		if (path.startsWith("/")) { //$NON-NLS-1$
 			throw new IllegalArgumentException(path);
 		}
@@ -285,7 +297,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		for (String comp : pathComps) {
 			DepTreeNode childNode = node.getChild(comp);
 			if (childNode == null) {
-				childNode = new DepTreeNode(comp);
+				childNode = new DepTreeNode(comp, uri);
 				node.add(childNode);
 			}
 			node = childNode;
@@ -465,6 +477,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 		if (dependencies != null) {
 			clone.dependencies = Arrays.copyOf(dependencies, dependencies.length);
 		}
+		clone.uri = uri;
 		return clone;
 	}
 
@@ -555,7 +568,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 */
 	void populateDepMap(Map<String, DependencyInfo> depMap) {
 		if (dependencies != null) {
-			depMap.put(getFullPathName(), new DependencyInfo(dependencies, dependentFeatures));
+			depMap.put(getFullPathName(), new DependencyInfo(dependencies, dependentFeatures, uri));
 		}
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {

@@ -28,7 +28,7 @@ public class DepTreeRoot extends DepTreeNode {
 	private IConfig config;
 
 	public DepTreeRoot(IConfig config) {
-		super(""); //$NON-NLS-1$
+		super("", null); //$NON-NLS-1$
 		this.config = config;
 	}
 

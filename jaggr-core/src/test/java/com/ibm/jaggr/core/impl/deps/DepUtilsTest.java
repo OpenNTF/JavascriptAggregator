@@ -80,12 +80,12 @@ public class DepUtilsTest {
 				new URI("/a/y"),
 				new URI("/b/a/z"),
 		};
-		DepTreeNode x = new DepTreeNode("");
-		DepTreeNode y = new DepTreeNode("");
-		DepTreeNode z = new DepTreeNode("");
-		DepTreeNode t1 = x.createOrGet("1/1");
-		DepTreeNode t2 = x.createOrGet("1/2");
-		DepTreeNode t3 = z.createOrGet("3");
+		DepTreeNode x = new DepTreeNode("", null);
+		DepTreeNode y = new DepTreeNode("", null);
+		DepTreeNode z = new DepTreeNode("", null);
+		DepTreeNode t1 = x.createOrGet("1/1", null);
+		DepTreeNode t2 = x.createOrGet("1/2", null);
+		DepTreeNode t3 = z.createOrGet("3", null);
 		Map<URI, DepTreeNode> map = new HashMap<URI, DepTreeNode>();
 		map.put(paths[0], x);
 		map.put(paths[1], y);

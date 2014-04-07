@@ -267,7 +267,7 @@ public class DepTree implements Serializable {
 			 * Create or get from cache the root node for this path and
 			 * add it to the new map.
 			 */
-			DepTreeNode root = new DepTreeNode(PathUtil.getModuleName(path));
+			DepTreeNode root = new DepTreeNode(PathUtil.getModuleName(path), path);
 			DepTreeNode cachedNode = null;
 			if (cached != null) {
 				cachedNode = cached.depMap.get(path);
@@ -434,7 +434,7 @@ public class DepTree implements Serializable {
 			DepTreeNode source = DepUtils.getNodeForResource(filePath, depMap);
 			if (source != null) {
 				// Create the child node for this entry's package/path name
-				DepTreeNode target = root.createOrGet(name);
+				DepTreeNode target = root.createOrGet(name, filePath);
 				/*
 				 * Clone the tree and copy the cloned node's children to the
 				 * target node.
