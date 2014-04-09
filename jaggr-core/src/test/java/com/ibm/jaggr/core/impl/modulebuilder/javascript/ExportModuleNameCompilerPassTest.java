@@ -16,7 +16,7 @@
 
 package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
-import com.ibm.jaggr.core.impl.modulebuilder.javascript.ExportModuleNameCompilerPass;
+import com.ibm.jaggr.core.util.JSSource;
 
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
@@ -29,10 +29,12 @@ import junit.framework.Assert;
 
 public class ExportModuleNameCompilerPassTest {
 
-	private ExportModuleNameCompilerPass pass = new ExportModuleNameCompilerPass();
+	private ExportModuleNameCompilerPass pass;
 
 	@Test
 	public void testProcess() {
+		pass =  new ExportModuleNameCompilerPass(null);
+
 		String code, output;
 		code = "define(['a', 'b'], function(a, b) {});";
 		output = runPass("test", code);
@@ -64,6 +66,16 @@ public class ExportModuleNameCompilerPassTest {
 		System.out.println(output);
 		Assert.assertFalse(output.contains("test"));
 
+	}
+
+	@Test
+	public void testSourceUpdate() throws Exception {
+		String code = "define( ['a', 'b'], function(a, b) {});";
+		JSSource source = new JSSource(code, null);
+		pass = new ExportModuleNameCompilerPass(source);
+		String output = runPass("test", code);
+		Assert.assertEquals("define( \"test\",['a', 'b'], function(a, b) {});", source.toString());
+		Assert.assertEquals("define(\"test\",[\"a\",\"b\"],function(a,b){});", output);
 	}
 
 	private String runPass(String moduleName, String code) {
