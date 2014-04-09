@@ -28,7 +28,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.mozilla.javascript.Context;
@@ -323,7 +323,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 		super.decorateRequest(request);
 		boolean isLayerBuild = false;
-		RequestedModuleNames requestedModuleNames = (RequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 		if (requestedModuleNames != null) {
 			isLayerBuild = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
 		}

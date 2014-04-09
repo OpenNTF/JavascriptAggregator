@@ -23,7 +23,7 @@ import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 
 import java.io.IOException;
 import java.util.List;
@@ -44,7 +44,7 @@ public interface IHttpTransport extends IExtensionInitializer {
 
 	/**
 	 * Name of the request attribute specifying the requested module names.
-	 * This is an instance of {@link RequestedModuleNames}.
+	 * This is an instance of {@link IRequestedModuleNames}.
 	 * <p>
 	 * The object's toString() method must return a string representation of
 	 * the list that can be used to uniquely identify the order and items in the

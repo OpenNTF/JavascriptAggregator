@@ -26,12 +26,12 @@ import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.test.MockAggregatorWrapper;
+import com.ibm.jaggr.core.test.MockRequestedModuleNames;
 import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
 
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.Weigher;
@@ -101,7 +101,7 @@ public class LayerCacheTest {
 
 		LayerCacheImpl layerCache = (LayerCacheImpl)mockAggregator.getCacheManager().getCache().getLayers();
 		Assert.assertEquals(0, layerCache.getLayerBuildMap().size());
-		RequestedModuleNames modules = new RequestedModuleNames();
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
 		modules.setModules(Arrays.asList(new String[]{"layer1"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		ILayer layer = layerCache.getLayer(mockRequest);
@@ -336,7 +336,7 @@ public class LayerCacheTest {
 		int i = 1;
 		for (String[] l : layers) {
 			requestAttributes.clear();
-			RequestedModuleNames modules = new RequestedModuleNames();
+			MockRequestedModuleNames modules = new MockRequestedModuleNames();
 			requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 			modules.setModules(Arrays.asList(l));
 			requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);

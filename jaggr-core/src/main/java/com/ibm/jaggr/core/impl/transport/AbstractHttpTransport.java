@@ -39,7 +39,6 @@ import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
@@ -47,7 +46,6 @@ import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang.StringUtils;
 import org.apache.wink.json4j.JSONArray;
 import org.apache.wink.json4j.JSONException;
-import org.apache.wink.json4j.JSONObject;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
@@ -69,7 +67,6 @@ import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -167,9 +164,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	protected static String FEATUREMAP_JS_NAME = "featureList.js"; //$NON-NLS-1$
 	public static final String FEATURE_LIST_PRELUDE = "define([], "; //$NON-NLS-1$
 	public static final String FEATURE_LIST_PROLOGUE = ");"; //$NON-NLS-1$
-
-	private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
-	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
 	private List<IServiceRegistration> serviceRegistrations = new ArrayList<IServiceRegistration>();
 	private IAggregator aggregator = null;
@@ -278,147 +272,17 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	}
 
 	protected void setRequestedModuleNames(HttpServletRequest request) throws IOException {
-		final String sourceMethod = "setRequestedModuleNames";
+		final String sourceMethod = "setRequestedModuleNames"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
 		}
-		RequestedModuleNames requestedModuleNames = new RequestedModuleNames();
-		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
-
-		setModuleListFromRequest(request, requestedModuleNames);
-
-		// Get the deprecated require list
-		List<String> required = getNameListFromQueryArg(request, REQUIRED_REQPARAM);
-		if (required != null) {
-			requestedModuleNames.setDeps(required);
-			// Log console warning about deprecated query arg if in debug/dev mode
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			if (aggr.getOptions().isDebugMode() || aggr.getOptions().isDevelopmentMode()) {
-				request.setAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG, Boolean.TRUE);
-			}
-		}
-
-		// Get the scripts list
-		List<String> scripts = getNameListFromQueryArg(request, SCRIPTS_REQPARAM);
-		if (scripts != null) {
-			if (moduleQueryArg != null || required != null) {
-				throw new BadRequestException(request.getQueryString());
-			}
-			requestedModuleNames.setScripts(scripts);
-		}
-		List<String> deps = getNameListFromQueryArg(request, DEPS_REQPARAM);
-		if (deps != null) {
-			if (moduleQueryArg != null || required != null) {
-				throw new BadRequestException(request.getQueryString());
-			}
-			requestedModuleNames.setDeps(deps);
-		}
-		List<String> preloads = getNameListFromQueryArg(request, PRELOADS_REQPARAM);
-		if (preloads != null) {
-			if (moduleQueryArg != null || required != null) {
-				throw new BadRequestException(request.getQueryString());
-			}
-			requestedModuleNames.setPreloads(preloads);
-		}
+		RequestedModuleNames requestedModuleNames =
+				new RequestedModuleNames(request, moduleIdList, Arrays.copyOf(moduleIdListHash, moduleIdListHash.length));
 		request.setAttribute(REQUESTEDMODULENAMES_REQATTRNAME, requestedModuleNames);
 		if (isTraceLogging) {
 			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
 		}
-	}
-
-	/**
-	 * Unfolds the folded module list in the request into a {@code Collection<String>}
-	 * of module names.
-	 *
-	 * @param request
-	 *            the request object
-	 * @param requestedModuleNames
-	 *            Output - the processed results
-	 * @throws IOException
-	 */
-	protected void setModuleListFromRequest(HttpServletRequest request, RequestedModuleNames requestedModuleNames) throws IOException {
-		final String sourceMethod = "setModuleListFromRequest";
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString(), requestedModuleNames});
-		}
-		List<String> moduleList = new LinkedList<String>();
-		String moduleQueryArg = request.getParameter(REQUESTEDMODULES_REQPARAM);
-		String moduleIdsQueryArg = request.getParameter(REQUESTEDMODULEIDS_REQPARAM);
-		String countParam = request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM);
-		int count = 0;
-		if (moduleQueryArg == null) moduleQueryArg = ""; //$NON-NLS-1$
-		if (moduleIdsQueryArg == null) moduleIdsQueryArg = ""; //$NON-NLS-1$
-		try {
-			if (countParam != null) {
-				count = Integer.parseInt(request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM));
-				// put a reasonable upper limit on the value of count
-				if (count < 1 || count > REQUESTED_MODULES_MAX_COUNT) {
-					throw new BadRequestException("count:" + count); //$NON-NLS-1$
-				}
-			}
-			try {
-				moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
-			} catch (UnsupportedEncodingException e) {
-				throw new BadRequestException(e.getMessage());
-			}
-
-			if (count > 0) {
-				String[] modules = new String[count];
-				unfoldModules(decodeModules(moduleQueryArg), modules);
-				decodeModuleIds(moduleIdsQueryArg, modules);
-				// make sure no empty slots
-				for (String mid : modules) {
-					if (mid == null) {
-						throw new BadRequestException();
-					}
-				}
-				requestedModuleNames.setString(moduleQueryArg+((moduleQueryArg.length() > 0 && moduleIdsQueryArg.length() > 0) ? ":" : "") + moduleIdsQueryArg); //$NON-NLS-1$ //$NON-NLS-2$
-				moduleList.addAll(Arrays.asList(modules));
-			} else if (moduleQueryArg.length() > 0){
-				// Hand crafted URL; get module names from one or more module query args (deprecated)
-				moduleList.addAll(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
-				// Set request attribute to warn about use of deprecated param
-				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-				if (aggr.getOptions().isDebugMode() || aggr.getOptions().isDevelopmentMode()) {
-					request.setAttribute(WARN_DEPRECATED_USE_OF_MODULES_QUERYARG, Boolean.TRUE);
-				}
-			}
-		} catch (ArrayIndexOutOfBoundsException ex) {
-			throw new BadRequestException(ex.getMessage(), ex); //$NON-NLS-1$
-		} catch (NumberFormatException ex) {
-			throw new BadRequestException(ex.getMessage(), ex); //$NON-NLS-1$
-		} catch (JSONException ex) {
-			throw new BadRequestException(ex.getMessage(), ex); //$NON-NLS-1$
-		}
-		if (count == 0) {
-			requestedModuleNames.setScripts(Collections.unmodifiableList(moduleList));
-		} else {
-			requestedModuleNames.setModules(Collections.unmodifiableList(moduleList));
-		}
-		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
-		}
-	}
-
-	protected List<String> getNameListFromQueryArg(HttpServletRequest request, String argName) throws IOException {
-		final String sourceMethod = "getNameListFromQueryArgs";
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString(), argName});
-		}
-		List<String> nameList = null;
-		String argValue = request.getParameter(argName);
-		if (argValue != null) {
-			nameList = new LinkedList<String>();
-			nameList.addAll(Arrays.asList(argValue.split("\\s*,\\s*", 0))); //$NON-NLS-1$
-		}
-		List<String> result = nameList != null ? Collections.unmodifiableList(nameList) : null;
-		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, result);
-		}
-		return result;
 	}
 
 	/**
@@ -428,7 +292,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return the locale strings
 	 */
 	protected Collection<String> getRequestedLocales(HttpServletRequest request) {
-		final String sourceMethod = "getRequestedLocales";
+		final String sourceMethod = "getRequestedLocales"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
@@ -447,268 +311,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		return result;
 	}
 
-	/**
-	 *  Decode JSON object encoded for url transport.
-	 *  Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
-	 *  Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
-	 *  See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
-	 *
-	 * @param encstr
-	 *            the encoded module name list
-	 * @return the decoded string as a JSON object
-	 *
-	 * @throws IOException
-	 * @throws JSONException
-	 */
-	protected  JSONObject decodeModules(String encstr) throws IOException, JSONException {
-		final String sourceMethod = "decodeModules";
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		JSONObject result = null;
-		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{encstr});
-		}
-		if (encstr.length() == 0) {
-			result = new JSONObject("{}"); //$NON-NLS-1$
-		} else {
-			StringBuffer json = new StringBuffer(encstr.length() * 2);
-			Matcher m = DECODE_JSON.matcher(encstr);
-			while (m.find()) {
-				String match = m.group(1);
-				if (match.equals("!")) //$NON-NLS-1$
-					m.appendReplacement(json, ":");     //$NON-NLS-1$
-				else if (match.equals("("))     //$NON-NLS-1$
-					m.appendReplacement(json, "{"); //$NON-NLS-1$
-				else if (match.equals(")"))     //$NON-NLS-1$
-					m.appendReplacement(json, "}"); //$NON-NLS-1$
-				else if (match.equals("|"))     //$NON-NLS-1$
-					m.appendReplacement(json, "!"); //$NON-NLS-1$
-				else if (match.equals("*"))     //$NON-NLS-1$
-					m.appendReplacement(json, ","); //$NON-NLS-1$
-				else if (match.equals("<"))     //$NON-NLS-1$
-					m.appendReplacement(json, "("); //$NON-NLS-1$
-				else if (match.equals(">"))     //$NON-NLS-1$
-					m.appendReplacement(json, ")"); //$NON-NLS-1$
-			}
-			m.appendTail(json);
-			String jsonstr = json.toString();
-			jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all keys //$NON-NLS-1$
-			jsonstr = REQUOTE_JSON.matcher(jsonstr).replaceAll("$1\"$2\"$3"); // matches all values //$NON-NLS-1$
-			result = new JSONObject(jsonstr);
-		}
-		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, result);
-		}
-		return result;
-	}
 
-	/**
-	 * Decodes the module names specified by {@code encoded} and adds the module names to the
-	 * appropriate positions in {@code resultArray}. {@code encoded} is specified as a base64
-	 * encoded id list. The id list consists of a hash code followed by a sequence of segments, with
-	 * each segment having the form:
-	 * <p>
-	 * <code>[position][count][moduleid-1][moduleid-2]...[moduleid-(count-1)]</code>
-	 * <p>
-	 * where position specifies the position in the module list of the first module in the segment,
-	 * count specifies the number of modules in the segment who's positions contiguously follow the
-	 * start position, and the module ids specify the ids for the modules from the id map. Position
-	 * and count are 16-bit numbers, and the module ids are specified as follows:
-	 * <p>
-	 * <code>[id]|[0][plugin id][id]</code>
-	 * <p>
-	 * If the module name doesn't specify a loader plugin, then it is represented by the id for the
-	 * module name. If the module name specifies a loader plugin, then it is represetned by a zero,
-	 * followed by the id for the loader plugin, followed by the id for the module name without the
-	 * loader plugin. All values are 16-bit numbers.
-	 * <p>
-	 * The hash code that precedes the list is composed of the hash code bytes which represent the
-	 * hash of the entire module id list on the server. This hash was provided by the transport in
-	 * the dynamic loader extension javascript.
-	 *
-	 * @param encoded
-	 *            the base64 encoded id list
-	 * @param resultArray
-	 *            Output - the array to which the decoded module names will be added
-	 * @throws IOException
-	 */
-	protected void decodeModuleIds(String encoded, String[] resultArray) throws IOException {
-		final String sourceMethod = "decodeModuleIds";
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{encoded, resultArray});
-		}
-		if (encoded != null && encoded.length() > 0) {
-			List<String> idList = getModuleIdList();
-			byte[] decoded = Base64.decodeBase64(encoded);
-			if (isTraceLogging) {
-				log.finer("decoded = " + byteArray2String(decoded));
-			}
-
-			// Strip off hash code
-			byte[] hash = Arrays.copyOf(decoded, moduleIdListHash.length);
-			if (!Arrays.equals(hash, moduleIdListHash)) {
-				if (isTraceLogging) {
-					log.finer("Invalid hash in request" + byteArray2String(hash));
-				}
-				throw new BadRequestException("Invalid mid list hash");
-			}
-			// convert to int array
-			int start = moduleIdListHash.length;
-			int[] intArray = new int[(decoded.length-start)/2];
-			for (int i = 0; i < intArray.length; i ++) {
-				intArray[i] = (((int)(decoded[start+i*2])&0xFF) << 8) + ((int)(decoded[start+i*2+1])&0xFF);
-			}
-			if (isTraceLogging) {
-				log.finer("ids = " + Arrays.asList(intArray).toString());
-			}
-			for (int i = 0, position = -1, length = 0; i < intArray.length;) {
-				if (position == -1) {
-					// read the position and length values
-					position = intArray[i++];
-					length = intArray[i++];
-				}
-				for (int j = 0; j < length; j++) {
-					String pluginName = null, moduleName = null;
-					int id = intArray[i++];
-					if (id == 0) {
-						// 0 means the next two ints specify plugin and modulename
-						id = intArray[i++];
-						pluginName = idList.get(id);
-						if (pluginName == null) {
-							throw new BadRequestException();
-						}
-						id = intArray[i++];
-						moduleName = id != 0 ? idList.get(id) : ""; //$NON-NLS-1$
-
-					} else {
-						moduleName = idList.get(id);
-					}
-					if (moduleName == null) {
-						throw new BadRequestException();
-					}
-					if (resultArray[position+j] != null) {
-						throw new BadRequestException();
-					}
-					resultArray[position+j] = (pluginName != null ? (pluginName + "!") : "") + moduleName; //$NON-NLS-1$ //$NON-NLS-2$
-				}
-				position = -1;
-			}
-		}
-		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, resultArray);
-		}
-	}
-
-	/**
-	 * Regular expression for a non-path property (i.e. auxiliary information or processing
-	 * instruction) of a folded path json object.
-	 */
-	static public Pattern NON_PATH_PROP_PATTERN = Pattern.compile("^/[^/]+/$"); //$NON-NLS-1$
-
-	/**
-	 * Name of folded path json property used to identify the names of loader
-	 * plugin prefixes and their ordinals used in the folded path.  This must
-	 * match the value of pluginPrefixesPropName in loaderExtCommon.js.  The
-	 * slashes (/) ensure that the name won't collide with a real path name.
-	 */
-	static public String PLUGIN_PREFIXES_PROP_NAME = "/pre/"; //$NON-NLS-1$
-
-	/**
-	 * Unfolds a folded module name list into a String array of unfolded names
-	 * <p>
-	 * The returned list must be sorted the same way it was requested ordering
-	 * modules in the same way as in the companion js extension to amd loader
-	 * order provided in the folded module leaf
-	 *
-	 * @param modules
-	 *            The folded module name list
-	 * @param resultArray
-	 *            The result array.  Note that there may be holes in the result
-	 *            array when this method is done because some of the modules may
-	 *            have been specified using a different mechanism.
-	 * @throws IOException
-	 * @throws JSONException
-	 */
-	protected void unfoldModules(JSONObject modules, String[] resultArray) throws IOException, JSONException {
-		final String sourceMethod = "unfoldModules";
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{modules, Arrays.asList(resultArray)});
-		}
-		Iterator<?> it = modules.keys();
-		String[] prefixes = null;
-		if (modules.containsKey(PLUGIN_PREFIXES_PROP_NAME)) {
-			@SuppressWarnings("unchecked")
-			Map<String, String> oPrefixes = (Map<String, String>) modules.get(PLUGIN_PREFIXES_PROP_NAME);
-			prefixes = new String[oPrefixes.size()];
-			for (String key : oPrefixes.keySet()) {
-				prefixes[Integer.parseInt(oPrefixes.get(key))] = key;
-			}
-		}
-		while (it.hasNext()) {
-			String key = (String) it.next();
-			if (!NON_PATH_PROP_PATTERN.matcher(key).find()) {
-				unfoldModulesHelper(modules.get(key), key, prefixes, resultArray);
-			}
-		}
-		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, Arrays.asList(resultArray));
-		}
-	}
-
-	/**
-	 * Helper routine to unfold folded module names
-	 *
-	 * @param obj
-	 *            The folded path list of names, as a string or JSON object
-	 * @param path
-	 *            The reference path
-	 * @param aPrefixes
-	 *            Array of loader plugin prefixes
-	 * @param modules
-	 *            Output - the list of unfolded modlue names
-	 * @throws IOException
-	 * @throws JSONException
-	 */
-	protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, String[] modules) throws IOException, JSONException {
-		final String sourceMethod = "unfoldModulesHelper";
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{
-				obj, path,
-				aPrefixes != null ? Arrays.asList(aPrefixes) : null,
-				modules != null ? Arrays.asList(modules) : null});
-		}
-		if (obj instanceof JSONObject) {
-			JSONObject jsonobj = (JSONObject)obj;
-			Iterator<?> it = jsonobj.keySet().iterator();
-			while (it.hasNext()) {
-				String key = (String)it.next();
-				String newpath = path + "/" + key;  //$NON-NLS-1$
-				unfoldModulesHelper(jsonobj.get(key), newpath, aPrefixes, modules);
-			}
-		}
-		else if (obj instanceof String){
-			String[] values = ((String)obj).split("-"); //$NON-NLS-1$
-			int idx = Integer.parseInt(values[0]);
-			if (modules[idx] != null) {
-				throw new BadRequestException();
-			}
-			if (modules[idx] != null) {
-				throw new BadRequestException();
-			}
-			modules[idx] = values.length > 1 ?
-					((aPrefixes != null ?
-							aPrefixes[Integer.parseInt(values[1])] : values[1])
-							+ "!" + path) : //$NON-NLS-1$
-								path;
-		} else {
-			throw new BadRequestException();
-		}
-		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, Arrays.asList(modules));
-		}
-	}
 
 	/**
 	 * Returns a map containing the has-condition/value pairs specified in the request
@@ -719,7 +322,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @throws IOException
 	 */
 	protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
-		final String sourceMethod = "getFeaturesFromRequest";
+		final String sourceMethod = "getFeaturesFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request});
@@ -757,7 +360,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 */
 	protected String getHasConditionsFromRequest(HttpServletRequest request) throws IOException {
 
-		final String sourceMethod = "getHasConditionsFromRequest";
+		final String sourceMethod = "getHasConditionsFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request});
@@ -766,7 +369,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (request.getParameter(FEATUREMAPHASH_REQPARAM) != null) {
 			// The cookie called 'has' contains the has conditions
 			if (isTraceLogging) {
-				log.finer("has hash = " + request.getParameter(FEATUREMAPHASH_REQPARAM));
+				log.finer("has hash = " + request.getParameter(FEATUREMAPHASH_REQPARAM)); //$NON-NLS-1$
 			}
 			Cookie[] cookies = request.getCookies();
 			if (cookies != null) {
@@ -774,7 +377,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 					Cookie cookie = cookies[i];
 					if (cookie.getName().equals(FEATUREMAP_REQPARAM) && cookie.getValue() != null) {
 						if (isTraceLogging) {
-							log.finer("has cookie = " + cookie.getValue());
+							log.finer("has cookie = " + cookie.getValue()); //$NON-NLS-1$
 						}
 						ret = URLDecoder.decode(cookie.getValue(), "US-ASCII"); //$NON-NLS-1$
 						break;
@@ -796,7 +399,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		else {
 			ret = request.getParameter(FEATUREMAP_REQPARAM);
 			if (isTraceLogging) {
-				log.finer("reading features from has query arg");
+				log.finer("reading features from has query arg"); //$NON-NLS-1$
 			}
 		}
 		if (isTraceLogging) {
@@ -816,7 +419,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *         specified names
 	 */
 	protected static String getParameter(HttpServletRequest request, String[] aliases) {
-		final String sourceMethod = "getParameter";
+		final String sourceMethod = "getParameter"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString(), Arrays.asList(aliases)});
@@ -845,7 +448,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return the optimization level specified in the request
 	 */
 	protected OptimizationLevel getOptimizationLevelFromRequest(HttpServletRequest request) {
-		final String sourceMethod = "getOptimizationLevelFromRequest";
+		final String sourceMethod = "getOptimizationLevelFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
@@ -872,7 +475,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 */
 	@Override
 	public void modifyConfig(IAggregator aggregator, Scriptable config) {
-		final String sourceMethod = "modifyConfig";
+		final String sourceMethod = "modifyConfig"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		// The server-side AMD config has been updated.  Add an entry to the
 		// {@code paths} property to map the resource (combo) path to the
@@ -890,7 +493,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 			((Scriptable)pathsObj).put(getResourcePathId(), (Scriptable)pathsObj, getComboUri().toString());
 			if (isTraceLogging) {
-				log.finer("modified config = " + Context.toString(config));
+				log.finer("modified config = " + Context.toString(config)); //$NON-NLS-1$
 				log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
 			}
 		} finally {
@@ -933,7 +536,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 			// Register the featureMap resource factory
 			Properties props = new Properties();
-			props.put("scheme", getComboUri().getScheme()); //$NON-NLS-1$ //$NON-NLS-2$
+			props.put("scheme", getComboUri().getScheme()); //$NON-NLS-1$
 			reg.registerExtension(
 					newFeatureListResourceFactory(featureListResourceUri),
 					props,
@@ -1008,7 +611,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	@Override
 	public String getLayerContribution(HttpServletRequest request,
 			LayerContributionType type, Object arg) {
-		final String sourceMethod = "getLayerContribution";
+		final String sourceMethod = "getLayerContribution"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request, type, arg});
@@ -1065,7 +668,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @return the dynamic portion of the loader extension javascript
 	 */
 	protected String getDynamicLoaderExtensionJavaScript() {
-		final String sourceMethod = "getDynamicLoaderExtensionJavaScript";
+		final String sourceMethod = "getDynamicLoaderExtensionJavaScript"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod);
@@ -1085,11 +688,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
 		if (moduleIdListHash != null) {
-			sb.append("require.combo.midListHash = [");
+			sb.append("require.combo.midListHash = ["); //$NON-NLS-1$
 			for (int i = 0; i < moduleIdListHash.length; i++) {
-				sb.append(i == 0 ? "" : ", ").append(((int)moduleIdListHash[i])&0xFF);
+				sb.append(i == 0 ? "" : ", ").append(((int)moduleIdListHash[i])&0xFF); //$NON-NLS-1$ //$NON-NLS-2$
 			}
-			sb.append("];\r\n");
+			sb.append("];\r\n"); //$NON-NLS-1$
 		}
 		sb.append(clientRegisterSyntheticModules());
 		if (isTraceLogging) {
@@ -1114,14 +717,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	protected void validateLayerContributionState(HttpServletRequest request,
 			LayerContributionType type, Object arg) {
 
-		final String sourceMethod = "validateLayerContributionState";
+		final String sourceMethod = "validateLayerContributionState"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request, type, arg});
 		}
 		LayerContributionType previousType = (LayerContributionType)request.getAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME);
 		if (isTraceLogging) {
-			log.finer("previousType = " + previousType);
+			log.finer("previousType = " + previousType); //$NON-NLS-1$
 		}
 		switch (type) {
 		case BEGIN_RESPONSE:
@@ -1497,7 +1100,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	}
 
 	private void addName(String dep, String name, Map<String, String> names, boolean isTraceLogging) {
-		final String UNSCANNED_DEP = "unscanned dependency of ";
+		final String UNSCANNED_DEP = "unscanned dependency of "; //$NON-NLS-1$
 		int idx = dep.lastIndexOf('!');
 		if (idx != -1) {
 			String plugin = dep.substring(0, idx);
@@ -1525,7 +1128,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		if (getModuleIdRegFunctionName() == null) {
 			if (isTraceLogging) {
-				log.finer("No module id list registration function - returning");
+				log.finer("No module id list registration function - returning"); //$NON-NLS-1$
 				log.exiting(AbstractHttpTransport.class.getName(), methodName);
 			}
 			return;
@@ -1558,15 +1161,15 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 		}
 		for (String name : getSyntheticModuleNames()) {
-			names.put(name, isTraceLogging ? "transport added" : null);
+			names.put(name, isTraceLogging ? "transport added" : null); //$NON-NLS-1$
 		}
 		if (isTraceLogging) {
 			// Log the module name id list.  This information is useful when trying to determine
 			// why different servers in the same cluster might be generating different list hashes.
-			StringBuffer sb = new StringBuffer("Module ID list:\r\n");
+			StringBuffer sb = new StringBuffer("Module ID list:\r\n"); //$NON-NLS-1$
 			int i = 1;
 			for (Map.Entry<String, String> entry : names.entrySet()) {
-				sb.append(i++).append(": ").append(entry.getKey()).append(" - ").append(entry.getValue()).append("\r\n");
+				sb.append(i++).append(": ").append(entry.getKey()).append(" - ").append(entry.getValue()).append("\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			log.finer(sb.toString());
 		}
@@ -1581,39 +1184,23 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		MessageDigest md = null;
 		try {
-			md = MessageDigest.getInstance("MD5");
+			md = MessageDigest.getInstance("MD5"); //$NON-NLS-1$
 		} catch (NoSuchAlgorithmException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
 			}
 			throw new IOException(e);
 		}
-		moduleIdListHash = md.digest(idList.toString().getBytes("UTF-8"));
+		moduleIdListHash = md.digest(idList.toString().getBytes("UTF-8")); //$NON-NLS-1$
 		moduleIdMap = Collections.unmodifiableMap(idMap);
 		moduleIdList = idList;
 
 		if (log.isLoggable(Level.INFO)) {
-			log.info("Module ID List hash = " + byteArray2String(moduleIdListHash));
+			log.info("Module ID List hash = " + TypeUtil.byteArray2String(moduleIdListHash)); //$NON-NLS-1$
 		}
 		if (isTraceLogging) {
 			log.exiting(AbstractHttpTransport.class.getName(), methodName);
 		}
-	}
-
-	/**
-	 * Returns a string representation of the byte array as an unsigned array of bytes
-	 * (e.g. "[1, 2, 3]" - Not a conversion of the byte array to a string).
-	 *
-	 * @param bytes the byte array
-	 * @return the byte array as a string
-	 */
-	private String byteArray2String(byte[] bytes) {
-		StringBuffer sb = new StringBuffer("[");
-		int i = 0;
-		for (byte b : bytes) {
-			sb.append(i++ == 0 ? "" : ", ").append(((int)b)&0xFF);
-		}
-		return sb.append("]").toString();
 	}
 
 	/**

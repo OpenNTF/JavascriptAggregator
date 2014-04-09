@@ -86,7 +86,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	class DependencyInfo {
 		private List<String> declaredDependencies;
 		private List<String> dependentFeatures;
-		private URI uri;
+		private final URI uri;
 		private DependencyInfo(String[] declaredDependencies, String[] dependentFeatures, URI uri) {
 			this.declaredDependencies = declaredDependencies != null ?
 					Collections.unmodifiableList(Arrays.asList(declaredDependencies)) :
