@@ -110,6 +110,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			} else if (moduleQueryArg.length() > 0){
 				// Hand crafted URL; get module names from one or more module query args (deprecated)
 				scripts = Collections.unmodifiableList(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
+				modules = Collections.emptyList();
 				// Set request attribute to warn about use of deprecated param
 				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 				if (aggr.getOptions().isDebugMode() || aggr.getOptions().isDevelopmentMode()) {
