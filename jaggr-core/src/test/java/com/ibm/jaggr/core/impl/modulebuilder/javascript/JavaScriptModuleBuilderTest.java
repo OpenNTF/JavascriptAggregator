@@ -515,38 +515,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertNull(result);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-
-		// Test that EXPORTMODULENAMES is disabled when compliler optimiation is turned off
-		mockRequest.setAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.NONE);
-		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-
-		// First, try with debug mode disabled (has no effect)
-		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
-		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-
-		// Now, enable development mode.  Should cause export names to be disabled
-		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
-		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
-		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-
-		// Should also work with debug mode
-		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, false);
-		mockAggregator.getOptions().setOption(IOptions.DEBUG_MODE, true);
-		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
-		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-
-		// whitespace optimization should not disable module name exporting
-		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
-		mockRequest.setAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.WHITESPACE);
-		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
-		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
 	}
 
 	@Test
