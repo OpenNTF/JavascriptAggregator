@@ -101,7 +101,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				new Features(),
 				null,
 				expanded,
-				null, false, null);
+				null, false);
 
 		String code, output;
 
@@ -279,7 +279,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				new Features(),
 				null,
 				expanded,
-				null, false, null);
+				null, false);
 		compiler = new Compiler();
 		compiler_options = new CompilerOptions();
 		CompilationLevel.SIMPLE_OPTIMIZATIONS.setOptionsForCompilationLevel(compiler_options);
@@ -301,7 +301,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				new Features(),
 				null,
 				expanded,
-				null, false, null);
+				null, false);
 
 		String code, output;
 
@@ -433,7 +433,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				features,
 				dependentFeatures,
 				expanded,
-				null, false, null);
+				null, false);
 
 		String code, output;
 		code = "require([\"has!feature1?has1\",\"has!feature2?has2\"]);";
@@ -509,7 +509,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				features,
 				dependentFeatures,
 				expanded,
-				null, false, null);
+				null, false);
 
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
 		mockAggregator.getOptions().setOption(IOptions.VERIFY_DEPS, true);
@@ -538,7 +538,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				new Features(),
 				null,
 				new ArrayList<ModuleDeps>(),
-				null, true, null);
+				null, true);
 
 		String code, output;
 		code = "require([\"foo\"],function(){});";

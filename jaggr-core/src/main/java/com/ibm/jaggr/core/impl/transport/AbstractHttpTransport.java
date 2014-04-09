@@ -141,6 +141,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		,"reqexp"	// backwards compatibility, to be removed. //$NON-NLS-1$
 	};
 
+	public static final String[] EXPORTMODULENAMES_REQPARAMS = {"exportNames", "en"}; //$NON-NLS-1$ //$NON-NLS-2$
+
 	public static final String[] SHOWFILENAMES_REQPARAMS = {"showFilenames", "fn"}; //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final String[] NOCACHE_REQPARAMS = {"noCache", "nc"}; //$NON-NLS-1$ //$NON-NLS-2$
@@ -225,7 +227,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		} else {
 			request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, TypeUtil.asBoolean(value));
 		}
-		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, true);
+		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, EXPORTMODULENAMES_REQPARAMS), true));
 
 		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
 

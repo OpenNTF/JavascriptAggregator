@@ -25,7 +25,6 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.JSSource;
 import com.ibm.jaggr.core.util.NodeUtil;
 import com.ibm.jaggr.core.util.PathUtil;
 
@@ -90,8 +89,6 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 */
 	private boolean logDebug;
 
-	private final JSSource source;
-
 	/**
 	 * Constructs a instance of this class for a specific module that is being compiled.
 	 *
@@ -107,8 +104,6 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 *            the name of the loader config var (e.g. dojoConfig or require, etc.)
 	 * @param logDebug
 	 *            true if debug logging to the browser console is enabled
-	 * @param source
-	 *            the source file to update if optimization is disabled
 	 */
 	public RequireExpansionCompilerPass(
 			IAggregator aggregator,
@@ -116,8 +111,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			Set<String> dependentFeatures,
 			List<ModuleDeps> expandedDepsList,
 			String configVarName,
-			boolean logDebug,
-			JSSource source) {
+			boolean logDebug) {
 
 		this.aggregator = aggregator;
 		this.hasFeatures = features;
@@ -126,7 +120,6 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		this.configVarName = configVarName;
 		this.consoleDebugOutput = logDebug ? new LinkedList<List<String>>() : null;
 		this.logDebug = logDebug;
-		this.source = source;
 
 		if (configVarName == null || configVarName.length() == 0) {
 			this.configVarName = "require"; //$NON-NLS-1$
@@ -203,8 +196,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 						logDebug ? MessageFormat.format(
 								Messages.RequireExpansionCompilerPass_0,
 								new Object[]{cursor.getLineno()})
-								: null,
-						true);
+								: null);
 			} else if ((dependencies = NodeUtil.moduleDepsFromConfigDeps(cursor, configVarName)) != null) {
 				expandRequireList(
 						dependencies,
@@ -213,8 +205,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 								MessageFormat.format(
 										Messages.RequireExpansionCompilerPass_2,
 										new Object[]{cursor.getLineno()}
-										) : null,
-						false);
+										) : null);
 			} else if ((dependencies = NodeUtil.moduleDepsFromDefine(cursor)) != null) {
 				String moduleName = cursor.getFirstChild().getProp(Node.SOURCENAME_PROP).toString();
 
@@ -274,7 +265,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		}
 			}
 
-	private void expandRequireList(Node array, List<DependencyList> enclosingDependencies, String detail, boolean updateSource)
+	private void expandRequireList(Node array, List<DependencyList> enclosingDependencies, String detail)
 			throws IOException {
 
 		Node strNode = array.getFirstChild();
@@ -405,16 +396,10 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				msg.add("font-size:x-small"); //$NON-NLS-1$
 				consoleDebugOutput.add(msg);
 			}
-			String textToAdd = String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, listIndex);
-			if (updateSource && source != null) {
-				// if there's a source file we need to update the do it
-				source.appendToArrayLit(array, textToAdd);
-			}
-			array.addChildrenToBack(Node.newString(textToAdd));
+			array.addChildrenToBack(Node.newString(String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, listIndex)));
 		}
 		// Add the expanded dependencies we found in this require call
 		// to the set of enclosing dependencies for all the child node
 		enclosingDependencies.add(depList);
 	}
-
 }
