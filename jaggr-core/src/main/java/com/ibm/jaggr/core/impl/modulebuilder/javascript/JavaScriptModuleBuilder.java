@@ -20,9 +20,9 @@ import com.ibm.jaggr.core.DependencyVerificationException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.NotFoundException;
-import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -41,6 +41,7 @@ import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
+import com.ibm.jaggr.core.util.JSSource;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.StringUtil;
 
@@ -159,15 +160,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
 		String result = null;
 		if (type == EventType.BEGIN_LAYER) {
-			// Check to see if optimization is disabled for this request and if so,
-			// then disable module name exporting since we can't export names of
-			// javascript modules without the compiler.
-			CompilationLevel level = getCompilationLevel(request);
-			if (level  == null) {
-				// optimization is disabled, so disable exporting of module name
-				request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
-			}
-
 			// If we're doing require list expansion, then set the EXPANDED_DEPENDENCIES attribute
 			// with the set of expanded dependencies for the layer.  This will be used by the
 			// build renderer to filter layer dependencies from the require list expansion.
@@ -286,20 +278,16 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		List<JSSourceFile> sources = this.getJSSource(mid, resource, request, keyGens);
 
-		// If optimization level is none, then just return the source, unless
-		// we were given a null keyGens array, in which case we
-		// need to process the source to be able to provide a
-		// cache key generator.
-		if (level == null && keyGens != null) {
+		JSSource source = null;
+		if (level == null) {
+			// If optimization level is none, then we need to modify the source code
+			// when expanding require lists and exporting module names because the
+			// parsed AST produced by closure does not preserve whitespace and comments.
 			StringBuffer code = new StringBuffer();
 			for (JSSourceFile sf : sources) {
 				code.append(sf.getCode());
 			}
-			return new ModuleBuild(
-					code.toString(),
-					keyGens,
-					false
-					);
+			source = new JSSource(code.toString(), mid);
 		}
 		boolean coerceUndefinedToFalse = aggr.getConfig().isCoerceUndefinedToFalse();
 		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
@@ -333,7 +321,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
 		List<ModuleDeps> expandedDepsList = null;
-		if (RequestUtil.isExplodeRequires(request) && level != null) {
+		if (RequestUtil.isExplodeRequires(request)) {
 			expandedDepsList = new ArrayList<ModuleDeps>();
 			/*
 			 * Register the RequireExpansionCompilerPass if we're exploding
@@ -346,15 +334,16 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 							discoveredHasConditionals,
 							expandedDepsList,
 							(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
-							isReqExpLogging);
+							isReqExpLogging,
+							source);
 
 			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, recp);
 		}
-		if (RequestUtil.isExportModuleName(request) && level != null) {
+		if (RequestUtil.isExportModuleName(request)) {
 			compiler_options.customPasses.put(
 					CustomPassExecutionTime.BEFORE_CHECKS,
-					new ExportModuleNameCompilerPass()
-					);
+					new ExportModuleNameCompilerPass(source)
+			);
 		}
 
 		if (level != null && level != CompilationLevel.WHITESPACE_ONLY) {
@@ -401,14 +390,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 			}
 			if (level == null) {
-				// If optimization level is null, then we compiled only to discover
-				// the dependent features for the cache key generator.  Set the
-				// response output to the un-modified source code.
-				StringBuffer code = new StringBuffer();
-				for (JSSourceFile sf : sources) {
-					code.append(sf.getCode());
-				}
-				output = code.toString();
+				output = source.toString();
 			} else {
 				// Get the compiler output and set the data in the ModuleBuild
 				output = compiler.toSource();

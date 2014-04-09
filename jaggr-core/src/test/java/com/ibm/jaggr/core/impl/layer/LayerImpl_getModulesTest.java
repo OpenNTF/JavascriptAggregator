@@ -31,12 +31,12 @@ import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.test.MockRequestedModuleNames;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
-import com.ibm.jaggr.core.util.RequestedModuleNames;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -92,7 +92,7 @@ public class LayerImpl_getModulesTest {
 	public void testTetModules_emptyRequestedModules() throws Exception {
 		// Empty requested modules
 		LayerImpl layer = new TestLayerImpl();
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		layer.getModules(mockRequest);
 	}
@@ -100,7 +100,7 @@ public class LayerImpl_getModulesTest {
 	@Test
 	public void testTetModules_moduleListOnly() throws Exception {
 		LayerImpl layer = new TestLayerImpl();
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		names.setModules(Arrays.asList(new String[]{"module/a", "module/b"}));
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		ModuleList modules = layer.getModules(mockRequest);
@@ -116,7 +116,7 @@ public class LayerImpl_getModulesTest {
 	@Test
 	public void testTetModules_modulesAndDeps() throws Exception {
 		LayerImpl layer = new TestLayerImpl();
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setModules(Arrays.asList(new String[]{"module/a", "module/b"}));
 		names.setDeps(Arrays.asList(new String[]{"dep/a"}));
@@ -152,7 +152,7 @@ public class LayerImpl_getModulesTest {
 	@Test
 	public void testTetModules_modulesAndDepsAndPreloads() throws Exception {
 		LayerImpl layer = new TestLayerImpl();
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setModules(Arrays.asList("module/a", "module/b"));
 		names.setDeps(Arrays.asList("dep/a"));
@@ -207,7 +207,7 @@ public class LayerImpl_getModulesTest {
 	@Test
 	public void testTetModules_depsAndPreloadsWithReqExpLogging() throws Exception {
 		LayerImpl layer = new TestLayerImpl();
-		RequestedModuleNames names = new RequestedModuleNames();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setDeps(Arrays.asList("dep/a"));
 		names.setPreloads(Arrays.asList("preload/a"));

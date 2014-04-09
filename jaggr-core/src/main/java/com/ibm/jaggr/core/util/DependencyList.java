@@ -296,7 +296,7 @@ public class DependencyList {
 		}
 		// A call to getDeclaredDependencies is made to ensure that the time stamp calculated to mark the beginning of finding the expanded
 		//dependencies is done only after forming the dependency map is completed.
-		aggr.getDependencies().getDelcaredDependencies("require");
+		aggr.getDependencies().getDelcaredDependencies("require"); //$NON-NLS-1$
 		long stamp = aggr.getDependencies().getLastModified();  // save time stamp
 		try {
 			explicitDeps = new ModuleDeps();
