@@ -16,19 +16,11 @@
 
 package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
-import com.ibm.jaggr.core.util.JSSource;
-
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 
 public class ExportModuleNameCompilerPass implements CompilerPass {
-
-	private JSSource source;
-
-	public ExportModuleNameCompilerPass(JSSource source) {
-		this.source = source;
-	}
 
 	/* (non-Javadoc)
 	 * @see com.google.javascript.jscomp.CompilerPass#process(com.google.javascript.rhino.Node, com.google.javascript.rhino.Node)
@@ -55,11 +47,11 @@ public class ExportModuleNameCompilerPass implements CompilerPass {
 						name.getString().equals("define")) { // name is "define" //$NON-NLS-1$
 					Node param = name.getNext();
 					if (param != null && param.getType() != Token.STRING) {
-						String expname = name.getProp(Node.SOURCENAME_PROP).toString();
-						if (source != null) {
-							source.insert("\"" + expname + "\",", param.getLineno(), param.getCharno()); //$NON-NLS-1$ //$NON-NLS-2$
-						}
-						param.getParent().addChildBefore(Node.newString(expname), param);
+						param.getParent().addChildBefore(
+								Node.newString(
+										name.getProp(Node.SOURCENAME_PROP).toString()),
+										param
+								);
 					}
 				}
 			}

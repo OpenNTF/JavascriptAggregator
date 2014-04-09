@@ -29,6 +29,7 @@ import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -331,6 +332,14 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 			// and don't export module names
 			request.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
 			request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
+		}
+		if (!(TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)) &&
+				(OptimizationLevel)request.getAttribute(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME) != OptimizationLevel.NONE ||
+				isLayerBuild)) {
+			// If we're not exporting module names and we aren't doing server side expansion
+			// of dependencies (i.e. using a prebuild cache), then we can't expand i18n
+			// resources.
+			request.setAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME, true);
 		}
 	}
 

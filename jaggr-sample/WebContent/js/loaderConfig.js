@@ -84,7 +84,7 @@
 	};
 	
 	// get combo propery overrides from URL
-	for (var s in {optimize:0,expandRequire:0,showFilenames:0,noCache:0}) {
+	for (var s in {optimize:0,expandRequire:0,showFilenames:0,noCache:0,exportNames:0}) {
 		var regex = new RegExp("[&?]"+s+"=([^&]*)","i");
 		var result = regex.exec(href) || [];
 		if (result.length > 1) {
