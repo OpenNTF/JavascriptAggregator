@@ -35,6 +35,7 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -266,6 +267,7 @@ public class RequestedModuleNamesTest {
 		requestParams.put(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM, new String[]{"foo/a,bar/b"});
 		RequestedModuleNames requestedNames = new RequestedModuleNames(request, null, null);
 		assertEquals(Arrays.asList(new String[]{"foo/a", "bar/b"}), requestedNames.getScripts());
+		assertEquals(Collections.emptyList(), requestedNames.getModules());
 		assertFalse(TypeUtil.asBoolean(request.getAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG)));
 		// now enable debug mode
 		request.removeAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);

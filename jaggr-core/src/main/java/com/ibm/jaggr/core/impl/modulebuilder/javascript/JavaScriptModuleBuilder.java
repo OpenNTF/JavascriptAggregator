@@ -390,7 +390,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 			}
 			if (level == null) {
-				output = source.toString();
+				output = source.toString()+ "\r\n";
 			} else {
 				// Get the compiler output and set the data in the ModuleBuild
 				output = compiler.toSource();
