@@ -45,5 +45,7 @@
 
 	notice: 'embed.txt',
 
-	cacheBust: getBundleVersionsHash("com.ibm.jaggr.sample", "com.ibm.jaggr.sample.dojo")
+	cacheBust: getBundleVersionsHash(					// Gets hash of header values in specified bundles
+			["Bundle-Version","Bnd-LastModified"], 		// Header values to include
+			"com.ibm.jaggr.sample", "com.ibm.jaggr.sample.dojo")	// bundles to get header values from
 }

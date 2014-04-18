@@ -783,7 +783,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 *            then the new extension is added to the end of the list
 	 */
 	protected void registerExtension(IAggregatorExtension ext, IAggregatorExtension before) {
-		final String sourceMethod = "registerExtension";
+		final String sourceMethod = "registerExtension"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{ext, before});
@@ -856,7 +856,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @param reg The extension registrar.
 	 */
 	protected void callExtensionInitializers(Iterable<IAggregatorExtension> extensions, ExtensionRegistrar reg) {
-		final String sourceMethod = "callextensionInitializers";
+		final String sourceMethod = "callextensionInitializers"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{extensions, reg});

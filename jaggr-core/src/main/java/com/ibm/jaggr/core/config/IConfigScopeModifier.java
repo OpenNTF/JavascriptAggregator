@@ -26,10 +26,10 @@ import org.mozilla.javascript.Scriptable;
  * which may be referenced by the config JavaScript.
  * <p>
  * Instances of this interface are registered as an OSGi service with the name property set to the
- * name of the aggregator. The {@link #prepare(IAggregator, Context, Scriptable)} method is called
+ * name of the aggregator. The {@link #modifyScope(IAggregator, Context, Scriptable)} method is called
  * just before the config JavaScript is evaluated.
  */
-public interface IConfigEnvironmentPreparer {
+public interface IConfigScopeModifier {
 
 	/**
 	 * Called prior to evaluating the config JavaScript
@@ -42,6 +42,6 @@ public interface IConfigEnvironmentPreparer {
 	 *            the JavaScript scope object.  Add functions and/or properties to the scope
 	 *            to make them available to the config JavaScript.
 	 */
-	public void prepare(IAggregator aggregator, Context context, Scriptable scope);
+	public void modifyScope(IAggregator aggregator, Context context, Scriptable scope);
 
 }

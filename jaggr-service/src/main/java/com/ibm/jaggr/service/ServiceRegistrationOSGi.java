@@ -55,12 +55,9 @@ public class ServiceRegistrationOSGi implements IServiceRegistration {
 				Bundle bundle = ref.getBundle();
 				if (bundle != null) {
 					Object service = bundle.getBundleContext().getService(ref);
-					if (service.toString() == null) {
-						System.out.println("");
-					}
 					bundle.getBundleContext().ungetService(ref);
 					if (service != null) {
-						result += " - ServiceRegistration for service " + service.getClass().getName() + ": " + service.toString();
+						result = "ServiceRegistration for service " + service.getClass().getName() + ": " + service.toString(); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 				}
 			}

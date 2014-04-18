@@ -328,7 +328,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	 * @throws NotFoundException
 	 */
 	protected void initExtensions(IConfigurationElement configElem) throws CoreException, NotFoundException {
-		final String sourceMethod = "initExtensions";
+		final String sourceMethod = "initExtensions"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configElem});
@@ -430,7 +430,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	 *            array of {@link IExtension} objects to be initialized
 	 */
 	protected void initExtensions(IExtension[] extensions) {
-		final String sourceMethod = "initExtension";
+		final String sourceMethod = "initExtension"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{extensions});

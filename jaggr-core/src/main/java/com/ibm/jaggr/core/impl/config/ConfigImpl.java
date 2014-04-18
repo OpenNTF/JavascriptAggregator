@@ -23,8 +23,8 @@ import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigEnvironmentPreparer;
 import com.ibm.jaggr.core.config.IConfigModifier;
+import com.ibm.jaggr.core.config.IConfigScopeModifier;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -39,6 +39,7 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -851,8 +852,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 
-			// Call the registered preparers
-			callConfigEnvironmentPreparers(cx, sharedScope);
+			// Call the registered scope modifiers
+			callConfigScopeModifiers(cx, sharedScope);
 
 			cx.evaluateString(sharedScope, "var config = " +  //$NON-NLS-1$
 					aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
@@ -1177,7 +1178,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	protected String loadCacheBust(Scriptable cfg) {
 		String result = null;
 		Object value = cfg.get(CACHEBUST_CONFIGPARAM, cfg);
-		if (value != Scriptable.NOT_FOUND) {
+		if (value != Scriptable.NOT_FOUND && value != Undefined.instance) {
 			result = Context.toString(value);
 		}
 		return result;
@@ -1223,7 +1224,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 
 	/**
-	 * Calls the registered config environment preparers to give them an opportunity to
+	 * Calls the registered config scope modifiers to give them an opportunity to
 	 * prepare the scope object prior to evaluating the config JavaScript
 	 *
 	 * @param context
@@ -1231,11 +1232,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @param scope
 	 *            The object representing the execution scope for the evaluation.
 	 */
-	protected void callConfigEnvironmentPreparers(Context context, Scriptable scope) {
+	protected void callConfigScopeModifiers(Context context, Scriptable scope) {
 		if( aggregator.getPlatformServices() != null){
 			IServiceReference[] refs = null;
 			try {
-				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigEnvironmentPreparer.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
+				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigScopeModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
 			} catch (PlatformServicesException e) {
 				if (log.isLoggable(Level.SEVERE)) {
 					log.log(Level.SEVERE, e.getMessage(), e);
@@ -1244,11 +1245,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 
 			if (refs != null) {
 				for (IServiceReference ref : refs) {
-					IConfigEnvironmentPreparer adaptor =
-							(IConfigEnvironmentPreparer) aggregator.getPlatformServices().getService(ref);
+					IConfigScopeModifier adaptor =
+							(IConfigScopeModifier) aggregator.getPlatformServices().getService(ref);
 					if (adaptor != null) {
 						try {
-							adaptor.prepare(getAggregator(), context, scope);
+							adaptor.modifyScope(getAggregator(), context, scope);
 						} catch (Exception e) {
 							if (log.isLoggable(Level.SEVERE)) {
 								log.log(Level.SEVERE, e.getMessage(), e);
@@ -1265,7 +1266,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public String toString() {
-		return super.toString() + " - " + strConfig;
+		return strConfig != null ? strConfig : "{}"; //$NON-NLS-1$
 	}
 
 	/* (non-Javadoc)

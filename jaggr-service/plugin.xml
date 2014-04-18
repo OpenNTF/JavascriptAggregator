@@ -75,7 +75,7 @@
 	        point="com.ibm.jaggr.service.serviceprovider">
 		<serviceprovider 
 		         class="com.ibm.jaggr.service.impl.config.BundleVersionsHash" 
-		         service="com.ibm.jaggr.core.config.IConfigEnvironmentPreparer">
+		         service="com.ibm.jaggr.core.config.IConfigScopeModifier">
 			<init-param name="propName" value="getBundleVersionsHash"/>
 		</serviceprovider>
 	</extension>

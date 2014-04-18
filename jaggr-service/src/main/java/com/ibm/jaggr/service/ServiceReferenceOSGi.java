@@ -48,7 +48,7 @@ public class ServiceReferenceOSGi implements IServiceReference {
 			Object service = bundle.getBundleContext().getService(ref);
 			bundle.getBundleContext().ungetService(ref);
 			if (service != null) {
-				result += " - ServiceReference for service " + service.getClass().getName() + ": " + service.toString();
+				result = "ServiceReference for service " + service.getClass().getName() + ": " + service.toString(); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 		return result;

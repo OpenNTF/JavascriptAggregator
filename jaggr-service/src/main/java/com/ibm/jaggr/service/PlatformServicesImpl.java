@@ -45,7 +45,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	private final BundleContext bundleContext;
 
 	public PlatformServicesImpl(BundleContext bc){
-		final String sourceMethod = "<ctor>";
+		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{bc});
@@ -65,7 +65,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	@Override
 	public IServiceRegistration registerService(String clazz, Object service,
 			Dictionary<String, String> properties) {
-		final String sourceMethod = "registerService";
+		final String sourceMethod = "registerService"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{clazz, service, properties});
@@ -91,7 +91,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public IServiceReference[] getServiceReferences(String clazz, String filter) throws PlatformServicesException {
-		final String sourceMethod = "getServiceReferences";
+		final String sourceMethod = "getServiceReferences"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{clazz, filter});
@@ -111,7 +111,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 			throw new PlatformServicesException(e);
 		}
 		if (isTraceLogging) {
-			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, Arrays.asList(new IServiceReference[refs.length]));
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, refs != null ? Arrays.asList(new IServiceReference[refs.length]) : null);
 		}
 		return refs;
 
@@ -125,7 +125,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public Object getService(IServiceReference serviceReference) {
-		final String sourceMethod = "getService";
+		final String sourceMethod = "getService"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, serviceReference);
@@ -149,7 +149,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public boolean ungetService(IServiceReference serviceReference) {
-		final String sourceMethod = "ungetService";
+		final String sourceMethod = "ungetService"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{serviceReference});
@@ -172,7 +172,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public URL getResource(String resourceName) {
-		final String sourceMethod = "getResource";
+		final String sourceMethod = "getResource"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{resourceName});
@@ -195,7 +195,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Dictionary<String, String> getHeaders() {
-		final String sourceMethod = "getHeaders";
+		final String sourceMethod = "getHeaders"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
@@ -212,7 +212,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	@Override
 	public boolean isShuttingdown() {
-		final String sourceMethod = "isShuttingdown";
+		final String sourceMethod = "isShuttingdown"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
@@ -232,7 +232,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 
 	@Override
 	public URI getAppContextURI() throws URISyntaxException {
-		final String sourceMethod = "getAppContextURI";
+		final String sourceMethod = "getAppContextURI"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);

@@ -20,7 +20,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.NotFoundException;
-import com.ibm.jaggr.core.config.IConfigEnvironmentPreparer;
+import com.ibm.jaggr.core.config.IConfigScopeModifier;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.test.TestUtils;
 
@@ -62,7 +62,7 @@ public class BundleVersionsHashTest {
 		dict.put("name", mockAggregator.getName());
 		EasyMock.expect(mockPlatformServices.getService(mockServiceReference)).andReturn(bvh).anyTimes();
 		EasyMock.expect(mockExtension.getAttribute("propName")).andReturn("getBundleVersionsHash").anyTimes();
-		EasyMock.expect(mockPlatformServices.getServiceReferences(IConfigEnvironmentPreparer.class.getName(), "(name="+mockAggregator.getName()+")")).andReturn(serviceReferences).anyTimes();
+		EasyMock.expect(mockPlatformServices.getServiceReferences(IConfigScopeModifier.class.getName(), "(name="+mockAggregator.getName()+")")).andReturn(serviceReferences).anyTimes();
 		EasyMock.replay(mockServiceReference, mockPlatformServices, mockExtension);
 		bvh.initialize(mockAggregator, mockExtension, null);
 		EasyMock.verify(mockPlatformServices);
@@ -91,7 +91,7 @@ public class BundleVersionsHashTest {
 		bundle2Headers.put("Bnd-LastModified", "234567890");
 		bundle1Headers.put("Bundle-Version", "1.2.3.20140414");
 		bundle2Headers.put("Bundle-Version", "1.2.3.20140412");
-		String config =  "{cacheBust:getBundleVersionsHash('com.test.bundle1', 'com.test.bundle2')}";
+		String config =  "{cacheBust:getBundleVersionsHash(['Bundle-Version', 'Bnd-LastModified'], 'com.test.bundle1', 'com.test.bundle2')}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
 		String cacheBust = cfg.getCacheBust();
 
@@ -111,6 +111,24 @@ public class BundleVersionsHashTest {
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
 		Assert.assertEquals(cacheBust, cfg.getCacheBust());
 
+		// Test that when header names are not specified, it defaults to 'Bundle-Version'.
+		config =  "{cacheBust:getBundleVersionsHash('com.test.bundle1', 'com.test.bundle2')}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
+		cacheBust = cfg.getCacheBust();
+
+		bundle1Headers.put("Bnd-LastModified", "123456780");
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
+		Assert.assertEquals(cacheBust, cfg.getCacheBust());
+
+		bundle2Headers.put("Bundle-Version", "1.2.4");
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
+		Assert.assertFalse(cacheBust.equals(cfg.getCacheBust()));
+
+		bundle2Headers.put("Bundle-Version", "1.2.3.20140412");
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
+		Assert.assertEquals(cacheBust, cfg.getCacheBust());
+
+		// Ensure exception thrown if a specified bundle is not found
 		config =  "{cacheBust:getBundleVersionsHash('com.test.bundle1', 'com.test.bundle2', 'com.test.bundle3')}";
 		try {
 			cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
@@ -119,13 +137,24 @@ public class BundleVersionsHashTest {
 			Assert.assertTrue(NotFoundException.class.isInstance(ex.getCause()));
 		}
 
-		config =  "{cacheBust:getBundleVersionsHash(['com.test.bundle1', 'com.test.bundle2'])}";
+		// ensure exception thrown if argument is wrong type
+		config =  "{cacheBust:getBundleVersionsHash({})}";
 		try {
 			cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
 			Assert.fail("Expected exception");
 		} catch (WrappedException ex) {
 			Assert.assertTrue(IllegalArgumentException.class.isInstance(ex.getCause()));
 		}
+
+
+		// ensure value is null if no bundle names specified
+		config =  "{cacheBust:getBundleVersionsHash()}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
+		Assert.assertNull(cfg.getCacheBust());
+
+		config =  "{cacheBust:getBundleVersionsHash(['Bundle-Version'])}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);
+		Assert.assertNull(cfg.getCacheBust());
 
 		config = "{}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config, true);

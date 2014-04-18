@@ -28,7 +28,7 @@ import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfigEnvironmentPreparer;
+import com.ibm.jaggr.core.config.IConfigScopeModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
@@ -207,7 +207,7 @@ public class LayerTest extends EasyMock {
 		mockPlatformServices = createMock(IPlatformServices.class);
 		IServiceReference mockServiceReference = createMock(IServiceReference.class);
 		final IServiceReference[] serviceReferences = new IServiceReference[]{mockServiceReference};
-		expect(mockPlatformServices.getServiceReferences(IConfigEnvironmentPreparer.class.getName(), "(name=test)")).andReturn(new IServiceReference[]{}).anyTimes();
+		expect(mockPlatformServices.getServiceReferences(IConfigScopeModifier.class.getName(), "(name=test)")).andReturn(new IServiceReference[]{}).anyTimes();
 		expect(mockPlatformServices.getServiceReferences(ILayerListener.class.getName(), "(name=test)")).andAnswer(new IAnswer<IServiceReference[]>() {
 			@Override public IServiceReference[] answer() throws Throwable {
 				return serviceReferences;

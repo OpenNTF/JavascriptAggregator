@@ -776,7 +776,7 @@ public class ConfigTest {
 		Context.enter();
 		String str = Context.toString(rawCfg);
 		Context.exit();
-		Assert.assertEquals(str, cfg.toString());
+		Assert.assertEquals(str,  cfg.toString());
 
 	}
 

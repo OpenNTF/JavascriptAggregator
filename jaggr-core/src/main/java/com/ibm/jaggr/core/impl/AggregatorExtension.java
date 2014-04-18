@@ -17,7 +17,6 @@
 package com.ibm.jaggr.core.impl;
 
 import com.ibm.jaggr.core.IAggregatorExtension;
-import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
@@ -55,7 +54,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 *            the extension unique id
 	 */
 	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
-		final String sourceMethod = "<ctor>";
+		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{instance, attributes, extensionPointId, uniqueId});
@@ -72,7 +71,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	}
 
 	private void validate() {
-		final String sourceMethod = "validate";
+		final String sourceMethod = "validate"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod);
@@ -110,10 +109,8 @@ public class AggregatorExtension  implements IAggregatorExtension {
 					throw new IllegalArgumentException(attr);
 				}
 			}
-		} else if (IServiceProviderExtensionPoint.ID.equals(extensionPointId)) {
-			if (!(instance instanceof IExtensionInitializer)) {
-				throw new IllegalArgumentException(instance.getClass().getName());
-			}
+		} else if (!IServiceProviderExtensionPoint.ID.equals(extensionPointId)) {
+			throw new IllegalArgumentException(instance.getClass().getName());
 		}
 		if (isTraceLogging) {
 			log.exiting(AggregatorExtension.class.getName(), sourceMethod);
@@ -125,7 +122,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 */
 	@Override
 	public String getExtensionPointId() {
-		final String sourceMethod = "getExtensionPointId";
+		final String sourceMethod = "getExtensionPointId"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod);
@@ -139,7 +136,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 */
 	@Override
 	public Object getInstance() {
-		final String sourceMethod = "getInstance";
+		final String sourceMethod = "getInstance"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod);
@@ -153,7 +150,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 */
 	@Override
 	public String getAttribute(String name) {
-		final String sourceMethod = "getAttribute";
+		final String sourceMethod = "getAttribute"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{name});
@@ -170,7 +167,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 */
 	@Override
 	public String getUniqueId() {
-		final String sourceMethod = "getUniqueId";
+		final String sourceMethod = "getUniqueId"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod);
@@ -184,7 +181,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 */
 	@Override
 	public String getContributorId() {
-		final String sourceMethod = "getContributorId";
+		final String sourceMethod = "getContributorId"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod);
@@ -198,6 +195,12 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 */
 	@Override
 	public String toString() {
-		return "(extensionPointId:"+extensionPointId+", uniqueId:" + uniqueId + ", contributorId:" + contributorId + ", instance:" + instance + ", attributes:" + attributes + ")";
+		return new StringBuffer()
+		    .append("{extensionPointId:").append(extensionPointId) //$NON-NLS-1$
+		    .append(", uniqueId:").append(uniqueId) //$NON-NLS-1$
+		    .append(", contributorId:").append(contributorId) //$NON-NLS-1$
+		    .append(", instance:").append(instance) //$NON-NLS-1$
+		    .append(", attributes:").append(attributes) //$NON-NLS-1$
+		    .append("}").toString(); //$NON-NLS-1$
 	}
 }
