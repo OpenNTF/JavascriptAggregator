@@ -17,6 +17,7 @@ package com.ibm.jaggr.service;
 
 import com.ibm.jaggr.core.IServiceReference;
 
+import org.osgi.framework.Bundle;
 import org.osgi.framework.ServiceReference;
 
 /**
@@ -37,6 +38,20 @@ public class ServiceReferenceOSGi implements IServiceReference {
 	@Override
 	public Object getPlatformObject() {
 		return ref;
+	}
+
+	@Override
+	public String toString() {
+		String result = super.toString();
+		Bundle bundle = ref.getBundle();
+		if (bundle != null) {
+			Object service = bundle.getBundleContext().getService(ref);
+			bundle.getBundleContext().ungetService(ref);
+			if (service != null) {
+				result += " - ServiceReference for service " + service.getClass().getName() + ": " + service.toString();
+			}
+		}
+		return result;
 	}
 
 }

@@ -30,21 +30,30 @@ import org.osgi.framework.ServiceRegistration;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This class provides the OSGi implementation of the
  * {@link IPlatformServices} interface.
  */
 public class PlatformServicesImpl implements IPlatformServices {
+	private static final Logger log = Logger.getLogger(PlatformServicesImpl.class.getName());
 
 	private final BundleContext bundleContext;
-	public static int resolved = Bundle.RESOLVED;
-	public static int active = Bundle.ACTIVE;
-	public static int stopping = Bundle.STOPPING;
 
 	public PlatformServicesImpl(BundleContext bc){
+		final String sourceMethod = "<ctor>";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{bc});
+		}
 		bundleContext = bc;
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod);
+		}
 	}
 
 	/*
@@ -56,12 +65,20 @@ public class PlatformServicesImpl implements IPlatformServices {
 	@Override
 	public IServiceRegistration registerService(String clazz, Object service,
 			Dictionary<String, String> properties) {
+		final String sourceMethod = "registerService";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{clazz, service, properties});
+		}
 		ServiceRegistrationOSGi serviceRegistrationOSGi = null;
 		ServiceRegistration serviceRegistration = null;
 		if (bundleContext != null) {
 			serviceRegistration = bundleContext.registerService(clazz, service,
 					properties);
 			serviceRegistrationOSGi = new ServiceRegistrationOSGi(serviceRegistration);
+		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, serviceRegistrationOSGi);
 		}
 		return serviceRegistrationOSGi;
 	}
@@ -74,6 +91,11 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public IServiceReference[] getServiceReferences(String clazz, String filter) throws PlatformServicesException {
+		final String sourceMethod = "getServiceReferences";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{clazz, filter});
+		}
 		ServiceReferenceOSGi[] refs = null;
 		try {
 			if (bundleContext != null) {
@@ -88,6 +110,9 @@ public class PlatformServicesImpl implements IPlatformServices {
 		} catch (InvalidSyntaxException e) {
 			throw new PlatformServicesException(e);
 		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, Arrays.asList(new IServiceReference[refs.length]));
+		}
 		return refs;
 
 	}
@@ -100,12 +125,20 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public Object getService(IServiceReference serviceReference) {
-		if (bundleContext != null) {
-			return bundleContext
-					.getService((ServiceReference) serviceReference.getPlatformObject());
-		} else {
-			return null;
+		final String sourceMethod = "getService";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, serviceReference);
 		}
+		Object result = null;
+		if (bundleContext != null) {
+			result = bundleContext
+					.getService((ServiceReference) serviceReference.getPlatformObject());
+		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 	/*
@@ -116,12 +149,20 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public boolean ungetService(IServiceReference serviceReference) {
-		if (bundleContext != null) {
-			return bundleContext
-					.ungetService((ServiceReference) serviceReference.getPlatformObject());
-		} else {
-			return false;
+		final String sourceMethod = "ungetService";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{serviceReference});
 		}
+		boolean result = false;
+		if (bundleContext != null) {
+			result = bundleContext
+					.ungetService((ServiceReference) serviceReference.getPlatformObject());
+		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 	/*
@@ -131,11 +172,19 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 */
 	@Override
 	public URL getResource(String resourceName) {
-		if (bundleContext != null) {
-			return bundleContext.getBundle().getResource(resourceName);
-		} else {
-			return null;
+		final String sourceMethod = "getResource";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{resourceName});
 		}
+		URL result = null;
+		if (bundleContext != null) {
+			result = bundleContext.getBundle().getResource(resourceName);
+		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 	/*
@@ -146,33 +195,55 @@ public class PlatformServicesImpl implements IPlatformServices {
 	@SuppressWarnings("unchecked")
 	@Override
 	public Dictionary<String, String> getHeaders() {
-		if (bundleContext != null && bundleContext.getBundle() != null) {
-			return bundleContext.getBundle().getHeaders();
-		} else {
-			return null;
+		final String sourceMethod = "getHeaders";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
 		}
+		Dictionary<String, String> result = null;
+		if (bundleContext != null && bundleContext.getBundle() != null) {
+			result = bundleContext.getBundle().getHeaders();
+		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 	@Override
 	public boolean isShuttingdown() {
+		final String sourceMethod = "isShuttingdown";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
+		}
+		boolean result = false;
 		if (bundleContext != null) {
 			int bundleState = bundleContext.getBundle().getState();
 			if (bundleState == Bundle.ACTIVE || bundleState == Bundle.STOPPING) {
-				return true;
-			} else {
-				return false;
+				result = true;
 			}
-		} else {
-			return false;
 		}
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 	@Override
 	public URI getAppContextURI() throws URISyntaxException {
-		URI uri = null;
-		uri = new URI("namedbundleresource://" +  //$NON-NLS-1$
+		final String sourceMethod = "getAppContextURI";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
+		}
+		URI result = new URI("namedbundleresource://" +  //$NON-NLS-1$
 				bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-1$
-		return uri;
+
+		if (isTraceLogging) {
+			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 }

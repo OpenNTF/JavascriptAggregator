@@ -18,6 +18,9 @@ package com.ibm.jaggr.service;
 
 import com.ibm.jaggr.core.IServiceRegistration;
 
+import org.osgi.framework.Bundle;
+import org.osgi.framework.ServiceReference;
+
 /**
  * OSGi platform implementation for {@code com.ibm.jaggr.core.ServiceRegistration} interface.
  * This class acts as a wrapper for {@code org.osgi.framework.ServiceRegistration} and uses this class
@@ -41,6 +44,28 @@ public class ServiceRegistrationOSGi implements IServiceRegistration {
 	@Override
 	public void unregister() {
 		serviceRegistrationOSGi.unregister();
+	}
+
+	@Override
+	public String toString() {
+		String result = super.toString();
+		if (serviceRegistrationOSGi != null) {
+			ServiceReference ref = serviceRegistrationOSGi.getReference();
+			if (ref != null) {
+				Bundle bundle = ref.getBundle();
+				if (bundle != null) {
+					Object service = bundle.getBundleContext().getService(ref);
+					if (service.toString() == null) {
+						System.out.println("");
+					}
+					bundle.getBundleContext().ungetService(ref);
+					if (service != null) {
+						result += " - ServiceRegistration for service " + service.getClass().getName() + ": " + service.toString();
+					}
+				}
+			}
+		}
+		return result;
 	}
 
 }

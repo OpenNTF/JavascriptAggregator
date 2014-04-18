@@ -36,7 +36,7 @@ import java.text.MessageFormat;
  */
 public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
 
-	static final String comboUriStr = "namedbundleresource://com.ibm.jaggr.core/WebContent/"; //$NON-NLS-1$ //$NON-NLS-2$
+	static final String comboUriStr = "namedbundleresource://com.ibm.jaggr.core/WebContent/"; //$NON-NLS-1$
 
 	private String resourcePathId = null;
 

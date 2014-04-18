@@ -80,7 +80,7 @@ public class AbstractDojoHttpTransportTest {
 		EasyMock.replay(mockExtension);
 		final List<IAggregatorExtension> extensions = new LinkedList<IAggregatorExtension>();
 		extensions.add(mockExtension);
-		EasyMock.expect(mockAggregator.getModuleBuilderExtensions()).andAnswer(new IAnswer<Iterable<IAggregatorExtension>>() {
+		EasyMock.expect(mockAggregator.getExtensions(IModuleBuilderExtensionPoint.ID)).andAnswer(new IAnswer<Iterable<IAggregatorExtension>>() {
 			@Override public Iterable<IAggregatorExtension> answer() throws Throwable {
 				return extensions;
 			}

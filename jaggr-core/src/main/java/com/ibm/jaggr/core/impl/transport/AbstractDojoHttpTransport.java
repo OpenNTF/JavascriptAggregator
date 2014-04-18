@@ -342,7 +342,7 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		super.initialize(aggregator, extension, reg);
 
 		// Get first resource factory extension so we can add to beginning of list
-		Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+		Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getExtensions(IResourceFactoryExtensionPoint.ID);
 		IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
 
 		// Register the loaderExt resource factory

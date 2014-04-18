@@ -47,8 +47,7 @@ public interface IExtensionInitializer {
 	 * Interface that can be used by Aggregator extensions to register
 	 * additional {@link IResourceFactory} or {@link IModuleBuilder} extensions.
 	 * For a list of currently registered extensions, call
-	 * {@link IAggregator#getResourceFactoryExtensions()} or
-	 * {@link IAggregator#getModuleBuilderExtensions()};
+	 * {@link IAggregator#getExtensions(String)}
 	 */
 	public interface IExtensionRegistrar {
 
@@ -63,7 +62,7 @@ public interface IExtensionInitializer {
 		 *            an object which implements {@link IResourceFactory} or
 		 *            {@link IModuleBuilder}.
 		 * @param attributes
-		 *            the extension attributes.
+		 *            the extension attributes and init-params
 		 * @param extensionPointId
 		 *            the extension point identifier
 		 * @param uniqueId

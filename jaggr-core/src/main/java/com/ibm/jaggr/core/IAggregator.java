@@ -149,7 +149,7 @@ public interface IAggregator {
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
 	 * The registered resource factory extension may be obtained by calling
-	 * {@link IAggregator#getResourceFactoryExtensions()};
+	 * {@link IAggregator#getExtensions(String)};
 	 * <p>
 	 * If a satisfactory resource factory cannot be found, then the unchecked
 	 * {@link UnsupportedOperationException} is thrown.
@@ -187,7 +187,7 @@ public interface IAggregator {
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
 	 * The registered module builder extensions may be obtained by calling
-	 * {@link #getModuleBuilderExtensions()}.
+	 * {@link #getExtensions(String)}.
 	 * <p>
 	 * If a satisfactory module builder still cannot be found, then the
 	 * unchecked {@link UnsupportedOperationException} is thrown.
@@ -238,34 +238,17 @@ public interface IAggregator {
 	public HttpServlet asServlet();
 
 	/**
-	 * Returns an {@link Iterable} for the collection of resource factory
-	 * extensions that have been registered for this aggregator. This includes
-	 * extensions obtained from the eclipse extension registry, as well as
-	 * extensions registered though the {@link IExtensionRegistrar} interface.
+	 * Returns an {@link Iterable} for the collection of aggregator extensions identified by
+	 * <code>extensionPointId</code>. This includes extensions obtained from the eclipse extension
+	 * registry, as well as extensions registered though the {@link IExtensionRegistrar} interface.
 	 *
-	 * @return An Iterable to the collection of resource factory extensions for
-	 *         this aggregator
+	 * @param extensionPointId
+	 *            The extension point id for the extensions to be returned, or null for all
+	 *            extensions.
+	 * @return An Iterable to the collection of matching extensions.
 	 */
-	public Iterable<IAggregatorExtension> getResourceFactoryExtensions();
+	public Iterable<IAggregatorExtension> getExtensions(String extensionPointId);
 
-	/**
-	 * Returns an {@link Iterable} for the collection of module builder
-	 * extensions that have been registered for this aggregator. This includes
-	 * extensions obtained from the eclipse extension registry, as well as
-	 * extensions registered though the {@link IExtensionRegistrar} interface.
-	 *
-	 * @return An Iterable to the collection of module builder extensions for
-	 *         this aggregator
-	 */
-	public Iterable<IAggregatorExtension> getModuleBuilderExtensions();
-
-	/**
-	 * Returns the {@code IAggregatorExtension} for the HttpTransport
-	 * for this aggregator.
-	 *
-	 * @return The IAggregatorExtension for the http transport.
-	 */
-	public IAggregatorExtension getHttpTransportExtension();
 	/**
 	 * Factory method for IModule instances.
 	 *

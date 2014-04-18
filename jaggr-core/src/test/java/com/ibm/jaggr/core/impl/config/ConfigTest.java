@@ -18,9 +18,9 @@ package com.ibm.jaggr.core.impl.config;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.test.MockAggregatorWrapper;
 import com.ibm.jaggr.core.test.TestUtils;
@@ -210,6 +210,7 @@ public class ConfigTest {
 				return dict;
 			}
 		}).anyTimes();
+		EasyMock.expect(mockPlatformServices.getServiceReferences(EasyMock.<String>anyObject(), EasyMock.<String>anyObject())).andReturn(new IServiceReference[]{}).anyTimes();
 		EasyMock.replay(mockPlatformServices);
 		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
 		EasyMock.replay(mockAggregator);

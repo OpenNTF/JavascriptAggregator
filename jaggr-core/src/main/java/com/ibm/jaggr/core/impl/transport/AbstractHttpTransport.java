@@ -529,7 +529,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			depsInitialized = new CountDownLatch(1);
 
 			// Get first resource factory extension so we can add to beginning of list
-			Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getResourceFactoryExtensions();
+			Iterable<IAggregatorExtension> resourceFactoryExtensions = aggregator.getExtensions(IResourceFactoryExtensionPoint.ID);
 			IAggregatorExtension first = resourceFactoryExtensions.iterator().next();
 
 			// Register the featureMap resource factory

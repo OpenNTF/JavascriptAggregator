@@ -54,6 +54,15 @@ public class InitParams implements Iterable<InitParam>{
 	 */
 	public static final String RESOURCEFACTORIES_INITPARAM = "resourcefactories"; //$NON-NLS-1$
 	/**
+	 * Name of the servlet init-param that specifies the name of the service provider extension(s)
+	 * used by this servlet. Multiple extensions may be specified using multple init-params. The
+	 * extensions will be initialized in the order that they are specified.
+	 * <p>
+	 * Service provider extensions are generally used to register OSGi services such as config
+	 * variable resolvers, etc.
+	 */
+	public static final String SERVICEPROVIDERS_INITPARAM = "serviceproviders"; //$NON-NLS-1$
+	/**
 	 * Name of the servlet init-param that specifies the URI to the server side
 	 * AMD config JSON. If the config JSON resides in the same bundle as the
 	 * defining servlet, then the config URI may specify a relative path
