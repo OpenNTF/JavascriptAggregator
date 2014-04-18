@@ -6,8 +6,9 @@ OpenNTF Alliance (http://www.OpenNTF.org/)
 
 This product is licensed under the terms of the Apache 2.0 license.
 
-The product includes the following third party code, licensed under the Eclipse Public License, modified and integrated into the file <insert path to file here>.
-NLS.java from the org.eclipse.osgi.util.NLS package.
+The product includes the following third party code, licensed under the Eclipse 
+Public License, modified and integrated into the file jaggr-core/src/main/java/com/ibm/jaggr/core/util/NLS.java.
+from the org.eclipse.osgi.util.NLS package.
 Available from http://archive.eclipse.org/equinox/drops/R-3.6.2-201102101200/download.php?dropFile=equinox-SDK-3.6.2.zip 
 
 The product includes the following third party packages:
@@ -72,7 +73,7 @@ Available from https://github.com/asual/lesscss-engine/tree/lesscss-engine-1.5.0
 Quire McKluisky Algoritm (Java), 2013-03-08
 Licensed under MIT
 Available from http://en.literateprograms.org/index.php?title=Special:DownloadCode/Quine-McCluskey_algorithm_%28Java%29&oldid=17357
-  /* Copyright (c) 2013 the authors listed at the following URL, and/or
+  Copyright (c) 2013 the authors listed at the following URL, and/or
   the authors of referenced articles or incorporated external code:
   http://en.literateprograms.org/Quine-McCluskey_algorithm_(Java)?action=history&offset= 20110925122251
 
