@@ -68,6 +68,16 @@ public class FileResource implements IResource {
 	/*
 	 * (non-Javadoc)
 	 *
+	 * @see com.ibm.jaggr.service.modules.Resource#getPath()
+	 */
+	@Override
+	public String getPath() {
+		return getURI(file).getPath();
+	}
+
+	/*
+	 * (non-Javadoc)
+	 *
 	 * @see com.ibm.jaggr.service.modules.Resource#exists()
 	 */
 	@Override
@@ -208,6 +218,18 @@ public class FileResource implements IResource {
 		@Override
 		public URI getURI() {
 			return FileResource.getURI(file);
+		}
+
+		/*
+		 * (non-Javadoc)
+		 *
+		 * @see
+		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
+		 * getPath()
+		 */
+		@Override
+		public String getPath() {
+			return getURI().getPath();
 		}
 
 		/*

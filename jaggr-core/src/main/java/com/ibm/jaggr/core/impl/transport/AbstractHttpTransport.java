@@ -1222,6 +1222,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 
 		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResource#getPath()
+		 */
+		@Override
+		public String getPath() {
+			return getURI().getPath();
+		}
+
+		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResource#exists()
 		 */
 		@Override

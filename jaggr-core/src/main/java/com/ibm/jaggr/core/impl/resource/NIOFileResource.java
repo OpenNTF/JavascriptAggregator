@@ -97,6 +97,10 @@ public class NIOFileResource extends FileResource {
 				return FileResource.getURI(file);
 			}
 			@Override
+			public String getPath() {
+				return getURI().getPath();
+			}
+			@Override
 			public Reader getReader() throws IOException {
 				return new InputStreamReader(new FileInputStream(file), "UTF-8"); //$NON-NLS-1$
 			}

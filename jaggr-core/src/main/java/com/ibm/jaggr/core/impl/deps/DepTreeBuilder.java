@@ -116,7 +116,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				if (resource.isFolder()) {
 					return true;
 				}
-				if (!resource.getURI().getPath().endsWith(".js")) { //$NON-NLS-1$
+				if (!resource.getPath().endsWith(".js")) { //$NON-NLS-1$
 					return false;
 				}
 				if (pathname == null) {
@@ -177,7 +177,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 
 			resource = aggregator.newResource(
 					uri.resolve((uri.getPath().endsWith("/") ? "../" : "./") + name)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			if (resource.exists()) {
+			if (resource != null && resource.exists()) {
 				visitor.visitResource(resource.asVisitorResource(), ""); //$NON-NLS-1$
 			}
 		}

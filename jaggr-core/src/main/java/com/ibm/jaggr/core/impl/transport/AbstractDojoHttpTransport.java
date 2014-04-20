@@ -593,9 +593,9 @@ public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport im
 		@Override
 		public boolean handles(URI uri) {
 			String path = uri.getPath();
-			if (path.equals(getLoaderExtensionPath())) {
+			if (path != null && path.equals(getLoaderExtensionPath())) {
 				if (uri.getScheme().equals(getComboUri().getScheme())
-						&& uri.getHost().equals(getComboUri().getHost())) {
+						&& (uri.getHost() == null || uri.getHost().equals(getComboUri().getHost()))) {
 					return true;
 				}
 			}

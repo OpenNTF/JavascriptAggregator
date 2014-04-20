@@ -53,6 +53,12 @@ public class ResolverResource implements IResource {
 	}
 
 	@Override
+	public String getPath() {
+		return getURI().getPath();
+	}
+
+
+	@Override
 	public boolean exists() {
 		return res.exists();
 	}

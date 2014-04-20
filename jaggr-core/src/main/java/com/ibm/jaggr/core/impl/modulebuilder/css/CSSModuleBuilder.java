@@ -46,6 +46,7 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
+import java.net.URL;
 import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -163,6 +164,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
 
 	static final protected Collection<String> s_inlineableImageTypes;
+
+	public IAggregator aggregatorInstance = null;
 	static {
 		s_inlineableImageTypes = new ArrayList<String>();
 		s_inlineableImageTypes.add("image/gif"); //$NON-NLS-1$
@@ -409,7 +412,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			importCss = readToString(
 					new CommentStrippingReader(
 							new InputStreamReader(
-									importRes.getURI().toURL().openStream(),
+									//importRes.getURI().toURL().openStream(),
+									importRes.getInputStream(),
 									"UTF-8" //$NON-NLS-1$
 									)
 							)
@@ -529,7 +533,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 
-			URI imageUri = res.getURI().resolve(urlMatch);
+			//URI imageUri = res.getURI().resolve(urlMatch);
+			URI imageUri = res.resolve(urlMatch).getURI();
 			boolean exclude = false, include = false;
 
 			// Determine if this image is in the include list
@@ -559,7 +564,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			InputStream in = null;
 			try {
 				// In-line the image.
-				URLConnection connection = imageUri.toURL().openConnection();
+				URL u = imageUri.toURL();
+				URLConnection connection = u.openConnection();
+
 				in = connection.getInputStream();
 				int size = connection.getContentLength();
 				String type = connection.getContentType();
@@ -574,7 +581,28 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					imageInlined = true;
 				}
 			} catch (IOException ex) {
-				if (log.isLoggable(Level.WARNING)) {
+				try {
+				// handle the case for JarResourceBundle
+				IResource imageResource = this.aggregatorInstance.newResource(imageUri);
+				//URLConnection connection = imageUri.toURL().openConnection();
+				in = imageResource.getInputStream();
+
+				//int size = imageResource.getContentLength();
+				//String type = imageResource.getContentType();
+				/*if (type == null) {
+					type = "content/unknown"; //$NON-NLS-1$
+				}*/
+			//	if (include || inlineableImageTypes.contains(type) && size <= imageSizeThreshold) {
+				if(false){
+					String base64 = getBase64(in);
+					System.out.println("base64" + base64);
+					m.appendReplacement(buf, ""); //$NON-NLS-1$
+					buf.append("url('data:" + "content/unknown" + //$NON-NLS-1$
+							";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
+					imageInlined = true;
+				}
+
+				/*if (log.isLoggable(Level.WARNING)) {
 					log.log(
 							Level.WARNING,
 							MessageFormat.format(
@@ -583,6 +611,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 									),
 									ex
 							);
+				}*/
+				}catch(Exception e){
+					e.printStackTrace();
 				}
 			} finally {
 				if (in != null) {
@@ -610,6 +641,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	protected String getBase64(URLConnection connection) throws IOException {
 		InputStream in = connection.getInputStream();
+		ByteArrayOutputStream out = new ByteArrayOutputStream();
+		CopyUtil.copy(in, out);
+		return new String(Base64.encodeBase64(out.toByteArray()), "UTF-8"); //$NON-NLS-1$
+	}
+
+	protected String getBase64(InputStream in) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		CopyUtil.copy(in, out);
 		return new String(Base64.encodeBase64(out.toByteArray()), "UTF-8"); //$NON-NLS-1$
@@ -678,7 +715,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-
+		aggregatorInstance = aggregator;
 		Hashtable<String, String> props;
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$

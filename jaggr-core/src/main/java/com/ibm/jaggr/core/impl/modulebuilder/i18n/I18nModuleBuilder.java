@@ -222,9 +222,10 @@ extends JavaScriptModuleBuilder {
 
 		// Get the available locales from disk
 		final Collection<String> result = new HashSet<String>();
-		final URI baseUri = res.getURI().resolve(""); //$NON-NLS-1$
+		//final URI baseUri = res.getURI().resolve(""); //$NON-NLS-1$
+		final URI baseUri = res.getURI(); //$NON-NLS-1$
 		final IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		String path = res.getURI().getPath();
+		String path = res.getPath();
 		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 		final String resourceName = idx == 0 ? path : path.substring(idx+1);
 		IResource baseRes = aggr.newResource(baseUri);

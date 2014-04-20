@@ -69,6 +69,7 @@ import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.StringReader;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Collections;
@@ -448,8 +449,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	@Override
 	public IModuleBuilder getModuleBuilder(String mid, IResource res) {
 		IModuleBuilder builder = null;
+		System.out.println("res.geturi " + res.getURI().toString());
 
-		String path = res.getURI().getPath();
+		String path = "";
+		//try {
+			path = res.getPath();
+			System.out.println("res.getpath " + res.getPath());
+		//}
 		int idx = path.lastIndexOf("."); //$NON-NLS-1$
 		String ext = (idx == -1) ? "" : path.substring(idx+1); //$NON-NLS-1$
 		if (ext.contains("/")) { //$NON-NLS-1$
@@ -923,6 +929,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		if (!servletDir.exists()) {
 			throw new FileNotFoundException(servletDir.getAbsolutePath());
 		}
+		System.out.println("Cache directory " + servletDir);
 		return servletDir;
 	}
 

@@ -60,6 +60,10 @@ public interface IResourceVisitor {
 		 * @return The URI for this resource
 		 */
 		public URI getURI();
+		/**
+		 * @return String The path for this resource
+		 */
+		public String getPath();
 
 		/**
 		 * @return True if the resource is a folder
