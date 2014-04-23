@@ -44,6 +44,13 @@ public interface IResource {
 	public URI getURI();
 
 	/**
+	 * Returns the path of the resource.
+	 *
+	 * @return String Path of the resource
+	 */
+	public String getPath();
+
+	/**
 	 * Returns true if the resource exists.
 	 *
 	 * @return True if the resource exists

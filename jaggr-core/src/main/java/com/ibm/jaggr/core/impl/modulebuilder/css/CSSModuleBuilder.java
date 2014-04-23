@@ -19,8 +19,8 @@ package com.ibm.jaggr.core.impl.modulebuilder.css;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
-import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.IServiceRegistration;
+import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -163,6 +163,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
 
 	static final protected Collection<String> s_inlineableImageTypes;
+
 	static {
 		s_inlineableImageTypes = new ArrayList<String>();
 		s_inlineableImageTypes.add("image/gif"); //$NON-NLS-1$
@@ -529,7 +530,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 
-			URI imageUri = res.getURI().resolve(urlMatch);
+			URI imageUri = res.resolve(urlMatch).getURI();
 			boolean exclude = false, include = false;
 
 			// Determine if this image is in the include list
@@ -560,6 +561,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			try {
 				// In-line the image.
 				URLConnection connection = imageUri.toURL().openConnection();
+
 				in = connection.getInputStream();
 				int size = connection.getContentLength();
 				String type = connection.getContentType();
@@ -678,7 +680,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
-
 		Hashtable<String, String> props;
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$

@@ -116,7 +116,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				if (resource.isFolder()) {
 					return true;
 				}
-				if (!resource.getURI().getPath().endsWith(".js")) { //$NON-NLS-1$
+				if (!resource.getPath().endsWith(".js")) { //$NON-NLS-1$
 					return false;
 				}
 				if (pathname == null) {

@@ -50,6 +50,14 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	}
 
 	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.resource.IResource#getPath()
+	 */
+	@Override
+	public String getPath() {
+		return getURI().getPath();
+	}
+
+	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.resource.IResource#exists()
 	 */
 	@Override
