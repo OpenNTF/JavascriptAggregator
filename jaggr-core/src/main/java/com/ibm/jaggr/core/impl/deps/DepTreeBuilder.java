@@ -177,7 +177,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 
 			resource = aggregator.newResource(
 					uri.resolve((uri.getPath().endsWith("/") ? "../" : "./") + name)); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			if (resource != null && resource.exists()) {
+			if (resource.exists()) {
 				visitor.visitResource(resource.asVisitorResource(), ""); //$NON-NLS-1$
 			}
 		}
