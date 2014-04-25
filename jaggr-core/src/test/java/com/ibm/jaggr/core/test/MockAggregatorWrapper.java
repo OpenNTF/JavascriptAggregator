@@ -139,18 +139,8 @@ public class MockAggregatorWrapper implements IAggregator {
 	}
 
 	@Override
-	public Iterable<IAggregatorExtension> getResourceFactoryExtensions() {
-		return mock.getResourceFactoryExtensions();
-	}
-
-	@Override
-	public Iterable<IAggregatorExtension> getModuleBuilderExtensions() {
-		return mock.getModuleBuilderExtensions();
-	}
-
-	@Override
-	public IAggregatorExtension getHttpTransportExtension() {
-		return mock.getHttpTransportExtension();
+	public Iterable<IAggregatorExtension> getExtensions(String extensionPointId) {
+		return mock.getExtensions(extensionPointId);
 	}
 
 	@Override

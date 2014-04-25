@@ -23,8 +23,7 @@ import java.util.Properties;
 /**
  * Interface for a registered aggregator extension.  An {@link Iterable} of
  * {@code IAggregatorExtension} objects is returned by the method
- * {@link IAggregator#getResourceFactoryExtensions()} and
- * {@link IAggregator#getModuleBuilderExtensions()},
+ * {@link IAggregator#getExtensions(String)}
  */
 public interface IAggregatorExtension {
 	/**
@@ -58,8 +57,8 @@ public interface IAggregatorExtension {
 	public Object getInstance();
 
 	/**
-	 * Returns the value of the specified attribute. These are the same as the
-	 * attribute values specified in the xml defining the extension, or in the
+	 * Returns the value of the specified attribute or init-param. These are the same as the
+	 * attribute and init-param values specified in the xml defining the extension, or in the
 	 * case of extensions registered through
 	 * {@link IExtensionRegistrar#registerExtension(Object, Properties, String, String, IAggregatorExtension)},
 	 * they are the attributes provided in the properties object.

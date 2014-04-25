@@ -45,6 +45,7 @@
 
 	notice: 'embed.txt',
 
-	cacheBust: '${project.version}' // This is a maven variable, replaced at build time (see pom file for filtered resources).
-		// You have other options for variable replacement in this file such as "scoped-variables" (see wiki for more info)
+	cacheBust: getBundleVersionsHash(					// Gets hash of header values in specified bundles
+			["Bundle-Version","Bnd-LastModified"], 		// Header values to include
+			"com.ibm.jaggr.sample", "com.ibm.jaggr.sample.dojo")	// bundles to get header values from
 }

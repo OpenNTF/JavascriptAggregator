@@ -220,6 +220,8 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 	 * So that unit test cases can provide alternative implementation
 	 */
 	protected Bundle getBundle(String bundleName) {
+		// TODO: Figure out how to get the same version of the bundle that was resolved for
+		// for the current application.
 		return Platform.getBundle(bundleName);
 	}
 }

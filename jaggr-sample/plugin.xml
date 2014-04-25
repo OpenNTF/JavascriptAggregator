@@ -21,6 +21,7 @@
       <!-- No scheme on the URI means the resource is located 
            in the same resource bundle as this file -->
       <init-param name="config" value="testaggr-config.js"/>
+      <init-param name="serviceproviders" value="com.ibm.jaggr.service.configextension.bundleVersionsHash"/>
     </servlet>
   </extension>
 
@@ -37,4 +38,5 @@
   <extension point="org.eclipse.equinox.http.registry.resources">
     <resource alias="/test/res" base-name="/" httpcontextId="resources" />
   </extension>
+
 </plugin>

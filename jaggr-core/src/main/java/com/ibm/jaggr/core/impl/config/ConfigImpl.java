@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigModifier;
+import com.ibm.jaggr.core.config.IConfigScopeModifier;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -38,6 +39,7 @@ import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -850,6 +852,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 
+			// Call the registered scope modifiers
+			callConfigScopeModifiers(cx, sharedScope);
+
 			cx.evaluateString(sharedScope, "var config = " +  //$NON-NLS-1$
 					aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
 						@Override
@@ -1173,7 +1178,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	protected String loadCacheBust(Scriptable cfg) {
 		String result = null;
 		Object value = cfg.get(CACHEBUST_CONFIGPARAM, cfg);
-		if (value != Scriptable.NOT_FOUND) {
+		if (value != Scriptable.NOT_FOUND && value != Undefined.instance) {
 			result = Context.toString(value);
 		}
 		return result;
@@ -1185,10 +1190,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * modify the raw config before config properties are evaluated.
 	 *
 	 * @param rawConfig
-	 *            A map of the top level properties in the config JavaScript. Lower
-	 *            level javascript arrays are represented as
-	 *            {@code List<Object>} and lower level javascript objects
-	 *            are represented as {@code Map<String, Object>}.
+	 *            The config object as a {@link Scriptable}.
 	 */
 	protected void callConfigModifiers(Scriptable rawConfig) {
 		if( aggregator.getPlatformServices() != null){
@@ -1221,12 +1223,50 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 	}
 
-	/* (non-Javadoc)
+	/**
+	 * Calls the registered config scope modifiers to give them an opportunity to
+	 * prepare the scope object prior to evaluating the config JavaScript
+	 *
+	 * @param context
+	 *            The JavaScript context object
+	 * @param scope
+	 *            The object representing the execution scope for the evaluation.
+	 */
+	protected void callConfigScopeModifiers(Context context, Scriptable scope) {
+		if( aggregator.getPlatformServices() != null){
+			IServiceReference[] refs = null;
+			try {
+				refs =  aggregator.getPlatformServices().getServiceReferences(IConfigScopeModifier.class.getName(), "(name="+getAggregator().getName()+")"); //$NON-NLS-1$  //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
+
+			if (refs != null) {
+				for (IServiceReference ref : refs) {
+					IConfigScopeModifier adaptor =
+							(IConfigScopeModifier) aggregator.getPlatformServices().getService(ref);
+					if (adaptor != null) {
+						try {
+							adaptor.modifyScope(getAggregator(), context, scope);
+						} catch (Exception e) {
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, e.getMessage(), e);
+							}
+						} finally {
+							aggregator.getPlatformServices().ungetService(ref);
+						}
+					}
+				}
+			}
+		}
+	}	/* (non-Javadoc)
 	 * @see java.lang.Object#toString()
 	 */
 	@Override
 	public String toString() {
-		return strConfig;
+		return strConfig != null ? strConfig : "{}"; //$NON-NLS-1$
 	}
 
 	/* (non-Javadoc)

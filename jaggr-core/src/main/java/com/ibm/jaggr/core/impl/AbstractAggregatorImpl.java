@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IRequestListener;
+import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
@@ -55,6 +56,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
@@ -71,8 +73,10 @@ import java.io.ObjectOutputStream;
 import java.io.StringReader;
 import java.net.URI;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -137,6 +141,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 
 	private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
+	private LinkedList<IAggregatorExtension> serviceProviderExtensions = new LinkedList<IAggregatorExtension>();
 	private IAggregatorExtension httpTransportExtension = null;
 	protected IPlatformServices platformServices;
 
@@ -413,7 +418,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	@Override
 	public IHttpTransport getTransport() {
-		return (IHttpTransport)getHttpTransportExtension().getInstance();
+		 IAggregatorExtension ext = getExtensions(IHttpTransportExtensionPoint.ID).iterator().next();
+		 return (IHttpTransport)(ext != null ? ext.getInstance() : null);
 	}
 
 	/* (non-Javadoc)
@@ -424,7 +430,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		IResourceFactory factory = null;
 		String scheme = uri.getScheme();
 
-		for (IAggregatorExtension extension : getResourceFactoryExtensions()) {
+		for (IAggregatorExtension extension : getExtensions(IResourceFactoryExtensionPoint.ID)) {
 			if (scheme.equals(extension.getAttribute(IResourceFactoryExtensionPoint.SCHEME_ATTRIBUTE))) {
 				IResourceFactory test = (IResourceFactory)extension.getInstance();
 				if (test.handles(uri)) {
@@ -456,7 +462,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			ext = ""; //$NON-NLS-1$
 		}
 
-		for (IAggregatorExtension extension : getModuleBuilderExtensions()) {
+		for (IAggregatorExtension extension : getExtensions(IModuleBuilderExtensionPoint.ID)) {
 			String extAttrib = extension.getAttribute(IModuleBuilderExtensionPoint.EXTENSION_ATTRIBUTE);
 			if (ext.equals(extAttrib) || "*".equals(extAttrib)) { //$NON-NLS-1$
 				IModuleBuilder test = (IModuleBuilder)extension.getInstance();
@@ -475,29 +481,24 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IAggregator#getResourceFactoryExtensions()
-	 */
 	@Override
-	public Iterable<IAggregatorExtension> getResourceFactoryExtensions() {
-		return Collections.unmodifiableList(resourceFactoryExtensions);
+	public Iterable<IAggregatorExtension> getExtensions(String extensionPointId) {
+		List<IAggregatorExtension> result = new ArrayList<IAggregatorExtension>();
+		if (extensionPointId == null || extensionPointId == IResourceFactoryExtensionPoint.ID) {
+			result.addAll(resourceFactoryExtensions);
+		}
+		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
+			result.addAll(moduleBuilderExtensions);
+		}
+		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
+			result.addAll(serviceProviderExtensions);
+		}
+		if (extensionPointId == null || extensionPointId == IHttpTransportExtensionPoint.ID) {
+			result.add(httpTransportExtension);
+		}
+		return result;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IAggregator#getModuleBuilderExtensions()
-	 */
-	@Override
-	public Iterable<IAggregatorExtension> getModuleBuilderExtensions() {
-		return Collections.unmodifiableList(moduleBuilderExtensions);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.IAggregator#getHttpTransportExtension()
-	 */
-	@Override
-	public IAggregatorExtension getHttpTransportExtension() {
-		return httpTransportExtension;
-	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleFactory#newModule(java.lang.String, java.net.URI)
@@ -772,82 +773,76 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	}
 
 	/**
-	 * Adds the specified resource factory extension to the list of registered
-	 * resource factory extensions.
+	 * Adds the specified extension to the list of registered extensions.
 	 *
-	 * @param loadedExt
+	 * @param ext
 	 *            The extension to add
 	 * @param before
-	 *            Reference to an existing resource factory extension that the
+	 *            Reference to an existing extension that the
 	 *            new extension should be placed before in the list. If null,
 	 *            then the new extension is added to the end of the list
 	 */
-	protected void registerResourceFactory(IAggregatorExtension loadedExt, IAggregatorExtension before) {
-		if (!(loadedExt.getInstance() instanceof IResourceFactory)) {
-			throw new IllegalArgumentException(loadedExt.getInstance().getClass().getName());
+	protected void registerExtension(IAggregatorExtension ext, IAggregatorExtension before) {
+		final String sourceMethod = "registerExtension"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{ext, before});
 		}
-		if (before == null) {
-			resourceFactoryExtensions.add(loadedExt);
+		// validate type
+		String id = ext.getExtensionPointId();
+		if (IHttpTransportExtensionPoint.ID.equals(id)) {
+			if (before != null) {
+				throw new IllegalArgumentException(before.getExtensionPointId());
+			}
+			httpTransportExtension = ext;
 		} else {
-			// find the extension to insert the item in front of
-			boolean inserted = false;
-			for (int i = 0; i < resourceFactoryExtensions.size(); i++) {
-				if (resourceFactoryExtensions.get(i) == before) {
-					resourceFactoryExtensions.add(i, loadedExt);
-					inserted = true;
-					break;
+			List<IAggregatorExtension> list;
+			if (IResourceFactoryExtensionPoint.ID.equals(id)) {
+				list = resourceFactoryExtensions;
+			} else if (IModuleBuilderExtensionPoint.ID.equals(id)) {
+				list = moduleBuilderExtensions;
+			} else if (IServiceProviderExtensionPoint.ID.equals(id)) {
+				list = serviceProviderExtensions;
+			} else {
+				throw new IllegalArgumentException(id);
+			}
+			if (before == null) {
+				list.add(ext);
+			} else {
+				// find the extension to insert the item in front of
+				boolean inserted = false;
+				for (int i = 0; i < list.size(); i++) {
+					if (list.get(i) == before) {
+						resourceFactoryExtensions.add(i, ext);
+						inserted = true;
+						break;
+					}
+				}
+				if (!inserted) {
+					throw new IllegalArgumentException();
 				}
 			}
-			if (!inserted) {
-				throw new IllegalArgumentException();
-			}
-		}
-	}
-
-	/**
-	 * Adds the specified module builder extension to the list of registered
-	 * module builder extensions.
-	 *
-	 * @param loadedExt
-	 *            The extension to add
-	 * @param before
-	 *            Reference to an existing module builder extension that the
-	 *            new extension should be placed before in the list. If null,
-	 *            then the new extension is added to the end of the list
-	 */
-	protected void registerModuleBuilder(IAggregatorExtension loadedExt, IAggregatorExtension before) {
-		if (!(loadedExt.getInstance() instanceof IModuleBuilder)) {
-			throw new IllegalArgumentException(loadedExt.getInstance().getClass().getName());
-		}
-		if (before == null) {
-			moduleBuilderExtensions.add(loadedExt);
-		} else {
-			// find the extension to insert the item in front of
-			boolean inserted = false;
-			for (int i = 0; i < moduleBuilderExtensions.size(); i++) {
-				if (moduleBuilderExtensions.get(i) == before) {
-					moduleBuilderExtensions.add(i, loadedExt);
-					inserted = true;
-					break;
+			// If this is a service provider extension the  register the specified service if
+			// one is indicated.
+			if (IServiceProviderExtensionPoint.ID.equals(id)) {
+				String interfaceName = ext.getAttribute(IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE);
+				if (interfaceName != null) {
+					try {
+						Dictionary<String, String> props = new Hashtable<String, String>();
+						props.put("name", getName()); //$NON-NLS-1$
+						registrations.add(getPlatformServices().registerService(interfaceName, ext.getInstance(), props));
+					} catch (Exception e) {
+						if (log.isLoggable(Level.WARNING)) {
+							log.log(Level.WARNING, e.getMessage(), e);
+						}
+					}
 				}
-			}
-			if (!inserted) {
-				throw new IllegalArgumentException();
-			}
-		}
-	}
 
-	/**
-	 * Registers the specified http transport extension as the
-	 * http transport for this aggregator.
-	 *
-	 * @param loadedExt The extension to register
-	 */
-	protected void registerHttpTransport(IAggregatorExtension loadedExt) {
-		if (!(loadedExt.getInstance() instanceof IHttpTransport)) {
-			throw new IllegalArgumentException(loadedExt.getInstance().getClass().getName());
+			}
 		}
-		httpTransportExtension = loadedExt;
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
 	}
 
 
@@ -861,11 +856,19 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @param reg The extension registrar.
 	 */
 	protected void callExtensionInitializers(Iterable<IAggregatorExtension> extensions, ExtensionRegistrar reg) {
+		final String sourceMethod = "callextensionInitializers"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{extensions, reg});
+		}
 		for (IAggregatorExtension extension : extensions) {
 			Object instance = extension.getInstance();
 			if (instance instanceof IExtensionInitializer) {
 				((IExtensionInitializer)instance).initialize(this, extension, reg);
 			}
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
 	}
 
@@ -1064,32 +1067,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			if (!open) {
 				throw new IllegalStateException("ExtensionRegistrar is closed"); //$NON-NLS-1$
 			}
-			IAggregatorExtension extension;
-			if (impl instanceof IResourceFactory) {
-				extension = new AggregatorExtension(
+			IAggregatorExtension extension = new AggregatorExtension(
 						impl,
 						new Properties(attributes),
 						extensionPointId,
 						uniqueId
 						);
-				registerResourceFactory(
-						extension,
-						before
-						);
-			} else if (impl instanceof IModuleBuilder) {
-				extension = new AggregatorExtension(
-						impl,
-						attributes,
-						extensionPointId,
-						uniqueId
-						);
-				registerModuleBuilder(
-						extension,
-						before
-						);
-			} else {
-				throw new UnsupportedOperationException(impl.getClass().getName());
-			}
+			AbstractAggregatorImpl.this.registerExtension(extension, before);
 			if (impl instanceof IExtensionInitializer) {
 				((IExtensionInitializer)impl).initialize(AbstractAggregatorImpl.this, extension, this);
 			}

@@ -156,8 +156,8 @@
     	<scope>provided</scope>
     </dependency>
     <dependency>
-    	<groupId>org.eclipse.core</groupId>
-    	<artifactId>runtime</artifactId>
+    	<groupId>org.eclipse.core.runtime</groupId>
+    	<artifactId>compatibility</artifactId>
     	<scope>provided</scope>
     </dependency>
   </dependencies>

@@ -29,6 +29,11 @@
 			id="httptransport"
 			name="Asynchronous Module Definition (AMD) HTTP Transport"
 			schema="schema/httptransport.exsd"/>
+			
+	<extension-point
+	        id="serviceprovider"
+	        name="Service provider aggregator extension"
+	        schema="schema/serviceprovider.exsd"/>
 
 	<extension
 			id="default.resourcefactories"
@@ -63,5 +68,15 @@
 			point="com.ibm.jaggr.service.httptransport">
 		<transport path="combo"
 		           class="com.ibm.jaggr.service.impl.transport.DojoHttpTransport"/>
+	</extension>
+	
+	<extension
+	        id="configextension.bundleVersionsHash"
+	        point="com.ibm.jaggr.service.serviceprovider">
+		<serviceprovider 
+		         class="com.ibm.jaggr.service.impl.config.BundleVersionsHash" 
+		         service="com.ibm.jaggr.core.config.IConfigScopeModifier">
+			<init-param name="propName" value="getBundleVersionsHash"/>
+		</serviceprovider>
 	</extension>
 </plugin>

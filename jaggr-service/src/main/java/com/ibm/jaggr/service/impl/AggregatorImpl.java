@@ -17,7 +17,7 @@
 package com.ibm.jaggr.service.impl;
 
 import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IAggregatorExtension;
+import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.NotFoundException;
@@ -26,13 +26,10 @@ import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
 import com.ibm.jaggr.core.impl.AggregatorExtension;
 import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
-import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
@@ -57,7 +54,7 @@ import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -323,118 +320,149 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	}
 
 	/**
-	 * Loads and initializes the resource factory, module builder and
-	 * http transport extensions specified in the configuration
-	 * element for this aggregator
+	 * Loads and initializes the resource factory, module builder, service provider and
+	 * http transport extensions specified in the configuration element for this aggregator
 	 *
 	 * @param configElem The configuration element
 	 * @throws CoreException
 	 * @throws NotFoundException
 	 */
 	protected void initExtensions(IConfigurationElement configElem) throws CoreException, NotFoundException {
+		final String sourceMethod = "initExtensions"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configElem});
+		}
 		/*
 		 *  Init the resource factory extensions
 		 */
-		Collection<String> resourceFactories = getInitParams().getValues(InitParams.RESOURCEFACTORIES_INITPARAM);
-		if (resourceFactories.size() == 0) {
-			resourceFactories.add(DEFAULT_RESOURCEFACTORIES);
-		}
 		IExtensionRegistry registry = Platform.getExtensionRegistry();
-		for (String resourceFactory : resourceFactories) {
+		Collection<String> extensionIds = getInitParams().getValues(InitParams.RESOURCEFACTORIES_INITPARAM);
+		if (extensionIds.size() == 0) {
+			extensionIds.add(DEFAULT_RESOURCEFACTORIES);
+		}
+
+		List<IExtension> extensions = new ArrayList<IExtension>();
+		for (String extensionId : extensionIds) {
 			IExtension extension = registry.getExtension(
 					IResourceFactoryExtensionPoint.NAMESPACE,
 					IResourceFactoryExtensionPoint.NAME,
-					resourceFactory);
+					extensionId);
 			if (extension == null) {
-				throw new NotFoundException(resourceFactory);
+				throw new NotFoundException(extensionId);
 			}
-			for (IConfigurationElement member : extension.getConfigurationElements()) {
-				IResourceFactory factory = (IResourceFactory)member.createExecutableExtension("class"); //$NON-NLS-1$
-				Properties props = new Properties();
-				for (String name : member.getAttributeNames()) {
-					props.put(name, member.getAttribute(name));
-				}
-				registerResourceFactory(
-						new AggregatorExtension(factory, props,
-								extension.getExtensionPointUniqueIdentifier(),
-								extension.getUniqueIdentifier()
-								), null
-						);
-			}
+			extensions.add(extension);
 		}
 
 		/*
 		 *  Init the module builder extensions
 		 */
-		Collection<String> moduleBuilders = getInitParams().getValues(InitParams.MODULEBUILDERS_INITPARAM);
-		if (moduleBuilders.size() == 0) {
-			moduleBuilders.add(DEFAULT_MODULEBUILDERS);
+		extensionIds = getInitParams().getValues(InitParams.MODULEBUILDERS_INITPARAM);
+		if (extensionIds.size() == 0) {
+			extensionIds.add(DEFAULT_MODULEBUILDERS);
 		}
-		for (String moduleBuilder : moduleBuilders) {
+		for (String extensionId : extensionIds) {
 			IExtension extension = registry.getExtension(
 					IModuleBuilderExtensionPoint.NAMESPACE,
 					IModuleBuilderExtensionPoint.NAME,
-					moduleBuilder);
+					extensionId);
 			if (extension == null) {
-				throw new NotFoundException(moduleBuilder);
+				throw new NotFoundException(extensionId);
 			}
-			for (IConfigurationElement member : extension.getConfigurationElements()) {
-				IModuleBuilder builder = (IModuleBuilder)member.createExecutableExtension("class"); //$NON-NLS-1$
-				Properties props = new Properties();
-				for (String name : member.getAttributeNames()) {
-					props.put(name, member.getAttribute(name));
-				}
-				registerModuleBuilder(
-						new AggregatorExtension(builder, props,
-								extension.getExtensionPointUniqueIdentifier(),
-								extension.getUniqueIdentifier()
-								), null
-						);
-			}
+			extensions.add(extension);
 		}
 
 		/*
 		 * Init the http transport extension
 		 */
-		Collection<String> transports = getInitParams().getValues(InitParams.TRANSPORT_INITPARAM);
-		if (transports.size() == 0) {
-			transports.add(DEFAULT_HTTPTRANSPORT);
+		{
+			extensionIds = getInitParams().getValues(InitParams.TRANSPORT_INITPARAM);
+			if (extensionIds.size() == 0) {
+				extensionIds.add(DEFAULT_HTTPTRANSPORT);
+			}
+			if (extensionIds.size() != 1) {
+				throw new IllegalStateException(extensionIds.toString());
+			}
+			IExtension extension = registry.getExtension(
+					IHttpTransportExtensionPoint.NAMESPACE,
+					IHttpTransportExtensionPoint.NAME,
+					extensionIds.iterator().next());
+			if (extension == null) {
+				throw new NotFoundException(extensionIds.iterator().next());
+			}
+			extensions.add(extension);
 		}
-		if (transports.size() != 1) {
-			throw new IllegalStateException(transports.toString());
+		/*
+		 *  Init the serviceprovider extensions
+		 */
+		extensionIds = getInitParams().getValues(InitParams.SERVICEPROVIDERS_INITPARAM);
+		for (String extensionId : extensionIds) {
+			IExtension extension = registry.getExtension(
+					IServiceProviderExtensionPoint.NAMESPACE,
+					IServiceProviderExtensionPoint.NAME,
+					extensionId);
+			if (extension == null) {
+				throw new NotFoundException(extensionId);
+			}
+			extensions.add(extension);
 		}
-		String transportName = transports.iterator().next();
-		IExtension extension = registry.getExtension(
-				IHttpTransportExtensionPoint.NAMESPACE,
-				IHttpTransportExtensionPoint.NAME,
-				transportName);
-		if (extension == null) {
-			throw new NotFoundException(transportName);
-		}
-		IConfigurationElement member = extension.getConfigurationElements()[0];
-		Properties props = new Properties();
-		IHttpTransport transport = (IHttpTransport)member.createExecutableExtension("class"); //$NON-NLS-1$
-		for (String attrname : member.getAttributeNames()) {
-			props.put(attrname, member.getAttribute(attrname));
-		}
-		registerHttpTransport(
-				new AggregatorExtension(transport, props,
-						extension.getExtensionPointUniqueIdentifier(),
-						extension.getUniqueIdentifier()
-						)
-				);
+
+		initExtensions(extensions.toArray(new IExtension[extensions.size()]));
 
 		/*
 		 *  Now call setAggregator on the loaded extensions starting with the
 		 *  transport and then the rest of the extensions.
 		 */
 		ExtensionRegistrar reg = new ExtensionRegistrar();
-		callExtensionInitializers(Arrays.asList(new IAggregatorExtension[]{getHttpTransportExtension()}), reg);
-		callExtensionInitializers(getResourceFactoryExtensions(), reg);
-		callExtensionInitializers(getModuleBuilderExtensions(), reg);
+		callExtensionInitializers(getExtensions(null), reg);
 		reg.closeRegistration();
+
+		if (isTraceLogging) {
+			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+		}
 	}
 
-
+	/**
+	 * Common routine to initialize {@link IExtension} objects with the aggregator.  Instantiates the
+	 * extension instances registers the instances with the aggregator.
+	 *
+	 * @param extensions
+	 *            array of {@link IExtension} objects to be initialized
+	 */
+	protected void initExtensions(IExtension[] extensions) {
+		final String sourceMethod = "initExtension"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{extensions});
+		}
+		for (IExtension extension : extensions) {
+			for (IConfigurationElement member : extension.getConfigurationElements()) {
+				try {
+					Object ext = member.createExecutableExtension("class"); //$NON-NLS-1$
+					Properties props = new Properties();
+					for (String attributeName : member.getAttributeNames()) {
+						props.put(attributeName, member.getAttribute(attributeName));
+					}
+					IConfigurationElement[] children = member.getChildren("init-param"); //$NON-NLS-1$
+					for( IConfigurationElement child : children) {
+						props.put(child.getAttribute("name"), child.getAttribute("value")); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+					registerExtension(
+							new AggregatorExtension(ext, props,
+									extension.getExtensionPointUniqueIdentifier(),
+									extension.getUniqueIdentifier()
+									), null
+							);
+				} catch (CoreException ex) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.log(Level.WARNING, ex.getMessage(), ex);
+					}
+				}
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+		}
+	}
 }
 

@@ -158,7 +158,8 @@
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>  
             <Export-Package>
               ${project.groupId}.core;version="${project.version}",
-              ${project.groupId}.core.*;version="${project.version}"
+              ${project.groupId}.core.*;version="${project.version}",
+              org.mozilla.javascript
             </Export-Package>          
             <Import-Package>
               javax.servlet;version="[2,4)",
