@@ -16,80 +16,17 @@
 package com.ibm.jaggr.service.impl.transport;
 
 import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
-import com.ibm.jaggr.core.impl.transport.Messages;
-
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
-import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
-import org.osgi.framework.Bundle;
-import org.osgi.framework.BundleException;
 
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.text.MessageFormat;
 
 /**
  * Extends {@link AbstractDojoHttpTransport} for OSGi platform
  *
  */
-public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExecutableExtension {
+public class DojoHttpTransport extends AbstractDojoHttpTransport {
 
-	static final String comboUriStr = "namedbundleresource://com.ibm.jaggr.core/WebContent/"; //$NON-NLS-1$
+	private URI comboUri = URI.create("namedbundleresource://com.ibm.jaggr.core/WebContent/"); //$NON-NLS-1$
 
-	private String resourcePathId = null;
-
-	private URI comboUri = null;
-
-	private String pluginUniqueId = null;
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
-	 */
-	@Override
-	public void setInitializationData(IConfigurationElement config, String propertyName,
-			Object data) throws CoreException {
-
-		// Make sure the contributing bundle is started
-		Bundle contributingBundle = Platform.getBundle(config.getNamespaceIdentifier());
-		if (contributingBundle.getState() != Bundle.ACTIVE) {
-			try {
-				contributingBundle.start();
-			} catch (BundleException e) {
-				throw new CoreException(
-						new Status(Status.ERROR, config.getNamespaceIdentifier(),
-								e.getMessage(), e)
-						);
-			}
-		}
-
-		// Get the resource (combo) path name from the this extension's
-		// path attribute
-		resourcePathId = config.getAttribute(PATH_ATTRNAME);
-		if (resourcePathId == null) {
-			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(),
-							MessageFormat.format(
-									Messages.AbstractHttpTransport_1,
-									new Object[]{config.getDeclaringExtension().getUniqueIdentifier()}
-									)
-							)
-					);
-		}
-		// Save this extension's pluginUniqueId
-		pluginUniqueId = config.getDeclaringExtension().getUniqueIdentifier();
-
-		// Initialize the combo uri
-		try {
-			comboUri = new URI(comboUriStr);
-		} catch (URISyntaxException e) {
-			throw new CoreException(
-					new Status(Status.ERROR, config.getNamespaceIdentifier(),
-							e.getMessage(), e)
-					);
-		}
-	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getComboUri()
@@ -97,22 +34,6 @@ public class DojoHttpTransport extends AbstractDojoHttpTransport implements IExe
 	@Override
 	protected URI getComboUri() {
 		return comboUri;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getTransportId()
-	 */
-	@Override
-	protected String getTransportId() {
-		return pluginUniqueId;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.impl.transport.AbstractHttpTransport#getResourcePathId()
-	 */
-	@Override
-	protected String getResourcePathId() {
-		return resourcePathId;
 	}
 
 }

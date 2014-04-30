@@ -176,6 +176,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private List<String> moduleIdList = null;
 	private byte[] moduleIdListHash = null;
 
+	private String resourcePathId = null;
+	private String transportId = null;
+
+
 	/** default constructor */
 	public AbstractHttpTransport() {}
 
@@ -506,6 +510,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
 		this.aggregator = aggregator;
 
+		resourcePathId = extension.getAttribute(PATH_ATTRNAME);
+		if (resourcePathId == null) {
+			throw new IllegalArgumentException(
+					MessageFormat.format(
+							Messages.AbstractHttpTransport_1,
+							new Object[]{extension.getUniqueId()}
+					)
+			);
+		}
+
+		transportId = extension.getUniqueId();
+
 		URI featureListResourceUri = getFeatureListResourceUri();
 		// register a config listener so that we get notified of changes to
 		// the server-side AMD config file.
@@ -565,7 +581,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @return the plugin unique id.
 	 */
-	abstract protected String getTransportId();
+	protected String getTransportId() {
+		return transportId;
+	}
 
 	/**
 	 * Default implementation that returns null URI. Subclasses should
@@ -593,7 +611,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @return the resource path id
 	 */
-	abstract protected String getResourcePathId();
+	protected String getResourcePathId() {
+		return resourcePathId;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#contributeLoaderExtensionJavaScript(java.lang.String)
