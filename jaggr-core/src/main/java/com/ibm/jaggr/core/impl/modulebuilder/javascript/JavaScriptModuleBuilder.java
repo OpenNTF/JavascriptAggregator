@@ -465,7 +465,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public boolean handles(String mid, IResource resource) {
-		return resource.getURI().getPath().endsWith(".js"); //$NON-NLS-1$
+		return resource.getPath().endsWith(".js"); //$NON-NLS-1$
 	}
 
 	protected List<ICacheKeyGenerator> getCacheKeyGenerators(Set<String> dependentFeatures) {

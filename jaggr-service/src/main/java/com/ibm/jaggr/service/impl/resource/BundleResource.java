@@ -174,6 +174,11 @@ public class BundleResource implements IResource {
 		}
 	}
 
+	@Override
+	public String getPath() {
+		return getURI().getPath();
+	}
+
 	private static class VisitorResource implements IResourceVisitor.Resource {
 
 		URL url;
@@ -227,5 +232,12 @@ public class BundleResource implements IResource {
 		public InputStream getInputStream() throws IOException {
 			return url.openConnection().getInputStream();
 		}
+
+		@Override
+		public String getPath() {
+			return getURI().getPath();
+		}
 	}
+
+
 }

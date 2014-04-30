@@ -279,8 +279,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
 		}
-		RequestedModuleNames requestedModuleNames =
-				new RequestedModuleNames(request, moduleIdList, Arrays.copyOf(moduleIdListHash, moduleIdListHash.length));
+
+		RequestedModuleNames requestedModuleNames = null;
+		if (moduleIdList == null){
+			requestedModuleNames = new RequestedModuleNames(request, null, null);
+		}else{
+			requestedModuleNames = new RequestedModuleNames(request, moduleIdList, Arrays.copyOf(moduleIdListHash, moduleIdListHash.length));
+		}
 		request.setAttribute(REQUESTEDMODULENAMES_REQATTRNAME, requestedModuleNames);
 		if (isTraceLogging) {
 			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
@@ -1089,7 +1094,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		StringBuffer sb = new StringBuffer();
 		Map<String, Integer> map = getModuleIdMap();
-		if (map != null || getModuleIdRegFunctionName() == null) {
+		if (map != null && getModuleIdRegFunctionName() != null) {
 			Collection<String> names = getSyntheticModuleNames();
 			if (names != null && names.size() > 0) {
 				// register the text plugin name (combo/text) and name id with the client
@@ -1239,6 +1244,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		@Override
 		public URI getURI() {
 			return res.getURI();
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.service.resource.IResource#getPath()
+		 */
+		@Override
+		public String getPath() {
+			return getURI().getPath();
 		}
 
 		/* (non-Javadoc)

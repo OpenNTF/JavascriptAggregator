@@ -455,7 +455,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	public IModuleBuilder getModuleBuilder(String mid, IResource res) {
 		IModuleBuilder builder = null;
 
-		String path = res.getURI().getPath();
+		String path = res.getPath();
 		int idx = path.lastIndexOf("."); //$NON-NLS-1$
 		String ext = (idx == -1) ? "" : path.substring(idx+1); //$NON-NLS-1$
 		if (ext.contains("/")) { //$NON-NLS-1$

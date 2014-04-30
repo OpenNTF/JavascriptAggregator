@@ -48,6 +48,11 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 	}
 
 	@Override
+	public String getPath() {
+		return getURI().getPath();
+	}
+
+	@Override
 	public boolean exists() {
 		return true;
 	}
