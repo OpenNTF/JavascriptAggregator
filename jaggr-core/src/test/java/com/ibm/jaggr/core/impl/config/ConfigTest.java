@@ -314,6 +314,14 @@ public class ConfigTest {
 		result = cfg.resolveAliases("p1/foo/p2", features, dependentFeatures, null);
 		Assert.assertEquals("p1/foo/p2", result);
 
+		// If more than one alias matches, then the last alias should win (to match the behavior of dojo's loader)
+		config = "{aliases:[[/^(.*)\\/foo\\/(.*)$/, '$2/bar/$1'],[/^(.*)\\/foo\\/baz\\/(.*)$/, '$2/yeah/$1']]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		result = cfg.resolveAliases("p1/foo/baz/p2", features, dependentFeatures, null);
+		Assert.assertEquals("p2/yeah/p1", result);
+		Assert.assertEquals(0, dependentFeatures.size());
+
+
 	}
 
 	@Test
