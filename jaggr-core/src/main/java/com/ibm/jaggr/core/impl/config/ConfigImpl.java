@@ -291,7 +291,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public Map<String, IPackage> getPackages() {
-		return Collections.unmodifiableMap(packages);
+		return packages;
 	}
 
 	/* (non-Javadoc)
@@ -299,7 +299,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public Map<String, Location> getPaths() {
-		return Collections.unmodifiableMap(paths);
+		return paths;
 	}
 
 	/* (non-Javadoc)
@@ -307,7 +307,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	@Override
 	public List<IAlias> getAliases() {
-		return Collections.unmodifiableList(aliases);
+		return aliases;
 	}
 
 	/* (non-Javadoc)
@@ -688,7 +688,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				m.appendTail(sbResult);
 				return sbResult.toString();
 			}
-			for (IAlias alias : getAliases()) {
+			List<IAlias> aliases = getAliases();
+			// Iterate through the list of aliases in reverse order so that last matching alias wins
+			// so as to emulate the behavior of dojo's loader.
+			for (int j = aliases.size()-1; j >= 0; j--) {
+				IAlias alias = aliases.get(j);
 				String nameToMatch = (result != null) ? result : name;
 				Object pattern = alias.getPattern();
 				if (pattern instanceof String) {
