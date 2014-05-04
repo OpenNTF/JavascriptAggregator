@@ -52,8 +52,8 @@ import javax.servlet.http.HttpServletRequest;
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
  */
-public class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
-	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
+public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
+	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 
 	static final String textPluginPath = "dojo/text"; //$NON-NLS-1$
 	static final String loaderExtensionPath = "/WebContent/loaderExt.js"; //$NON-NLS-1$
@@ -74,7 +74,7 @@ public class AbstractDojoHttpTransport extends AbstractHttpTransport implements 
 	 * Name of request attribute used for temporary storage of required modules so we can use it
 	 * during {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#END_RESPONSE} processing
 	 */
-	static final String ADD_REQUIRE_DEPS_REQATTRNAME = AbstractDojoHttpTransport.class.getName() + ".addRequireDeps"; //$NON-NLS-1$
+	static final String ADD_REQUIRE_DEPS_REQATTRNAME = DojoHttpTransport.class.getName() + ".addRequireDeps"; //$NON-NLS-1$
 
 	static {
 		try {

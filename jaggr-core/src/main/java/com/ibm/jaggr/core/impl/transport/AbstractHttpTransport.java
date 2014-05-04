@@ -89,7 +89,7 @@ import javax.servlet.http.HttpServletRequest;
  * and defines abstract methods that subclasses need to implement
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IConfigModifier, IShutdownListener, IDependenciesListener {
-	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
+	private static final Logger log = Logger.getLogger(DojoHttpTransport.class.getName());
 
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
 
