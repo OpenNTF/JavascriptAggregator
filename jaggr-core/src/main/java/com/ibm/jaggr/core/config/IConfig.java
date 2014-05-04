@@ -398,16 +398,19 @@ public interface IConfig {
 	 *            missing required feature.
 	 * @param resolveAliases
 	 *            If true, then module name aliases will be resolved
-	 * @param resolveHasPlugin
-	 *            If true, then attempt has plugin resolution using the features
-	 *            provided in <code>features</code>
+	 * @param evaluateHasPluginConditionals
+	 *            If true, then attempt to evaluate the has plugin conditionals using the features
+	 *            provided in <code>features</code>, potentially eliminating the has! loader plugin
+	 *            from the returned value if all features can be resolved.  If false, then the
+	 *            conditionals are retained in the result, although the expression may change
+	 *            if new conditionals are introduced by alias resolution.
 	 * @return The resolved module id.  If the module id is unchanged, then
 	 *         {@code name} should be returned.
 	 *
 	 */
 	public String resolve(String name, Features features,
 			Set<String> dependentFeatures, StringBuffer sb,
-			boolean resolveAliases, boolean resolveHasPlugin);
+			boolean resolveAliases, boolean evaluateHasPluginConditionals);
 
 	/**
 	 * Legacy method that calls {@link #resolve(String, Features, Set, StringBuffer, boolean, boolean)}

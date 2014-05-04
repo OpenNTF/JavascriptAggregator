@@ -321,7 +321,17 @@ public class ConfigTest {
 		Assert.assertEquals("p2/yeah/p1", result);
 		Assert.assertEquals(0, dependentFeatures.size());
 
+		// Test recursive matching of regular expression with empty string result for loop termination
+		config = "{aliases:[[/^foo\\/test\\/(.*)$/, function($0, $1){return $0.indexOf('/baz/') == -1 ? ('foo/test/baz/'+$1) : '';}]]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		result = cfg.resolveAliases("foo/test/bar", features, dependentFeatures,  null);
+		Assert.assertEquals("foo/test/baz/bar", result);
 
+		// Test order of alias matching (last one wins)
+		config = "{aliases:[['foo', 'bar'],['foo', 'baz']]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		result = cfg.resolveAliases("foo", features, dependentFeatures,  null);
+		Assert.assertEquals("baz", result);
 	}
 
 	@Test

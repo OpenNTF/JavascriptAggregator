@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.util;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 
+import java.util.Collection;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -108,6 +109,84 @@ public class HasNode {
 		return results.andWith(terms);
 	}
 
+	/**
+	 * Recursively resolves the current node with the specified features. Any conditionals for
+	 * features contained in <code>features</code> will be replaced with the result of the
+	 * evaluation.
+	 *
+	 * @param features
+	 *            The features passed to the aggregator.
+	 * @param discovered
+	 *            A map in which all features encountered in the evaluation will be placed. This
+	 *            will not necessarily contain all features in the dependency expression. Only the
+	 *            ones in the evaluation chain will be included.
+	 * @param coerceUndefinedToFalse
+	 *            If true, then a feature not being defined will be treated the same as if the
+	 *            feature were defined with a value of false.
+	 * @return this node
+	 */
+	public HasNode resolve(Features features, Set<String> discovered, boolean coerceUndefinedToFalse) {
+		if (feature != null && discovered != null) {
+			discovered.add(feature);
+		}
+		if (feature != null && (features.contains(feature) || coerceUndefinedToFalse)) {
+			replaceWith(features.isFeature(feature) ? trueNode : falseNode);
+			resolve(features, discovered, coerceUndefinedToFalse);
+		}
+		if (trueNode != null) {
+			trueNode.resolve(features, discovered, coerceUndefinedToFalse);
+		}
+		if (falseNode != null) {
+			falseNode.resolve(features, discovered, coerceUndefinedToFalse);
+		}
+		return this;
+	}
+
+	/**
+	 * Adds to <code>result</code> the end point nodes (nodes that specify a module name) for this
+	 * node and all of the child nodes.
+	 *
+	 * @param result
+	 *            The collection that the end point nodes will be added to
+	 */
+	public void gatherEndpoints(Collection<HasNode> result) {
+		if (nodeName != null && nodeName.length() > 0) {
+			result.add(this);
+		}
+		if (trueNode != null) {
+			trueNode.gatherEndpoints(result);
+		}
+		if (falseNode != null) {
+			falseNode.gatherEndpoints(result);
+		}
+	}
+
+	/**
+	 * Replaces the properties of the current node with the properties of the specified node.
+	 *
+	 * @param node
+	 *            The node to replace this node with
+	 */
+	public void replaceWith(HasNode node) {
+		feature = node.feature;
+		nodeName = node.nodeName;
+		trueNode = node.trueNode;
+		falseNode = node.falseNode;
+	}
+
+	/**
+	 * Replaces the properties of the current node with the specified node name, making this node
+	 * into an end point node.
+	 *
+	 * @param nodeName
+	 *            The name of the end point.
+	 */
+	public void replaceWith(String nodeName) {
+		feature = null;
+		this.nodeName = nodeName;
+		trueNode = falseNode = null;
+	}
+
 	private void evaluateAll(String pluginName, Features features, Set<String> discovered, BooleanTerm term, ModuleDeps results, String comment) {
 		if (feature != null && discovered != null) {
 			discovered.add(feature);
@@ -176,5 +255,9 @@ public class HasNode {
 
 	public String getFeature() {
 		return feature;
+	}
+
+	public String getNodeName() {
+		return nodeName;
 	}
 }
