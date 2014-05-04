@@ -47,10 +47,17 @@ public interface IHttpTransportExtensionPoint {
 	public static final String PATH_ATTRIBUTE = "path"; //$NON-NLS-1$
 
 	/**
+	 * Name of {@code httptransport} extension point {@code resourcesUri} attribute.
+	 * Specifies the URI to the transport provided resources on the server.  The URI
+	 * may specify aggregator defined schemes such as {@code namedbundleresource}.
+	 */
+	public static final String RESOURCESURI_ATTRIBUTE = "resourcesUri"; //$NON-NLS-1$
+
+	/**
 	 * List of required extension attributes for the {@code httptransport} extension
 	 * point.
 	 */
-	public static final String[] REQUIRED_ATTRIBUTES = { PATH_ATTRIBUTE };
+	public static final String[] REQUIRED_ATTRIBUTES = { PATH_ATTRIBUTE, RESOURCESURI_ATTRIBUTE };
 
 	/**
 	 * A reference to the {@link IHttpTransport} interface which is the

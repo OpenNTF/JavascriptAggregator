@@ -84,6 +84,13 @@ AMD module path to transport resources as specified on the client.
           </documentation>
         </annotation>
       </attribute>
+      <attribute name="resourcesUri" type="string" use="required">
+         <annotation>
+            <documentation>
+               URI to the transport resources on the server such as the loader extension javascript.  Can include aggregator defined schemes like namedbundleresource
+            </documentation>
+         </annotation>
+      </attribute>
     </complexType>
   </element>
 

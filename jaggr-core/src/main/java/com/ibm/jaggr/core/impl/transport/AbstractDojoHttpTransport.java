@@ -52,7 +52,7 @@ import javax.servlet.http.HttpServletRequest;
  * Implements the functionality specific for the Dojo Http Transport (supporting
  * the dojo AMD loader).
  */
-public abstract class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
+public class AbstractDojoHttpTransport extends AbstractHttpTransport implements IHttpTransport, IExtensionInitializer {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
 	static final String textPluginPath = "dojo/text"; //$NON-NLS-1$

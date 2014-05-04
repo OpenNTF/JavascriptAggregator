@@ -37,6 +37,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.TypeUtil;
@@ -90,7 +91,6 @@ import javax.servlet.http.HttpServletRequest;
 public abstract class AbstractHttpTransport implements IHttpTransport, IConfigModifier, IShutdownListener, IDependenciesListener {
 	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
 
-	public static final String PATH_ATTRNAME = "path"; //$NON-NLS-1$
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
 
 	public static final String REQUESTEDMODULES_REQPARAM = "modules"; //$NON-NLS-1$
@@ -178,6 +178,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	private String resourcePathId = null;
 	private String transportId = null;
+	private URI comboUri = null;
 
 
 	/** default constructor */
@@ -199,7 +200,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @return the combo resource URI
 	 */
-	protected abstract URI getComboUri();
+	protected URI getComboUri() {
+		return comboUri;
+	}
 
 	/**
 	 * Returns the name of the aggregator text plugin module name (e.g. combo/text)
@@ -515,14 +518,24 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
 		this.aggregator = aggregator;
 
-		resourcePathId = extension.getAttribute(PATH_ATTRNAME);
+		resourcePathId = extension.getAttribute(IHttpTransportExtensionPoint.PATH_ATTRIBUTE);
 		if (resourcePathId == null) {
 			throw new IllegalArgumentException(
-					MessageFormat.format(
-							Messages.AbstractHttpTransport_1,
-							new Object[]{extension.getUniqueId()}
-					)
+				IHttpTransportExtensionPoint.PATH_ATTRIBUTE  +
+				" attribute not specified for extension " +
+				extension.getUniqueId()
 			);
+		}
+
+		String comboUriStr = extension.getAttribute(IHttpTransportExtensionPoint.RESOURCESURI_ATTRIBUTE);
+		if (comboUriStr == null) {
+			throw new IllegalArgumentException(
+				IHttpTransportExtensionPoint.RESOURCESURI_ATTRIBUTE  +
+				" attribute not specified for extension " +
+				extension.getUniqueId()
+			);
+		} else {
+			comboUri = URI.create(comboUriStr);
 		}
 
 		transportId = extension.getUniqueId();
