@@ -438,6 +438,11 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		for (IExtension extension : extensions) {
 			for (IConfigurationElement member : extension.getConfigurationElements()) {
 				try {
+					// make sure the contributing bundle is started.
+					Bundle contributingBundle = Platform.getBundle(member.getNamespaceIdentifier());
+					if (contributingBundle.getState() != Bundle.ACTIVE && contributingBundle.getState() != Bundle.STARTING) {
+						contributingBundle.start();
+					}
 					Object ext = member.createExecutableExtension("class"); //$NON-NLS-1$
 					Properties props = new Properties();
 					for (String attributeName : member.getAttributeNames()) {
@@ -454,6 +459,10 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 									), null
 							);
 				} catch (CoreException ex) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.log(Level.WARNING, ex.getMessage(), ex);
+					}
+				} catch (BundleException ex) {
 					if (log.isLoggable(Level.WARNING)) {
 						log.log(Level.WARNING, ex.getMessage(), ex);
 					}

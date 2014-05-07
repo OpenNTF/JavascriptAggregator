@@ -37,6 +37,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.TypeUtil;
@@ -88,9 +89,8 @@ import javax.servlet.http.HttpServletRequest;
  * and defines abstract methods that subclasses need to implement
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IConfigModifier, IShutdownListener, IDependenciesListener {
-	private static final Logger log = Logger.getLogger(AbstractDojoHttpTransport.class.getName());
+	private static final Logger log = Logger.getLogger(AbstractHttpTransport.class.getName());
 
-	public static final String PATH_ATTRNAME = "path"; //$NON-NLS-1$
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
 
 	public static final String REQUESTEDMODULES_REQPARAM = "modules"; //$NON-NLS-1$
@@ -176,6 +176,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private List<String> moduleIdList = null;
 	private byte[] moduleIdListHash = null;
 
+	private String resourcePathId = null;
+	private String transportId = null;
+	private URI comboUri = null;
+
+
 	/** default constructor */
 	public AbstractHttpTransport() {}
 
@@ -195,7 +200,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @return the combo resource URI
 	 */
-	protected abstract URI getComboUri();
+	protected URI getComboUri() {
+		return comboUri;
+	}
 
 	/**
 	 * Returns the name of the aggregator text plugin module name (e.g. combo/text)
@@ -511,6 +518,28 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar reg) {
 		this.aggregator = aggregator;
 
+		resourcePathId = extension.getAttribute(IHttpTransportExtensionPoint.PATH_ATTRIBUTE);
+		if (resourcePathId == null) {
+			throw new IllegalArgumentException(
+				IHttpTransportExtensionPoint.PATH_ATTRIBUTE  +
+				" attribute not specified for extension " +
+				extension.getUniqueId()
+			);
+		}
+
+		String comboUriStr = extension.getAttribute(IHttpTransportExtensionPoint.RESOURCESURI_ATTRIBUTE);
+		if (comboUriStr == null) {
+			throw new IllegalArgumentException(
+				IHttpTransportExtensionPoint.RESOURCESURI_ATTRIBUTE  +
+				" attribute not specified for extension " +
+				extension.getUniqueId()
+			);
+		} else {
+			comboUri = URI.create(comboUriStr);
+		}
+
+		transportId = extension.getUniqueId();
+
 		URI featureListResourceUri = getFeatureListResourceUri();
 		// register a config listener so that we get notified of changes to
 		// the server-side AMD config file.
@@ -570,7 +599,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @return the plugin unique id.
 	 */
-	abstract protected String getTransportId();
+	protected String getTransportId() {
+		return transportId;
+	}
 
 	/**
 	 * Default implementation that returns null URI. Subclasses should
@@ -598,7 +629,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @return the resource path id
 	 */
-	abstract protected String getResourcePathId();
+	protected String getResourcePathId() {
+		return resourcePathId;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#contributeLoaderExtensionJavaScript(java.lang.String)

@@ -67,7 +67,8 @@
 			id="dojo.httptransport"
 			point="com.ibm.jaggr.service.httptransport">
 		<transport path="combo"
-		           class="com.ibm.jaggr.service.impl.transport.DojoHttpTransport"/>
+		           resourcesUri="namedbundleresource://com.ibm.jaggr.core/WebContent/"
+		           class="com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport"/>
 	</extension>
 	
 	<extension
