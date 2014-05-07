@@ -89,7 +89,7 @@ public class AbstractDojoHttpTransportTest {
 		String config = "{packages:[{name:\"dojo\", location:\"namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo\"}]}";
 		URI tmpDir = new File(System.getProperty("java.io.tmpdir")).toURI();
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		AbstractDojoHttpTransport transport = new TestUtils.TestDojoHttpTransport() {
+		DojoHttpTransport transport = new TestUtils.TestDojoHttpTransport() {
 			@Override public List<String[]> getClientConfigAliases() {
 				return super.getClientConfigAliases();
 			}
@@ -106,20 +106,20 @@ public class AbstractDojoHttpTransportTest {
 				rawConfig);
 		Assert.assertEquals(3, modifiedConfig.getPaths().size());
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text",
-				modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
-		Assert.assertNull(modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath).getOverride());
-		Assert.assertEquals(transport.getComboUri().resolve(AbstractDojoHttpTransport.textPluginPath).toString(),
-				modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
+		Assert.assertNull(modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getOverride());
+		Assert.assertEquals(transport.getComboUri().resolve(DojoHttpTransport.textPluginPath).toString(),
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(transport.getComboUri(), modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
-		Assert.assertEquals(AbstractDojoHttpTransport.dojoTextPluginAlias, modifiedConfig.getAliases().get(0).getPattern());
-		Assert.assertEquals(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath, modifiedConfig.getAliases().get(0).getReplacement());
+		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, modifiedConfig.getAliases().get(0).getPattern());
+		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, modifiedConfig.getAliases().get(0).getReplacement());
 		Assert.assertEquals(2, transport.getClientConfigAliases().size());
 		String[] alias = transport.getClientConfigAliases().get(0);
-		Assert.assertEquals(AbstractDojoHttpTransport.dojoTextPluginAlias, alias[0]);
-		Assert.assertEquals(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath, alias[1]);
+		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, alias[1]);
 		alias = transport.getClientConfigAliases().get(1);
-		Assert.assertEquals(AbstractDojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
 
 		// make sure overrides are handled properly
@@ -132,7 +132,7 @@ public class AbstractDojoHttpTransportTest {
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
 				rawConfig);
 		System.out.println(Context.toString(rawConfig));
-		IConfig.Location loc = modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath);
+		IConfig.Location loc = modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath);
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text", loc.getPrimary().toString());
 		Assert.assertNull(loc.getOverride());
 
@@ -145,7 +145,7 @@ public class AbstractDojoHttpTransportTest {
 				new File(System.getProperty("java.io.tmpdir")).toURI(),
 				rawConfig);
 		System.out.println(Context.toString(rawConfig));
-		loc = modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath);
+		loc = modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath);
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text", loc.getPrimary().toString());
 		Assert.assertEquals("file:/c:/customizations/dojo/text", loc.getOverride().toString());
 
@@ -182,15 +182,15 @@ public class AbstractDojoHttpTransportTest {
 		Assert.assertEquals(1, modifiedConfig.getAliases().size());
 		Assert.assertEquals(transport.getComboUri(), modifiedConfig.getPaths().get("combo").getPrimary());
 		Assert.assertEquals("namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo/text",
-				modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
-		Assert.assertEquals(transport.getComboUri().resolve(AbstractDojoHttpTransport.textPluginPath).toString(),
-				modifiedConfig.getPaths().get(AbstractDojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginAliasFullPath).getPrimary().toString());
+		Assert.assertEquals(transport.getComboUri().resolve(DojoHttpTransport.textPluginPath).toString(),
+				modifiedConfig.getPaths().get(DojoHttpTransport.dojoTextPluginFullPath).getPrimary().toString());
 		Assert.assertEquals(2, transport.getClientConfigAliases().size());
 		alias = transport.getClientConfigAliases().get(0);
-		Assert.assertEquals(AbstractDojoHttpTransport.dojoTextPluginAlias, alias[0]);
-		Assert.assertEquals(AbstractDojoHttpTransport.dojoTextPluginAliasFullPath, alias[1]);
+		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoHttpTransport.dojoTextPluginAliasFullPath, alias[1]);
 		alias = transport.getClientConfigAliases().get(1);
-		Assert.assertEquals(AbstractDojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
+		Assert.assertEquals(DojoHttpTransport.aggregatorTextPluginAlias, alias[0]);
 		Assert.assertEquals("combo/text", alias[1]);
 		Context.exit();
 	}
@@ -237,7 +237,7 @@ public class AbstractDojoHttpTransportTest {
 		Object arg = new Object();
 		String result = transport.endLayerModules(mockRequest, arg);
 		Assert.assertEquals("}});require({cache:{}});", result);
-		Assert.assertSame(arg, mockRequest.getAttribute(AbstractDojoHttpTransport.ADD_REQUIRE_DEPS_REQATTRNAME));
+		Assert.assertSame(arg, mockRequest.getAttribute(DojoHttpTransport.ADD_REQUIRE_DEPS_REQATTRNAME));
 	}
 
 	@Test
@@ -248,7 +248,7 @@ public class AbstractDojoHttpTransportTest {
 
 		// Add required modules
 		Set<String> required = new LinkedHashSet<String>();
-		mockRequest.setAttribute(AbstractDojoHttpTransport.ADD_REQUIRE_DEPS_REQATTRNAME, required);
+		mockRequest.setAttribute(DojoHttpTransport.ADD_REQUIRE_DEPS_REQATTRNAME, required);
 		result = transport.endResponse(mockRequest, null);
 		Assert.assertEquals("", result);
 
@@ -258,7 +258,7 @@ public class AbstractDojoHttpTransportTest {
 		Assert.assertEquals("require([\"module1\",\"module2\"]);", result);
 	}
 
-	class TestDojoHttpTransport extends AbstractDojoHttpTransport {
+	class TestDojoHttpTransport extends DojoHttpTransport {
 		@Override protected URI getComboUri() { return null; }
 		@Override protected String getTransportId() {return null; }
 		@Override protected String getResourcePathId() { return null; }

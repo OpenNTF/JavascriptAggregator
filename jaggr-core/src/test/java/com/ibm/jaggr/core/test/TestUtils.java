@@ -33,7 +33,7 @@ import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.impl.resource.FileResource;
-import com.ibm.jaggr.core.impl.transport.AbstractDojoHttpTransport;
+import com.ibm.jaggr.core.impl.transport.DojoHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -436,7 +436,7 @@ public class TestUtils {
 		return mockResponse;
 	}
 
-	public static class TestDojoHttpTransport extends AbstractDojoHttpTransport {
+	public static class TestDojoHttpTransport extends DojoHttpTransport {
 		public TestDojoHttpTransport() {
 			super();
 		}
