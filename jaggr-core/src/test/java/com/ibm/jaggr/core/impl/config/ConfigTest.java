@@ -321,7 +321,11 @@ public class ConfigTest {
 		Assert.assertEquals("p2/yeah/p1", result);
 		Assert.assertEquals(0, dependentFeatures.size());
 
-
+		// Test order of alias matching (last one wins)
+		config = "{aliases:[['foo', 'bar'],['foo', 'baz']]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		result = cfg.resolveAliases("foo", features, dependentFeatures,  null);
+		Assert.assertEquals("baz", result);
 	}
 
 	@Test
@@ -871,6 +875,18 @@ public class ConfigTest {
 		features.put("xxx", true);
 		Assert.assertEquals("mainloc", cfg.resolve("has!xxx?foo", features, dependentFeatures, null, true));
 
+		// Test recursive matching of regular expression with empty string result for loop termination
+		// first, run resolve without loop termination test and ensure we get an exception due to excessive recursion
+		config = "{aliases:[[/^foo\\/test\\/(.*)$/, function($0, $1){return 'foo/test/baz/'+$1;}]]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		try {
+			cfg.resolve("foo/test/bar", features, dependentFeatures,  null, true);
+			Assert.fail("Expected exception");
+		} catch (IllegalStateException e) {}
+		// now add the loop termination check in the resolver function
+		config = "{aliases:[[/^foo\\/test\\/(.*)$/, function($0, $1){return $0.indexOf('/baz/') == -1 ? ('foo/test/baz/'+$1) : '';}]]}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals("foo/test/baz/bar", cfg.resolve("foo/test/bar", features, dependentFeatures,  null, true));
 	}
 
 	public static class TestConsoleLogger extends ConfigImpl.Console {

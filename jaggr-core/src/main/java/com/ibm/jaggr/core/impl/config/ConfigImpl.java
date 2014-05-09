@@ -529,105 +529,120 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Set<String> dependentFeatures,
 			StringBuffer sb,
 			boolean resolveAliases,
-			boolean resolveHasPlugin) {
-
-		// Resolve has plugin first.  Note that we call <code>resolveHasPlugin</code>
-		// method unconditionally, passing an empty feature set if the flag is false,
-		// so that the features specified by the plugin will be added to the
-		// dependent features.
-		mid = resolveHasPlugin(mid,
-				resolveHasPlugin ? features : Features.emptyFeatures,
-						dependentFeatures, sb);
-
-		if (resolveAliases) {
-			String aliased = null;
-			try {
-				aliased = resolveAliases(mid, features, dependentFeatures, sb);
-			} catch (Exception e) {
-				if (log.isLoggable(Level.SEVERE)) {
-					log.log(Level.SEVERE, e.getMessage(), e);
-				}
-			}
-			if (!mid.equals(aliased)) {
-				if (sb != null) {
-					sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
-							Messages.ConfigImpl_6,
-							new Object[]{mid}
-							));
-				}
-				// If alias resolution introduced a has plugin, then try to resolve it
-				int idx = mid.indexOf("!"); //$NON-NLS-1$
-				if (idx == -1 || !HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
-					mid = resolveHasPlugin(aliased,
-							resolveHasPlugin ? features : Features.emptyFeatures,
-									dependentFeatures, sb);
-				} else {
-					mid = aliased;
-				}
-			}
+			boolean evaluateHasPluginConditionals) {
+		final String sourceMethod = "resolve";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{mid, features, dependentFeatures, sb, resolveAliases, evaluateHasPluginConditionals});
 		}
+
+		mid = _resolve(mid, features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, 0, sb);
+
 		// check for package name and replace with the package's main module id
 		IPackage pkg = packages.get(mid);
 		if (pkg != null) {
 			mid = pkg.getMain();
 		}
+		if (isTraceLogging) {
+			log.exiting(ConfigImpl.class.getName(), sourceMethod, mid);
+		}
 		return mid;
 	}
 
 	/**
-	 * Resolves has! loader plugin based on the specified feature set
+	 * Resolves has! loader plugin expressions by calling _resolve() on each of the modules named
+	 * in the expression.  Optionally evaluates the feature conditionals in the expression,
+	 * potentially simplifying or eliminating the conditionals.
 	 *
-	 * @param mid
-	 *            The module id to resolve.  May specify plugins
+	 * @param expression
+	 *            The expression to resolve, excluding the has plugin name
+	 *            (e.g. feature?moduleA:moduleB)
 	 * @param features
 	 *            Features that are defined in the request
 	 * @param dependentFeatures
 	 *            Output - Set of feature names that the returned value is
 	 *            conditioned on. Used for cache management.
+	 * @param resolveAliases
+	 *            If true, then module name aliases will be resolved
+	 * @param evaluateHasPluginConditionals
+	 *            If true, then attempt to evaluate the has plugin conditionals using the features
+	 *            provided in <code>features</code>, potentially eliminating the has! loader plugin
+	 *            from the returned value if all features can be resolved.  If false, then the
+	 *            conditionals are retained in the result, although the expression may change
+	 *            if new conditionals are introduced by alias resolution.
 	 * @param sb
 	 *            If not null, then a reference to a string buffer that can
 	 *            be used by the resolver to indicate debug/diagnostic information
 	 *            about the alias resolution.  For example, the resolver may
 	 *            indicate that alias resolution was not performed due to
 	 *            a missing required feature.
+	 * @param recursionCount
+	 *            Counter used to guard against runaway recursion
 	 *
 	 * @return The module id with has! loader plugin resolved, or {@code mid} if the
 	 *         features specified by the loader plugin are not defined.
 	 */
 	protected String resolveHasPlugin(
-			String mid,
+			String expression,
 			Features features,
 			Set<String> dependentFeatures,
+			boolean resolveAliases,
+			boolean evaluateHasPluginConditionals,
+			int recursionCount,
 			StringBuffer sb) {
-		int idx = mid.indexOf("!"); //$NON-NLS-1$
-		if (idx != -1 && HAS_PATTERN.matcher(mid.substring(0, idx)).find()) {
-			Set<String> depFeatures = new HashSet<String>();
-			HasNode hasNode = new HasNode(mid.substring(idx+1));
-			String name = hasNode.evaluate(
+
+		final String sourceMethod = "resolveHasPlugin";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{expression, features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, recursionCount, sb});
+		}
+		HasNode hasNode = new HasNode(expression)
+				.resolve(
+						evaluateHasPluginConditionals ? features : Features.emptyFeatures,
+						dependentFeatures,
+						isCoerceUndefinedToFalse()
+				);
+		Collection<HasNode> nodes = new ArrayList<HasNode>();
+		Set<String> depFeatures = new HashSet<String>();
+		hasNode.gatherEndpoints(nodes);
+		for (HasNode node : nodes) {
+			String replacement = _resolve(
+					node.getNodeName(),
 					features,
 					depFeatures,
-					isCoerceUndefinedToFalse()
-					);
+					resolveAliases,
+					evaluateHasPluginConditionals,
+					recursionCount,
+					sb);
 			dependentFeatures.addAll(depFeatures);
-			if (name != null) {
-				if (name.length() > 0) {
-					if (sb != null) {
-						Map<String,Boolean> featureMap = new HashMap<String,Boolean>();
-						for (String featureName : depFeatures) {
-							featureMap.put(featureName, features.isFeature(featureName));
-						}
-						sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
-								Messages.ConfigImpl_2,
-								new Object[]{name + featureMap.toString()}
-								));
+			// If a has! loader plugin expressions was introduced by alias resolution, then
+			// create a new HasNode for the expression and replace the current node with the new
+			// node.  Otherwise, replace the current node with the new module id.
+			int idx = replacement.indexOf("!");
+			if (idx != -1 && HAS_PATTERN.matcher(replacement.substring(0, idx)).find()) {
+				node.replaceWith(new HasNode(replacement.substring(idx+1)));
+			} else {
+				node.replaceWith(replacement);
+			}
+		}
+		if (sb != null && evaluateHasPluginConditionals) {
+			Map<String,Boolean> featureMap = new HashMap<String,Boolean>();
+			if (!expression.equals(hasNode.toString()) ) {
+				for (String featureName : depFeatures) {
+					if (features.contains(featureName) || isCoerceUndefinedToFalse()) {
+						featureMap.put(featureName, features.isFeature(featureName));
 					}
 				}
-				mid = name;
-			} else {
-				if (sb != null) {
-					// determine the missing feature.  Should be the only one left in depFeatures
-					// after removing the request features.
-					depFeatures.removeAll(features.featureNames());
+				sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
+						Messages.ConfigImpl_2,
+						new Object[]{hasNode.toString() + featureMap.toString()}
+						));
+			}
+			if (isCoerceUndefinedToFalse()) {
+				// determine the missing feature.  Should be the only one left in depFeatures
+				// after removing the request features.
+				depFeatures.removeAll(features.featureNames());
+				if (!depFeatures.isEmpty()) {
 					sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
 							Messages.ConfigImpl_4,
 							new Object[]{depFeatures.toString()}
@@ -635,14 +650,103 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				}
 			}
 		}
-		return mid;
+		if (isTraceLogging) {
+			log.exiting(ConfigImpl.class.getName(), sourceMethod, hasNode.toString());
+		}
+		return hasNode.toString();
 	}
 
-	private static final Pattern plugins1 = Pattern.compile("[!?:]"); //$NON-NLS-1$
-	private static final Pattern plugins2 = Pattern.compile("[^!?:]*"); //$NON-NLS-1$
+	private static final Pattern plugins2 = Pattern.compile("[^!]*"); //$NON-NLS-1$
+	private static final int MAX_RECURSION_COUNT = 25;
 
 	/**
-	 * Applies alias mappings to the specified name and returns the result
+	 * Resolves a module id by applying alias resolution and has! loader plugin resolution.
+	 *
+	 * @param name
+	 *            The module name to map.  May specify plugins
+	 * @param features
+	 *            Features that are defined in the request
+	 * @param dependentFeatures
+	 *            Output - Set of feature names that the returned value is
+	 *            conditioned on. Used for cache management.
+	 * @param resolveAliases
+	 *            If true, then module name aliases will be resolved
+	 * @param evaluateHasPluginConditionals
+	 *            If true, then attempt to evaluate the has plugin conditionals using the features
+	 *            provided in <code>features</code>, potentially eliminating the has! loader plugin
+	 *            from the returned value if all features can be resolved.  If false, then the
+	 *            conditionals are retained in the result, although the expression may change
+	 *            if new conditionals are introduced by alias resolution.
+	 * @param recursionCount
+	 *            Counter used to guard against runaway recursion
+	 * @param sb
+	 *            If not null, then a reference to a string buffer that can
+	 *            be used by the resolver to indicate debug/diagnostic information
+	 *            about the alias resolution.  For example, the resolver may
+	 *            indicate that alias resolution was not performed due to
+	 *            a missing required feature.
+	 *
+	 * @return The resolved module id.
+	 */
+	protected String _resolve(
+			String name,
+			Features features,
+			Set<String> dependentFeatures,
+			boolean resolveAliases,
+			boolean evaluateHasPluginConditionals,
+			int recursionCount,
+			StringBuffer sb) {
+
+		final String sourceMethod = "_resolve";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{name, features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, recursionCount, sb});
+		}
+
+		String result = name;
+		if (name != null && name.length() != 0) {
+
+			if (recursionCount >= MAX_RECURSION_COUNT) {
+				throw new IllegalStateException("Excessive recursion in resolver: " + name); //$NON-NLS-1$
+			}
+
+			int idx = name.indexOf("!"); //$NON-NLS-1$
+			if (idx != -1 && HAS_PATTERN.matcher(name.substring(0, idx)).find()) {
+				result = resolveHasPlugin(name.substring(idx+1), features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, recursionCount+1, sb);
+				result = result.contains("?") ? (name.substring(0, idx+1) + result) : result;
+			} else if (resolveAliases && getAliases() != null) {
+				if (idx != -1) { // non-has plugin
+					// If the module id specifies a plugin, then process each part individually
+					Matcher m = plugins2.matcher(name);
+					StringBuffer sbResult = new StringBuffer();
+					while (m.find()) {
+						String replacement = _resolve(m.group(0), features, dependentFeatures, true, evaluateHasPluginConditionals, recursionCount+1, sb);
+						m.appendReplacement(sbResult, replacement);
+					}
+					m.appendTail(sbResult);
+					result = sbResult.toString();
+				}
+				String candidate = resolveAliases(name, features, dependentFeatures, sb);
+				if (candidate != null && candidate.length() > 0 && !candidate.equals(name)) {
+					if (sb != null) {
+						sb.append(", ").append(MessageFormat.format( //$NON-NLS-1$
+								Messages.ConfigImpl_6,
+								new Object[]{name + " --> " + candidate} //$NON-NLS-1$
+						));
+					}
+					result = _resolve(candidate, features, dependentFeatures, true, evaluateHasPluginConditionals, recursionCount+1, sb);
+				}
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(ConfigImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
+	}
+
+	/**
+	 * Applies alias mappings to a module name.  The name is expected to not specify a loader plugin,
+	 * however, mapping may introduce a loader plugin.
 	 *
 	 * @param name
 	 *            The module name to map.  May specify plugins
@@ -660,81 +764,78 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 *
 	 * @return The module name with alias mappings applied, or {@code name} if there is
 	 *         not mapping for this module name.
-	 * @throws IOException
-	 * @throws InstantiationException
-	 * @throws IllegalAccessException
-	 * @throws ClassNotFoundException
 	 */
 	protected String resolveAliases(
 			String name,
 			Features features,
 			Set<String> dependentFeatures,
-			StringBuffer sb) throws IOException, ClassNotFoundException, IllegalAccessException, InstantiationException {
+			StringBuffer sb) {
 
-		if (name == null || name.length() == 0) {
-			return name;
+		final String sourceMethod = "resolveAliases";
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{name, features, dependentFeatures, sb});
 		}
-
+		List<IAlias> aliases = getAliases();
 		String result = name;
-		if (getAliases() != null) {
-			if (plugins1.matcher(name).find()) {
-				// If the module id specifies a plugin, then process each part individually
-				Matcher m = plugins2.matcher(name);
-				StringBuffer sbResult = new StringBuffer();
-				while (m.find()) {
-					String replacement = resolveAliases(m.group(0), features, dependentFeatures, sb);
-					m.appendReplacement(sbResult, replacement);
-				}
-				m.appendTail(sbResult);
-				return sbResult.toString();
-			}
-			List<IAlias> aliases = getAliases();
-			// Iterate through the list of aliases in reverse order so that last matching alias wins
-			// so as to emulate the behavior of dojo's loader.
-			for (int j = aliases.size()-1; j >= 0; j--) {
-				IAlias alias = aliases.get(j);
-				String nameToMatch = (result != null) ? result : name;
-				Object pattern = alias.getPattern();
-				if (pattern instanceof String) {
-					if (alias.getPattern().equals(nameToMatch)) {
-						result = (String)alias.getReplacement();
+		// Iterate through the list of aliases in reverse order so that last matching alias wins
+		// so as to emulate the behavior of dojo's loader.
+		for (int j = aliases.size()-1; j >= 0; j--) {
+			IAlias alias = aliases.get(j);
+			Object pattern = alias.getPattern();
+			if (pattern instanceof String) {
+				if (alias.getPattern().equals(name)) {
+					if (isTraceLogging) {
+						log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + alias.getReplacement().toString());
 					}
-				} else {
-					Matcher m = ((Pattern)pattern).matcher(nameToMatch);
-					if (m.find()) {
-						m.reset();
-						Object replacement = alias.getReplacement();
-						if (replacement instanceof String) {
-							result = m.replaceAll((String)replacement);
-						} else if (replacement instanceof Function){
-							// replacement is a javascript function.
-							Context cx = Context.enter();
-							try {
-								Scriptable threadScope = cx.newObject(sharedScope);
-								threadScope.setPrototype(sharedScope);
-								threadScope.setParentScope(null);
-								HasFunction hasFn = newHasFunction(threadScope, features);
-								ScriptableObject.putProperty(threadScope, "has", hasFn); //$NON-NLS-1$
-								StringBuffer sbResult = new StringBuffer();
-								while (m.find()) {
-									ArrayList<Object> groups = new ArrayList<Object>(m.groupCount()+1);
-									groups.add(m.group(0));
-									for (int i = 0; i < m.groupCount(); i++) {
-										groups.add(m.group(i+1));
-									}
-									String r = (String)((Function)replacement).call(cx, threadScope, null, groups.toArray()).toString();
-									m.appendReplacement(sbResult, r);
-									dependentFeatures.addAll(hasFn.getDependentFeatures());
+					result = (String)alias.getReplacement();
+					break;
+				}
+			} else {
+				Matcher m = ((Pattern)pattern).matcher(name);
+				if (m.find()) {
+					m.reset();
+					Object replacement = alias.getReplacement();
+					if (replacement instanceof String) {
+						if (isTraceLogging) {
+							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + replacement.toString());
+						}
+						result = m.replaceAll((String)replacement);
+					} else if (replacement instanceof Function){
+						// replacement is a javascript function.
+						Context cx = Context.enter();
+						if (isTraceLogging) {
+							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + Context.toString(replacement));
+						}
+						try {
+							Scriptable threadScope = cx.newObject(sharedScope);
+							threadScope.setPrototype(sharedScope);
+							threadScope.setParentScope(null);
+							HasFunction hasFn = newHasFunction(threadScope, features);
+							ScriptableObject.putProperty(threadScope, "has", hasFn); //$NON-NLS-1$
+							StringBuffer sbResult = new StringBuffer();
+							while (m.find()) {
+								ArrayList<Object> groups = new ArrayList<Object>(m.groupCount()+1);
+								groups.add(m.group(0));
+								for (int i = 0; i < m.groupCount(); i++) {
+									groups.add(m.group(i+1));
 								}
-								m.appendTail(sbResult);
-								result = sbResult.toString();
-							} finally {
-								Context.exit();
+								String r = (String)((Function)replacement).call(cx, threadScope, null, groups.toArray()).toString();
+								m.appendReplacement(sbResult, r);
+								dependentFeatures.addAll(hasFn.getDependentFeatures());
 							}
+							m.appendTail(sbResult);
+							result = sbResult.toString();
+						} finally {
+							Context.exit();
 						}
 					}
+					break;
 				}
 			}
+		}
+		if (isTraceLogging) {
+			log.exiting(ConfigImpl.class.getName(), sourceMethod, result);
 		}
 		return result;
 	}
