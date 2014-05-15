@@ -36,7 +36,6 @@ import com.ibm.jaggr.core.util.TypeUtil;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.StringUtils;
-import org.mozilla.javascript.Scriptable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -698,18 +697,18 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void configLoaded(IConfig conf, long sequence) {
-		Scriptable config = conf.getRawConfig();
 		/** Maximum size of image that can be in-lined */
-		Object obj = config.get(SIZETHRESHOLD_CONFIGPARAM, config);
-		imageSizeThreshold = TypeUtil.asInt(obj==Scriptable.NOT_FOUND ? null : obj.toString(), SIZETHRESHOLD_DEFAULT_VALUE);
+		Object obj = conf.getProperty(SIZETHRESHOLD_CONFIGPARAM, null);
+		imageSizeThreshold = TypeUtil.asInt(obj, SIZETHRESHOLD_DEFAULT_VALUE);
 
 		/** True if &#064;import statements should be inlined */
-		obj = config.get(INLINEIMPORTS_CONFIGPARAM, config);
-		inlineImports = TypeUtil.asBoolean(obj==Scriptable.NOT_FOUND ? null : obj.toString(), INLINEIMPORTS_DEFAULT_VALUE);
+		obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
+		inlineImports = TypeUtil.asBoolean(obj, INLINEIMPORTS_DEFAULT_VALUE);
+		System.out.println(obj.toString());
 
 		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
-		Object oImageTypes = config.get(IMAGETYPES_CONFIGPARAM, config);
-		if (oImageTypes != Scriptable.NOT_FOUND) {
+		Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
+		if (oImageTypes != IConfig.NOT_FOUND && oImageTypes != null) {
 			String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
 			for (String type : aTypes) {
 				types.add(type);
@@ -719,8 +718,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 		/** List of files that should be in-lined */
 		Collection<Pattern> list = Collections.emptyList();
-		Object oIncludeList = config.get(INCLUDELIST_CONFIGPARAM, config);
-		if (oIncludeList != Scriptable.NOT_FOUND) {
+		Object oIncludeList = conf.getProperty(INCLUDELIST_CONFIGPARAM, null);
+		if (oIncludeList != IConfig.NOT_FOUND && oIncludeList != null) {
 			list = new ArrayList<Pattern>();
 			for (String s : oIncludeList.toString().split(",")) { //$NON-NLS-1$
 				list.add(toRegexp(s));
@@ -730,8 +729,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 		/** List of files that should NOT be in-lined */
 		list = Collections.emptyList();
-		Object oExcludeList = config.get(EXCLUDELIST_CONFIGPARAM, config);
-		if (oExcludeList != Scriptable.NOT_FOUND) {
+		Object oExcludeList = conf.getProperty(EXCLUDELIST_CONFIGPARAM, null);
+		if (oExcludeList != IConfig.NOT_FOUND && oExcludeList != null) {
 			list = new ArrayList<Pattern>();
 			for (String s : oExcludeList.toString().split(",")) { //$NON-NLS-1$
 				list.add(toRegexp(s));

@@ -480,13 +480,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
 	@Override
-	public void modifyConfig(IAggregator aggregator, Scriptable config) {
+	public void modifyConfig(IAggregator aggregator, Object configObj) {
 		final String sourceMethod = "modifyConfig"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		// The server-side AMD config has been updated.  Add an entry to the
 		// {@code paths} property to map the resource (combo) path to the
 		// location of the combo resources on the server.
 		Context context = Context.enter();
+		Scriptable config = (Scriptable)configObj;
 		try {
 			if (isTraceLogging) {
 				log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{aggregator, Context.toString(config)});

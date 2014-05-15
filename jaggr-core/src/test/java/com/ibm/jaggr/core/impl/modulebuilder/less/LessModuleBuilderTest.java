@@ -90,7 +90,7 @@ public class LessModuleBuilderTest extends EasyMock {
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
-		configScript = cfg.getRawConfig();
+		configScript = (Scriptable)cfg.getRawConfig();
 	}
 
 	@Test

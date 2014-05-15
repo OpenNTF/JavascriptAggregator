@@ -22,8 +22,6 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.Features;
 
-import org.mozilla.javascript.Scriptable;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -65,7 +63,7 @@ public interface IConfig {
 	/**
 	 * Value returned from {@link #getProperty(String, Class)} if the property is not found.
 	 */
-	public static final Object NOT_FOUND = new Object();
+	public static final Object NOT_FOUND = new Object(){@Override public String toString() { return "NOT_FOUND";}};
 
 	/**
 	 * Static constant specifying the name of the {@code packages} config param
@@ -348,17 +346,17 @@ public interface IConfig {
 	public Set<String> getJsPluginDelegators();
 
 	/**
-	 * Returns the raw config data as an instance of {@link Scriptable}, after the
-	 * config has been modified by any {@link IConfigModifier} services that
-	 * have been registered for the aggregator that this config is associated
-	 * with, and after any string substitutions have been performed.
+	 * Returns the raw config data after the config has been modified by any {@link IConfigModifier}
+	 * services that have been registered for the aggregator that this config is associated with,
+	 * and after any string substitutions have been performed. The runtime type of the object is
+	 * dependent upon the config processor implementation.
 	 * <p>
-	 * The returned {@link Scriptable} is sealed, so it may not be modified.
+	 * The returned object is read-only, so it may not be modified.
 	 *
 	 * @return The raw config data for this config object
 	 * @see IConfigModifier
 	 */
-	public Scriptable getRawConfig();
+	public Object getRawConfig();
 
 	/**
 	 * Returns the value of the named config property.  If the value is not a
@@ -386,7 +384,7 @@ public interface IConfig {
 	public Object getProperty(String propname, Class<?> hint) throws IllegalArgumentException;
 
 	/**
-	 * Returns the stringized source code representation of the {@link Scriptable}
+	 * Returns the stringized source code representation of the raw config
 	 * returned by {@link #getRawConfig()}.  Changes in this string may be used to
 	 * track config changes.  This method is preferable to using {@link #lastModified()}
 	 * because external factors besides the config file (such as changes in the

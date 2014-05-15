@@ -95,7 +95,7 @@ public class AbstractDojoHttpTransportTest {
 			}
 		};
 		Context.enter();
-		Scriptable rawConfig = cfg.getRawConfig();
+		Scriptable rawConfig = (Scriptable)cfg.getRawConfig();
 		IConfig modifiedConfig;
 		transport.modifyConfig(mockAggregator, rawConfig);
 		System.out.println(Context.toString(rawConfig));
@@ -125,7 +125,7 @@ public class AbstractDojoHttpTransportTest {
 		// make sure overrides are handled properly
 		config = "{packages:[{name:\"dojo\", location:[\"namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo\"]}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		rawConfig = cfg.getRawConfig();
+		rawConfig = (Scriptable)cfg.getRawConfig();
 		transport.modifyConfig(mockAggregator, rawConfig);
 		modifiedConfig = new ConfigImpl(
 				mockAggregator,
@@ -138,7 +138,7 @@ public class AbstractDojoHttpTransportTest {
 
 		config = "{packages:[{name:\"dojo\", location:[\"namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/dojo\", \"file:/c:/customizations/dojo\"]}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		rawConfig = cfg.getRawConfig();
+		rawConfig = (Scriptable)cfg.getRawConfig();
 		transport.modifyConfig(mockAggregator, rawConfig);
 		modifiedConfig = new ConfigImpl(
 				mockAggregator,
@@ -152,7 +152,7 @@ public class AbstractDojoHttpTransportTest {
 		// No dojo package in config
 		transport.getClientConfigAliases().clear();
 		cfg = new ConfigImpl(mockAggregator, tmpDir, "{}");
-		rawConfig = cfg.getRawConfig();
+		rawConfig = (Scriptable)cfg.getRawConfig();
 		transport.modifyConfig(mockAggregator, rawConfig);
 		modifiedConfig = new ConfigImpl(
 				mockAggregator,
@@ -171,7 +171,7 @@ public class AbstractDojoHttpTransportTest {
 		EasyMock.replay(mockExtension);
 		extensions.add(mockExtension);
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		rawConfig = cfg.getRawConfig();
+		rawConfig = (Scriptable)cfg.getRawConfig();
 		transport.modifyConfig(mockAggregator, rawConfig);
 		modifiedConfig = new ConfigImpl(
 				mockAggregator,
