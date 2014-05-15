@@ -294,13 +294,15 @@ public class DepTreeNode implements Cloneable, Serializable {
 
 		String[] pathComps = path.split("/"); //$NON-NLS-1$
 		DepTreeNode node = this;
+		int i = 0;
 		for (String comp : pathComps) {
 			DepTreeNode childNode = node.getChild(comp);
 			if (childNode == null) {
-				childNode = new DepTreeNode(comp, uri);
+				childNode = new DepTreeNode(comp, i == pathComps.length-1 ? uri : null);
 				node.add(childNode);
 			}
 			node = childNode;
+			i++;
 		}
 		return node;
 	}
@@ -387,8 +389,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	}
 
 	/**
-	 * Recursively walks the node tree removing nodes that have neither
-	 * child nodes or specify dependencies.
+	 * Recursively walks the node tree removing folder nodes that have not children.
 	 */
 	public void prune() {
 		if (children != null) {
@@ -396,7 +397,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
 				DepTreeNode child = entry.getValue();
 				child.prune();
-				if ((child.dependencies == null)
+				if ((child.dependencies == null && child.uri == null)
 						&& (child.children == null || child.children.isEmpty())) {
 					removeList.add(entry.getKey());
 				}
@@ -567,7 +568,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * @param depMap
 	 */
 	void populateDepMap(Map<String, DependencyInfo> depMap) {
-		if (dependencies != null) {
+		if (uri != null) {
 			depMap.put(getFullPathName(), new DependencyInfo(dependencies, dependentFeatures, uri));
 		}
 		if (children != null) {

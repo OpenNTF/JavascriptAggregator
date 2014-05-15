@@ -28,12 +28,9 @@ import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.HashMap;
@@ -190,9 +187,9 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 						if (config.isDepsIncludeBaseUrl()) {
 							Location base = config.getBase();
 							if (base != null) {
-								addFolderContents(getAggregator().newResource(base.getPrimary()), baseURIs);
+								baseURIs.put("",  base.getPrimary()); //$NON-NLS-1$
 								if (base.getOverride() != null) {
-									addFolderContents(getAggregator().newResource(base.getOverride()), baseOverrideURIs);
+									baseOverrideURIs.put("", base.getOverride()); //$NON-NLS-1$
 								}
 							}
 						}
@@ -302,36 +299,6 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		} finally {
 			initialized.countDown();
 			processingDeps = false;
-		}
-	}
-
-	/**
-	 * Adds the contents of the directory specified by <code>res</code> to the map specified by
-	 * <code>baseURIs</code>. Only the top level contents of the directory are added.
-	 *
-	 * @param res
-	 *            a folder resource who's contents will be added to the map
-	 * @param baseURIs
-	 *            map of resource name/URI pairs
-	 * @throws IOException
-	 */
-	protected void addFolderContents(final IResource res, final Map<String, URI> baseURIs) throws IOException {
-		if (res.exists()) {
-			res.walkTree(new IResourceVisitor() {
-				public boolean visitResource(IResourceVisitor.Resource resource,
-						String name) throws IOException {
-					if (name.startsWith(".")) { //$NON-NLS-1$
-						return false;
-					}
-					URI uri = resource.getURI();
-					if (resource.isFolder()) {
-						baseURIs.put(name, uri);
-					} else 	if (name.endsWith(".js")) { //$NON-NLS-1$
-						baseURIs.put(name.substring(0, name.length()-3), uri);
-					}
-					return false;		// don't recurse
-				}
-			});
 		}
 	}
 

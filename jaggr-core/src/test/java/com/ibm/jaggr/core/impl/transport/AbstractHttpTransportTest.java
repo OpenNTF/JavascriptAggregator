@@ -45,8 +45,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 import javax.servlet.http.Cookie;
@@ -211,7 +213,7 @@ public class AbstractHttpTransportTest {
 	public void testGenerateModuleIdMap() throws Exception {
 		final String[] moduleIdRegFunctionName = new String[]{"reg"};
 		final Collection<String> syntheticModuleNames = new ArrayList<String>();
-		final Map<String, List<String>> dependencyNames = new HashMap<String, List<String>>();
+		final Set<String> dependencyNames = new HashSet<String>();
 		TestHttpTransport transport = new TestHttpTransport() {
 			@Override public String getModuleIdRegFunctionName() { return moduleIdRegFunctionName[0]; }
 			@Override public Collection<String> getSyntheticModuleNames() { return syntheticModuleNames; }
@@ -220,14 +222,7 @@ public class AbstractHttpTransportTest {
 		EasyMock.expect(mockDependencies.getDependencyNames()).andAnswer(new IAnswer<Iterable<String>>() {
 			@Override
 			public Iterable<String> answer() throws Throwable {
-				return dependencyNames.keySet();
-			}
-		}).anyTimes();
-		EasyMock.expect(mockDependencies.getDelcaredDependencies(EasyMock.isA(String.class))).andAnswer(new IAnswer<List<String>>() {
-			@Override
-			public List<String> answer() throws Throwable {
-				String mid = (String)EasyMock.getCurrentArguments()[0];
-				return dependencyNames.get(mid);
+				return dependencyNames;
 			}
 		}).anyTimes();
 		IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
@@ -241,11 +236,11 @@ public class AbstractHttpTransportTest {
 		Assert.assertEquals(Arrays.asList(new String[]{""}), transport.getModuleIdList());
 
 		// now add some dependencies
-		List<String> declaredDeps = Arrays.asList(new String[]{"foo", "bar"});
-		dependencyNames.put("foobar", declaredDeps);
+		dependencyNames.add("foo");
+		dependencyNames.add("bar");
 		transport.generateModuleIdMap();
 		List<String> idList = transport.getModuleIdList();
-		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "foo", "foobar"}), idList);
+		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "foo"}), idList);
 		for (int i = 1; i < idList.size(); i++) {
 			Assert.assertEquals(i, transport.getModuleIdMap().get(idList.get(i)).intValue());
 		}
@@ -256,19 +251,18 @@ public class AbstractHttpTransportTest {
 		syntheticModuleNames.add("combo/other");
 		transport.generateModuleIdMap();
 		idList = transport.getModuleIdList();
-		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "foo", "foobar"}), idList);
+		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "foo"}), idList);
 		for (int i = 1; i < idList.size(); i++) {
 			Assert.assertEquals(i, transport.getModuleIdMap().get(idList.get(i)).intValue());
 		}
 		Assert.assertEquals(idList.size()-1, transport.getModuleIdMap().size());
 
 		// add some more deps
-		declaredDeps = Arrays.asList(new String[]{"dep1", "dep2", "dep3"});
-		dependencyNames.put("module", declaredDeps);
+		dependencyNames.add("module");
 		transport.generateModuleIdMap();
 		System.out.println(transport.getModuleIdList());
 		idList = transport.getModuleIdList();
-		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "dep1", "dep2", "dep3", "foo", "foobar", "module"}), idList);
+		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "foo", "module"}), idList);
 		for (int i = 1; i < idList.size(); i++) {
 			Assert.assertEquals(i, transport.getModuleIdMap().get(idList.get(i)).intValue());
 		}

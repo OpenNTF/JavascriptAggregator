@@ -63,6 +63,11 @@ import java.util.Set;
 public interface IConfig {
 
 	/**
+	 * Value returned from {@link #getProperty(String, Class)} if the property is not found.
+	 */
+	public static final Object NOT_FOUND = new Object();
+
+	/**
 	 * Static constant specifying the name of the {@code packages} config param
 	 */
 	public static final String PACKAGES_CONFIGPARAM = "packages"; //$NON-NLS-1$
@@ -354,6 +359,31 @@ public interface IConfig {
 	 * @see IConfigModifier
 	 */
 	public Scriptable getRawConfig();
+
+	/**
+	 * Returns the value of the named config property.  If the value is not a
+	 * primitive type (String, Number, Boolean), then this function will attempt
+	 * to convert the property value to the class specified by <code>hint</code>.
+	 * <p>
+	 * The value returned may be one of the following:
+	 * <ul>
+	 * <li>{@link Boolean}</li>
+	 * <li>{@link Number}</li>
+	 * <li>{@link String}</li>
+	 * <li>An implementation specific representation of the value native to the config
+	 * processor if the value is not one of the above and <code>hint</code> is null</li>
+	 * <li>An object of the type specified by <code>hint</code> if the value can be converted</li>
+	 * <li>null, if the value is null or undefined</li>
+	 * <li>{@link #NOT_FOUND}</li>
+	 * </ul>
+	 * @param propname
+	 *            the name of the config property
+	 * @param hint
+	 *            the class to try to convert the value to if not a primitive type
+	 * @return the value of the property (may be null).
+	 * @throws IllegalArgumentException
+	 */
+	public Object getProperty(String propname, Class<?> hint) throws IllegalArgumentException;
 
 	/**
 	 * Returns the stringized source code representation of the {@link Scriptable}

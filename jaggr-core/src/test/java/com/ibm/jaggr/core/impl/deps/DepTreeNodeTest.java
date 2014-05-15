@@ -37,6 +37,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Map;
 
@@ -268,6 +269,7 @@ public class DepTreeNodeTest extends EasyMock {
 		root.createOrGet("a/a", null);
 		root.createOrGet("a/b", null);
 		root.createOrGet("a/b/a", null);
+		root.createOrGet("a/b/b", URI.create("a/b/b"));
 		root.getDescendent("a/b").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
 		root.getDescendent("c").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
 		root.getDescendent("a/b/a").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
@@ -279,6 +281,7 @@ public class DepTreeNodeTest extends EasyMock {
 		assertNotNull(root.getDescendent("a/b"));
 		assertEquals(null, root.getDescendent("a/a"));
 		assertNotNull(root.getDescendent("a/b/a"));
+		assertNotNull(root.getDescendent("a/b/b"));
 	}
 
 	@Test
