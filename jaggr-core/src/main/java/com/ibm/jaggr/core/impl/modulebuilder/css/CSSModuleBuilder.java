@@ -704,7 +704,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		/** True if &#064;import statements should be inlined */
 		obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
 		inlineImports = TypeUtil.asBoolean(obj, INLINEIMPORTS_DEFAULT_VALUE);
-		System.out.println(obj.toString());
 
 		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
 		Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
