@@ -22,8 +22,6 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.Features;
 
-import org.mozilla.javascript.Scriptable;
-
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -61,6 +59,11 @@ import java.util.Set;
  * dependency graph.
  */
 public interface IConfig {
+
+	/**
+	 * Value returned from {@link #getProperty(String, Class)} if the property is not found.
+	 */
+	public static final Object NOT_FOUND = new Object(){@Override public String toString() { return "NOT_FOUND";}};
 
 	/**
 	 * Static constant specifying the name of the {@code packages} config param
@@ -343,20 +346,45 @@ public interface IConfig {
 	public Set<String> getJsPluginDelegators();
 
 	/**
-	 * Returns the raw config data as an instance of {@link Scriptable}, after the
-	 * config has been modified by any {@link IConfigModifier} services that
-	 * have been registered for the aggregator that this config is associated
-	 * with, and after any string substitutions have been performed.
+	 * Returns the raw config data after the config has been modified by any {@link IConfigModifier}
+	 * services that have been registered for the aggregator that this config is associated with,
+	 * and after any string substitutions have been performed. The runtime type of the object is
+	 * dependent upon the config processor implementation.
 	 * <p>
-	 * The returned {@link Scriptable} is sealed, so it may not be modified.
+	 * The returned object is read-only, so it may not be modified.
 	 *
 	 * @return The raw config data for this config object
 	 * @see IConfigModifier
 	 */
-	public Scriptable getRawConfig();
+	public Object getRawConfig();
 
 	/**
-	 * Returns the stringized source code representation of the {@link Scriptable}
+	 * Returns the value of the named config property.  If the value is not a
+	 * primitive type (String, Number, Boolean), then this function will attempt
+	 * to convert the property value to the class specified by <code>hint</code>.
+	 * <p>
+	 * The value returned may be one of the following:
+	 * <ul>
+	 * <li>{@link Boolean}</li>
+	 * <li>{@link Number}</li>
+	 * <li>{@link String}</li>
+	 * <li>An implementation specific representation of the value native to the config
+	 * processor if the value is not one of the above and <code>hint</code> is null</li>
+	 * <li>An object of the type specified by <code>hint</code> if the value can be converted</li>
+	 * <li>null, if the value is null or undefined</li>
+	 * <li>{@link #NOT_FOUND}</li>
+	 * </ul>
+	 * @param propname
+	 *            the name of the config property
+	 * @param hint
+	 *            the class to try to convert the value to if not a primitive type
+	 * @return the value of the property (may be null).
+	 * @throws IllegalArgumentException
+	 */
+	public Object getProperty(String propname, Class<?> hint) throws IllegalArgumentException;
+
+	/**
+	 * Returns the stringized source code representation of the raw config
 	 * returned by {@link #getRawConfig()}.  Changes in this string may be used to
 	 * track config changes.  This method is preferable to using {@link #lastModified()}
 	 * because external factors besides the config file (such as changes in the

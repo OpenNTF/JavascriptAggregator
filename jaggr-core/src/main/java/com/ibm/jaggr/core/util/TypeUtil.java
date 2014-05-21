@@ -19,7 +19,11 @@ package com.ibm.jaggr.core.util;
 public class TypeUtil {
 
 	public static Boolean asBoolean(Object obj) {
-		Boolean result = Boolean.FALSE;
+		return asBoolean(obj, false);
+	}
+
+	public static Boolean asBoolean(Object obj, boolean defaultValue) {
+		Boolean result = defaultValue;
 		if (obj != null) {
 			if (obj instanceof Boolean) {
 				result = (Boolean)obj;
@@ -30,13 +34,6 @@ public class TypeUtil {
 			}
 		}
 		return result;
-	}
-
-	public static Boolean asBoolean(Object obj, boolean defaultValue) {
-		if (obj == null) {
-			return defaultValue;
-		}
-		return asBoolean(obj);
 	}
 
 	public static int asInt(Object obj, int defaultValue) {

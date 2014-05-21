@@ -413,10 +413,11 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 * {@link #contributeLoaderExtensionJavaScript(String)}.
 	 */
 	@Override
-	public void modifyConfig(IAggregator aggregator, Scriptable config) {
+	public void modifyConfig(IAggregator aggregator, Object configObj) {
 		// let the superclass do its thing
-		super.modifyConfig(aggregator, config);
+		super.modifyConfig(aggregator, configObj);
 
+		Scriptable config = (Scriptable)configObj;
 		// Get the server-side config properties we need to start with
 		Object pathsObj = config.get(IConfig.PATHS_CONFIGPARAM, config);
 		Object packagesObj = config.get(IConfig.PACKAGES_CONFIGPARAM, config);

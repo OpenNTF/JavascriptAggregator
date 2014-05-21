@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.deps;
 
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 
 import java.net.URI;
 import java.util.Arrays;
@@ -42,6 +43,18 @@ public interface IDependencies {
 	 */
 	public static final Collection<String> excludes = Arrays
 			.asList(new String[] { "require", "exports", "module" }); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+
+	/**
+	 * Default non-JavaScript file extensions to include in the scanned dependencies names list returned
+	 * by {@link #getDependencyNames()}.
+	 */
+	public static final String[] defaultNonJSExtensions = new String[]{"html", "css"}; //$NON-NLS-1$ //$NON-NLS-2$
+
+	/**
+	 * Name of config property specifying optional additional file extension names to include in the
+	 * scanned dependencies name list returned by {@link #getDependencyNames()}.
+	 */
+	public static final String nonJSExtensionsCfgPropName = "depScanIncludeExtensions"; //$NON-NLS-1$
 
 	/**
 	 * Returns the dependencies for the specified module. This is the list of
@@ -101,17 +114,28 @@ public interface IDependencies {
 
 
 	/**
-	 * Returns an {@link Iterable} over the module names for witch dependency
-	 * information is contained in the dependency map. Calling
-	 * {@link #getDelcaredDependencies(String)} or
-	 * {@link #getDependentFeatures(String)} with any of the module names
-	 * returned by this method is guaranteed to return a non-null value.
+	 * Returns an {@link Iterable} over the module names that were scanned while building the
+	 * dependency map. This includes JavaScript modules as well as selected non-JavaScript modules.
+	 * <p>
+	 * Non-JavaScript modules included in the result include the following:
+	 * <ul>
+	 * <li>modules with extensions specified in {@link #defaultNonJSExtensions}</li>
+	 * <li>modules with extensions specified in the server-side config property named
+	 * {@link #nonJSExtensionsCfgPropName}</li>
+	 * <li>modules with extensions specified by the
+	 * {@link IModuleBuilderExtensionPoint#EXTENSION_ATTRIBUTE} config property for the registered
+	 * module builders</li>
+	 * </ul>
+	 * Only JavaScript modules have dependencies.  If a non-JavaScript module included in the
+	 * result is passed to {@link #getDelcaredDependencies(String)} or {@link #getDependentFeatures(String)},
+	 * an empty list will be returned.
 	 *
 	 * @return the module names in the dependency map.
 	 * @throws ProcessingDependenciesException
 	 */
 	public Iterable<String> getDependencyNames()
 			throws ProcessingDependenciesException;
+
 	/**
 	 * Returns the cumulative last-modified date of these dependencies which was
 	 * determined the last time the dependencies were created or validated. In

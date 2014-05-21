@@ -13,29 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["dojo/_base/array"], function(arrays) {
+define(["dojo/_base/array",
+        "dojox/encoding/base64"], function(arrays, base64) {
 	
 	function decodeModuleIdList(encoded, moduleIdMap) {
+		encoded = encoded.replace(/[-_]/g, function(c) {
+			return (c=='-')?'+':'/';
+		});
+		var decoded = base64.decode(encoded);
+		var hashLen = require.combo.midListHash.length;
+		var hash = decoded.slice(0, hashLen);
+		var use32BitEncoding = decoded[hashLen];
+		decoded = decoded.slice(hashLen+1);
+		
+		var idList = [], length, j, i;
+		var elemLen = use32BitEncoding ? 4 : 2;
+		for (i = 0; i < decoded.length/elemLen; i++) {
+			j = i * elemLen;
+			if (use32BitEncoding) {
+				idList.push( ((decoded[j]&0xFF) << 24) + ((decoded[j+1]&0xFF) << 16) +
+				             ((decoded[j+2]&0xFF) << 8) + (decoded[j+3]&0xFF) );
+			} else {
+				idList.push( ((decoded[j]&0xFF) << 8) + (decoded[j+1]&0xFF) );
+			}
+		}
+		
 		var idModuleMap = {}, result = [];
 		for (var s in moduleIdMap) {
 			if (moduleIdMap.hasOwnProperty(s)) {
 				idModuleMap[moduleIdMap[s]] = s;
 			}
 		}
-		for (var i = 0, position = -1, length = 0; i < encoded.length;) {
+		for (i = 0, position = -1, length = 0; i < idList.length;) {
 			if (position == -1) {
 				// read the position and length values
-				position = encoded[i++];
-				length = encoded[i++];
+				position = idList[i++];
+				length = idList[i++];
 			}
-			for (var j = 0; j < length; j++) {
-				var pluginName = null, moduleName = null, id = encoded[i++];
+			for (j = 0; j < length; j++) {
+				var pluginName = null, moduleName = null, id = idList[i++];
 				if (id === 0) {
 					// 0 means the next two ints specify plugin and modulename
-					id = encoded[i++];
+					id = idList[i++];
 					pluginName = idModuleMap[id];
 					expect(pluginName).not.toBe(null);
-					id = encoded[i++];
+					id = idList[i++];
 					moduleName = id !== 0 ? idModuleMap : "";
 				} else {
 					moduleName = idModuleMap[id];
@@ -108,19 +130,43 @@ define(["dojo/_base/array"], function(arrays) {
 	});
 	
 	describe("test addModuleIdEncoded", function() {
-		var moduleIdMap = {"foo/bar1":11, "foo/bar2":12, "dir1/dir2/test":25, "xxx/yyy": 50};
-		it("test basic encoding and positioning", function() {
-			var names = ["foo/bar1","xxx/yyy",null,null,"dir1/dir2/test","foo/bar2","notfound"];
-			var encoded = [];
+		var moduleIdMap = {"foo/bar1":11, "foo/bar2":12, "dir1/dir2/test":25, "xxx/yyy": 50, "bigId": 0x10000};
+		var buildIdList = function(names) {
+			var result = [];
 			arrays.forEach(names, function(name, i) {
 				if (name) {
-					var added = addModuleIdEncoded({name:name}, i, encoded, moduleIdMap);
+					var added = addModuleIdEncoded({name:name}, i, result, moduleIdMap);
 					var expected = (name != "notfound");
 					expect(added).toBe(expected);
 				}
 			});
+			return result;
+		};
+		beforeEach(function() {
+			window.require = require || {};
+			require.combo = require.combo || {};
+			require.combo.midListHash = [1,2 ,3, 4, 5, 6, 7, 8];
+		});
+		it("16-bit encoding and positioning", function() {
+			var names = ["foo/bar1","xxx/yyy",null,null,"dir1/dir2/test","foo/bar2","notfound"];
+			var idList = buildIdList(names);
+			var encoded = base64EncodeModuleIds(idList, base64.encode);
+			// Verify 16 bit ids used
+			expect(base64.decode(encoded).length).toBe(require.combo.midListHash.length + 1 + 2*8);
 			var moduleIdDecoded = decodeModuleIdList(encoded, moduleIdMap);
 			expect(moduleIdDecoded).toEqual(["foo/bar1","xxx/yyy",undefined,undefined,"dir1/dir2/test","foo/bar2"]);
+		});
+		it("32-bit encoding and positioning", function() {
+			var names = ["foo/bar1","xxx/yyy",null,null,"dir1/dir2/test","foo/bar2","notfound", "bigId"];
+			var idList = buildIdList(names);
+			var encoded = base64EncodeModuleIds(idList, base64.encode);
+			// Verify 32 bit ids used (note: bug in encode/decode strips trailing zeros, hence inexact comparison)
+			expect(base64.decode(encoded).length).toBe(
+					require.combo.midListHash.length + 1 + 4*11
+					- 2	// workaround for https://bugs.dojotoolkit.org/ticket/7400
+			);
+			var moduleIdDecoded = decodeModuleIdList(encoded, moduleIdMap);
+			expect(moduleIdDecoded).toEqual(["foo/bar1","xxx/yyy",undefined,undefined,"dir1/dir2/test","foo/bar2",undefined,"bigId"]);
 			
 		});
 	});

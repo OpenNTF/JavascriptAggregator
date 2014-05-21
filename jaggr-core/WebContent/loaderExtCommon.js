@@ -179,9 +179,7 @@ var params = {
 			pluginNameId = dep.prefix ? moduleIdMap[dep.prefix] : 0;
 			
 		// validate ids
-		if (nameId && (dep.prefix && pluginNameId || !dep.prefix) && 
-				!(nameId >> 16) && !(pluginNameId >> 16)) {	// only 16-bit id mappings currently supported
-			
+		if (nameId && (dep.prefix && pluginNameId || !dep.prefix)) {				
 			// encodedIds.segStartIdx holds the index in the array for the start of 
 			// the current segment.
 			if (!encodedIds.length) {
@@ -266,20 +264,33 @@ var params = {
 	 * Performs base64 encoding of the encoded module id list
 	 * 
 	 * @param ids
-	 *            the encoded module id list as a 16-bit number array.
+	 *            the encoded module id list as a 32-bit or 16-bit number array.
 	 * @param encoder
 	 *            the base64 encoder
 	 * @return the URL safe base64 encoded representation of the number array
 	 */
 	base64EncodeModuleIds = function(ids, encoder) {
+		// First, determine the max id.  If max id is less than 64k, then we can
+		// use 16-bit encoding.  Otherwise, we need to use 32-bit encoding.
+		var use32BitEncoding = false;
+		for (var i = 0; i < ids.length; i++) {
+			if (ids[i] > 0xFFFF) {
+				use32BitEncoding = true;
+				break;
+			}
+		}
 		// convert from number array to byte array for base64 encoding
 		var bytes = [];
-		for (var i = 0; i < ids.length; i++) {
+		for (i = 0; i < ids.length; i++) {
+			if (use32BitEncoding) {
+				bytes.push((ids[i] >> 24) & 0xFF);
+				bytes.push((ids[i] >> 16) & 0xFF);
+			}
 			bytes.push((ids[i] >> 8) & 0xFF);
 			bytes.push(ids[i] & 0xFF);
 		}
-		// now add the module id list hash to the beginning of the data
-		bytes = require.combo.midListHash.concat(bytes);
+		// now add the module id list hash and 32-bit flag to the beginning of the data
+		bytes = require.combo.midListHash.concat(use32BitEncoding ? 1 : 0, bytes);
 		// do the encoding, converting for URL safe characters
 		return encoder(bytes).replace(/[+=\/]/g, function(c) {
 			return (c=='+')?'-':((c=='/')?'_':'');

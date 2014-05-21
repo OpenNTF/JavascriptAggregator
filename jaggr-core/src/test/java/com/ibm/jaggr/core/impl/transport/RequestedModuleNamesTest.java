@@ -33,7 +33,6 @@ import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -350,13 +349,13 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testDecodeModuleIds() throws Exception {
-		final List<String> idList = new ArrayList<String>();
-		idList.add(null);
-		idList.add("module1");
-		idList.add("module2");
-		idList.add("foo");
-		idList.add("bar");
-		idList.add("plugin");
+		final String[] idList = new String[0x10005];
+		idList[1] = "module1";
+		idList[2] = "module2";
+		idList[3] = "foo";
+		idList[4] = "bar";
+		idList[5] = "plugin";
+		idList[0x10003] = "bigId";
 
 		int ids[] = new int [] {
 			// specifies the following {,,,"module1",,"module2","plugin!foo",,,"bar"}
@@ -381,18 +380,35 @@ public class RequestedModuleNamesTest {
 
 		byte hash[] = new byte[]{1, 2, 3};
 
-		byte[] bytes = new byte[24];
+		// test with 16-bit encoding
+		byte[] bytes = new byte[ids.length*2];
 		for (int i = 0; i < ids.length; i++) {
 			bytes[i*2] = (byte)(ids[i] >> 8);
 			bytes[i*2+1] = (byte)(ids[i] & 0xFF);
 		}
-		String encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(hash, bytes));
+		String encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{0}), bytes));
+		System.out.println(encoded);
 		String resultArray[] = new String[11];
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(null);
 		EasyMock.replay(mockRequest);
-		RequestedModuleNames requestedModules = new RequestedModuleNames(mockRequest, idList, hash);
+		RequestedModuleNames requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
 		requestedModules.decodeModuleIds(encoded, resultArray);
 		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar"},  resultArray);
+
+		// test again with 32-bit encoding
+		ids = ArrayUtils.addAll(ids, new int[]{12, 1, 0x10003});  // slot 12, 1 module, "bigId"
+		bytes = new byte[ids.length*4];
+		for (int i = 0; i < ids.length; i++) {
+			bytes[i*4] = (byte)(ids[i] >> 24);
+			bytes[i*4+1] = (byte)((ids[i] >> 16) & 0xFF);
+			bytes[i*4+2] = (byte)((ids[i] >> 8) & 0xFF);
+			bytes[i*4+3] = (byte)(ids[i] & 0xFF);
+		}
+		encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{1}), bytes));
+		System.out.println(encoded);
+		resultArray = new String[13];
+		requestedModules.decodeModuleIds(encoded, resultArray);
+		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar",null,"bigId"},  resultArray);
 
 		// Make sure exception is thrown if hash is not correct
 		try {

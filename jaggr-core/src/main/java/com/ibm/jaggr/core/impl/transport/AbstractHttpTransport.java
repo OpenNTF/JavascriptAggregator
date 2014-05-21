@@ -26,8 +26,6 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
-import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.resource.ExceptionResource;
 import com.ibm.jaggr.core.readers.AggregationReader;
 import com.ibm.jaggr.core.resource.IResource;
@@ -39,7 +37,6 @@ import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
@@ -78,7 +75,6 @@ import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.Cookie;
@@ -484,13 +480,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @see com.ibm.jaggr.service.config.IConfigModifier#modifyConfig(com.ibm.jaggr.service.IAggregator, java.util.Map)
 	 */
 	@Override
-	public void modifyConfig(IAggregator aggregator, Scriptable config) {
+	public void modifyConfig(IAggregator aggregator, Object configObj) {
 		final String sourceMethod = "modifyConfig"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		// The server-side AMD config has been updated.  Add an entry to the
 		// {@code paths} property to map the resource (combo) path to the
 		// location of the combo resources on the server.
 		Context context = Context.enter();
+		Scriptable config = (Scriptable)configObj;
 		try {
 			if (isTraceLogging) {
 				log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{aggregator, Context.toString(config)});
@@ -522,7 +519,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (resourcePathId == null) {
 			throw new IllegalArgumentException(
 				IHttpTransportExtensionPoint.PATH_ATTRIBUTE  +
-				" attribute not specified for extension " +
+				" attribute not specified for extension " + //$NON-NLS-1$
 				extension.getUniqueId()
 			);
 		}
@@ -531,7 +528,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (comboUriStr == null) {
 			throw new IllegalArgumentException(
 				IHttpTransportExtensionPoint.RESOURCESURI_ATTRIBUTE  +
-				" attribute not specified for extension " +
+				" attribute not specified for extension " + //$NON-NLS-1$
 				extension.getUniqueId()
 			);
 		} else {
@@ -1135,21 +1132,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		return sb.toString();
 	}
 
-	private void addName(String dep, String name, Map<String, String> names, boolean isTraceLogging) {
-		final String UNSCANNED_DEP = "unscanned dependency of "; //$NON-NLS-1$
-		int idx = dep.lastIndexOf('!');
-		if (idx != -1) {
-			String plugin = dep.substring(0, idx);
-			if (plugin.length() > 0 && !names.containsKey(plugin)) {
-				names.put(plugin, isTraceLogging ? (UNSCANNED_DEP + name) : null);
-			}
-			dep = dep.substring(idx+1);
-		}
-		if (dep.length() > 0 && !names.containsKey(dep)) {
-			names.put(dep, isTraceLogging ? (UNSCANNED_DEP + name) : null);
-		}
-
-	}
 	/**
 	 * Generates the module id map used by the transport to encode/decode module names
 	 * using assigned module name ids.
@@ -1174,27 +1156,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		for (String name : deps.getDependencyNames()) {
 			names.put(name, isTraceLogging ? deps.getURI(name).toString() : null);
-		}
-		List<String> depNames = new ArrayList<String>(names.keySet());
-		for (String name : depNames) {
-			List<String> declaredDeps = deps.getDelcaredDependencies(name);
-			for (String dep : declaredDeps) {
-				Matcher m = hasPluginPattern.matcher(dep);
-				if (m.find()) {
-					// mid specifies the has! loader plugin.  Process the
-					// constituent mids separately
-					HasNode hasNode = new HasNode(m.group(2));
-					ModuleDeps hasDeps = hasNode.evaluateAll(
-							"has", Features.emptyFeatures, //$NON-NLS-1$
-							new HashSet<String>(),
-							(ModuleDepInfo)null, null);
-					for (Map.Entry<String, ModuleDepInfo> entry : hasDeps.entrySet()) {
-						addName(entry.getKey(), name, names, isTraceLogging);
-					}
-				} else {
-					addName(dep, name, names, isTraceLogging);
-				}
-			}
 		}
 		for (String name : getSyntheticModuleNames()) {
 			names.put(name, isTraceLogging ? "transport added" : null); //$NON-NLS-1$

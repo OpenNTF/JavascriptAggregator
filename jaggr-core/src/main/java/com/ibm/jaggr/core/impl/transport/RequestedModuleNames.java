@@ -233,22 +233,24 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	/**
 	 * Decodes the module names specified by {@code encoded} and adds the module names to the
 	 * appropriate positions in {@code resultArray}. {@code encoded} is specified as a base64
-	 * encoded id list. The id list consists of a hash code followed by a sequence of segments, with
-	 * each segment having the form:
+	 * encoded array of bytes. The byte array consists of a hash code followed by a base flag (1
+	 * byte) indicating whether the id map was encoded using 16-bit or 32-bit values, followed by
+	 * the id map which consists of a sequence of segments, with each segment having the form:
 	 * <p>
 	 * <code>[position][count][moduleid-1][moduleid-2]...[moduleid-(count-1)]</code>
 	 * <p>
 	 * where position specifies the position in the module list of the first module in the segment,
 	 * count specifies the number of modules in the segment who's positions contiguously follow the
 	 * start position, and the module ids specify the ids for the modules from the id map. Position
-	 * and count are 16-bit numbers, and the module ids are specified as follows:
+	 * and count are 16-bit or 32-bit numbers depending on the base flag, and the module ids are
+	 * specified as follows:
 	 * <p>
 	 * <code>[id]|[0][plugin id][id]</code>
 	 * <p>
 	 * If the module name doesn't specify a loader plugin, then it is represented by the id for the
 	 * module name. If the module name specifies a loader plugin, then it is represetned by a zero,
 	 * followed by the id for the loader plugin, followed by the id for the module name without the
-	 * loader plugin. All values are 16-bit numbers.
+	 * loader plugin. All values are 16-bit or 32-bit numbers, depending on the base flag.
 	 * <p>
 	 * The hash code that precedes the list is composed of the hash code bytes which represent the
 	 * hash of the entire module id list on the server. This hash was provided by the transport in
@@ -279,11 +281,21 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				}
 				throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
 			}
+			// strip off base flag
+			boolean use32BitEncoding = decoded[idListHash.length] == 1;
+
 			// convert to int array
-			int start = idListHash.length;
-			int[] intArray = new int[(decoded.length-start)/2];
+			int start = idListHash.length+1;
+			int elemSize = use32BitEncoding ? 4 : 2;
+			int[] intArray = new int[(decoded.length-start)/elemSize];
 			for (int i = 0; i < intArray.length; i ++) {
-				intArray[i] = (((int)(decoded[start+i*2])&0xFF) << 8) + ((int)(decoded[start+i*2+1])&0xFF);
+				int j = start+i*elemSize;
+				if (use32BitEncoding) {
+					intArray[i] = (((int)(decoded[j])&0xFF) << 24) + (((int)(decoded[j+1])&0xFF) << 16) +
+					              (((int)(decoded[j+2])&0xFF) << 8) + ((int)(decoded[j+3])&0xFF);
+				} else {
+					intArray[i] = (((int)(decoded[j])&0xFF) << 8) + ((int)(decoded[j+1])&0xFF);
+				}
 			}
 			if (isTraceLogging) {
 				log.finer("ids = " + Arrays.asList(intArray).toString()); //$NON-NLS-1$

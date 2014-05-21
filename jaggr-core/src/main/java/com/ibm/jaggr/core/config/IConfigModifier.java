@@ -18,26 +18,23 @@ package com.ibm.jaggr.core.config;
 
 import com.ibm.jaggr.core.IAggregator;
 
-import org.mozilla.javascript.Scriptable;
-
 /**
  * Interface for config modifier class. Instances of this class are registered
  * as an OSGi service with the name property set to the name of the aggregator
  * that the config object is associated with. The
- * {@link #modifyConfig(IAggregator, Scriptable)} method is called whenever the
+ * {@link #modifyConfig(IAggregator, Object)} method is called whenever the
  * config is loaded/reloaded, before any config listeners are called.
  */
 public interface IConfigModifier {
 	/**
 	 * Called whenever the config is loaded/reloaded
-	 * 
+	 *
 	 * @param aggregator
 	 *            The aggregator that this config is associated with
 	 * @param rawConfig
-	 *            The raw config object from the config JavaScript. See
-	 *            {@link IConfig#getRawConfig()} for a description of this
-	 *            object. Implementors of this method may modify the config
-	 *            object as needed.
+	 *            The implementation specific raw config object from the config JavaScript. See
+	 *            {@link IConfig#getRawConfig()} for a description of this object. Implementors of
+	 *            this method may modify the config object as needed.
 	 */
-	void modifyConfig(IAggregator aggregator, Scriptable rawConfig);
+	void modifyConfig(IAggregator aggregator, Object rawConfig);
 }

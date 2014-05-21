@@ -36,6 +36,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Scriptable;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -46,6 +47,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
@@ -887,6 +889,27 @@ public class ConfigTest {
 		config = "{aliases:[[/^foo\\/test\\/(.*)$/, function($0, $1){return $0.indexOf('/baz/') == -1 ? ('foo/test/baz/'+$1) : '';}]]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Assert.assertEquals("foo/test/baz/bar", cfg.resolve("foo/test/bar", features, dependentFeatures,  null, true));
+	}
+
+	@Test
+	public void testGetProperty() throws Exception {
+		String config = "{booleanVar:true, numberVar:1.5, stringVar:'value', nullVar:null, undefinedVar:undefined, arrayVar:['foo', 'bar'], mapVar:{foo:'bar'}}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals(true, cfg.getProperty("booleanVar", null));
+		Assert.assertEquals(1.5, cfg.getProperty("numberVar", null));
+		Assert.assertEquals("value", cfg.getProperty("stringVar", null));
+		Assert.assertEquals(IConfig.NOT_FOUND, cfg.getProperty("foo", null));
+		Assert.assertNull(cfg.getProperty("nullVar", null));
+		Assert.assertNull(cfg.getProperty("undefinedVar", null));
+		Assert.assertTrue(cfg.getProperty("arrayVar", null) instanceof Scriptable);
+		Assert.assertArrayEquals(new String[]{"foo",  "bar"}, (String[])cfg.getProperty("arrayVar", String[].class));
+		try {
+			cfg.getProperty("arrayVar", Map.class);
+			Assert.fail("Expected exception");
+		} catch (IllegalArgumentException e) {}
+		Map<String, String> map = new HashMap<String, String>();
+		map.put("foo", "bar");
+		Assert.assertEquals(map, cfg.getProperty("mapVar", Map.class));
 	}
 
 	public static class TestConsoleLogger extends ConfigImpl.Console {

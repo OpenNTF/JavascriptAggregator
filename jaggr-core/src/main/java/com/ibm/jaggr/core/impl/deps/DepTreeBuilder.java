@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -61,6 +62,8 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 
 	private final DepTreeNode cached;
 
+	private final Set<String> nonJSExtensions;
+
 	/**
 	 * Counter to keep track of the number of parser threads started
 	 */
@@ -91,15 +94,18 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 	 * @param node
 	 *            The {@link DepTreeNode} corresponding to {@code path}.
 	 * @param cached
-	 *            The cached dependency tree.  Used when validating dependencies
+	 *            The cached dependency tree. Used when validating dependencies
+	 * @param nonJSExtensions
+	 *            Set of non-JavaScript file extensions to include in the dependencies name list.
 	 */
 	DepTreeBuilder(IAggregator aggregator, CompletionService<URI> parserCs,
-			URI path, DepTreeNode node, DepTreeNode cached) {
+			URI path, DepTreeNode node, DepTreeNode cached, Set<String> nonJSExtensions) {
 		this.aggregator = aggregator;
 		this.parserCs = parserCs;
 		this.uri = path;
 		this.root = node;
 		this.cached = cached;
+		this.nonJSExtensions = nonJSExtensions;
 	}
 
 	/* (non-Javadoc)
@@ -113,14 +119,24 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 			 */
 			@Override
 			public boolean visitResource(Resource resource, String pathname) throws IOException {
-				if (resource.isFolder()) {
-					return true;
-				}
-				if (!resource.getPath().endsWith(".js")) { //$NON-NLS-1$
-					return false;
-				}
 				if (pathname == null) {
 					pathname = ""; //$NON-NLS-1$
+				}
+				int idx = pathname.lastIndexOf("/"); //$NON-NLS-1$
+				String resname = idx == -1 ? pathname : pathname.substring(idx+1);
+
+				if (resource.isFolder()) {
+					return !resname.startsWith("."); //$NON-NLS-1$
+				}
+				if (!resource.getPath().endsWith(".js")) { //$NON-NLS-1$
+					// non-JavaScript resource
+					idx = resname.lastIndexOf("."); //$NON-NLS-1$
+					String extension = idx == -1 ? "" : resname.substring(idx+1); //$NON-NLS-1$
+					if (nonJSExtensions.contains(extension)) {
+						DepTreeNode node = root.createOrGet(pathname, resource.getURI());
+						node.setDependencies(null,  null,  resource.lastModified(), resource.lastModified());
+					}
+					return false;
 				}
 				// strip off the .js extension
 				if (pathname.endsWith(".js")) {  //$NON-NLS-1$

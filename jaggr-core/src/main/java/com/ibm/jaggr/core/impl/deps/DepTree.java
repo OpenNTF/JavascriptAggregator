@@ -17,9 +17,11 @@
 package com.ibm.jaggr.core.impl.deps;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.util.ConsoleService;
-import com.ibm.jaggr.core.util.PathUtil;
 
 import org.apache.commons.lang.StringUtils;
 
@@ -33,10 +35,14 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.net.URI;
 import java.text.MessageFormat;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.CompletionService;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -261,13 +267,14 @@ public class DepTree implements Serializable {
 		CompletionService<DepTreeBuilder.Result> treeBuilderCs = new ExecutorCompletionService<DepTreeBuilder.Result>(
 				treeBuilderExc);
 
+		Set<String> nonJSExtensions = Collections.unmodifiableSet(getNonJSExtensions(aggregator));
 		// Start the tree builder threads to process the paths
 		for (final URI path : paths) {
 			/*
 			 * Create or get from cache the root node for this path and
 			 * add it to the new map.
 			 */
-			DepTreeNode root = new DepTreeNode(PathUtil.getModuleName(path), path);
+			DepTreeNode root = new DepTreeNode("", path); //$NON-NLS-1$
 			DepTreeNode cachedNode = null;
 			if (cached != null) {
 				cachedNode = cached.depMap.get(path);
@@ -292,7 +299,7 @@ public class DepTree implements Serializable {
 			depMap.put(path, root);
 
 			treeBuilderCount.incrementAndGet();
-			treeBuilderCs.submit(new DepTreeBuilder(aggregator, parserCs, path, root, cachedNode));
+			treeBuilderCs.submit(new DepTreeBuilder(aggregator, parserCs, path, root, cachedNode, nonJSExtensions));
 		}
 
 		// List of parser exceptions
@@ -332,7 +339,7 @@ public class DepTree implements Serializable {
 			throw new RuntimeException(parserExceptions.get(0));
 		}
 
-		// Prune dead nodes (nodes with no children or dependency lists)
+		// Prune dead nodes (folder nodes with no children)
 		for (Map.Entry<URI, DepTreeNode> entry : depMap.entrySet()) {
 			entry.getValue().prune();
 		}
@@ -453,5 +460,46 @@ public class DepTree implements Serializable {
 		}
 
 		return root;
+	}
+
+	/**
+	 * Returns the set of non-JavaScript file extensions to include in the scanned dependencies name
+	 * list. The values returned are obtained from the following sources:
+	 * <ul>
+	 * <li>Default values specified by {@link IDependencies#defaultNonJSExtensions}</li>
+	 * <li>Values specified by the {@link IDependencies#nonJSExtensionsCfgPropName} config property</li>
+	 * <li>Values specified by the {@link IModuleBuilderExtensionPoint#EXTENSION_ATTRIBUTE} config
+	 * property for the registered module builders</li>
+	 * </ul>
+	 *
+	 * @param aggregator
+	 *            the aggregator instance
+	 * @return the set of extension names
+	 */
+	public Set<String> getNonJSExtensions(IAggregator aggregator) {
+		final String sourceMethod = "getNonJSExtensions"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(DepTree.class.getName(), sourceMethod, new Object[]{aggregator});
+		}
+		// Build set of non-js file extensions to include in the dependency names
+		Set<String> result = new HashSet<String>(Arrays.asList(IDependencies.defaultNonJSExtensions));
+		// Add any extensions specified in the config
+		Object cfgExtensions = aggregator.getConfig().getProperty(IDependencies.nonJSExtensionsCfgPropName, String[].class);
+		if (cfgExtensions != null && cfgExtensions instanceof String[]) {
+			result.addAll(Arrays.asList((String[])cfgExtensions));
+		}
+		// Add extensions specified by any module builders
+		Iterable<IAggregatorExtension> aggrExts = aggregator.getExtensions(IModuleBuilderExtensionPoint.ID);
+		if (aggrExts != null) {
+			for (IAggregatorExtension aggrExt : aggrExts) {
+				String ext = aggrExt.getAttribute(IModuleBuilderExtensionPoint.EXTENSION_ATTRIBUTE);
+				if (ext != null && ext.length() > 0 && !ext.equals("js") && !ext.equals("*")) { //$NON-NLS-1$ //$NON-NLS-2$
+					result.add(ext);
+				}
+			}
+		}
+		log.exiting(DepTree.class.getName(), sourceMethod, result);
+		return result;
 	}
 }

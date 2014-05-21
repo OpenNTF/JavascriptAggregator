@@ -35,6 +35,7 @@ import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;
+import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.FunctionObject;
 import org.mozilla.javascript.Scriptable;
@@ -530,7 +531,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			StringBuffer sb,
 			boolean resolveAliases,
 			boolean evaluateHasPluginConditionals) {
-		final String sourceMethod = "resolve";
+		final String sourceMethod = "resolve"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{mid, features, dependentFeatures, sb, resolveAliases, evaluateHasPluginConditionals});
@@ -591,7 +592,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			int recursionCount,
 			StringBuffer sb) {
 
-		final String sourceMethod = "resolveHasPlugin";
+		final String sourceMethod = "resolveHasPlugin"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{expression, features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, recursionCount, sb});
@@ -618,7 +619,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			// If a has! loader plugin expressions was introduced by alias resolution, then
 			// create a new HasNode for the expression and replace the current node with the new
 			// node.  Otherwise, replace the current node with the new module id.
-			int idx = replacement.indexOf("!");
+			int idx = replacement.indexOf("!"); //$NON-NLS-1$
 			if (idx != -1 && HAS_PATTERN.matcher(replacement.substring(0, idx)).find()) {
 				node.replaceWith(new HasNode(replacement.substring(idx+1)));
 			} else {
@@ -697,7 +698,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			int recursionCount,
 			StringBuffer sb) {
 
-		final String sourceMethod = "_resolve";
+		final String sourceMethod = "_resolve"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{name, features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, recursionCount, sb});
@@ -713,7 +714,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			int idx = name.indexOf("!"); //$NON-NLS-1$
 			if (idx != -1 && HAS_PATTERN.matcher(name.substring(0, idx)).find()) {
 				result = resolveHasPlugin(name.substring(idx+1), features, dependentFeatures, resolveAliases, evaluateHasPluginConditionals, recursionCount+1, sb);
-				result = result.contains("?") ? (name.substring(0, idx+1) + result) : result;
+				result = result.contains("?") ? (name.substring(0, idx+1) + result) : result; //$NON-NLS-1$
 			} else if (resolveAliases && getAliases() != null) {
 				if (idx != -1) { // non-has plugin
 					// If the module id specifies a plugin, then process each part individually
@@ -771,7 +772,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Set<String> dependentFeatures,
 			StringBuffer sb) {
 
-		final String sourceMethod = "resolveAliases";
+		final String sourceMethod = "resolveAliases"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{name, features, dependentFeatures, sb});
@@ -786,7 +787,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			if (pattern instanceof String) {
 				if (alias.getPattern().equals(name)) {
 					if (isTraceLogging) {
-						log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + alias.getReplacement().toString());
+						log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + alias.getReplacement().toString()); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					result = (String)alias.getReplacement();
 					break;
@@ -798,14 +799,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 					Object replacement = alias.getReplacement();
 					if (replacement instanceof String) {
 						if (isTraceLogging) {
-							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + replacement.toString());
+							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + replacement.toString()); //$NON-NLS-1$ //$NON-NLS-2$
 						}
 						result = m.replaceAll((String)replacement);
 					} else if (replacement instanceof Function){
 						// replacement is a javascript function.
 						Context cx = Context.enter();
 						if (isTraceLogging) {
-							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + Context.toString(replacement));
+							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + Context.toString(replacement)); //$NON-NLS-1$ //$NON-NLS-2$
 						}
 						try {
 							Scriptable threadScope = cx.newObject(sharedScope);
@@ -1375,6 +1376,38 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 
 	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.config.IConfig#getProperty(java.lang.String, java.lang.Class)
+	 */
+	@Override
+	public Object getProperty(String propname, Class<?> hint) {
+		final String sourceMethod = "getProperty"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(ConfigImpl.class.getName(), sourceMethod, new Object[]{propname, hint});
+		}
+		Object result = rawConfig.get(propname, rawConfig);
+		if (result != null && result instanceof Scriptable && hint != null) {
+			Context.enter();
+			try {
+				result = Context.jsToJava(result, hint);
+			} catch (EvaluatorException e) {
+				throw new IllegalArgumentException(e);
+			}finally {
+				Context.exit();
+			}
+		}
+		if (result == org.mozilla.javascript.Scriptable.NOT_FOUND) {
+			result = com.ibm.jaggr.core.config.IConfig.NOT_FOUND;
+		} else if (result == Undefined.instance) {
+			result = null;
+		}
+		if (isTraceLogging) {
+			log.exiting(ConfigImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
+	}
+
+	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.options.IOptionsListener#optionsUpdated(com.ibm.jaggr.service.options.IOptions, long)
 	 */
 	@Override
@@ -1404,6 +1437,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 		}
 	}
+
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	protected void registerServices() {
