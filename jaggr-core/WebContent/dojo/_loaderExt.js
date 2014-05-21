@@ -22,6 +22,7 @@
  *  aggregator when the combo/loaderExt.js pseudo resource is 
  *  requested.
  */
+(function() {
 var depmap = {},
     deps = [],
     userConfig = (function(){
@@ -44,7 +45,7 @@ var depmap = {},
     aliases = (userConfig.aliases = userConfig.aliases || []),
     // Flag indicating whether or not has features sent to the server should
     // include features that evaluate to undefined
-    includeUndefinedFeatures;
+    includeUndefinedFeatures,
 
     // Map of module name to number id pairs
     moduleIdMap = {};
@@ -171,8 +172,29 @@ combo.add = function (prefix, name, url, config) {
 	return canHandle;
 };
 
-combo.reg = function(ary) {
+/*
+ * If ary is null, then hash specifies the module id list hash on the server.
+ * If ary is not null, then it specifies the module ids to register and hash is ignored
+ */
+combo.reg = function(ary, hash) {
+	if (ary === null) {
+		for (var s in moduleIdMap) {
+			if (moduleIdMap.hasOwnProperty(s)) {
+				throw new Error("Can't set hash");
+			}
+		}
+		moduleIdMap["**idListHash**"] = hash;
+		return;
+	}
 	registerModuleNameIds(ary, moduleIdMap);
+};
+
+combo.getIdMap = function() {
+	// return a copy of the object
+	// Note that this function is used only called unit tests and diagnostic tools, so 
+	// the potentially poor performance of the converting the string to/form json is not
+	// and issue.
+	return JSON.parse(JSON.stringify(moduleIdMap));
 };
 
 setTimeout(function() {
@@ -186,4 +208,4 @@ setTimeout(function() {
 		userConfig.callback();
 	}
 }, 0);
-
+})();

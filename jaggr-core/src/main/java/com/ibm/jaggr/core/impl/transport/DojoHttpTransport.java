@@ -378,7 +378,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 
 		// add in the super class's contribution
 		sb.append(super.getDynamicLoaderExtensionJavaScript());
-		sb.append("})(userConfig);"); //$NON-NLS-1$
+		sb.append("})(this.dojoConfig || this.djConfig || this.require);"); //$NON-NLS-1$
 		return sb.toString();
 	}
 

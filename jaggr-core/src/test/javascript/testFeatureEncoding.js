@@ -13,39 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(["combo/dojo/featureMap", "dojox/encoding/base64", "combo/featureList"], function(featureMap, base64, featureList) {
+define([
+    "combo/dojo/featureMap", 
+    "dojox/encoding/base64", 
+    "combo/featureDecoder"], function(featureMap, base64, featureDecoder) {
 	describe("testFeatureEncoding", function() {
-		function decode(encoded) {
-			expect(encoded.indexOf("hasEnc=")).toBe(0);
-			var base64decoded = base64.decode(encoded.substring(7).replace(/[_-]/g, function(c) {
-				return (c=='-')?'+':'/';
-			}) + '=');
-			var len = (base64decoded[0]&0xFF) + ((base64decoded[1]&0xFF) << 8);
-			expect(len).toBe(featureList.length);
-			// Now decode the trit map
-			var trits = [];
-			for (var i = 2; i < base64decoded.length; i++) {
-				var q = base64decoded[i] & 0xFF;
-				for (var j = 0; j < 5 && (i-2)*5+j < len; j++) {
-					trits.push(q % 3);
-					q = Math.floor(q / 3);
-				}
-			}
-			// now reconstruct the features
-			var a = [];
-			for (i = 0; i < trits.length; i++) {
-				if (trits[i] < 2) {
-					a.push((trits[i] ? "" : "!") + featureList[i]);
-				}
-			}
-			return a.join('*');
-		}
 		
 		it("should encode the feature string properly", function() {
 			var features = "has=!0*2*12*!27*!31*50*!63*99*101";
 			var result = featureMap.getQueryString(features);
+			expect(result.substring(0,7)).toEqual("hasEnc=");
 			// Now decode the encoded feature list
-			expect(decode(result)).toEqual("!0*2*12*!27*!31*50*!63*99");
+			expect(featureDecoder.decode(result.substring(7), base64)).toEqual({"0":false, "2":true, "12":true, "27":false, "31":false, "50":true, "63":false, "99":true});
 		});
 		it("should handle empty feature list", function() {
 			var result = featureMap.getQueryString("has=");
@@ -57,7 +36,8 @@ define(["combo/dojo/featureMap", "dojox/encoding/base64", "combo/featureList"], 
 		});
 		it("should encode empty feature set for unknown features", function() {
 			var result = featureMap.getQueryString("has=foo*bar*hello");
-			expect(decode(result)).toEqual("");
+			expect(result.substring(0,7)).toEqual("hasEnc=");
+			expect(featureDecoder.decode(result.substring(7), base64)).toEqual({});
 		});
 		it("should gracefully handle garbage input", function() {
 			var input = "fd;lakejrlewmasldm";

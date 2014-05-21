@@ -721,11 +721,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
 		if (moduleIdListHash != null) {
-			sb.append("require.combo.midListHash = ["); //$NON-NLS-1$
+			sb.append("require.combo.reg(null, ["); //$NON-NLS-1$
 			for (int i = 0; i < moduleIdListHash.length; i++) {
 				sb.append(i == 0 ? "" : ", ").append(((int)moduleIdListHash[i])&0xFF); //$NON-NLS-1$ //$NON-NLS-2$
 			}
-			sb.append("];\r\n"); //$NON-NLS-1$
+			sb.append("]);\r\n"); //$NON-NLS-1$
 		}
 		sb.append(clientRegisterSyntheticModules());
 		if (isTraceLogging) {
