@@ -432,9 +432,6 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			if (modules[idx] != null) {
 				throw new BadRequestException();
 			}
-			if (modules[idx] != null) {
-				throw new BadRequestException();
-			}
 			modules[idx] = values.length > 1 ?
 					((aPrefixes != null ?
 							aPrefixes[Integer.parseInt(values[1])] : values[1])

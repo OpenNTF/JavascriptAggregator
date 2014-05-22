@@ -269,7 +269,7 @@ var params = {
 	 *            the base64 encoder
 	 * @return the URL safe base64 encoded representation of the number array
 	 */
-	base64EncodeModuleIds = function(ids, encoder) {
+	base64EncodeModuleIds = function(ids, encoder, idListHash) {
 		// First, determine the max id.  If max id is less than 64k, then we can
 		// use 16-bit encoding.  Otherwise, we need to use 32-bit encoding.
 		var use32BitEncoding = false;
@@ -290,7 +290,7 @@ var params = {
 			bytes.push(ids[i] & 0xFF);
 		}
 		// now add the module id list hash and 32-bit flag to the beginning of the data
-		bytes = require.combo.midListHash.concat(use32BitEncoding ? 1 : 0, bytes);
+		bytes = idListHash.concat(use32BitEncoding ? 1 : 0, bytes);
 		// do the encoding, converting for URL safe characters
 		return encoder(bytes).replace(/[+=\/]/g, function(c) {
 			return (c=='+')?'-':((c=='/')?'_':'');
@@ -316,10 +316,11 @@ var params = {
 	 *             the base64 encoder to use for encoding the encoded module id
 	 *             list.
 	 */
-	addRequestedModulesToUrl = function(url, opt_deps, modleIdMap, base64Encoder) {
+	addRequestedModulesToUrl = function(url, opt_deps, moduleIdMap, base64Encoder) {
 		var oFolded = {},
-	    oPrefixes = {},
-	    ids = [];
+	        oPrefixes = {},
+	        ids = [],
+	        hash = moduleIdMap["**idListHash**"];
 
 		for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
 			// This list of invalid chars should be the same as the list used
@@ -327,13 +328,13 @@ var params = {
 			if (/[{},:|<>*]/.test(dep.name)) {
 				throw new Error("Invalid module name: " + name);
 			}
-			if (!base64Encoder || !require.combo.midListHash || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
+			if (!base64Encoder || !hash || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
 				addFoldedModuleName(dep, i, oFolded, oPrefixes);
 			}
 		}
 		return url + (url.indexOf("?") === -1 ? "?" : "&") + "count=" + i + 
 		             (sizeofObject(oFolded) ? ("&modules="+encodeURIComponent(encodeModules(oFolded))):"") + 
-		             (ids.length ? ("&moduleIds=" + base64EncodeModuleIds(ids, base64Encoder)):"");
+		             (ids.length ? ("&moduleIds=" + base64EncodeModuleIds(ids, base64Encoder, hash)):"");
 		
 	},
 	

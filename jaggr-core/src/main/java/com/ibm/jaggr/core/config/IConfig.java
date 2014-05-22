@@ -63,7 +63,7 @@ public interface IConfig {
 	/**
 	 * Value returned from {@link #getProperty(String, Class)} if the property is not found.
 	 */
-	public static final Object NOT_FOUND = new Object(){@Override public String toString() { return "NOT_FOUND";}};
+	public static final Object NOT_FOUND = new Object(){@Override public String toString() { return "NOT_FOUND";}}; //$NON-NLS-1$
 
 	/**
 	 * Static constant specifying the name of the {@code packages} config param
