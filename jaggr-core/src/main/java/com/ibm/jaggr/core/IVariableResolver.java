@@ -16,7 +16,23 @@
 
 package com.ibm.jaggr.core;
 
+/**
+ * Interface for variables resolver.  Variables of the form ${varname} which appear in the
+ * server-side config JavaScript will be replaced by the values returned from the
+ * <code>resolve</code> method.  The default variable resolver uses Java system properties.
+ * <p>
+ * Variable resolvers are registered with the service registry using the interface name
+ * and the <code>name</code> property set to the name of the aggregator instance.
+ */
 public interface IVariableResolver {
 
+	/**
+	 * Returns the value to use in place of the variable name.  If a resolver cannot
+	 * resolve a variable name, it should return null.
+	 *
+	 * @param variableName
+	 *            The variable name
+	 * @return The value to use, or null.
+	 */
 	String resolve(String variableName);
 }
