@@ -78,11 +78,11 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 	 * @see com.ibm.jaggr.core.config.IConfigScopeModifier#modifyScope(com.ibm.jaggr.core.IAggregator, org.mozilla.javascript.Context, org.mozilla.javascript.Scriptable)
 	 */
 	@Override
-	public void modifyScope(IAggregator aggregator, Object context, Object scope) {
+	public void modifyScope(IAggregator aggregator, Object scope) {
 		final String sourceMethod = "prepareEnv"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(BundleVersionsHash.class.getName(), sourceMethod, new Object[]{aggregator, context, scope});
+			log.entering(BundleVersionsHash.class.getName(), sourceMethod, new Object[]{aggregator, scope});
 		}
 		FunctionObject fn = new FunctionObject((Scriptable)scope);
 		ScriptableObject.putProperty((Scriptable)scope, propName, fn);
