@@ -23,7 +23,7 @@ import com.ibm.jaggr.core.IAggregator;
  * which may be referenced by the config JavaScript.
  * <p>
  * Instances of this interface are registered as an OSGi service with the name property set to the
- * name of the aggregator. The {@link #modifyScope(IAggregator, Object)} method is called
+ * name of the aggregator. The {@link #modifyScope(IAggregator, Object, Object)} method is called
  * just before the config JavaScript is evaluated.
  */
 public interface IConfigScopeModifier {
@@ -33,10 +33,12 @@ public interface IConfigScopeModifier {
 	 *
 	 * @param aggregator
 	 *            The aggregator object
+	 * @param context
+	 *            The implementation specific context
 	 * @param scope
 	 *            the implementation specific scope object.  Add functions and/or properties to the scope
 	 *            to make them available to the config JavaScript.
 	 */
-	public void modifyScope(IAggregator aggregator, Object scope);
+	public void modifyScope(IAggregator aggregator, Object context, Object scope);
 
 }
