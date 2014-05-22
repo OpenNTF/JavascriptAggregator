@@ -959,7 +959,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 
 			// Call the registered scope modifiers
-			callConfigScopeModifiers(cx, sharedScope);
+			callConfigScopeModifiers(sharedScope);
 
 			cx.evaluateString(sharedScope, "var config = " +  //$NON-NLS-1$
 					aggregator.substituteProps(configScript, new IAggregator.SubstitutionTransformer() {
@@ -1333,12 +1333,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * Calls the registered config scope modifiers to give them an opportunity to
 	 * prepare the scope object prior to evaluating the config JavaScript
 	 *
-	 * @param context
-	 *            The JavaScript context object
 	 * @param scope
 	 *            The object representing the execution scope for the evaluation.
 	 */
-	protected void callConfigScopeModifiers(Context context, Scriptable scope) {
+	protected void callConfigScopeModifiers(Scriptable scope) {
 		if( aggregator.getPlatformServices() != null){
 			IServiceReference[] refs = null;
 			try {
@@ -1355,7 +1353,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 							(IConfigScopeModifier) aggregator.getPlatformServices().getService(ref);
 					if (adaptor != null) {
 						try {
-							adaptor.modifyScope(getAggregator(), context, scope);
+							adaptor.modifyScope(getAggregator(), scope);
 						} catch (Exception e) {
 							if (log.isLoggable(Level.SEVERE)) {
 								log.log(Level.SEVERE, e.getMessage(), e);
