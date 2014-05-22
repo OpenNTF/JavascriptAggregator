@@ -86,7 +86,7 @@ public class NIOFileResource extends FileResource {
 		return new IResourceVisitor.Resource() {
 			@Override
 			public long lastModified() {
-				return attrs.lastModifiedTime().to(TimeUnit.MICROSECONDS);
+				return attrs.lastModifiedTime().to(TimeUnit.MILLISECONDS);
 			}
 			@Override
 			public boolean isFolder() {
