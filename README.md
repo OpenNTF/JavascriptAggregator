@@ -54,7 +54,7 @@ ask a question on [Stack Overflow](http://stackoverflow.com/) with the tag
 ###UPGRADING###
 
 ####1.2.0####
-1.2 is a major upgrade.  [Read what it brings](../wiki/What's-new-in-Version-1.2).
+This is a major upgrade.  [Read what it brings](../wiki/What's-new-in-Version-1.2).
 
 We've created a new bundle, `jaggr-core`, to house all non-osgi specific code.
 This is now where the vast majority of jaggr code is located. Bundle 
