@@ -19,6 +19,7 @@ package com.ibm.jaggr.core;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Interface for a registered aggregator extension.  An {@link Iterable} of
@@ -68,4 +69,12 @@ public interface IAggregatorExtension {
 	 * @return the attribute value
 	 */
 	public String getAttribute(String name);
+
+	/**
+	 * Returns the set of attribute names for which {@link #getAttribute(String)} will return
+	 * a value.
+	 *
+	 * @return The attribute names
+	 */
+	public Set<String> getAttributeNames();
 }
