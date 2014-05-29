@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.readers.CommentStrippingReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
@@ -50,9 +51,11 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -206,6 +209,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
+	private Map<String, String> inlineableImageTypeMap = new HashMap<String, String>();
 	private Collection<Pattern> inlinedImageIncludeList = Collections.emptyList();
 	public Collection<Pattern> inlinedImageExcludeList = Collections.emptyList();
 
@@ -556,38 +560,43 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 
 			boolean imageInlined = false;
-			InputStream in = null;
-			try {
-				// In-line the image.
-				URLConnection connection = imageUri.toURL().openConnection();
+			String type = URLConnection.getFileNameMap().getContentTypeFor(imageUri.getPath());
+			String extension = PathUtil.getExtension(imageUri.getPath());
+			if (type == null) {
+				type = inlineableImageTypeMap.get(extension);
+			}
+			if (type == null) {
+				type = "content/unknown"; //$NON-NLS-1$
+			}
+			if (include || inlineableImageTypes.contains(type) || inlineableImageTypeMap.containsKey(extension)) {
+				InputStream in = null;
+				try {
+					// In-line the image.
+					URLConnection connection = imageUri.toURL().openConnection();
 
-				in = connection.getInputStream();
-				int size = connection.getContentLength();
-				String type = connection.getContentType();
-				if (type == null) {
-					type = "content/unknown"; //$NON-NLS-1$
-				}
-				if (include || inlineableImageTypes.contains(type) && size <= imageSizeThreshold) {
-					String base64 = getBase64(connection);
-					m.appendReplacement(buf, ""); //$NON-NLS-1$
-					buf.append("url('data:" + type + //$NON-NLS-1$
-							";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
-					imageInlined = true;
-				}
-			} catch (IOException ex) {
-				if (log.isLoggable(Level.WARNING)) {
-					log.log(
-							Level.WARNING,
-							MessageFormat.format(
-									Messages.CSSModuleBuilder_0,
-									new Object[]{imageUri}
-									),
-									ex
-							);
-				}
-			} finally {
-				if (in != null) {
-					try {in.close();} catch (IOException ignore) {}
+					if (include || connection.getContentLength() <= imageSizeThreshold) {
+						in = connection.getInputStream();
+						String base64 = getBase64(connection);
+						m.appendReplacement(buf, ""); //$NON-NLS-1$
+						buf.append("url('data:" + type + //$NON-NLS-1$
+								";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
+						imageInlined = true;
+					}
+				} catch (IOException ex) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.log(
+								Level.WARNING,
+								MessageFormat.format(
+										Messages.CSSModuleBuilder_0,
+										new Object[]{imageUri}
+										),
+										ex
+								);
+					}
+				} finally {
+					if (in != null) {
+						try {in.close();} catch (IOException ignore) {}
+					}
 				}
 			}
 			if (!imageInlined) {
@@ -708,9 +717,16 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
 		Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
 		if (oImageTypes != IConfig.NOT_FOUND && oImageTypes != null) {
-			String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
-			for (String type : aTypes) {
-				types.add(type);
+			// property can be either a comma delimited string, or a property map
+			if (oImageTypes instanceof String) {
+				String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
+				for (String type : aTypes) {
+					types.add(type);
+				}
+			} else {
+				@SuppressWarnings("unchecked")
+				Map<String, String> map = (Map<String, String>)conf.getProperty(IMAGETYPES_CONFIGPARAM, Map.class);
+				inlineableImageTypeMap.putAll(map);
 			}
 		}
 		inlineableImageTypes = types;

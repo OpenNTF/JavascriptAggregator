@@ -492,6 +492,17 @@ public class CSSModuleBuilderTest extends EasyMock {
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:content\\/unknown;base64\\,[^']*'\\)\\}"));
+
+		// Test specifying inlineableImageTypes as property map works.
+		CopyUtil.copy("hello world!\r\n", new FileWriter(new File(testdir, "hello.svg")));
+		css = ".hello {background-image:url(hello.svg)}";
+		String cfg = "{" + CSSModuleBuilder.IMAGETYPES_CONFIGPARAM + ":{svg:'image/svg+xml'}," +
+		                   CSSModuleBuilder.SIZETHRESHOLD_CONFIGPARAM + ":1000}";
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), cfg);
+		builder.configLoaded(config, seq++);
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertTrue(output.matches("\\.hello\\{background-image:url\\('data:image\\/svg\\+xml;base64\\,[^']*'\\)\\}"));
+
 	}
 
 	@Test

@@ -182,4 +182,17 @@ public class PathUtil {
 						uri.getFragment()
 						);
 	}
+
+	/**
+	 * Returns the file extension part of the specified path
+	 *
+	 * @param path the filname path of the file
+	 * @return the file extension
+	 */
+	public static String getExtension(String path) {
+		int idx = path.lastIndexOf("/");
+		String filename = idx == -1 ? path : path.substring(idx+1);
+		idx = filename.lastIndexOf(".");
+		return idx == -1 ? "" : filename.substring(idx+1);
+	}
 }
