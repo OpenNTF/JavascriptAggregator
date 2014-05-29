@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -160,6 +161,21 @@ public class AggregatorExtension  implements IAggregatorExtension {
 			log.exiting(AggregatorExtension.class.getName(), sourceMethod, result);
 		}
 		return result;
+	}
+
+	@Override
+	public Set<String> getAttributeNames() {
+		final String sourceMethod = "getAttributeNames"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorExtension.class.getName(), sourceMethod);
+		}
+		Set<String> result = attributes.stringPropertyNames();
+		if (isTraceLogging) {
+			log.exiting(AggregatorExtension.class.getName(), sourceMethod, result);
+		}
+		return result;
+
 	}
 
 	/* (non-Javadoc)

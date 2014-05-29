@@ -74,6 +74,7 @@ import java.io.StringReader;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.Hashtable;
@@ -82,6 +83,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -829,6 +831,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				if (interfaceName != null) {
 					try {
 						Dictionary<String, String> props = new Hashtable<String, String>();
+						// Copy init-params from extension to service dictionary
+						Set<String> attributeNames = ext.getAttributeNames();
+						attributeNames.removeAll(Arrays.asList(new String[]{"class", IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE}));
+						for (String propName : attributeNames) {
+							props.put(propName, ext.getAttribute(propName));
+						}
+						// Set name property to aggregator name
 						props.put("name", getName()); //$NON-NLS-1$
 						registrations.add(getPlatformServices().registerService(interfaceName, ext.getInstance(), props));
 					} catch (Exception e) {
