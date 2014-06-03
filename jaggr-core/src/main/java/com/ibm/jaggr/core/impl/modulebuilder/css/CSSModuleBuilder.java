@@ -329,7 +329,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return css.toString();
 	}
 
-	static final Pattern importPattern = Pattern.compile("\\@import\\s+(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
+	static final Pattern importPattern = Pattern.compile("\\@import\\s+(?:\\(less\\))?\\s*(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
 	/**
 	 * Processes the input CSS to replace &#064;import statements with the
 	 * contents of the imported CSS.  The imported CSS is minified, image

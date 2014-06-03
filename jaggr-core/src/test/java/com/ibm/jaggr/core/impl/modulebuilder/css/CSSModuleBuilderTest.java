@@ -211,6 +211,11 @@ public class CSSModuleBuilderTest extends EasyMock {
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".imported{color:black}", output);
 
+		// Test forced LESS import
+		css = "/* importing file */\n\r@import (less) \"imported.css\"";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertEquals(".imported{color:black}", output);
+
 		// This should fail
 		css = "/* importing file */\n\r@import \"foo/imported.css\"";
 		boolean exceptionCaught = false;
