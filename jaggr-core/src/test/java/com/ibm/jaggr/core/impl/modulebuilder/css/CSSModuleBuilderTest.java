@@ -300,7 +300,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, "true");
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("/* @import subdir/imported.css */\r\n.background-image:url('#images/img.jpg');", output);
+		Assert.assertEquals("/* @import subdir/imported.css */ .background-image:url('#images/img.jpg');", output);
 
 		requestAttributes.remove(IHttpTransport.SHOWFILENAMES_REQATTRNAME);
 		output = buildCss(new StringResource(css, resuri));
