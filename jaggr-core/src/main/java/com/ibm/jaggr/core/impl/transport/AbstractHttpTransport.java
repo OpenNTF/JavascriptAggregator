@@ -1047,7 +1047,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			dependentFeatures = Collections.unmodifiableList(Arrays.asList(features.toArray(new String[features.size()])));
 			depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), deps.getLastModified());
 			depsInitialized.countDown();
-			generateModuleIdMap();
+			generateModuleIdMap(deps);
 		} catch (ProcessingDependenciesException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
@@ -1136,9 +1136,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * Generates the module id map used by the transport to encode/decode module names
 	 * using assigned module name ids.
 	 *
+	 * @param deps
+	 *            The dependencies object
+	 *
 	 * @throws IOException
 	 */
-	protected void generateModuleIdMap() throws IOException {
+	protected void generateModuleIdMap(IDependencies deps) throws IOException {
 		final String methodName = "generateModuleIdMap"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
@@ -1152,7 +1155,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			return;
 		}
 		Map<String, String> names = new TreeMap<String, String>(); // Use TreeMap to get consistent ordering
-		IDependencies deps = aggregator.getDependencies();
 
 		for (String name : deps.getDependencyNames()) {
 			names.put(name, isTraceLogging ? deps.getURI(name).toString() : null);

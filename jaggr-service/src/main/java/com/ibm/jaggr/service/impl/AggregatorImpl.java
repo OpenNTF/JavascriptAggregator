@@ -158,6 +158,13 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			bundle = bundleContext.getBundle();
 			initParams = getInitParams(configInitParams);
 			name = getAggregatorName(configMap);
+
+			// Make sure there isn't already an instance of the aggregator registered for the current name
+			if (getPlatformServices().getServiceReferences(
+					IAggregator.class.getName(),
+					"(name=" + getName() + ")") != null) { //$NON-NLS-1$ //$NON-NLS-2$
+				throw new IllegalStateException("Name already registered - " + name);
+			}
 			registerLayerListener();
 			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);

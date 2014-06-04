@@ -231,14 +231,14 @@ public class AbstractHttpTransportTest {
 		EasyMock.replay(mockAggregator, mockDependencies);
 
 		// verify an empty id map is created with no dependencies
-		transport.generateModuleIdMap();
+		transport.generateModuleIdMap(mockDependencies);
 		Assert.assertEquals(0, transport.getModuleIdMap().size());
 		Assert.assertEquals(Arrays.asList(new String[]{""}), transport.getModuleIdList());
 
 		// now add some dependencies
 		dependencyNames.add("foo");
 		dependencyNames.add("bar");
-		transport.generateModuleIdMap();
+		transport.generateModuleIdMap(mockDependencies);
 		List<String> idList = transport.getModuleIdList();
 		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "foo"}), idList);
 		for (int i = 1; i < idList.size(); i++) {
@@ -249,7 +249,7 @@ public class AbstractHttpTransportTest {
 		// add some synthetic modules
 		syntheticModuleNames.add("combo/text");
 		syntheticModuleNames.add("combo/other");
-		transport.generateModuleIdMap();
+		transport.generateModuleIdMap(mockDependencies);
 		idList = transport.getModuleIdList();
 		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "foo"}), idList);
 		for (int i = 1; i < idList.size(); i++) {
@@ -259,7 +259,7 @@ public class AbstractHttpTransportTest {
 
 		// add some more deps
 		dependencyNames.add("module");
-		transport.generateModuleIdMap();
+		transport.generateModuleIdMap(mockDependencies);
 		System.out.println(transport.getModuleIdList());
 		idList = transport.getModuleIdList();
 		Assert.assertEquals(Arrays.asList(new String[]{"", "bar", "combo/other", "combo/text", "foo", "module"}), idList);
@@ -272,7 +272,7 @@ public class AbstractHttpTransportTest {
 		moduleIdRegFunctionName[0] = null;
 		Whitebox.setInternalState(transport, "moduleIdMap", (Map<String, Integer>)null);
 		Whitebox.setInternalState(transport, "moduleIdList", (List<String>)null);
-		transport.generateModuleIdMap();
+		transport.generateModuleIdMap(mockDependencies);
 		Assert.assertNull(transport.getModuleIdMap());
 		Assert.assertNull(transport.getModuleIdList());
 	}
