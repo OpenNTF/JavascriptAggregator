@@ -222,14 +222,18 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			IResource resource,
 			HttpServletRequest request,
 			List<ICacheKeyGenerator> keyGens)
-					throws IOException {
+			throws IOException {
 
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
+		// in-line @imports
+		if (inlineImports) {
+			css = inlineImports(request, css, resource, "");
+		}
 		return processCss(resource, request, css);
 	}
 
 	/**
-	 * Runs CSS through minification, image inlining, and import inlining.
+	 * Runs CSS through minification and image inlining.
 	 * @param resource The resource representing the CSS file.
 	 * @param request The request for the CSS file.
 	 * @param css The actual CSS {@link java.lang.String} to process.
@@ -243,10 +247,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		// Inline images
 		css = inlineImageUrls(request, css, resource);
 
-		// in-line @imports
-		if (inlineImports) {
-			css = inlineImports(request, css, resource, ""); //$NON-NLS-1$
-		}
 		return new StringReader(css);
 	}
 
@@ -329,7 +329,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return css.toString();
 	}
 
-	static final Pattern importPattern = Pattern.compile("\\@import\\s+(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
+	static final Pattern importPattern = Pattern.compile("\\@import\\s+(?:\\(less\\))?\\s*(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
 	/**
 	 * Processes the input CSS to replace &#064;import statements with the
 	 * contents of the imported CSS.  The imported CSS is minified, image

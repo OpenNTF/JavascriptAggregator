@@ -373,9 +373,9 @@
         <version>1.4</version>
       </dependency>
       <dependency>
-        <groupId>com.asual.lesscss</groupId>
-        <artifactId>lesscss-engine</artifactId>
-        <version>1.5.0</version>
+        <groupId>org.lesscss</groupId>
+        <artifactId>lesscss</artifactId>
+        <version>1.7.0.1.0</version>
       </dependency>
       <dependency>
         <groupId>commons-logging</groupId>

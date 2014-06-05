@@ -43,7 +43,7 @@ public class LessModuleBuilderTest extends EasyMock {
 	static File tmpdir;
 	static File testdir;
 	public static final String LESS = "@import \"colors.less\";\n\nbody{\n  " +
-			"background: @mainColor;\n}";
+            "background: @mainColor;\n}";
 
 	Map<String, String[]> requestParams = new HashMap<String, String[]>();
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
