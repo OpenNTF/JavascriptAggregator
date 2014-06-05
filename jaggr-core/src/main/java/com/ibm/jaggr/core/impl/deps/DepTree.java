@@ -69,7 +69,7 @@ import java.util.logging.Logger;
  * dependencies) for the module.
  */
 public class DepTree implements Serializable {
-	private static final long serialVersionUID = 5453343490025146049L;
+	private static final long serialVersionUID = -8494644438459736244L;
 
 	static final Logger log = Logger.getLogger(DepTree.class.getName());
 
@@ -91,7 +91,7 @@ public class DepTree implements Serializable {
 	 */
 	protected ConcurrentMap<URI, DepTreeNode> depMap = null;
 
-	protected Object rawConfig;
+	protected String rawConfig;
 
 	protected long stamp;
 
@@ -133,9 +133,15 @@ public class DepTree implements Serializable {
 	 */
 	public DepTree(Collection<URI> paths, IAggregator aggregator, long stamp, boolean clean, boolean validateDeps)
 			throws IOException {
+		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(DepTree.class.getName(), sourceMethod, new Object[]{paths, aggregator, stamp, clean, validateDeps});
+		}
 		this.stamp = stamp;
 		IConfig config = aggregator.getConfig();
 		rawConfig = config.toString();
+		cacheBust = AggregatorUtil.getCacheBust(aggregator);
 
 		File cacheDir = new File(aggregator.getWorkingDirectory(), DEPCACHE_DIRNAME);
 		File cacheFile = new File(cacheDir, CACHE_FILE);
@@ -155,6 +161,9 @@ public class DepTree implements Serializable {
 				ObjectInputStream is = new ObjectInputStream(
 						new FileInputStream(cacheFile));
 				try {
+					if (isTraceLogging) {
+						log.finer("Attempting to read cached dependencies from " + cacheFile.toString()); //$NON-NLS-1$
+					}
 					cached = (DepTree) is.readObject();
 				} finally {
 					try { is.close(); } catch (Exception ignore) {}
@@ -183,12 +192,21 @@ public class DepTree implements Serializable {
 				// init stamp has been updated.  Validate dependencies.
 				validateDeps = true;
 			}
-			cacheBust = AggregatorUtil.getCacheBust(aggregator);
 			if (!StringUtils.equals(cacheBust, cached.cacheBust)) {
+				if (isTraceLogging) {
+					log.finer("Current cacheBust = " + cacheBust + ", cached cacheBust = " + cached.cacheBust);  //$NON-NLS-1$//$NON-NLS-2$
+				}
 				if (log.isLoggable(Level.INFO)) {
 					log.info(Messages.DepTree_2);
 				}
 				cached = null;
+			}
+			if (cached != null && !StringUtils.equals(rawConfig, cached.rawConfig)) {
+				if (isTraceLogging) {
+					log.finer("Current config = " + rawConfig); //$NON-NLS-1$
+					log.finer("Cached config = " + cached.rawConfig); //$NON-NLS-1$
+				}
+				validateDeps = true;
 			}
 		}
 
@@ -196,12 +214,12 @@ public class DepTree implements Serializable {
 		 * If we de-serialized a previously saved dependency map, then go with
 		 * that.
 		 */
-		if (cached != null &&
-				rawConfig.equals(cached.rawConfig) &&
-				!validateDeps && !clean) {
+		if (cached != null && !validateDeps && !clean) {
 			depMap = cached.depMap;
 			fromCache = true;
 			return;
+		} else if (isTraceLogging) {
+			log.finer("Building/validating deps: cached = " + cached + ", validateDeps = " + validateDeps + ", clean = " + clean); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
 		// Initialize the dependency map
@@ -361,6 +379,9 @@ public class DepTree implements Serializable {
 		ObjectOutputStream os;
 		os = new ObjectOutputStream(new FileOutputStream(cacheFile));
 		try {
+			if (isTraceLogging) {
+				log.finer("Writing cached dependencies to " + cacheFile.toString()); //$NON-NLS-1$
+			}
 			os.writeObject(this);
 		} finally {
 			try { os.close(); } catch (Exception ignore) {}
@@ -374,6 +395,9 @@ public class DepTree implements Serializable {
 		cs.println(msg);
 		if (log.isLoggable(Level.INFO)) {
 			log.info(msg);
+		}
+		if (isTraceLogging) {
+			log.exiting(DepTree.class.getName(), sourceMethod);
 		}
 	}
 

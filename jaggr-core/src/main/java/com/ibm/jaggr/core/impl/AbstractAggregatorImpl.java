@@ -834,7 +834,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						Dictionary<String, String> props = new Hashtable<String, String>();
 						// Copy init-params from extension to service dictionary
 						Set<String> attributeNames = new HashSet<String>(ext.getAttributeNames());
-						attributeNames.removeAll(Arrays.asList(new String[]{"class", IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE}));
+						attributeNames.removeAll(Arrays.asList(new String[]{"class", IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE})); //$NON-NLS-1$
 						for (String propName : attributeNames) {
 							props.put(propName, ext.getAttribute(propName));
 						}
