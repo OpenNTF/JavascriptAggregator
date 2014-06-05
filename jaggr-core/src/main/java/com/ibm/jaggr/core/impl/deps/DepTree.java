@@ -21,6 +21,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
+import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.ConsoleService;
 
 import org.apache.commons.lang.StringUtils;
@@ -182,7 +183,7 @@ public class DepTree implements Serializable {
 				// init stamp has been updated.  Validate dependencies.
 				validateDeps = true;
 			}
-			cacheBust = aggregator.getOptions().getCacheBust();
+			cacheBust = AggregatorUtil.getCacheBust(aggregator);
 			if (!StringUtils.equals(cacheBust, cached.cacheBust)) {
 				if (log.isLoggable(Level.INFO)) {
 					log.info(Messages.DepTree_2);

@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.TypeUtil;
 
@@ -710,12 +711,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		for (String contribution : getExtensionContributions()) {
 			sb.append(contribution).append("\r\n"); //$NON-NLS-1$
 		}
-		String cacheBust = aggregator.getConfig().getCacheBust();
-		String optionsCb = aggregator.getOptions().getCacheBust();
-		if (optionsCb != null && optionsCb.length() > 0) {
-			cacheBust = (cacheBust != null && cacheBust.length() > 0) ?
-					(cacheBust + "-" + optionsCb) : optionsCb; //$NON-NLS-1$
-		}
+		String cacheBust = AggregatorUtil.getCacheBust(aggregator);
 		if (cacheBust != null && cacheBust.length() > 0) {
 			sb.append("if (!require.combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
