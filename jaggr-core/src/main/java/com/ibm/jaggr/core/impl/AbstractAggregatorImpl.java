@@ -28,6 +28,7 @@ import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
@@ -176,7 +177,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// so as to avoid memory leaks due to circular references.
 		resourceFactoryExtensions.clear();
 		moduleBuilderExtensions.clear();
+		serviceProviderExtensions.clear();
 		httpTransportExtension = null;
+		initParams = null;
 		cacheMgr = null;
 		config = null;
 		deps = null;
@@ -487,14 +490,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	@Override
 	public Iterable<IAggregatorExtension> getExtensions(String extensionPointId) {
 		List<IAggregatorExtension> result = new ArrayList<IAggregatorExtension>();
+		// List service provider extensions first so that they will be initialized first
+		// in case any other extension initializers use any variable resolvers.
+		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
+			result.addAll(serviceProviderExtensions);
+		}
 		if (extensionPointId == null || extensionPointId == IResourceFactoryExtensionPoint.ID) {
 			result.addAll(resourceFactoryExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
 			result.addAll(moduleBuilderExtensions);
-		}
-		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
-			result.addAll(serviceProviderExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IHttpTransportExtensionPoint.ID) {
 			result.add(httpTransportExtension);
@@ -681,7 +686,32 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @return Value of the property
 	 */
 	public String getPropValue (String propName){
-		return System.getProperty(propName);
+		String propValue = null;
+		propValue = System.getProperty(propName);
+		IServiceReference[] refs = null;
+		if (propValue == null) {
+			try {
+				refs = getPlatformServices().getServiceReferences(IVariableResolver.class.getName(), "(name=" + getName() + ")");  //$NON-NLS-1$ //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
+			if (refs != null) {
+				for (IServiceReference sr : refs) {
+					IVariableResolver resolver = (IVariableResolver)getPlatformServices().getService(sr);
+					try {
+						propValue = resolver.resolve(propName);
+						if (propValue != null) {
+							break;
+						}
+					} finally {
+						getPlatformServices().ungetService(sr);
+					}
+				}
+			}
+		}
+		return propValue;
 	}
 
 
@@ -978,7 +1008,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		for (Entry<String, String> child : configMap.entrySet()) {
 			String name = (String)child.getKey();
 			String value = (String)child.getValue();
-			initParams.add(new InitParam(name, value));
+			initParams.add(new InitParam(name, value, this));
 		}
 		return new InitParams(initParams);
 	}
@@ -1081,7 +1111,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						impl,
 						new Properties(attributes),
 						extensionPointId,
-						uniqueId
+						uniqueId,
+						AbstractAggregatorImpl.this
 						);
 			AbstractAggregatorImpl.this.registerExtension(extension, before);
 			if (impl instanceof IExtensionInitializer) {

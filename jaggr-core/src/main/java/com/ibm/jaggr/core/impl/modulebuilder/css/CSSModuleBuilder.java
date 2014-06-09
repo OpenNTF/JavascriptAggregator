@@ -227,7 +227,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		String css = readToString(new CommentStrippingReader(resource.getReader()));
 		// in-line @imports
 		if (inlineImports) {
-			css = inlineImports(request, css, resource, "");
+			css = inlineImports(request, css, resource, ""); //$NON-NLS-1$
 		}
 		return processCss(resource, request, css);
 	}

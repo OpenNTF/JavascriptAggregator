@@ -50,7 +50,6 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
@@ -166,13 +165,13 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			if (getPlatformServices().getServiceReferences(
 					IAggregator.class.getName(),
 					"(name=" + getName() + ")") != null) { //$NON-NLS-1$ //$NON-NLS-2$
-				throw new IllegalStateException("Name already registered - " + name);
+				throw new IllegalStateException("Name already registered - " + name); //$NON-NLS-1$
 			}
 			registerLayerListener();
-			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
 			initExtensions(configElem);
+			initOptions(initParams);
 			initialize(configMap, configInitParams);
 
 			String versionString = Long.toString(bundleContext.getBundle().getBundleId());
@@ -239,23 +238,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (getBundleContext() != null) {
 			propValue = getBundleContext().getProperty(propName);
 		} else {
-			propValue = System.getProperty(propName);
-		}
-		if (propValue == null && variableResolverServiceTracker != null) {
-			ServiceReference[] refs = variableResolverServiceTracker.getServiceReferences();
-			if (refs != null) {
-				for (ServiceReference sr : refs) {
-					IVariableResolver resolver = (IVariableResolver)getBundleContext().getService(sr);
-					try {
-						propValue = resolver.resolve(propName);
-						if (propValue != null) {
-							break;
-						}
-					} finally {
-						getBundleContext().ungetService(sr);
-					}
-				}
-			}
+			propValue = super.getPropValue(propName);
 		}
 		return propValue;
 	}
@@ -266,7 +249,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
 		if (values != null && values.size() > 0) {
 			String value = values.get(0);
-			final File file = new File(substituteProps(value));
+			final File file = new File(value);
 			if (file.exists()) {
 				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
 				localOptions = new OptionsImpl(registrationName, true, this) {
@@ -471,8 +454,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					registerExtension(
 							new AggregatorExtension(ext, props,
 									extension.getExtensionPointUniqueIdentifier(),
-									extension.getUniqueIdentifier()
-									), null
+									extension.getUniqueIdentifier(),
+									this), null
 							);
 				} catch (CoreException ex) {
 					if (log.isLoggable(Level.WARNING)) {
