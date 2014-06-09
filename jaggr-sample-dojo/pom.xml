@@ -13,152 +13,154 @@
    See the License for the specific language governing permissions and
    limitations under the License.
 -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
 
-  <parent>
-    <groupId>com.ibm.jaggr</groupId>
-    <artifactId>jaggr</artifactId>
-    <relativePath>../pom.xml</relativePath>
-    <version>1.2.0-SNAPSHOT</version>
-  </parent>
-  
-  <artifactId>jaggr-sample-dojo</artifactId>
-  <packaging>bundle</packaging>
-  
-  <name>Jaggr Sample Dojo</name>
-  <description>Bundle providing dojo for the Jaggr Sample project.</description>
-  
-  <properties>
-    <bundle.symbolicName>com.ibm.jaggr.sample.dojo</bundle.symbolicName>
-    <bundle.namespace>com.ibm.jaggr.sample.dojo</bundle.namespace>
-    <tmp>${java.io.tmpdir}</tmp>
-  </properties>
+	<parent>
+		<groupId>com.ibm.jaggr</groupId>
+		<artifactId>jaggr</artifactId>
+		<relativePath>../pom.xml</relativePath>
+		<version>1.2.0-SNAPSHOT</version>
+	</parent>
 
-  <build>
-  	<resources>
-  	  <resource>
-        <directory>..</directory>
-        <includes>
-          <include>LICENSE</include>
-          <include>NOTICE</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
-          <include>plugin.xml</include>
-        </includes>
-      </resource>
-      <resource>
-        <directory>${basedir}</directory>
-        <includes>
-          <include>WebContent/**</include>
-        </includes>
-      </resource>
-    </resources>
-  	<plugins>
-  		<plugin>
-  			<groupId>org.apache.felix</groupId>
-  			<artifactId>maven-bundle-plugin</artifactId>
-  			<extensions>true</extensions>
-  			<configuration>
-  				<manifestLocation>META-INF</manifestLocation>
-  				<instructions>
-  					<Bundle-Name>jaggr-sample-dojo</Bundle-Name>
-		            <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
+	<artifactId>jaggr-sample-dojo</artifactId>
+	<packaging>bundle</packaging>
 
-		            <Require-Bundle>org.eclipse.core.runtime,org.eclipse.equinox.http.registry</Require-Bundle>
-		            <Import-Package>
-		            	javax.servlet;version="[2,4)",
-		            	javax.servlet.http;version="[2,4)",
-		            	*
-		            </Import-Package>
-				</instructions>
-  			</configuration>
-  		</plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-compiler-plugin</artifactId>
-  			<configuration>
-		       <source>1.6</source>
-		       <target>1.6</target>
-		   </configuration>
-  		</plugin>
-  		<plugin>
-  			<groupId>org.apache.maven.plugins</groupId>
-  			<artifactId>maven-surefire-plugin</artifactId>
-  			<configuration>
-          		<skipTests>true</skipTests>
-        	</configuration>
-  		</plugin>
-  		<plugin>
-  			<groupId>com.github.goldin</groupId>
-  			<artifactId>copy-maven-plugin</artifactId>
+	<name>Jaggr Sample Dojo</name>
+	<description>Bundle providing dojo for the Jaggr Sample project.</description>
+
+	<properties>
+		<bundle.symbolicName>com.ibm.jaggr.sample.dojo</bundle.symbolicName>
+		<bundle.namespace>com.ibm.jaggr.sample.dojo</bundle.namespace>
+		<tmp>${java.io.tmpdir}</tmp>
+	</properties>
+
+	<build>
+		<resources>
+			<resource>
+				<directory>..</directory>
+				<includes>
+					<include>LICENSE</include>
+					<include>NOTICE</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>${basedir}</directory>
+				<includes>
+					<include>plugin.xml</include>
+				</includes>
+			</resource>
+			<resource>
+				<directory>${basedir}</directory>
+				<includes>
+					<include>WebContent/**</include>
+				</includes>
+			</resource>
+		</resources>
+		<plugins>
+			<plugin>
+				<groupId>org.apache.felix</groupId>
+				<artifactId>maven-bundle-plugin</artifactId>
+				<extensions>true</extensions>
+				<configuration>
+					<manifestLocation>META-INF</manifestLocation>
+					<instructions>
+						<Bundle-Name>jaggr-sample-dojo</Bundle-Name>
+						<Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
+
+						<Require-Bundle>org.eclipse.core.runtime,org.eclipse.equinox.http.registry</Require-Bundle>
+						<Import-Package>
+							javax.servlet;version="[2,4)",
+							javax.servlet.http;version="[2,4)",
+							*
+						</Import-Package>
+					</instructions>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+				<configuration>
+					<source>1.6</source>
+					<target>1.6</target>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<skipTests>true</skipTests>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>com.github.goldin</groupId>
+				<artifactId>copy-maven-plugin</artifactId>
 				<executions>
-	        <execution>
-            <id>fetch dojo</id>
-            <phase>prepare-package</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-            	<runIf>{{ !new File(project.basedir, "WebContent/source_1.8.0-20120830-IBM_dojo" ).isDirectory() }}</runIf>
-            	<resources>
-            		<!-- This is done in 2 steps because on windows, TrueZip throws IOExceptions about last modified. -->
-            		<resource>
-							    <targetPath>${tmp}/source_1.8.0-20120830-IBM_dojo</targetPath>
-							    <file>${basedir}/source_1.8.0-20120830-IBM_dojo.zip</file>
-							    <unpack>true</unpack>
-							    <preservePath>true</preservePath>
+					<execution>
+						<id>fetch dojo</id>
+						<phase>prepare-package</phase>
+						<goals>
+							<goal>copy</goal>
+						</goals>
+						<configuration>
+							<runIf>{{ !new File(project.basedir, "WebContent/source_1.8.0-20120830-IBM_dojo").isDirectory() }}
+							</runIf>
+							<resources>
+								<!-- This is done in 2 steps because on windows, TrueZip throws IOExceptions about last modified. -->
+								<resource>
+									<targetPath>${tmp}/source_1.8.0-20120830-IBM_dojo</targetPath>
+									<file>${basedir}/source_1.8.0-20120830-IBM_dojo.zip</file>
+									<unpack>true</unpack>
+									<preservePath>true</preservePath>
 								</resource>
 								<resource>
-							    <targetPath>${basedir}/WebContent/source_1.8.0-20120830-IBM_dojo</targetPath>
-							    <directory>${tmp}/source_1.8.0-20120830-IBM_dojo</directory>
-							    <move>true</move>
-							    <preservePath>true</preservePath>
+									<targetPath>${basedir}/WebContent/source_1.8.0-20120830-IBM_dojo</targetPath>
+									<directory>${tmp}/source_1.8.0-20120830-IBM_dojo</directory>
+									<move>true</move>
+									<preservePath>true</preservePath>
 								</resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
-  		</plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-	      <artifactId>maven-clean-plugin</artifactId>
-	      <configuration>
-	        <filesets>
-	          <fileset>
-	            <directory>.</directory>
-	            <includes>
-	              <include>WebContent/**</include>
-	            </includes>
-	            <followSymlinks>false</followSymlinks>
-	          </fileset>
-	        </filesets>
-	      </configuration>
-	    </plugin>
-	    <plugin>
-          <groupId>org.apache.rat</groupId>
-          <artifactId>apache-rat-plugin</artifactId>
-          <configuration>
-            <excludes>
-              <exclude>WebContent/*dojo*/**</exclude>
-            </excludes>
-          </configuration>
-        </plugin>
-  	  </plugins>
-  </build>
-  <dependencies>
-    <dependency>
-    	<groupId>javax.servlet</groupId>
-    	<artifactId>javax.servlet-api</artifactId>
-    	<scope>provided</scope>
-    </dependency>
-    <dependency>
-    	<groupId>org.eclipse.core.runtime</groupId>
-    	<artifactId>compatibility</artifactId>
-    	<scope>provided</scope>
-    </dependency>
-  </dependencies>
+							</resources>
+						</configuration>
+					</execution>
+				</executions>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-clean-plugin</artifactId>
+				<configuration>
+					<filesets>
+						<fileset>
+							<directory>.</directory>
+							<includes>
+								<include>WebContent/**</include>
+							</includes>
+							<followSymlinks>false</followSymlinks>
+						</fileset>
+					</filesets>
+				</configuration>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.rat</groupId>
+				<artifactId>apache-rat-plugin</artifactId>
+				<configuration>
+					<excludes>
+						<exclude>WebContent/*dojo*/**</exclude>
+					</excludes>
+				</configuration>
+			</plugin>
+		</plugins>
+	</build>
+	<dependencies>
+		<dependency>
+			<groupId>javax.servlet</groupId>
+			<artifactId>javax.servlet-api</artifactId>
+			<scope>provided</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.eclipse.core.runtime</groupId>
+			<artifactId>compatibility</artifactId>
+			<scope>provided</scope>
+		</dependency>
+	</dependencies>
 </project>
