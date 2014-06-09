@@ -28,6 +28,7 @@ import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
@@ -681,7 +682,32 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @return Value of the property
 	 */
 	public String getPropValue (String propName){
-		return System.getProperty(propName);
+		String propValue = null;
+		propValue = System.getProperty(propName);
+		IServiceReference[] refs = null;
+		if (propValue == null) {
+			try {
+				refs = getPlatformServices().getServiceReferences(IVariableResolver.class.getName(), "(name=" + getName() + ")");  //$NON-NLS-1$ //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
+			if (refs != null) {
+				for (IServiceReference sr : refs) {
+					IVariableResolver resolver = (IVariableResolver)getPlatformServices().getService(sr);
+					try {
+						propValue = resolver.resolve(propName);
+						if (propValue != null) {
+							break;
+						}
+					} finally {
+						getPlatformServices().ungetService(sr);
+					}
+				}
+			}
+		}
+		return propValue;
 	}
 
 
@@ -977,7 +1003,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		List<InitParam> initParams = new LinkedList<InitParam>();
 		for (Entry<String, String> child : configMap.entrySet()) {
 			String name = (String)child.getKey();
-			String value = (String)child.getValue();
+			String value = substituteProps((String)child.getValue());
 			initParams.add(new InitParam(name, value));
 		}
 		return new InitParams(initParams);

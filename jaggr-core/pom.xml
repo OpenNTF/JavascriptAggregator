@@ -109,7 +109,7 @@
                     <artifactId>maven-dependency-plugin</artifactId>
                     <versionRange>[2.4,)</versionRange>
                     <goals><goal>copy-dependencies</goal>
-                    	<goal>unpack</goal>
+                      <goal>unpack</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action><ignore></ignore></action>
@@ -175,8 +175,8 @@
               guava,
               rhino,
               wink-json4j,
-              lesscss-engine,
-	            commons-logging
+              lesscss,
+              commons-logging
             </Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
@@ -337,8 +337,8 @@
       <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
-      <groupId>com.asual.lesscss</groupId>
-      <artifactId>lesscss-engine</artifactId>
+      <groupId>org.lesscss</groupId>
+      <artifactId>lesscss</artifactId>
     </dependency>
     <dependency>
       <groupId>commons-logging</groupId>
