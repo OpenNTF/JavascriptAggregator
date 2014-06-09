@@ -220,17 +220,17 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 				} else {
 					throw new IllegalArgumentException("Invalid argument type:" + arg.toString()); //$NON-NLS-1$
 				}
-				if (sb.length() > 0) {
-					MessageDigest md = null;
-					try {
-						md = MessageDigest.getInstance("MD5"); //$NON-NLS-1$
-						result = Base64.encodeBase64URLSafeString(md.digest(sb.toString().getBytes("UTF-8"))); //$NON-NLS-1$
-					} catch (Exception e) {
-						if (log.isLoggable(Level.SEVERE)) {
-							log.log(Level.SEVERE, e.getMessage(), e);
-						}
-						throw new RuntimeException(e);
+			}
+			if (sb.length() > 0) {
+				MessageDigest md = null;
+				try {
+					md = MessageDigest.getInstance("MD5"); //$NON-NLS-1$
+					result = Base64.encodeBase64URLSafeString(md.digest(sb.toString().getBytes("UTF-8"))); //$NON-NLS-1$
+				} catch (Exception e) {
+					if (log.isLoggable(Level.SEVERE)) {
+						log.log(Level.SEVERE, e.getMessage(), e);
 					}
+					throw new RuntimeException(e);
 				}
 			}
 			if (isTraceLogging) {

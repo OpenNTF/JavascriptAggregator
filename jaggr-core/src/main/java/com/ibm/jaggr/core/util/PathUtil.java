@@ -190,9 +190,9 @@ public class PathUtil {
 	 * @return the file extension
 	 */
 	public static String getExtension(String path) {
-		int idx = path.lastIndexOf("/");
+		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 		String filename = idx == -1 ? path : path.substring(idx+1);
-		idx = filename.lastIndexOf(".");
-		return idx == -1 ? "" : filename.substring(idx+1);
+		idx = filename.lastIndexOf("."); //$NON-NLS-1$
+		return idx == -1 ? "" : filename.substring(idx+1); //$NON-NLS-1$
 	}
 }

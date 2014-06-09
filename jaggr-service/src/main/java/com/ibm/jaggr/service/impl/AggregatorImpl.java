@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.ServiceRegistrationOSGi;
@@ -77,6 +78,8 @@ import java.util.logging.Logger;
 public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutableExtension, BundleListener {
 
 	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
+
+	public static final String DISABLEBUNDLEIDDIRSOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
 
 	protected Bundle bundle;
 	private ServiceTracker optionsServiceTracker = null;
@@ -158,15 +161,28 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			bundle = bundleContext.getBundle();
 			initParams = getInitParams(configInitParams);
 			name = getAggregatorName(configMap);
+
+			// Make sure there isn't already an instance of the aggregator registered for the current name
+			if (getPlatformServices().getServiceReferences(
+					IAggregator.class.getName(),
+					"(name=" + getName() + ")") != null) { //$NON-NLS-1$ //$NON-NLS-2$
+				throw new IllegalStateException("Name already registered - " + name);
+			}
 			registerLayerListener();
 			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
 			initExtensions(configElem);
 			initialize(configMap, configInitParams);
+
+			String versionString = Long.toString(bundleContext.getBundle().getBundleId());
+			if (TypeUtil.asBoolean(getConfig().getProperty(DISABLEBUNDLEIDDIRSOPING_PROPNAME, null)) ||
+				TypeUtil.asBoolean(getOptions().getOption(DISABLEBUNDLEIDDIRSOPING_PROPNAME))) {
+				versionString = null;
+			}
 			workdir = initWorkingDirectory( // this must be after initOptions
 					Platform.getStateLocation(bundleContext.getBundle()).toFile(), configMap,
-					Long.toString(bundleContext.getBundle().getBundleId()));
+					versionString);
 
 			// Notify listeners
 			notifyConfigListeners(1);

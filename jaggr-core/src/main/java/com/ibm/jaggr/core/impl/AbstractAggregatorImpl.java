@@ -77,6 +77,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
@@ -832,8 +833,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 					try {
 						Dictionary<String, String> props = new Hashtable<String, String>();
 						// Copy init-params from extension to service dictionary
-						Set<String> attributeNames = ext.getAttributeNames();
-						attributeNames.removeAll(Arrays.asList(new String[]{"class", IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE}));
+						Set<String> attributeNames = new HashSet<String>(ext.getAttributeNames());
+						attributeNames.removeAll(Arrays.asList(new String[]{"class", IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE})); //$NON-NLS-1$
 						for (String propName : attributeNames) {
 							props.put(propName, ext.getAttribute(propName));
 						}
