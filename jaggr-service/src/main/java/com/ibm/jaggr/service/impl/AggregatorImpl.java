@@ -49,7 +49,6 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
@@ -223,23 +222,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (getBundleContext() != null) {
 			propValue = getBundleContext().getProperty(propName);
 		} else {
-			propValue = System.getProperty(propName);
-		}
-		if (propValue == null && variableResolverServiceTracker != null) {
-			ServiceReference[] refs = variableResolverServiceTracker.getServiceReferences();
-			if (refs != null) {
-				for (ServiceReference sr : refs) {
-					IVariableResolver resolver = (IVariableResolver)getBundleContext().getService(sr);
-					try {
-						propValue = resolver.resolve(propName);
-						if (propValue != null) {
-							break;
-						}
-					} finally {
-						getBundleContext().ungetService(sr);
-					}
-				}
-			}
+			propValue = super.getPropValue(propName);
 		}
 		return propValue;
 	}
@@ -250,7 +233,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
 		if (values != null && values.size() > 0) {
 			String value = values.get(0);
-			final File file = new File(substituteProps(value));
+			final File file = new File(value);
 			if (file.exists()) {
 				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
 				localOptions = new OptionsImpl(registrationName, true, this) {
@@ -450,7 +433,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					}
 					IConfigurationElement[] children = member.getChildren("init-param"); //$NON-NLS-1$
 					for( IConfigurationElement child : children) {
-						props.put(child.getAttribute("name"), child.getAttribute("value")); //$NON-NLS-1$ //$NON-NLS-2$
+						props.put(child.getAttribute("name"), substituteProps(child.getAttribute("value"))); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					registerExtension(
 							new AggregatorExtension(ext, props,

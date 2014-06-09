@@ -957,6 +957,8 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Console console = newConsole();
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
+			GetPropertyFunction getPropertyFn = newGetPropertyFunction(sharedScope, aggregator);
+			ScriptableObject.putProperty(sharedScope, "getProperty", getPropertyFn);
 
 			// Call the registered scope modifiers
 			callConfigScopeModifiers(sharedScope);
@@ -1450,6 +1452,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 	}
 
+	protected GetPropertyFunction newGetPropertyFunction(Scriptable scriptable, IAggregator aggregator) {
+		return new GetPropertyFunction(scriptable, aggregator);
+
+	}
 	protected HasFunction newHasFunction(Scriptable scriptable, Features features) {
 		return new HasFunction(scriptable, features);
 	}
@@ -1568,6 +1574,55 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			return replacement;
 		}
 
+	}
+
+	/**
+	 * This class implements the JavaScript getProperty function which can be used to obtain the
+	 * values of named properties. The property is obtained using
+	 * {@link IAggregator#substituteProps(String)}.
+	 */
+	static private class GetPropertyFunction extends FunctionObject {
+		private static final long serialVersionUID = 8368747446681861288L;
+
+		static Method getPropertyMethod;
+
+		static {
+			try {
+				getPropertyMethod = GetPropertyFunction.class.getMethod("getProperty", Context.class, Scriptable.class, Object[].class, Function.class); //$NON-NLS-1$
+			} catch (SecurityException e) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			} catch (NoSuchMethodException e) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+
+		private final IAggregator aggregator;
+
+		GetPropertyFunction(Scriptable scope, IAggregator aggregator) {
+			super("getProperty", getPropertyMethod, scope); //$NON-NLS-1$
+			this.aggregator = aggregator;
+		}
+
+		@SuppressWarnings("unused")
+		public static Object getProperty(Context cx, Scriptable thisObj, Object[] args, Function funObj) {
+			Object result = null;
+			GetPropertyFunction javaThis = (GetPropertyFunction)funObj;
+			System.out.println("Hello from getProperty()");
+			if (args.length > 0) {
+				Object arg = args[0];
+				System.out.println("arg = " + arg);
+				if (arg instanceof String) {
+					String subst = "${"+arg.toString()+"}";
+					System.out.println("subst = " + subst);
+					Object value = javaThis.aggregator.substituteProps(subst);
+					System.out.println("value = " + value);
+					if (!value.equals(subst)) {
+						result = value;
+					}
+				}
+			}
+			return result;
+		}
 	}
 
 
