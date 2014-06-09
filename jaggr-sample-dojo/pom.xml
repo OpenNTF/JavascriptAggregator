@@ -94,33 +94,18 @@
 				</configuration>
 			</plugin>
 			<plugin>
-				<groupId>com.github.goldin</groupId>
-				<artifactId>copy-maven-plugin</artifactId>
+				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
 					<execution>
 						<id>fetch dojo</id>
 						<phase>prepare-package</phase>
 						<goals>
-							<goal>copy</goal>
+							<goal>run</goal>
 						</goals>
 						<configuration>
-							<runIf>{{ !new File(project.basedir, "WebContent/source_1.8.0-20120830-IBM_dojo").isDirectory() }}
-							</runIf>
-							<resources>
-								<!-- This is done in 2 steps because on windows, TrueZip throws IOExceptions about last modified. -->
-								<resource>
-									<targetPath>${tmp}/source_1.8.0-20120830-IBM_dojo</targetPath>
-									<file>${basedir}/source_1.8.0-20120830-IBM_dojo.zip</file>
-									<unpack>true</unpack>
-									<preservePath>true</preservePath>
-								</resource>
-								<resource>
-									<targetPath>${basedir}/WebContent/source_1.8.0-20120830-IBM_dojo</targetPath>
-									<directory>${tmp}/source_1.8.0-20120830-IBM_dojo</directory>
-									<move>true</move>
-									<preservePath>true</preservePath>
-								</resource>
-							</resources>
+							<tasks>
+								<unzip src="${basedir}/source_1.8.0-20120830-IBM_dojo.zip" dest="${basedir}/WebContent/source_1.8.0-20120830-IBM_dojo" overwrite="false" />
+							</tasks>
 						</configuration>
 					</execution>
 				</executions>
