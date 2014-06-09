@@ -44,7 +44,7 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 	protected Reader getContentReader(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		String less = readToString(resource.getReader());
 		// We always in-line imports when processing LESS
-		String css = inlineImports(request, less, resource, "");
+		String css = inlineImports(request, less, resource, ""); //$NON-NLS-1$
 		try {
 			css = LESS_COMPILER.compile(css, resource.getPath());
 		} catch (LessException e) {

@@ -165,13 +165,13 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			if (getPlatformServices().getServiceReferences(
 					IAggregator.class.getName(),
 					"(name=" + getName() + ")") != null) { //$NON-NLS-1$ //$NON-NLS-2$
-				throw new IllegalStateException("Name already registered - " + name);
+				throw new IllegalStateException("Name already registered - " + name); //$NON-NLS-1$
 			}
 			registerLayerListener();
-			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
 			initExtensions(configElem);
+			initOptions(initParams);
 			initialize(configMap, configInitParams);
 
 			String versionString = Long.toString(bundleContext.getBundle().getBundleId());
@@ -449,13 +449,13 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					}
 					IConfigurationElement[] children = member.getChildren("init-param"); //$NON-NLS-1$
 					for( IConfigurationElement child : children) {
-						props.put(child.getAttribute("name"), substituteProps(child.getAttribute("value"))); //$NON-NLS-1$ //$NON-NLS-2$
+						props.put(child.getAttribute("name"), child.getAttribute("value")); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					registerExtension(
 							new AggregatorExtension(ext, props,
 									extension.getExtensionPointUniqueIdentifier(),
-									extension.getUniqueIdentifier()
-									), null
+									extension.getUniqueIdentifier(),
+									this), null
 							);
 				} catch (CoreException ex) {
 					if (log.isLoggable(Level.WARNING)) {

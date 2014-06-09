@@ -177,7 +177,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// so as to avoid memory leaks due to circular references.
 		resourceFactoryExtensions.clear();
 		moduleBuilderExtensions.clear();
+		serviceProviderExtensions.clear();
 		httpTransportExtension = null;
+		initParams = null;
 		cacheMgr = null;
 		config = null;
 		deps = null;
@@ -488,14 +490,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	@Override
 	public Iterable<IAggregatorExtension> getExtensions(String extensionPointId) {
 		List<IAggregatorExtension> result = new ArrayList<IAggregatorExtension>();
+		// List service provider extensions first so that they will be initialized first
+		// in case any other extension initializers use any variable resolvers.
+		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
+			result.addAll(serviceProviderExtensions);
+		}
 		if (extensionPointId == null || extensionPointId == IResourceFactoryExtensionPoint.ID) {
 			result.addAll(resourceFactoryExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
 			result.addAll(moduleBuilderExtensions);
-		}
-		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
-			result.addAll(serviceProviderExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IHttpTransportExtensionPoint.ID) {
 			result.add(httpTransportExtension);
@@ -1003,8 +1007,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		List<InitParam> initParams = new LinkedList<InitParam>();
 		for (Entry<String, String> child : configMap.entrySet()) {
 			String name = (String)child.getKey();
-			String value = substituteProps((String)child.getValue());
-			initParams.add(new InitParam(name, value));
+			String value = (String)child.getValue();
+			initParams.add(new InitParam(name, value, this));
 		}
 		return new InitParams(initParams);
 	}
@@ -1107,7 +1111,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						impl,
 						new Properties(attributes),
 						extensionPointId,
-						uniqueId
+						uniqueId,
+						AbstractAggregatorImpl.this
 						);
 			AbstractAggregatorImpl.this.registerExtension(extension, before);
 			if (impl instanceof IExtensionInitializer) {

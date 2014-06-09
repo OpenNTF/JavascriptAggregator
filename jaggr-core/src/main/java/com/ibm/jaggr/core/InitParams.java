@@ -93,16 +93,19 @@ public class InitParams implements Iterable<InitParam>{
 	public static class InitParam {
 		private final String name;
 		private final String value;
-		public InitParam(String name, String value) {
+		private final IAggregator aggregator;
+		public InitParam(String name, String value, IAggregator aggregator) {
 			if (name.length() == 0 || value.length() == 0) {
 				// disallow null or empty values
 				throw new IllegalArgumentException();
 			}
 			this.name = name;
 			this.value = value;
+			this.aggregator = aggregator;
 		}
+		public InitParam(String name, String value) { this(name, value, null); }
 		public String getName() { return name; }
-		public String getValue() { return value; }
+		public String getValue() { return aggregator != null ? aggregator.substituteProps(value) : value; }
 	}
 
 	/**

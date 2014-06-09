@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.core.impl;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
@@ -41,6 +42,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	private String contributorId;
 	private Object instance;
 	private Properties attributes;
+	private IAggregator aggregator;
 
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and
@@ -53,22 +55,29 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 *            the extension point id
 	 * @param uniqueId
 	 *            the extension unique id
+	 * @param aggregator
+	 *            the aggregator
 	 */
-	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
+	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId, IAggregator aggregator) {
 		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{instance, attributes, extensionPointId, uniqueId});
+			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{instance, attributes, extensionPointId, uniqueId, aggregator});
 		}
 		this.extensionPointId = extensionPointId;
 		this.uniqueId = uniqueId;
 		this.contributorId = null;
 		this.instance = instance;
 		this.attributes = attributes;
+		this.aggregator = aggregator;
 		validate();
 		if (isTraceLogging) {
 			log.exiting(AggregatorExtension.class.getName(), sourceMethod);
 		}
+	}
+
+	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
+		this(instance, attributes, extensionPointId, uniqueId, null);
 	}
 
 	private void validate() {
@@ -157,6 +166,9 @@ public class AggregatorExtension  implements IAggregatorExtension {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{name});
 		}
 		String result = attributes.getProperty(name);
+		if (result != null && aggregator != null) {
+			result = aggregator.substituteProps(result);
+		}
 		if (isTraceLogging) {
 			log.exiting(AggregatorExtension.class.getName(), sourceMethod, result);
 		}

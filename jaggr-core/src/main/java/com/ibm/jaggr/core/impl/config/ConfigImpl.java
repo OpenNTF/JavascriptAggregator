@@ -958,7 +958,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Object jsConsole = Context.javaToJS(console, sharedScope);
 			ScriptableObject.putProperty(sharedScope, "console", jsConsole); //$NON-NLS-1$
 			GetPropertyFunction getPropertyFn = newGetPropertyFunction(sharedScope, aggregator);
-			ScriptableObject.putProperty(sharedScope, "getProperty", getPropertyFn);
+			ScriptableObject.putProperty(sharedScope, "getProperty", getPropertyFn); //$NON-NLS-1$
 
 			// Call the registered scope modifiers
 			callConfigScopeModifiers(sharedScope);
@@ -1607,15 +1607,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		public static Object getProperty(Context cx, Scriptable thisObj, Object[] args, Function funObj) {
 			Object result = null;
 			GetPropertyFunction javaThis = (GetPropertyFunction)funObj;
-			System.out.println("Hello from getProperty()");
 			if (args.length > 0) {
 				Object arg = args[0];
-				System.out.println("arg = " + arg);
 				if (arg instanceof String) {
-					String subst = "${"+arg.toString()+"}";
-					System.out.println("subst = " + subst);
+					String subst = "${"+arg.toString()+"}";  //$NON-NLS-1$//$NON-NLS-2$
 					Object value = javaThis.aggregator.substituteProps(subst);
-					System.out.println("value = " + value);
 					if (!value.equals(subst)) {
 						result = value;
 					}
