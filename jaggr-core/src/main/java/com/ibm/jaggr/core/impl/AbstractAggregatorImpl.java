@@ -294,9 +294,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				} else {
 					resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
 					int expires = getConfig().getExpires();
-					if (expires > 0) {
-						resp.addHeader("Cache-Control", "public, max-age=" + expires); //$NON-NLS-1$ //$NON-NLS-2$
-					}
+					resp.addHeader(
+							"Cache-Control", //$NON-NLS-1$
+							"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					);
 				}
 				CopyUtil.copy(in, resp.getOutputStream());
 			}
