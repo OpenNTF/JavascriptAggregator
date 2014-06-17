@@ -94,4 +94,9 @@ public class ResolverResource implements IResource {
 		return res.asVisitorResource();
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + " - " + res.getURI();
+	}
+
 }

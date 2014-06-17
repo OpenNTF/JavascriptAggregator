@@ -153,6 +153,11 @@ public class FileResource implements IResource {
 		return new VisitorResource(file, file.lastModified());
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + ": " + file.toString(); //$NON-NLS-1$
+	}
+
 	/**
 	 * Internal method for recursing sub directories.
 	 *

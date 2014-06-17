@@ -21,6 +21,8 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
@@ -570,6 +572,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			reg.registerExtension(
 					newFeatureListResourceFactory(featureListResourceUri),
 					props,
+					new InitParams(Collections.<InitParam>emptyList()),
 					IResourceFactoryExtensionPoint.ID,
 					getTransportId(),
 					first);

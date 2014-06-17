@@ -749,29 +749,6 @@ public class ConfigTest {
 		Assert.assertEquals(cfgUri, cfg.getConfigUri());
 	}
 
-	// Make sure that if the uri to the config is relative, then getConfigUri returns
-	// a namedbundleresource uri
-	@Test
-	public void testGetConfigUriRelative() throws Exception {
-		String config = "{paths:{foo:'fooloc'}}";
-		URI cfgUri = tmpDir.resolve("config.js");
-		Writer fileWriter = new FileWriter(new File(cfgUri));
-		fileWriter.append(config);
-		fileWriter.close();
-
-		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
-		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, "config.js"));
-		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
-
-		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);
-		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/")).anyTimes();;
-		EasyMock.replay(mockPlatformServices);
-		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
-		EasyMock.replay(mockAggregator);
-		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);
-		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());
-	}
-
 	@Test
 	public void testGetRawConfig() throws Exception {
 		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()";

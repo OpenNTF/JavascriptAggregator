@@ -19,6 +19,8 @@ package com.ibm.jaggr.core.impl.transport;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfig.Location;
@@ -38,6 +40,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
@@ -351,6 +354,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		reg.registerExtension(
 				new LoaderExtensionResourceFactory(),
 				attributes,
+				new InitParams(Collections.<InitParam>emptyList()),
 				IResourceFactoryExtensionPoint.ID,
 				getTransportId(),
 				first);

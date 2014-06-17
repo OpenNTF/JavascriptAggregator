@@ -179,6 +179,11 @@ public class BundleResource implements IResource {
 		return getURI().getPath();
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + ": " +  (symname != null ? symname  : "null") + " - " + uri.toString(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	}
+
 	private static class VisitorResource implements IResourceVisitor.Resource {
 
 		URL url;

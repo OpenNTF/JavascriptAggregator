@@ -76,4 +76,9 @@ public class NotFoundResource implements IResource {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + ": " + "Not found: " + uri.toString(); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 }

@@ -849,20 +849,12 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @throws FileNotFoundException
 	 */
 	protected URI loadConfigUri() throws URISyntaxException, FileNotFoundException {
-		URI configUri = null;
 		Collection<String> configNames = getAggregator().getInitParams().getValues(InitParams.CONFIG_INITPARAM);
 		if (configNames.size() != 1) {
 			throw new IllegalArgumentException(InitParams.CONFIG_INITPARAM);
 		}
 		String configName = configNames.iterator().next();
-		configUri = new URI(configName);
-		if (!configUri.isAbsolute()) {
-			configUri = aggregator.getPlatformServices().getAppContextURI().resolve(configName);
-			if (!getAggregator().newResource(configUri).exists()) {
-				throw new FileNotFoundException(configName);
-			}
-		}
-		return configUri;
+		return new URI(configName);
 	}
 
 	/**
