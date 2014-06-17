@@ -19,7 +19,7 @@ define([
 	"dijit/layout/TabContainer",
 	"js/LazyContentPane",
 	"js/css!dijit/themes/claro/claro.css",
-	"js/css!sample.less",
+	"js/css!theme/sample.less",
 	"dojo/has!dojo-combo-api?combo/dojo/featureMap",
 	/*
 	 * preload selector lite implementation which is used by dojo/query and 
