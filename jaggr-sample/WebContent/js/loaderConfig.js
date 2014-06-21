@@ -39,7 +39,8 @@
 			],
 
 			paths: {
-				js: "res/js"
+				js: "res/js",
+				theme: "res/theme"
 			},
 
 		has: {
