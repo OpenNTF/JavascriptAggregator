@@ -19,6 +19,8 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfigScopeModifier;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
@@ -38,6 +40,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
@@ -51,6 +54,7 @@ public class BundleVersionsHashTest {
 	public void testBundleVersionsHash() throws Exception {
 		URI tmpDir = new File(System.getProperty("user.dir")).toURI();
 		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		InitParams initParams = new InitParams(Arrays.asList(new InitParam[]{new InitParam("propName", "getBundleVersionsHash", mockAggregator)}));
 		BundleVersionsHash bvh = new BundleVersionsHash();
 		IServiceReference mockServiceReference = EasyMock.createNiceMock(IServiceReference.class);
 		IServiceReference[] serviceReferences = new IServiceReference[]{mockServiceReference};
@@ -61,7 +65,7 @@ public class BundleVersionsHashTest {
 		Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("name", mockAggregator.getName());
 		EasyMock.expect(mockPlatformServices.getService(mockServiceReference)).andReturn(bvh).anyTimes();
-		EasyMock.expect(mockExtension.getAttribute("propName")).andReturn("getBundleVersionsHash").anyTimes();
+		EasyMock.expect(mockExtension.getInitParams()).andReturn(initParams).anyTimes();
 		EasyMock.expect(mockPlatformServices.getServiceReferences(IConfigScopeModifier.class.getName(), "(name="+mockAggregator.getName()+")")).andReturn(serviceReferences).anyTimes();
 		EasyMock.replay(mockServiceReference, mockPlatformServices, mockExtension);
 		bvh.initialize(mockAggregator, mockExtension, null);

@@ -1,4 +1,5 @@
 /*
+
  * (C) Copyright 2012, IBM Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,6 +20,7 @@ package com.ibm.jaggr.core.impl;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
+import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.resource.IResourceFactory;
@@ -42,6 +44,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	private String contributorId;
 	private Object instance;
 	private Properties attributes;
+	private InitParams initParams;
 	private IAggregator aggregator;
 
 	/**
@@ -50,7 +53,9 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 * @param instance
 	 *            The instantiated object for this extension
 	 * @param attributes
-	 *            The attributes and init-params for this extension
+	 *            The attributes for this extension
+	 * @param initParams
+	 *            The init-params for this extension
 	 * @param extensionPointId
 	 *            the extension point id
 	 * @param uniqueId
@@ -58,7 +63,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 * @param aggregator
 	 *            the aggregator
 	 */
-	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId, IAggregator aggregator) {
+	public AggregatorExtension(Object instance, Properties attributes, InitParams initParams, String extensionPointId, String uniqueId, IAggregator aggregator) {
 		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
@@ -69,6 +74,7 @@ public class AggregatorExtension  implements IAggregatorExtension {
 		this.contributorId = null;
 		this.instance = instance;
 		this.attributes = attributes;
+		this.initParams = initParams;
 		this.aggregator = aggregator;
 		validate();
 		if (isTraceLogging) {
@@ -76,8 +82,8 @@ public class AggregatorExtension  implements IAggregatorExtension {
 		}
 	}
 
-	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
-		this(instance, attributes, extensionPointId, uniqueId, null);
+	public AggregatorExtension(Object instance, Properties attributes, InitParams initParams, String extensionPointId, String uniqueId) {
+		this(instance, attributes, initParams, extensionPointId, uniqueId, null);
 	}
 
 	private void validate() {
@@ -229,6 +235,12 @@ public class AggregatorExtension  implements IAggregatorExtension {
 		    .append(", contributorId:").append(contributorId) //$NON-NLS-1$
 		    .append(", instance:").append(instance) //$NON-NLS-1$
 		    .append(", attributes:").append(attributes) //$NON-NLS-1$
+		    .append(", initParams:").append(initParams) //$NON-NLS-1$
 		    .append("}").toString(); //$NON-NLS-1$
+	}
+
+	@Override
+	public InitParams getInitParams() {
+		return initParams;
 	}
 }
