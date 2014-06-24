@@ -37,7 +37,10 @@ var depmap = {},
 
     // ( 4k/4096 with a buffer just in case - 96) 
     // Set to 0 to disable url length checks.
-    maxUrlLength = typeof(combo.maxUrlLength) === 'undefined' ? 4000 : combo.maxUrlLength,
+    maxUrlLength = (typeof(combo.maxUrlLength) === 'undefined') ?
+            // IE doesn't cache responses for request URLs greater than about 2K
+			(/MSIE (\d+\.\d+);/.test(navigator.userAgent) ? 2000 : 4000) :
+			combo.maxUrlLength,
 
 	// The following vars are referenced by javascript code injected by the 
 	// server.
@@ -88,14 +91,50 @@ urlProcessors.push(function(url){
 
 // require.combo needs to be defined before this code is loaded
 combo.done = function(load, config, opt_deps) {
-	var mids = [];
-	opt_deps = opt_deps || deps;
-	for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
-		mids[i] = dep.prefix ? (dep.prefix + "!" + dep.name) : dep.name;
-	}
+	var hasArg = "", base64,
+	    sendRequest = function(load, config, opt_deps) {
+			var mids = [];
+			opt_deps = opt_deps || deps;
+			for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
+				mids[i] = dep.prefix ? (dep.prefix + "!" + dep.name) : dep.name;
+			}
+			
+			var url = contextPath;
+			url = addRequestedModulesToUrl(url, opt_deps, moduleIdMap, base64 ? base64.encode : null);
+			url += (hasArg ? '&' + hasArg : "");
+			
+			// Allow any externally provided URL processors to make their contribution
+			// to the URL
+			for (i = 0; i < urlProcessors.length; i++) {
+				url = urlProcessors[i](url);
+			}
+			
+			if (config.has("dojo-trace-api")) {
+				config.trace("loader-inject-combo", [mids.join(', ')]);
+			}
+			if (maxUrlLength && url.length > maxUrlLength) {
+				var parta = opt_deps.slice(0, opt_deps.length/2),
+				    partb = opt_deps.slice(opt_deps.length/2, opt_deps.length);
+				deps = [];
+				depmap = {};
+				sendRequest(load, config, parta);
+				sendRequest(load, config, partb);
+			} else {
+				if (deps === opt_deps) {
+					// we have not split the module list to trim url size, so we can clear this safely.
+					// otherwise clearing these is the responsibility of the initial function.
+					deps = [];
+					depmap = {};
+				}
+				load(mids, url);			
+			}
+	    };
 	
-	var hasArg = "";
-	
+	// Get base64 decoder
+	try {
+		base64 = require('dojox/encoding/base64');
+	} catch (ignore) {}
+
 	if (!combo.serverOptions.skipHasFiltering) {
 		if (typeof includeUndefinedFeatures == 'undefined') {
 			// Test to determine if we can include features that evaluate to undefined.
@@ -118,40 +157,7 @@ combo.done = function(load, config, opt_deps) {
 		hasArg = featureCookie.setCookie(hasArg, contextPath);
 	}
 
-	var base64;
-	try {
-		base64 = require('dojox/encoding/base64');
-	} catch (ignore) {}
-	
-	var url = contextPath;
-	url = addRequestedModulesToUrl(url, opt_deps, moduleIdMap, base64 ? base64.encode : null);
-	url += (hasArg ? '&' + hasArg : "");
-	
-	// Allow any externally provided URL processors to make their contribution
-	// to the URL
-	for (i = 0; i < urlProcessors.length; i++) {
-		url = urlProcessors[i](url);
-	}
-	
-	if (config.has("dojo-trace-api")) {
-		config.trace("loader-inject-combo", [mids.join(', ')]);
-	}
-	if (maxUrlLength && url.length > maxUrlLength) {
-		var parta = opt_deps.slice(0, opt_deps.length/2),
-		    partb = opt_deps.slice(opt_deps.length/2, opt_deps.length);
-		deps = [];
-		depmap = {};
-		arguments.callee(load, config, parta);
-		arguments.callee(load, config, partb);
-	} else {
-		if (deps === opt_deps) {
-			// we have not split the module list to trim url size, so we can clear this safely.
-			// otherwise clearing these is the responsibility of the initial function.
-			deps = [];
-			depmap = {};
-		}
-		load(mids, url);			
-	}
+	sendRequest(load, config, opt_deps);
 };
 
 combo.add = function (prefix, name, url, config) {

@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
@@ -31,6 +32,7 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.ServiceRegistrationOSGi;
@@ -49,16 +51,18 @@ import org.osgi.framework.BundleException;
 import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
-import org.osgi.framework.ServiceReference;
 import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -77,6 +81,8 @@ import java.util.logging.Logger;
 public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutableExtension, BundleListener {
 
 	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
+
+	public static final String DISABLEBUNDLEIDDIRSOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
 
 	protected Bundle bundle;
 	private ServiceTracker optionsServiceTracker = null;
@@ -115,17 +121,33 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		return configMap;
 	}
 
-	public Map<String, String> getConfigInitParams(IConfigurationElement configElem) {
-		Map<String, String> configInitParams = new HashMap<String, String>();
+	public InitParams getConfigInitParams(IConfigurationElement configElem) {
+		Map<String, String[]> configInitParams = new HashMap<String, String[]>();
 		if (configElem.getChildren("init-param") != null) { //$NON-NLS-1$
 			IConfigurationElement[] children = configElem.getChildren("init-param"); //$NON-NLS-1$
 			for (IConfigurationElement child : children) {
 				String name = child.getAttribute("name"); //$NON-NLS-1$
 				String value = child.getAttribute("value"); //$NON-NLS-1$
-				configInitParams.put(name, value);
+				String[] current = configInitParams.get(name);
+				String[] newValue;
+				if (current != null) {
+					newValue = Arrays.copyOf(current, current.length+1);
+					newValue[current.length] = value;
+				} else {
+					newValue = new String[]{value};
+				}
+				configInitParams.put(name, newValue);
 			}
 		}
-		return configInitParams;
+		List<InitParam> initParams = new LinkedList<InitParam>();
+		for (Entry<String, String[]> child : configInitParams.entrySet()) {
+			String name = (String)child.getKey();
+			String values[] = (String[])child.getValue();
+			for (String value : values) {
+				initParams.add(new InitParam(name, value, this));
+			}
+		}
+		return new InitParams(initParams);
 	}
 
 	/* (non-Javadoc)
@@ -148,25 +170,36 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 
 		Map<String, String> configMap = new HashMap<String, String>();
-		Map<String, String> configInitParams = new HashMap<String, String>();
 		configMap = getConfigMap(configElem);
-		configInitParams = getConfigInitParams(configElem);
+		initParams = getConfigInitParams(configElem);
 
 		try {
 			BundleContext bundleContext = contributingBundle.getBundleContext();
 			platformServices = new PlatformServicesImpl(bundleContext);
 			bundle = bundleContext.getBundle();
-			initParams = getInitParams(configInitParams);
 			name = getAggregatorName(configMap);
+
+			// Make sure there isn't already an instance of the aggregator registered for the current name
+			if (getPlatformServices().getServiceReferences(
+					IAggregator.class.getName(),
+					"(name=" + getName() + ")") != null) { //$NON-NLS-1$ //$NON-NLS-2$
+				throw new IllegalStateException("Name already registered - " + name); //$NON-NLS-1$
+			}
 			registerLayerListener();
-			initOptions(initParams);
 			executorsServiceTracker = getExecutorsServiceTracker(bundleContext);
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
 			initExtensions(configElem);
-			initialize(configMap, configInitParams);
+			initOptions(initParams);
+			initialize();
+
+			String versionString = Long.toString(bundleContext.getBundle().getBundleId());
+			if (TypeUtil.asBoolean(getConfig().getProperty(DISABLEBUNDLEIDDIRSOPING_PROPNAME, null)) ||
+				TypeUtil.asBoolean(getOptions().getOption(DISABLEBUNDLEIDDIRSOPING_PROPNAME))) {
+				versionString = null;
+			}
 			workdir = initWorkingDirectory( // this must be after initOptions
 					Platform.getStateLocation(bundleContext.getBundle()).toFile(), configMap,
-					Long.toString(bundleContext.getBundle().getBundleId()));
+					versionString);
 
 			// Notify listeners
 			notifyConfigListeners(1);
@@ -223,23 +256,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (getBundleContext() != null) {
 			propValue = getBundleContext().getProperty(propName);
 		} else {
-			propValue = System.getProperty(propName);
-		}
-		if (propValue == null && variableResolverServiceTracker != null) {
-			ServiceReference[] refs = variableResolverServiceTracker.getServiceReferences();
-			if (refs != null) {
-				for (ServiceReference sr : refs) {
-					IVariableResolver resolver = (IVariableResolver)getBundleContext().getService(sr);
-					try {
-						propValue = resolver.resolve(propName);
-						if (propValue != null) {
-							break;
-						}
-					} finally {
-						getBundleContext().ungetService(sr);
-					}
-				}
-			}
+			propValue = super.getPropValue(propName);
 		}
 		return propValue;
 	}
@@ -250,7 +267,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
 		if (values != null && values.size() > 0) {
 			String value = values.get(0);
-			final File file = new File(substituteProps(value));
+			final File file = new File(value);
 			if (file.exists()) {
 				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
 				localOptions = new OptionsImpl(registrationName, true, this) {
@@ -448,15 +465,12 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					for (String attributeName : member.getAttributeNames()) {
 						props.put(attributeName, member.getAttribute(attributeName));
 					}
-					IConfigurationElement[] children = member.getChildren("init-param"); //$NON-NLS-1$
-					for( IConfigurationElement child : children) {
-						props.put(child.getAttribute("name"), child.getAttribute("value")); //$NON-NLS-1$ //$NON-NLS-2$
-					}
+					InitParams initParams = getConfigInitParams(member);
 					registerExtension(
-							new AggregatorExtension(ext, props,
+							new AggregatorExtension(ext, props, initParams,
 									extension.getExtensionPointUniqueIdentifier(),
-									extension.getUniqueIdentifier()
-									), null
+									extension.getUniqueIdentifier(),
+									this), null
 							);
 				} catch (CoreException ex) {
 					if (log.isLoggable(Level.WARNING)) {

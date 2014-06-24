@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.core.impl.modulebuilder.less;
 
-import com.asual.lesscss.LessEngine;
-import com.asual.lesscss.LessException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
+import org.lesscss.LessCompiler;
+import org.lesscss.LessException;
 
 import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
@@ -31,9 +31,7 @@ import java.util.List;
  * This class compiles LESS resources that are loaded by the AMD aggregator.
  */
 public class LessModuleBuilder extends CSSModuleBuilder {
-
-	public static final LessEngine LESS_ENGINE = new LessEngine();
-
+	private static final LessCompiler LESS_COMPILER = new LessCompiler();
 	/*
 	 * (non-Javadoc)
 	 *
@@ -45,16 +43,15 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 	@Override
 	protected Reader getContentReader(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 		String less = readToString(resource.getReader());
+		// We always in-line imports when processing LESS
+		String css = inlineImports(request, less, resource, ""); //$NON-NLS-1$
 		try {
-			// We pass the output of `LESS_ENGINE.compile(..)` to the parent
-			// `processCss(...)` method so that we can use existing code to inline
-			// remaining CSS imports, inline images, and minify the resulting CSS.
-			// Please note that LESS will only import less files or casted less
-			// imports (e.g., `@import (less) "file.css";`).
-			return processCss(resource, request, LESS_ENGINE.compile(less, resource.getURI().toString()));
+			css = LESS_COMPILER.compile(css, resource.getPath());
 		} catch (LessException e) {
 			throw new RuntimeException(e);
 		}
+		// Continue processing CSS with CSSModuleBuilder
+		return processCss(resource, request, css);
 	}
 
 	/*

@@ -19,6 +19,7 @@ package com.ibm.jaggr.core;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Interface for a registered aggregator extension.  An {@link Iterable} of
@@ -57,10 +58,10 @@ public interface IAggregatorExtension {
 	public Object getInstance();
 
 	/**
-	 * Returns the value of the specified attribute or init-param. These are the same as the
-	 * attribute and init-param values specified in the xml defining the extension, or in the
+	 * Returns the value of the specified attribute. These are the same as the
+	 * attributes specified in the xml defining the extension, or in the
 	 * case of extensions registered through
-	 * {@link IExtensionRegistrar#registerExtension(Object, Properties, String, String, IAggregatorExtension)},
+	 * {@link IExtensionRegistrar#registerExtension(Object, Properties, InitParams, String, String, IAggregatorExtension)},
 	 * they are the attributes provided in the properties object.
 	 *
 	 * @param name
@@ -68,4 +69,24 @@ public interface IAggregatorExtension {
 	 * @return the attribute value
 	 */
 	public String getAttribute(String name);
+
+	/**
+	 * Returns the set of attribute names for which {@link #getAttribute(String)} will return
+	 * a value.  The extension attributes which are allowed are defined by the extension point.
+	 * For OSGi, they are specified in the extension point schema.  All extensions must
+	 * specify the (non-optional) attributes defined by the extension point and may not specify
+	 * any attributes which are not defined by the extension point.
+	 *
+	 * @return The attribute names
+	 */
+	public Set<String> getAttributeNames();
+
+	/**
+	 * Returns the init params for the extension.  Unlike attributes, init-params are <strong>not</strong>
+	 * defined by the extension point, but rather by the implementing extension.  Init-params
+	 * may be multi-valued.
+	 *
+	 * @return the init params
+	 */
+	public InitParams getInitParams();
 }

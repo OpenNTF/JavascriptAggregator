@@ -19,11 +19,14 @@ package com.ibm.jaggr.core;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.options.IOptions;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Wrapper class for aggregator init-params.
@@ -84,6 +87,24 @@ public class InitParams implements Iterable<InitParam>{
 	public static final String MAXLAYERCACHECAPACITY_MB_INITPARAM = "maxlayercachecapacity_mb"; //$NON-NLS-1$
 
 	/**
+	 * Name of the servlet init-param that specifies aggregator aliases within the servlet
+	 */
+	public static final String ALIAS_INITPARAM = "alias"; //$NON-NLS-1$
+
+	/**
+	 * Name of the servlet init-param that specifies resource ids.  Resource ids are used to
+	 * specify resource alias and base-name values using init-param names of the form
+	 * <resource id>:alias and <resource id>:base-name.  For example, the following init-params
+	 * would specify a resource with alias foo and base-name foopath:
+	 * <pre>
+	 * &lt;init-param name="resource-id" value="foores"/&gt;
+	 * &lt;init-param name="foores:alias" value="foo"/&gt;
+	 * &lt;init-param name="foores:base-name" value="foopath"/&gt;
+	 * </pre>
+	 */
+	public static final String RESOURCEID_INITPARAM = "resource-id";  //$NON-NLS-1$
+
+	/**
 	 * The init-params
 	 */
 	private List<InitParam> initParams;
@@ -93,16 +114,19 @@ public class InitParams implements Iterable<InitParam>{
 	public static class InitParam {
 		private final String name;
 		private final String value;
-		public InitParam(String name, String value) {
+		private final IAggregator aggregator;
+		public InitParam(String name, String value, IAggregator aggregator) {
 			if (name.length() == 0 || value.length() == 0) {
 				// disallow null or empty values
 				throw new IllegalArgumentException();
 			}
 			this.name = name;
 			this.value = value;
+			this.aggregator = aggregator;
 		}
+		public InitParam(String name, String value) { this(name, value, null); }
 		public String getName() { return name; }
-		public String getValue() { return value; }
+		public String getValue() { return aggregator != null ? aggregator.substituteProps(value) : value; }
 	}
 
 	/**
@@ -135,6 +159,25 @@ public class InitParams implements Iterable<InitParam>{
 	}
 
 	/**
+	 * Returns the value of the first instance of the named init-param, or
+	 * null if the init-param is not found.
+	 *
+	 * @param name
+	 *            the init-param name
+	 * @return the value of the first init-param with the specified name or null
+	 */
+	public String getValue(String name) {
+		String result = null;
+		for (InitParam initParam : initParams) {
+			if (initParam.getName().equals(name)) {
+				result = initParam.getValue();
+				break;
+			}
+		}
+		return result;
+	}
+
+	/**
 	 * Returns a collection of the init-param names, or an empty collection
 	 * if there are no init-params
 	 *
@@ -154,5 +197,20 @@ public class InitParams implements Iterable<InitParam>{
 	@Override
 	public Iterator<InitParam> iterator() {
 		return initParams.iterator();
+	}
+
+	@Override
+	public String toString() {
+		Map<String, List<String>> map = new HashMap<String, List<String>>();
+		for (InitParam initParam : initParams) {
+			if (map.containsKey(initParam.name)) {
+				map.get(initParam.name).add(initParam.value);
+			} else {
+				List<String> value = new ArrayList<String>();
+				value.add(initParam.value);
+				map.put(initParam.name, value);
+			}
+		}
+		return map.toString();
 	}
 }

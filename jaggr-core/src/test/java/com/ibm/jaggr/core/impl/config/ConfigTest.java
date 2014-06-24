@@ -46,6 +46,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,9 +66,9 @@ public class ConfigTest {
 	public void setup() throws Exception {
 		tmpFile = Files.createTempDir();
 		tmpDir = tmpFile.toURI();
-		mockAggregator = TestUtils.createMockAggregator();
-		EasyMock.replay(mockAggregator);
-
+		IAggregator easyMockAggregator = TestUtils.createMockAggregator(null, null, null, AggregatorProxy.class, null);
+		EasyMock.replay(easyMockAggregator);
+		mockAggregator = new AggregatorProxy(easyMockAggregator);
 	}
 	@After
 	public void tearDown() throws Exception {
@@ -748,29 +749,6 @@ public class ConfigTest {
 		Assert.assertEquals(cfgUri, cfg.getConfigUri());
 	}
 
-	// Make sure that if the uri to the config is relative, then getConfigUri returns
-	// a namedbundleresource uri
-	@Test
-	public void testGetConfigUriRelative() throws Exception {
-		String config = "{paths:{foo:'fooloc'}}";
-		URI cfgUri = tmpDir.resolve("config.js");
-		Writer fileWriter = new FileWriter(new File(cfgUri));
-		fileWriter.append(config);
-		fileWriter.close();
-
-		List<InitParams.InitParam> initParams = new LinkedList<InitParams.InitParam>();
-		initParams.add(new InitParams.InitParam(InitParams.CONFIG_INITPARAM, "config.js"));
-		mockAggregator = TestUtils.createMockAggregator(null, new File(tmpDir), initParams);
-
-		IPlatformServices mockPlatformServices = EasyMock.createMock(IPlatformServices.class);
-		EasyMock.expect(mockPlatformServices.getAppContextURI()).andReturn(new URI("namedbundleresource://org.mock.name/")).anyTimes();;
-		EasyMock.replay(mockPlatformServices);
-		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
-		EasyMock.replay(mockAggregator);
-		ConfigImpl cfg = new ConfigImpl(mockAggregator, true);
-		Assert.assertEquals(new URI("namedbundleresource://org.mock.name/config.js"), cfg.getConfigUri());
-	}
-
 	@Test
 	public void testGetRawConfig() throws Exception {
 		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()";
@@ -912,6 +890,17 @@ public class ConfigTest {
 		Assert.assertEquals(map, cfg.getProperty("mapVar", Map.class));
 	}
 
+	@Test
+	public void testJSGetProperty() throws Exception {
+		Map<String, String> properties = new HashMap<String, String>();
+		properties.put("foo", "bar");
+		((AggregatorProxy)mockAggregator).setProperties(properties);
+		String config = "{prop1:getProperty('foo'), prop2:getProperty('noexist')}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Assert.assertEquals("bar", cfg.getProperty("prop1", null));
+		Assert.assertEquals(null, cfg.getProperty("prop2", null));
+	}
+
 	public static class TestConsoleLogger extends ConfigImpl.Console {
 		List<String> logged = new ArrayList<String>();
 		List<String> getLogged() {
@@ -939,4 +928,29 @@ public class ConfigTest {
 		}
 	}
 
+	static public class AggregatorProxy extends MockAggregatorWrapper implements IAggregator {
+
+		public Map<String, String> properties = Collections.emptyMap();
+
+		public AggregatorProxy(IAggregator mock) {
+			super(mock);
+		}
+
+		public void setProperties(Map<String, String> properties) {
+			this.properties = properties;
+		}
+
+		@Override
+		public String substituteProps(String str) {
+			String result = str;
+			if (str.startsWith("${") && str.endsWith("}")) {
+				String name = str.substring(2, str.length()-1);
+				result = properties.get(name);
+				if (result == null) {
+					result = str;
+				}
+			}
+			return result;
+		}
+	}
 }

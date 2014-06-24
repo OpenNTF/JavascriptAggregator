@@ -28,8 +28,8 @@ import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
-import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
@@ -62,6 +62,7 @@ import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -70,18 +71,23 @@ import java.io.InputStream;
 import java.io.NotSerializableException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.StringReader;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.logging.Level;
@@ -145,6 +151,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	private IAggregatorExtension httpTransportExtension = null;
 	protected IPlatformServices platformServices;
 
+	protected Map<String, IResource> resourcePaths;
+
 	enum RequestNotifierAction {
 		start,
 		end
@@ -173,7 +181,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		// so as to avoid memory leaks due to circular references.
 		resourceFactoryExtensions.clear();
 		moduleBuilderExtensions.clear();
+		serviceProviderExtensions.clear();
 		httpTransportExtension = null;
+		initParams = null;
 		cacheMgr = null;
 		config = null;
 		deps = null;
@@ -227,9 +237,96 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	@Override
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException {
-		if (log.isLoggable(Level.FINEST))
-			log.finest("doGet: URL=" + req.getRequestURI()); //$NON-NLS-1$
+		final String sourceMethod = "doGet"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp});
+			log.finer("Request URL=" + req.getRequestURI()); //$NON-NLS-1$
+			}
 
+		resp.addHeader("Server", "JavaScript Aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
+		String pathInfo = req.getPathInfo();
+		if (pathInfo == null) {
+			processAggregatorRequest(req, resp);
+		} else {
+			boolean processed = false;
+			// search resource paths to see if we should treat as aggregator request or resource request
+			for (Map.Entry<String, IResource> entry : resourcePaths.entrySet()) {
+				String path = entry.getKey();
+				if (path.equals(pathInfo) && entry.getValue() == null) {
+					processAggregatorRequest(req, resp);
+					processed = true;
+					break;
+				}
+				if (pathInfo.startsWith(path)) {
+					if ((path.length() == pathInfo.length() || pathInfo.charAt(path.length()) == '/') && entry.getValue() != null) {
+						String resPath = path.length() == pathInfo.length() ? "" : pathInfo.substring(path.length()+1); //$NON-NLS-1$
+						IResource res = entry.getValue();
+						processResourceRequest(req, resp, res, resPath);
+						processed = true;
+						break;
+					}
+				}
+			}
+			if (!processed) {
+				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
+	}
+
+	protected void processResourceRequest(HttpServletRequest req, HttpServletResponse resp, IResource res, String path) {
+		final String sourceMethod = "processRequest"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp, res, path});
+		}
+		try {
+			URI uri = res.getURI();
+			if (path != null && path.length() > 0 && !uri.getPath().endsWith("/")) {
+				// Make sure we resolve against a folder path
+				uri =  new URI(uri.getScheme(), uri.getAuthority(),
+						uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
+				res = newResource(uri);
+			}
+			IResource resolved = res.resolve(path);
+			if (!resolved.exists()) {
+				throw new NotFoundException(resolved.getURI().toString());
+			}
+			resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
+			int expires = getConfig().getExpires();
+			resp.addHeader(
+					"Cache-Control", //$NON-NLS-1$
+					"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			);
+			InputStream is = res.resolve(path).getInputStream();
+			OutputStream os = resp.getOutputStream();
+			CopyUtil.copy(is, os);
+		} catch (NotFoundException e) {
+			if (log.isLoggable(Level.INFO)) {
+				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
+			}
+			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
+			}
+			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
+
+	}
+
+	protected void processAggregatorRequest(HttpServletRequest req, HttpServletResponse resp) {
+		final String sourceMethod = "processAggregatorRequest"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp});
+		}
 		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
 		ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
 		req.setAttribute(CONCURRENTMAP_REQATTRNAME, concurrentMap);
@@ -288,9 +385,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				} else {
 					resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
 					int expires = getConfig().getExpires();
-					if (expires > 0) {
-						resp.addHeader("Cache-Control", "public, max-age=" + expires); //$NON-NLS-1$ //$NON-NLS-2$
-					}
+					resp.addHeader(
+							"Cache-Control", //$NON-NLS-1$
+							"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					);
 				}
 				CopyUtil.copy(in, resp.getOutputStream());
 			}
@@ -352,6 +450,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			exceptionResponse(req, resp, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		} finally {
 			concurrentMap.clear();
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
 	}
 
@@ -427,6 +528,20 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	@Override
 	public IResource newResource(URI uri) {
+		final String sourceMethod = "newResource"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{uri});
+		}
+		if (!uri.isAbsolute()) {
+			// URI is not absolute, so make it absolute.
+			try {
+				uri = getPlatformServices().getAppContextURI().resolve(uri.getPath());
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException(e);
+			}
+		}
+
 		IResourceFactory factory = null;
 		String scheme = uri.getScheme();
 
@@ -445,7 +560,11 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 					);
 		}
 
-		return factory.newResource(uri);
+		IResource result = factory.newResource(uri);
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
 	}
 
 	/* (non-Javadoc)
@@ -484,14 +603,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	@Override
 	public Iterable<IAggregatorExtension> getExtensions(String extensionPointId) {
 		List<IAggregatorExtension> result = new ArrayList<IAggregatorExtension>();
+		// List service provider extensions first so that they will be initialized first
+		// in case any other extension initializers use any variable resolvers.
+		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
+			result.addAll(serviceProviderExtensions);
+		}
 		if (extensionPointId == null || extensionPointId == IResourceFactoryExtensionPoint.ID) {
 			result.addAll(resourceFactoryExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
 			result.addAll(moduleBuilderExtensions);
-		}
-		if (extensionPointId == null || extensionPointId == IServiceProviderExtensionPoint.ID) {
-			result.addAll(serviceProviderExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IHttpTransportExtensionPoint.ID) {
 			result.add(httpTransportExtension);
@@ -678,7 +799,32 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * @return Value of the property
 	 */
 	public String getPropValue (String propName){
-		return System.getProperty(propName);
+		String propValue = null;
+		propValue = System.getProperty(propName);
+		IServiceReference[] refs = null;
+		if (propValue == null) {
+			try {
+				refs = getPlatformServices().getServiceReferences(IVariableResolver.class.getName(), "(name=" + getName() + ")");  //$NON-NLS-1$ //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
+			}
+			if (refs != null) {
+				for (IServiceReference sr : refs) {
+					IVariableResolver resolver = (IVariableResolver)getPlatformServices().getService(sr);
+					try {
+						propValue = resolver.resolve(propName);
+						if (propValue != null) {
+							break;
+						}
+					} finally {
+						getPlatformServices().ungetService(sr);
+					}
+				}
+			}
+		}
+		return propValue;
 	}
 
 
@@ -829,6 +975,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				if (interfaceName != null) {
 					try {
 						Dictionary<String, String> props = new Hashtable<String, String>();
+						// Copy init-params from extension to service dictionary
+						Set<String> attributeNames = new HashSet<String>(ext.getAttributeNames());
+						attributeNames.removeAll(Arrays.asList(new String[]{"class", IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE})); //$NON-NLS-1$
+						for (String propName : attributeNames) {
+							props.put(propName, ext.getAttribute(propName));
+						}
+						// Set name property to aggregator name
 						props.put("name", getName()); //$NON-NLS-1$
 						registrations.add(getPlatformServices().registerService(interfaceName, ext.getInstance(), props));
 					} catch (Exception e) {
@@ -952,28 +1105,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	}
 
 	/**
-	 * Returns the init params for this aggregator
-	 * <p>
-	 * This method is called during aggregator intialization.  Subclasses may
-	 * override this method to initialize the aggregator using different
-	 * init params.  Use the public {@link IAggregator#getInitParams()} method
-	 * to get the init params for an initialized aggregator.
-	 *
-	 * @param configMap
-	 *            A Map having key-value pairs denoting configuration init-params for the aggregator servlet
-	 * @return The init params
-	 */
-	protected InitParams getInitParams(Map<String, String> configMap) {
-		List<InitParam> initParams = new LinkedList<InitParam>();
-		for (Entry<String, String> child : configMap.entrySet()) {
-			String name = (String)child.getKey();
-			String value = (String)child.getValue();
-			initParams.add(new InitParam(name, value));
-		}
-		return new InitParams(initParams);
-	}
-
-	/**
 	 * Instantiates a new dependencies object
 	 * @param stamp
 	 *            the time stamp
@@ -1020,15 +1151,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * This method does some initialization for the aggregator servlet. This method is called from platform
 	 * dependent Aggregator implementation during its initialization.
 	 *
-	 *
-	 * @param configMap
-	 *            A Map having key-value pairs denoting configuration settings for the aggregator servlet
-	 * @param configInitParams
-	 *            A Map having key-value pairs denoting servlet init parameters for the aggregator servlet
 	 * @throws Exception
 	 */
 
-	public void initialize(Map<String, String> configMap, Map<String, String> configInitParams)
+	public void initialize()
 			throws Exception {
 
 		// create the config. Keep it local so it won't be seen by deps and cacheMgr
@@ -1044,8 +1170,95 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		walker.walkTree();
 		deps = newDependencies(walker.getLastModifiedJS());
 		cacheMgr = newCacheManager(walker.getLastModified());
+		resourcePaths = getPathsAndAliases(getInitParams());
 		this.config = config;
 
+	}
+
+	/**
+	 * Returns a mapping of resource aliases to IResources defined in the init-params.
+	 * If the IResource is null, then the alias is for the aggregator itself rather
+	 * than a resource location.
+	 *
+	 * @param initParams
+	 *            The aggregator init-params
+	 *
+	 * @return Mapping of aliases to IResources
+	 */
+	protected Map<String, IResource> getPathsAndAliases(InitParams initParams) {
+		final String sourceMethod = "getPahtsAndAliases"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{initParams});
+		}
+		Map<String, IResource> resourcePaths = new HashMap<String, IResource>();
+		List<String> aliases = initParams.getValues(InitParams.ALIAS_INITPARAM);
+		for (String alias : aliases) {
+			addAlias(alias, null, "alias", resourcePaths); //$NON-NLS-1$
+		}
+		List<String> resourceIds = initParams.getValues(InitParams.RESOURCEID_INITPARAM);
+		for (String resourceId : resourceIds) {
+			aliases = initParams.getValues(resourceId + ":alias"); //$NON-NLS-1$
+			List<String> baseNames = initParams.getValues(resourceId + ":base-name"); //$NON-NLS-1$
+			if (aliases == null || aliases.size() != 1) {
+				throw new IllegalArgumentException(resourceId + ":aliases"); //$NON-NLS-1$
+			}
+			if (baseNames == null || baseNames.size() != 1) {
+				throw new IllegalArgumentException(resourceId + ":base-name"); //$NON-NLS-1$
+			}
+			String alias = aliases.get(0);
+			String baseName = baseNames.get(0);
+
+			// make sure not root path
+			boolean isPathComp = false;
+			for (String part : alias.split("/")) { //$NON-NLS-1$
+				if (part.length() > 0) {
+					isPathComp = true;
+					break;
+				}
+			}
+			if (!isPathComp) {
+				throw new IllegalArgumentException(resourceId + ":alias = " + alias); //$NON-NLS-1$
+			}
+			IResource res = newResource(URI.create(baseName));
+			if (res == null) {
+				throw new NullPointerException();
+			}
+			addAlias(alias, res, resourceId + ":alias", resourcePaths); //$NON-NLS-1$
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, resourcePaths);
+		}
+		return Collections.unmodifiableMap(resourcePaths);
+	}
+
+	protected void addAlias(String alias, IResource res, String initParamName, Map<String, IResource> map) {
+		final String sourceMethod = "addAlias"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{alias, res, initParamName, map});
+		}
+		String[] parts;
+		if (alias == null || (parts = alias.split("/")).length == 0) { //$NON-NLS-1$
+			throw new IllegalArgumentException(initParamName + " = " + alias); //$NON-NLS-1$
+		}
+		List<String> nonEmptyParts = new ArrayList<String>(parts.length);
+		for (String part : parts) {
+			if (part != null && part.length() > 0) {
+				nonEmptyParts.add(part);
+			}
+		}
+		alias = "/" + StringUtils.join(nonEmptyParts, "/"); //$NON-NLS-1$ //$NON-NLS-2$
+		// Make sure no overlapping alias paths
+		for (String test : map.keySet()) {
+			if (alias.equals(test)) {
+				throw new IllegalArgumentException("Duplicate alias path: " + alias); //$NON-NLS-1$
+			} else if (alias.startsWith(test + "/") || test.startsWith(alias + "/")) { //$NON-NLS-1$ //$NON-NLS-2$
+				throw new IllegalArgumentException("Overlapping alias paths: " + alias + ", " + test); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+		map.put(alias, res);
+		log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 	}
 
 	/**
@@ -1055,12 +1268,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		 boolean open = true;
 
 		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar#registerExtension(java.lang.Object, java.util.Properties, java.lang.String, java.lang.String)
+		 * @see com.ibm.jaggr.service.IExtensionInitializer.IExtensionRegistrar#registerExtension(java.lang.Object, java.util.Properties, InitParams, java.lang.String, java.lang.String)
 		 */
 		@Override
 		public void registerExtension(
 				Object impl,
 				Properties attributes,
+				InitParams initParams,
 				String extensionPointId,
 				String uniqueId,
 				IAggregatorExtension before) {
@@ -1070,8 +1284,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			IAggregatorExtension extension = new AggregatorExtension(
 						impl,
 						new Properties(attributes),
+						initParams,
 						extensionPointId,
-						uniqueId
+						uniqueId,
+						AbstractAggregatorImpl.this
 						);
 			AbstractAggregatorImpl.this.registerExtension(extension, before);
 			if (impl instanceof IExtensionInitializer) {

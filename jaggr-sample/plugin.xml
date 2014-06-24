@@ -22,6 +22,22 @@
            in the same resource bundle as this file -->
       <init-param name="config" value="testaggr-config.js"/>
       <init-param name="serviceproviders" value="com.ibm.jaggr.service.configextension.bundleVersionsHash"/>
+      
+      <!-- The following init-params define internally scoped aliases and resource paths for the application, -->
+      <!-- allowing the aggregator to serve as the resource servlet for all the application's resources       -->
+      <!-- (aggregatored and non-aggregated).  This is an alternative to using the equinox resource servlet   -->
+      <!-- to serve non-aggregated resources out of the application's OSGi bundles.                           -->
+      <!--                                                                                                    -->
+      <!-- The internally scoped version of the sample application can be loaded using the URL                -->
+      <!-- http://<server>/test/aggr/app/res/test.html                                                   -->
+      
+      <init-param name="alias" value="/app/aggr"/>
+      <init-param name="resource-id" value="res"/>
+      <init-param name="resource-id" value="dojo"/>
+      <init-param name="res:alias" value="/app/res"/>
+      <init-param name="res:base-name" value="/WebContent"/> 
+      <init-param name="dojo:alias" value="/app/dojo-1.8.0"/>
+      <init-param name="dojo:base-name" value="namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/source_1.8.0-20120830-IBM_dojo"/>
     </servlet>
   </extension>
 

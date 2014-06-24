@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
+import com.ibm.jaggr.core.InitParams;
 
 import java.net.URI;
 import java.util.Properties;
@@ -32,7 +33,7 @@ import java.util.Properties;
  * for Aggregator extensions that implement the
  * {@code com.ibm.jaggr.core.resourcefactory} extension point.
  * Aggregator extensions may also register resource factories by calling
- * {@link IExtensionRegistrar#registerExtension(Object, Properties, String, String, IAggregatorExtension)}
+ * {@link IExtensionRegistrar#registerExtension(Object, Properties, InitParams, String, String, IAggregatorExtension)}
  * when the extension's
  * {@link IExtensionInitializer#initialize(IAggregator, IAggregatorExtension, IExtensionRegistrar)}
  * method is called (assuming the extension implements the

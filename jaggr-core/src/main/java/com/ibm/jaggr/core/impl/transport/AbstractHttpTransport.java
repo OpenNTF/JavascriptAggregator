@@ -21,6 +21,8 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfigModifier;
@@ -36,6 +38,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.TypeUtil;
 
@@ -569,6 +572,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			reg.registerExtension(
 					newFeatureListResourceFactory(featureListResourceUri),
 					props,
+					new InitParams(Collections.<InitParam>emptyList()),
 					IResourceFactoryExtensionPoint.ID,
 					getTransportId(),
 					first);
@@ -710,12 +714,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		for (String contribution : getExtensionContributions()) {
 			sb.append(contribution).append("\r\n"); //$NON-NLS-1$
 		}
-		String cacheBust = aggregator.getConfig().getCacheBust();
-		String optionsCb = aggregator.getOptions().getCacheBust();
-		if (optionsCb != null && optionsCb.length() > 0) {
-			cacheBust = (cacheBust != null && cacheBust.length() > 0) ?
-					(cacheBust + "-" + optionsCb) : optionsCb; //$NON-NLS-1$
-		}
+		String cacheBust = AggregatorUtil.getCacheBust(aggregator);
 		if (cacheBust != null && cacheBust.length() > 0) {
 			sb.append("if (!require.combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
@@ -1047,7 +1046,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			dependentFeatures = Collections.unmodifiableList(Arrays.asList(features.toArray(new String[features.size()])));
 			depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), deps.getLastModified());
 			depsInitialized.countDown();
-			generateModuleIdMap();
+			generateModuleIdMap(deps);
 		} catch (ProcessingDependenciesException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
@@ -1136,9 +1135,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * Generates the module id map used by the transport to encode/decode module names
 	 * using assigned module name ids.
 	 *
+	 * @param deps
+	 *            The dependencies object
+	 *
 	 * @throws IOException
 	 */
-	protected void generateModuleIdMap() throws IOException {
+	protected void generateModuleIdMap(IDependencies deps) throws IOException {
 		final String methodName = "generateModuleIdMap"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
@@ -1152,7 +1154,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			return;
 		}
 		Map<String, String> names = new TreeMap<String, String>(); // Use TreeMap to get consistent ordering
-		IDependencies deps = aggregator.getDependencies();
 
 		for (String name : deps.getDependencyNames()) {
 			names.put(name, isTraceLogging ? deps.getURI(name).toString() : null);

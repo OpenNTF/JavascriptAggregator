@@ -104,7 +104,7 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 			log.entering(BundleVersionsHash.class.getName(), sourceMethod, new Object[]{aggregator, extension, registrar});
 		}
 		// get the name of the function from the extension attributes
-		propName = extension.getAttribute("propName"); //$NON-NLS-1$
+		propName = extension.getInitParams().getValue("propName"); //$NON-NLS-1$
 		if (propName == null) {
 			propName = DEFAULT_PROPNAME;
 		}
@@ -220,17 +220,17 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 				} else {
 					throw new IllegalArgumentException("Invalid argument type:" + arg.toString()); //$NON-NLS-1$
 				}
-				if (sb.length() > 0) {
-					MessageDigest md = null;
-					try {
-						md = MessageDigest.getInstance("MD5"); //$NON-NLS-1$
-						result = Base64.encodeBase64URLSafeString(md.digest(sb.toString().getBytes("UTF-8"))); //$NON-NLS-1$
-					} catch (Exception e) {
-						if (log.isLoggable(Level.SEVERE)) {
-							log.log(Level.SEVERE, e.getMessage(), e);
-						}
-						throw new RuntimeException(e);
+			}
+			if (sb.length() > 0) {
+				MessageDigest md = null;
+				try {
+					md = MessageDigest.getInstance("MD5"); //$NON-NLS-1$
+					result = Base64.encodeBase64URLSafeString(md.digest(sb.toString().getBytes("UTF-8"))); //$NON-NLS-1$
+				} catch (Exception e) {
+					if (log.isLoggable(Level.SEVERE)) {
+						log.log(Level.SEVERE, e.getMessage(), e);
 					}
+					throw new RuntimeException(e);
 				}
 			}
 			if (isTraceLogging) {

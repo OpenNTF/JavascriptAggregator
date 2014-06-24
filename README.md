@@ -53,15 +53,18 @@ ask a question on [Stack Overflow](http://stackoverflow.com/) with the tag
 
 ###UPGRADING###
 
-####From 1.0.0 to 1.1.1####
-* Resources defined in the server-side amd config file that use a 
-  "namedbundleresource" scheme url should leave the authority section of the
-  uri blank and have the bundle name be the first segment in the path. 
-  (ex: namedbundleresource:///bundle.name/path/to/file)
-* Interface change in IResource (added IResource resolve(String relative);) 
-  will affect any third-party resource providers.
+####1.2.0####
+This is a major upgrade.  [Read what it brings](https://github.com/OpenNTF/JavascriptAggregator/wiki/What%27s-new-in-Version-1.2).
 
-####From 1.1.7 to 1.1.8####
+We've created a new bundle, `jaggr-core`, to house all non-osgi specific code.
+This is now where the vast majority of jaggr code is located. Bundle 
+dependencies may need to be updated.
+
+Developers running from within eclipse should use a java7 jre/jdk for 
+development and running the bundles out of the eclipse workspace. Maven will 
+generate java6 compatible jars from the command line.  
+
+####1.1.8####
 The changes described below don't affect casual users. Only implementors of
 JAGGR extensions that deal with calculation of expanded dependencies are 
 affected:
@@ -70,11 +73,11 @@ affected:
   removed. Use com.ibm.jaggr.service.util.DependencyList instead.
 * com.ibm.jaggr.service.util.DependencyList constructor arguments have changed.
 
-####From 1.1.9 to 1.2.0####
-We've created a new bundle, `jaggr-core`, to house all non-osgi specific code.
-This is now where the vast majority of jaggr code is located. Bundle 
-dependencies may need to be updated.
+####1.1.1####
+* Resources defined in the server-side amd config file that use a 
+  "namedbundleresource" scheme url should leave the authority section of the
+  uri blank and have the bundle name be the first segment in the path. 
+  (ex: namedbundleresource:///bundle.name/path/to/file)
+* Interface change in IResource (added IResource resolve(String relative);) 
+  will affect any third-party resource providers.
 
-Developers running from within eclipse should use a java7 jre/jdk for 
-development and running the bundles out of the eclipse workspace. Maven will 
-generate java6 compatible jars from the command line.  

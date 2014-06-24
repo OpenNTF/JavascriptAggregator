@@ -84,4 +84,9 @@ public class ExceptionResource implements IResource, IResourceVisitor.Resource {
 		throw new UnsupportedOperationException();
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + ": " + ex.getMessage() + " - " + uri.toString(); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 }

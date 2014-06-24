@@ -19,7 +19,7 @@
 	
 	// make sure we use the global require object
 	this.require = {
-		baseUrl: '/test',
+		baseUrl: '..',
 		packages: [
 				{
 					name: 'dojo',
@@ -39,7 +39,8 @@
 			],
 
 			paths: {
-				js: "res/js"
+				js: "res/js",
+				theme: "res/theme"
 			},
 
 		has: {
@@ -64,7 +65,7 @@
 		waitSeconds: 10,
 	
 		combo: {
-			contextPath: "/test/aggr",
+			contextPath: "../aggr",
 			expandRequire: true,
 			// This is a maven variable, replaced at build time (see pom file for filtered resources).
 			cacheBust: '${project.version}'

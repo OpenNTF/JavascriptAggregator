@@ -1,4 +1,5 @@
 /*
+
  * (C) Copyright 2012, IBM Corporation
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,8 +17,10 @@
 
 package com.ibm.jaggr.core.impl;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
+import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.resource.IResourceFactory;
@@ -26,6 +29,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 
 import java.util.Properties;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -40,6 +44,8 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	private String contributorId;
 	private Object instance;
 	private Properties attributes;
+	private InitParams initParams;
+	private IAggregator aggregator;
 
 	/**
 	 * Constructs a new AggregatorExtension object from an object instance and
@@ -47,27 +53,37 @@ public class AggregatorExtension  implements IAggregatorExtension {
 	 * @param instance
 	 *            The instantiated object for this extension
 	 * @param attributes
-	 *            The attributes and init-params for this extension
+	 *            The attributes for this extension
+	 * @param initParams
+	 *            The init-params for this extension
 	 * @param extensionPointId
 	 *            the extension point id
 	 * @param uniqueId
 	 *            the extension unique id
+	 * @param aggregator
+	 *            the aggregator
 	 */
-	public AggregatorExtension(Object instance, Properties attributes, String extensionPointId, String uniqueId) {
+	public AggregatorExtension(Object instance, Properties attributes, InitParams initParams, String extensionPointId, String uniqueId, IAggregator aggregator) {
 		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{instance, attributes, extensionPointId, uniqueId});
+			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{instance, attributes, extensionPointId, uniqueId, aggregator});
 		}
 		this.extensionPointId = extensionPointId;
 		this.uniqueId = uniqueId;
 		this.contributorId = null;
 		this.instance = instance;
 		this.attributes = attributes;
+		this.initParams = initParams;
+		this.aggregator = aggregator;
 		validate();
 		if (isTraceLogging) {
 			log.exiting(AggregatorExtension.class.getName(), sourceMethod);
 		}
+	}
+
+	public AggregatorExtension(Object instance, Properties attributes, InitParams initParams, String extensionPointId, String uniqueId) {
+		this(instance, attributes, initParams, extensionPointId, uniqueId, null);
 	}
 
 	private void validate() {
@@ -156,10 +172,28 @@ public class AggregatorExtension  implements IAggregatorExtension {
 			log.entering(AggregatorExtension.class.getName(), sourceMethod, new Object[]{name});
 		}
 		String result = attributes.getProperty(name);
+		if (result != null && aggregator != null) {
+			result = aggregator.substituteProps(result);
+		}
 		if (isTraceLogging) {
 			log.exiting(AggregatorExtension.class.getName(), sourceMethod, result);
 		}
 		return result;
+	}
+
+	@Override
+	public Set<String> getAttributeNames() {
+		final String sourceMethod = "getAttributeNames"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorExtension.class.getName(), sourceMethod);
+		}
+		Set<String> result = attributes.stringPropertyNames();
+		if (isTraceLogging) {
+			log.exiting(AggregatorExtension.class.getName(), sourceMethod, result);
+		}
+		return result;
+
 	}
 
 	/* (non-Javadoc)
@@ -201,6 +235,12 @@ public class AggregatorExtension  implements IAggregatorExtension {
 		    .append(", contributorId:").append(contributorId) //$NON-NLS-1$
 		    .append(", instance:").append(instance) //$NON-NLS-1$
 		    .append(", attributes:").append(attributes) //$NON-NLS-1$
+		    .append(", initParams:").append(initParams) //$NON-NLS-1$
 		    .append("}").toString(); //$NON-NLS-1$
+	}
+
+	@Override
+	public InitParams getInitParams() {
+		return initParams;
 	}
 }
