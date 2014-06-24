@@ -82,7 +82,7 @@ define([
 					length = idList[i++];
 				}
 				for (j = 0; j < length; j++) {
-					var pluginName, moduleName, id = idList[i++];
+					var pluginName = null, moduleName = null, id = idList[i++];
 					if (id === 0) {
 						// 0 means the next two ints specify plugin and modulename
 						id = idList[i++];
