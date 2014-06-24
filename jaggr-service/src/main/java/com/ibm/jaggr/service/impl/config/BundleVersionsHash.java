@@ -104,7 +104,7 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 			log.entering(BundleVersionsHash.class.getName(), sourceMethod, new Object[]{aggregator, extension, registrar});
 		}
 		// get the name of the function from the extension attributes
-		propName = extension.getAttribute("propName"); //$NON-NLS-1$
+		propName = extension.getInitParams().getValue("propName"); //$NON-NLS-1$
 		if (propName == null) {
 			propName = DEFAULT_PROPNAME;
 		}
