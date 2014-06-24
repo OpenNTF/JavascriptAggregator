@@ -62,7 +62,9 @@ public interface IExtensionInitializer {
 		 *            an object which implements {@link IResourceFactory} or
 		 *            {@link IModuleBuilder}.
 		 * @param attributes
-		 *            the extension attributes and init-params
+		 *            the extension attributes
+		 * @param initParams
+		 *            the extension init-params
 		 * @param extensionPointId
 		 *            the extension point identifier
 		 * @param uniqueId
@@ -76,7 +78,7 @@ public interface IExtensionInitializer {
 		 *             If there are missing required attributes for the
 		 *             extension being registered.
 		 */
-		public void registerExtension(Object impl, Properties attributes,
+		public void registerExtension(Object impl, Properties attributes, InitParams initParams,
 				String extensionPointId, String uniqueId, IAggregatorExtension before)
 						throws IllegalStateException;
 	}

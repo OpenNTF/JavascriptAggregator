@@ -77,10 +77,10 @@ public class DepTreeTest {
 
 		Properties props = new Properties();
 		props.put(IModuleBuilderExtensionPoint.EXTENSION_ATTRIBUTE, "ext1");
-		moduleBuilderExtensions.add(new AggregatorExtension(new DummyModuleBuilder(), props, IModuleBuilderExtensionPoint.ID, "1"));
+		moduleBuilderExtensions.add(new AggregatorExtension(new DummyModuleBuilder(), props, null, IModuleBuilderExtensionPoint.ID, "1"));
 		props = new Properties();
 		props.put(IModuleBuilderExtensionPoint.EXTENSION_ATTRIBUTE, "ext2");
-		moduleBuilderExtensions.add(new AggregatorExtension(new DummyModuleBuilder(), props, IModuleBuilderExtensionPoint.ID, "2"));
+		moduleBuilderExtensions.add(new AggregatorExtension(new DummyModuleBuilder(), props, null, IModuleBuilderExtensionPoint.ID, "2"));
 		exts = depTree.getNonJSExtensions(mockAggregator);
 		expected.addAll(Arrays.asList(new String[]{"ext1", "ext2"}));
 		Assert.assertEquals(expected, exts);

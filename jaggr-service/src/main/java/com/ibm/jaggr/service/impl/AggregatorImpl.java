@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
@@ -55,10 +56,13 @@ import org.osgi.util.tracker.ServiceTracker;
 import java.io.File;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -117,17 +121,33 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		return configMap;
 	}
 
-	public Map<String, String> getConfigInitParams(IConfigurationElement configElem) {
-		Map<String, String> configInitParams = new HashMap<String, String>();
+	public InitParams getConfigInitParams(IConfigurationElement configElem) {
+		Map<String, String[]> configInitParams = new HashMap<String, String[]>();
 		if (configElem.getChildren("init-param") != null) { //$NON-NLS-1$
 			IConfigurationElement[] children = configElem.getChildren("init-param"); //$NON-NLS-1$
 			for (IConfigurationElement child : children) {
 				String name = child.getAttribute("name"); //$NON-NLS-1$
 				String value = child.getAttribute("value"); //$NON-NLS-1$
-				configInitParams.put(name, value);
+				String[] current = configInitParams.get(name);
+				String[] newValue;
+				if (current != null) {
+					newValue = Arrays.copyOf(current, current.length+1);
+					newValue[current.length] = value;
+				} else {
+					newValue = new String[]{value};
+				}
+				configInitParams.put(name, newValue);
 			}
 		}
-		return configInitParams;
+		List<InitParam> initParams = new LinkedList<InitParam>();
+		for (Entry<String, String[]> child : configInitParams.entrySet()) {
+			String name = (String)child.getKey();
+			String values[] = (String[])child.getValue();
+			for (String value : values) {
+				initParams.add(new InitParam(name, value, this));
+			}
+		}
+		return new InitParams(initParams);
 	}
 
 	/* (non-Javadoc)
@@ -150,15 +170,13 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 
 		Map<String, String> configMap = new HashMap<String, String>();
-		Map<String, String> configInitParams = new HashMap<String, String>();
 		configMap = getConfigMap(configElem);
-		configInitParams = getConfigInitParams(configElem);
+		initParams = getConfigInitParams(configElem);
 
 		try {
 			BundleContext bundleContext = contributingBundle.getBundleContext();
 			platformServices = new PlatformServicesImpl(bundleContext);
 			bundle = bundleContext.getBundle();
-			initParams = getInitParams(configInitParams);
 			name = getAggregatorName(configMap);
 
 			// Make sure there isn't already an instance of the aggregator registered for the current name
@@ -172,7 +190,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
 			initExtensions(configElem);
 			initOptions(initParams);
-			initialize(configMap, configInitParams);
+			initialize();
 
 			String versionString = Long.toString(bundleContext.getBundle().getBundleId());
 			if (TypeUtil.asBoolean(getConfig().getProperty(DISABLEBUNDLEIDDIRSOPING_PROPNAME, null)) ||
@@ -447,12 +465,9 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					for (String attributeName : member.getAttributeNames()) {
 						props.put(attributeName, member.getAttribute(attributeName));
 					}
-					IConfigurationElement[] children = member.getChildren("init-param"); //$NON-NLS-1$
-					for( IConfigurationElement child : children) {
-						props.put(child.getAttribute("name"), child.getAttribute("value")); //$NON-NLS-1$ //$NON-NLS-2$
-					}
+					InitParams initParams = getConfigInitParams(member);
 					registerExtension(
-							new AggregatorExtension(ext, props,
+							new AggregatorExtension(ext, props, initParams,
 									extension.getExtensionPointUniqueIdentifier(),
 									extension.getUniqueIdentifier(),
 									this), null

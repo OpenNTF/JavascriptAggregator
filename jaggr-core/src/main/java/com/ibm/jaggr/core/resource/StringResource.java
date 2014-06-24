@@ -91,4 +91,9 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 		return new StringResource("", uri.resolve(relative)); //$NON-NLS-1$
 	}
 
+	@Override
+	public String toString() {
+		return super.toString() + " - " + uri.toString(); //$NON-NLS-1$
+	}
+
 }
