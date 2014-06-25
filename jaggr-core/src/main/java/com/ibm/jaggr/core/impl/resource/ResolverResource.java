@@ -96,7 +96,7 @@ public class ResolverResource implements IResource {
 
 	@Override
 	public String toString() {
-		return super.toString() + " - " + res.getURI();
+		return super.toString() + " - " + res.getURI(); //$NON-NLS-1$
 	}
 
 }

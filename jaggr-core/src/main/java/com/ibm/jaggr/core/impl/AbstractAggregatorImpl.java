@@ -285,7 +285,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 		try {
 			URI uri = res.getURI();
-			if (path != null && path.length() > 0 && !uri.getPath().endsWith("/")) {
+			if (path != null && path.length() > 0 && !uri.getPath().endsWith("/")) { //$NON-NLS-1$
 				// Make sure we resolve against a folder path
 				uri =  new URI(uri.getScheme(), uri.getAuthority(),
 						uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
