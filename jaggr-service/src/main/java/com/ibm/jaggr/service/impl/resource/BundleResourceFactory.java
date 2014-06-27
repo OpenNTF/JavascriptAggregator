@@ -26,9 +26,8 @@ import com.ibm.jaggr.core.impl.resource.ResolverResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.PathUtil;
 
-import org.eclipse.core.runtime.CoreException;
-import org.eclipse.core.runtime.IConfigurationElement;
-import org.eclipse.core.runtime.IExecutableExtension;
+import com.ibm.jaggr.service.impl.AggregatorImpl;
+
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
 import org.osgi.framework.Bundle;
@@ -38,17 +37,20 @@ import org.osgi.framework.ServiceReference;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class BundleResourceFactory extends FileResourceFactory implements IExecutableExtension, IExtensionInitializer {
+public class BundleResourceFactory extends FileResourceFactory implements IExtensionInitializer {
 	static final Logger log = Logger.getLogger(BundleResourceFactory.class.getName());
 
 	private BundleContext context;
 	private ServiceReference urlConverterSR;
+	private Object resolver;
+	private Method resolverGetBundleMethod;
 
 	public BundleResourceFactory() {
 		super();
@@ -135,15 +137,6 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 		return result;
 	}
 
-	/* (non-Javadoc)
-	 * @see org.eclipse.core.runtime.IExecutableExtension#setInitializationData(org.eclipse.core.runtime.IConfigurationElement, java.lang.String, java.lang.Object)
-	 */
-	@Override
-	public void setInitializationData(IConfigurationElement config, String arg1,
-			Object arg2) throws CoreException {
-		context = Platform.getBundle(config.getNamespaceIdentifier()).getBundleContext();
-		this.urlConverterSR = context.getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
-	}
 	/*
 	 * Package-private initializer for unit testing
 	 */
@@ -157,6 +150,24 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 
 	@Override
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
+		context = ((AggregatorImpl)aggregator).getBundleContext();
+		urlConverterSR = context.getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
+
+		// Try to load the BundleResolver class (will fail if not on OSGi 4.3).
+		try {
+			Class<?> resolverClass = Class.forName("com.ibm.jaggr.service.impl.resource.BundleResolver"); //$NON-NLS-1$
+			Constructor<?> ctor = resolverClass.getConstructor(new Class[]{Bundle.class});
+			resolver = ctor.newInstance(new Object[]{context.getBundle()});
+			resolverGetBundleMethod = resolverClass.getMethod("getBundle", new Class[]{String.class}); //$NON-NLS-1$
+		} catch (ClassNotFoundException e) {
+			if (log.isLoggable(Level.FINE)) {
+				log.fine("Down level version of OSGi.  Bundle wiring support not available."); //$NON-NLS-1$
+			}
+		} catch (Exception e) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, e.getMessage(), e);
+			}
+		}
 	}
 
 	@Override
@@ -220,8 +231,19 @@ public class BundleResourceFactory extends FileResourceFactory implements IExecu
 	 * So that unit test cases can provide alternative implementation
 	 */
 	protected Bundle getBundle(String bundleName) {
-		// TODO: Figure out how to get the same version of the bundle that was resolved for
-		// for the current application.
-		return Platform.getBundle(bundleName);
+		Bundle result = null;
+		if (resolverGetBundleMethod != null) {
+			try {
+				result = (Bundle) resolverGetBundleMethod.invoke(resolver, new Object[]{bundleName});
+			} catch (Exception e) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.log(Level.WARNING, e.getMessage(), e);
+				}
+				result = Platform.getBundle(bundleName);
+			}
+		} else {
+			result = Platform.getBundle(bundleName);
+		}
+		return result;
 	}
 }
