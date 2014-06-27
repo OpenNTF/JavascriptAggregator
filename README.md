@@ -60,6 +60,10 @@ We've created a new bundle, `jaggr-core`, to house all non-osgi specific code.
 This is now where the vast majority of jaggr code is located. Bundle 
 dependencies may need to be updated.
 
+Besides the name changes, there are some interface changes affecting aggregator
+extensions.  Extensions developed for previous versions of the aggregator won't
+run on 1.2 without changes.
+
 Developers running from within eclipse should use a java7 jre/jdk for 
 development and running the bundles out of the eclipse workspace. Maven will 
 generate java6 compatible jars from the command line.  
