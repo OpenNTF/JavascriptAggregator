@@ -203,6 +203,17 @@ combo.getIdMap = function() {
 	return JSON.parse(JSON.stringify(moduleIdMap));
 };
 
+/*
+ * Decodes an aggregator request url.  Outputs to the console an object with properties 
+ * identifying requested modules, defined features, etc.  Provided for diagnostic/debugging 
+ * purposes.
+ */
+combo.decodeUrl = function(url) {
+	require(['combo/dojo/requestDecoder'], function(decoder){
+		console.log(decoder.decode(url));
+	});
+};
+
 setTimeout(function() {
 	if (userConfig.deps) {
 		require(userConfig.deps, function() {
