@@ -149,7 +149,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> serviceProviderExtensions = new LinkedList<IAggregatorExtension>();
 	private IAggregatorExtension httpTransportExtension = null;
+	private boolean isShuttingDown = false;
 	protected IPlatformServices platformServices;
+
 
 	protected Map<String, IResource> resourcePaths;
 
@@ -212,50 +214,52 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
 
-		IServiceReference[] refs = null;
-		try {
-			refs = getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-		} catch (PlatformServicesException e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
+		if (!isShuttingDown) {
+			isShuttingDown = true;
+			IServiceReference[] refs = null;
+			try {
+				refs = getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+			} catch (PlatformServicesException e) {
+				if (log.isLoggable(Level.SEVERE)) {
+					log.log(Level.SEVERE, e.getMessage(), e);
+				}
 			}
-		}
-		if (refs != null) {
-			for (IServiceReference ref : refs) {
-				IShutdownListener listener = (IShutdownListener)getPlatformServices().getService(ref);
-				if (listener != null) {
-					try {
-						listener.shutdown(this);
-					} catch (Exception e) {
-						if (log.isLoggable(Level.SEVERE)) {
-							log.log(Level.SEVERE, e.getMessage(), e);
+			if (refs != null) {
+				for (IServiceReference ref : refs) {
+					IShutdownListener listener = (IShutdownListener)getPlatformServices().getService(ref);
+					if (listener != null) {
+						try {
+							listener.shutdown(this);
+						} catch (Exception e) {
+							if (log.isLoggable(Level.SEVERE)) {
+								log.log(Level.SEVERE, e.getMessage(), e);
+							}
+						} finally {
+							getPlatformServices().ungetService(ref);
 						}
-					} finally {
-						getPlatformServices().ungetService(ref);
 					}
 				}
 			}
-		}
-		for (IServiceRegistration registration : registrations) {
-			registration.unregister();
-		}
-		for (IServiceReference ref : serviceReferences) {
-			getPlatformServices().ungetService(ref);
-		}
-		registrations.clear();
-		serviceReferences.clear();
+			for (IServiceRegistration registration : registrations) {
+				registration.unregister();
+			}
+			for (IServiceReference ref : serviceReferences) {
+				getPlatformServices().ungetService(ref);
+			}
+			registrations.clear();
+			serviceReferences.clear();
 
-		// Clear references to objects that can potentially reference this object
-		// so as to avoid memory leaks due to circular references.
-		resourceFactoryExtensions.clear();
-		moduleBuilderExtensions.clear();
-		serviceProviderExtensions.clear();
-		httpTransportExtension = null;
-		initParams = null;
-		cacheMgr = null;
-		config = null;
-		deps = null;
-
+			// Clear references to objects that can potentially reference this object
+			// so as to avoid memory leaks due to circular references.
+			resourceFactoryExtensions.clear();
+			moduleBuilderExtensions.clear();
+			serviceProviderExtensions.clear();
+			httpTransportExtension = null;
+			initParams = null;
+			cacheMgr = null;
+			config = null;
+			deps = null;
+		}
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
@@ -271,8 +275,17 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp});
 			log.finer("Request URL=" + req.getRequestURI()); //$NON-NLS-1$
-			}
+		}
 
+		if (isShuttingDown) {
+			// Server has been shut-down, or is in the process of shutting down.
+			resp.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+			if (isTraceLogging) {
+				log.finer("Processing request after server shutdown.  Returning SC_SERVICE_UNAVAILABLE"); //$NON-NLS-1$
+				log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+			}
+			return;
+		}
 		resp.addHeader("Server", "JavaScript Aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
