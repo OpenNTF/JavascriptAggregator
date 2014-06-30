@@ -32,6 +32,7 @@ import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Hashtable;
@@ -52,9 +53,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
 
-	private IServiceRegistration configUpdateListener;
-	private IServiceRegistration optionsUpdateListener;
-	private IServiceRegistration shutdownListener;
+	private List<IServiceRegistration> serviceRegistrations = new ArrayList<IServiceRegistration>();
 	private String servletName;
 	private long depsLastModified = -1;
 	private long initStamp;
@@ -78,15 +77,15 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		shutdownListener = aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
+		serviceRegistrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		configUpdateListener= aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+		serviceRegistrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict));
 
 		dict = new Hashtable<String, String>();
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
-		optionsUpdateListener= aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
+		serviceRegistrations.add(aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));
 
 		if (aggregator.getConfig() != null) {
 			configLoaded(aggregator.getConfig(), 1);
@@ -99,10 +98,10 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		this.aggregator = null;
-		configUpdateListener.unregister();
-		optionsUpdateListener.unregister();
-		shutdownListener.unregister();
-
+		for (IServiceRegistration reg : serviceRegistrations) {
+			reg.unregister();
+		}
+		serviceRegistrations.clear();
 	}
 
 	protected IAggregator getAggregator() {

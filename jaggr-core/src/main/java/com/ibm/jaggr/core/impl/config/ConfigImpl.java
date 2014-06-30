@@ -1424,10 +1424,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public void shutdown(IAggregator aggregator) {
 		for (IServiceRegistration reg : serviceRegs) {
-			if( aggregator.getPlatformServices() != null){
-				reg.unregister();
-			}
+			reg.unregister();
 		}
+		serviceRegs.clear();
 	}
 
 

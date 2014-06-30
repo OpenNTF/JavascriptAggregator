@@ -163,12 +163,20 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	@Override
 	public void init(ServletConfig servletConfig) throws ServletException {
+		final String sourceMethod = "init"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{servletConfig});
+		}
 		super.init(servletConfig);
 
 		final ServletContext context = servletConfig.getServletContext();
 
 		// Set servlet context attributes for access though the request
 		context.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, this);
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
 	}
 
 	/* (non-Javadoc)
@@ -176,18 +184,18 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 */
 	@Override
 	public void destroy() {
+		final String sourceMethod = "destroy"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
+
 		shutdown();
-		// Clear references to objects that can potentially reference this object
-		// so as to avoid memory leaks due to circular references.
-		resourceFactoryExtensions.clear();
-		moduleBuilderExtensions.clear();
-		serviceProviderExtensions.clear();
-		httpTransportExtension = null;
-		initParams = null;
-		cacheMgr = null;
-		config = null;
-		deps = null;
 		super.destroy();
+
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
 	}
 
 
@@ -198,37 +206,58 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * may be called from the destroy method or the bundle listener or both.
 	 */
 	synchronized protected void shutdown() {
-		if(getPlatformServices().isShuttingdown()){
-			IServiceReference[] refs = null;
-			try {
-				refs = getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-			} catch (PlatformServicesException e) {
-				if (log.isLoggable(Level.SEVERE)) {
-					log.log(Level.SEVERE, e.getMessage(), e);
-				}
+		final String sourceMethod = "shutdown"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
+
+		IServiceReference[] refs = null;
+		try {
+			refs = getPlatformServices().getServiceReferences(IShutdownListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+		} catch (PlatformServicesException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
 			}
-			if (refs != null) {
-				for (IServiceReference ref : refs) {
-					IShutdownListener listener = (IShutdownListener)getPlatformServices().getService(ref);
-					if (listener != null) {
-						try {
-							listener.shutdown(this);
-						} catch (Exception e) {
-							if (log.isLoggable(Level.SEVERE)) {
-								log.log(Level.SEVERE, e.getMessage(), e);
-							}
-						} finally {
-							getPlatformServices().ungetService(ref);
+		}
+		if (refs != null) {
+			for (IServiceReference ref : refs) {
+				IShutdownListener listener = (IShutdownListener)getPlatformServices().getService(ref);
+				if (listener != null) {
+					try {
+						listener.shutdown(this);
+					} catch (Exception e) {
+						if (log.isLoggable(Level.SEVERE)) {
+							log.log(Level.SEVERE, e.getMessage(), e);
 						}
+					} finally {
+						getPlatformServices().ungetService(ref);
 					}
 				}
 			}
-			for (IServiceRegistration registration : registrations) {
-				registration.unregister();
-			}
-			for (IServiceReference ref : serviceReferences) {
-				getPlatformServices().ungetService(ref);
-			}
+		}
+		for (IServiceRegistration registration : registrations) {
+			registration.unregister();
+		}
+		for (IServiceReference ref : serviceReferences) {
+			getPlatformServices().ungetService(ref);
+		}
+		registrations.clear();
+		serviceReferences.clear();
+
+		// Clear references to objects that can potentially reference this object
+		// so as to avoid memory leaks due to circular references.
+		resourceFactoryExtensions.clear();
+		moduleBuilderExtensions.clear();
+		serviceProviderExtensions.clear();
+		httpTransportExtension = null;
+		initParams = null;
+		cacheMgr = null;
+		config = null;
+		deps = null;
+
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
 	}
 

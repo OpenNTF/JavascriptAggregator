@@ -46,9 +46,7 @@ import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleEvent;
 import org.osgi.framework.BundleException;
-import org.osgi.framework.BundleListener;
 import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
@@ -78,17 +76,18 @@ import java.util.logging.Logger;
  * attempts will be made to serialize instances of this class.
  */
 @SuppressWarnings("serial")
-public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutableExtension, BundleListener {
+public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutableExtension {
 
 	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
 
 	public static final String DISABLEBUNDLEIDDIRSOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
 
-	protected Bundle bundle;
+	protected Bundle contributingBundle;
 	private ServiceTracker optionsServiceTracker = null;
 	private ServiceTracker executorsServiceTracker = null;
 	private ServiceTracker variableResolverServiceTracker = null;
 	private File workdir = null;
+	private boolean isShuttingDown = false;
 
 
 	/* (non-Javadoc)
@@ -109,8 +108,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		return (IExecutors) executorsServiceTracker.getService();
 	}
 
-	public BundleContext getBundleContext() {
-		return bundle != null ? bundle.getBundleContext() : null;
+	public Bundle getContributingBundle() {
+		return contributingBundle;
 	}
 
 	public Map<String, String> getConfigMap(IConfigurationElement configElem) {
@@ -157,7 +156,12 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	public void setInitializationData(IConfigurationElement configElem, String propertyName,
 			Object data) throws CoreException {
 
-		Bundle contributingBundle = Platform.getBundle(configElem.getNamespaceIdentifier());
+		final String sourceMethod = "setInitializationData"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configElem, propertyName, data});
+		}
+		contributingBundle = Platform.getBundle(configElem.getNamespaceIdentifier());
 		if (contributingBundle.getState() != Bundle.ACTIVE) {
 			try {
 				contributingBundle.start();
@@ -169,14 +173,14 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			}
 		}
 
+
 		Map<String, String> configMap = new HashMap<String, String>();
 		configMap = getConfigMap(configElem);
 		initParams = getConfigInitParams(configElem);
 
 		try {
-			BundleContext bundleContext = contributingBundle.getBundleContext();
-			platformServices = new PlatformServicesImpl(bundleContext);
-			bundle = bundleContext.getBundle();
+			BundleContext bundleContext = Activator.getBundleContext();
+			platformServices = new PlatformServicesImpl(contributingBundle);
 			name = getAggregatorName(configMap);
 
 			// Make sure there isn't already an instance of the aggregator registered for the current name
@@ -204,7 +208,6 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			// Notify listeners
 			notifyConfigListeners(1);
 
-			bundleContext.addBundleListener(this);
 		} catch (Exception e) {
 			throw new CoreException(
 					new Status(Status.ERROR, configElem.getNamespaceIdentifier(),
@@ -214,31 +217,34 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 
 		Properties dict = new Properties();
 		dict.put("name", getName()); //$NON-NLS-1$
-		registrations.add(new ServiceRegistrationOSGi(getBundleContext().registerService(
+		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
 				IAggregator.class.getName(), this, dict)));
+		if (isTraceLogging) {
+			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+		}
 	}
 
 	@Override
 	synchronized protected void shutdown(){
-		super.shutdown();
-		BundleContext bundleContext = getBundleContext();
-		bundleContext.removeBundleListener(this);
-		optionsServiceTracker.close();
-		executorsServiceTracker.close();
-		variableResolverServiceTracker.close();
-	}
-
-	/* (non-Javadoc)
-	 * @see org.osgi.framework.BundleListener#bundleChanged(org.osgi.framework.BundleEvent)
-	 */
-	@Override
-	public void bundleChanged(BundleEvent event) {
-		if (event.getType() == BundleEvent.STOPPING) {
-			shutdown();
+		final String sourceMethod = "shutdown"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorImpl.class.getName(), sourceMethod);
+		}
+		// Because HttpServlet.destroy() isn't guaranteed to be called when our bundle is stopped,
+		// shutdown is also called from our Activator.stop() method.  This check makes sure we don't
+		// execute shutdown processing more than once for a given servlet.
+		if (!isShuttingDown) {
+			isShuttingDown = true;
+			super.shutdown();
+			optionsServiceTracker.close();
+			executorsServiceTracker.close();
+			variableResolverServiceTracker.close();
+		}
+		if (isTraceLogging) {
+			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
 		}
 	}
-
-
 
 	/**
 	 * Returns the name for the bundle containing the servlet code.  This is used
@@ -253,8 +259,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 
 	public String getPropValue (String propName){
 		String propValue = null;
-		if (getBundleContext() != null) {
-			propValue = getBundleContext().getProperty(propName);
+		if (getContributingBundle() != null) {
+			propValue = getContributingBundle().getBundleContext().getProperty(propName);
 		} else {
 			propValue = super.getPropValue(propName);
 		}
@@ -262,7 +268,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	}
 
 	protected void initOptions(InitParams initParams) throws InvalidSyntaxException {
-		optionsServiceTracker = getOptionsServiceTracker(getBundleContext());
+		optionsServiceTracker = getOptionsServiceTracker(Activator.getBundleContext());
 		String registrationName = getServletBundleName();
 		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
 		if (values != null && values.size() > 0) {
@@ -282,7 +288,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 		Properties dict = new Properties();
 		dict.put("name", registrationName); //$NON-NLS-1$
-		registrations.add(new ServiceRegistrationOSGi(getBundleContext().registerService(
+		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
 				IOptionsListener.class.getName(), this, dict)));
 
 	}

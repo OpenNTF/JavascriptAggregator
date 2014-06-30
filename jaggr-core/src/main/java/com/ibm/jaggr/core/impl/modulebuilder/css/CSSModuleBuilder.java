@@ -680,6 +680,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		for (IServiceRegistration reg : registrations) {
 			reg.unregister();
 		}
+		registrations.clear();
 	}
 
 	/* (non-Javadoc)

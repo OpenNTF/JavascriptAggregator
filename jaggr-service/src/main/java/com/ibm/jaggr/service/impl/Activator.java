@@ -48,9 +48,9 @@ public class Activator extends Plugin implements BundleActivator {
 	 * in a static way.  This is used to filter services to bundle scope.
 	 */
 	public static String BUNDLE_NAME = "com.ibm.jaggr.service"; //$NON-NLS-1$
+	private static BundleContext context = null;
 
 	private Collection<ServiceRegistration> serviceRegistrations;
-	private BundleContext context = null;
 	private IExecutors executors = null;
 
 	/* (non-Javadoc)
@@ -58,6 +58,11 @@ public class Activator extends Plugin implements BundleActivator {
 	 */
 	@Override
 	public void start(BundleContext context) throws Exception {
+		final String sourceMethod = "start"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(Activator.class.getName(), sourceMethod, new Object[]{context});
+		}
 		super.start(context);
 
 		// Verify the bundle id.
@@ -65,7 +70,7 @@ public class Activator extends Plugin implements BundleActivator {
 			throw new IllegalStateException();
 		}
 		serviceRegistrations = new LinkedList<ServiceRegistration>();
-		this.context = context;
+		Activator.context = context;
 		Properties dict = new Properties();
 		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
 		// Create an options object and register the service
@@ -91,13 +96,39 @@ public class Activator extends Plugin implements BundleActivator {
 		} else if (options.isDebugMode() && log.isLoggable(Level.WARNING)) {
 			log.warning(Messages.Activator_2);
 		}
+		if (isTraceLogging) {
+			log.exiting(Activator.class.getName(), sourceMethod);
+		}
 	}
 
 	/* (non-Javadoc)
 	 * @see org.eclipse.core.runtime.Plugin#stop(org.osgi.framework.BundleContext)
 	 */
 	@Override
-	public void stop(BundleContext arg0) throws Exception {
+	public void stop(BundleContext context) throws Exception {
+		final String sourceMethod = "stop"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(Activator.class.getName(), sourceMethod, new Object[]{context});
+		}
+		super.stop(context);
+		// Shutdown the aggregator instances
+		ServiceReference[] refs = context.getServiceReferences(IAggregator.class.getName(), null);
+		if (refs != null) {
+			for (ServiceReference ref : refs) {
+				AggregatorImpl aggr = (AggregatorImpl)context.getService(ref);
+				if (aggr != null) {
+					try {
+						aggr.shutdown();
+					} catch (Exception e) {
+						if (log.isLoggable(Level.SEVERE)) {
+							log.log(Level.SEVERE, e.getMessage(), e);
+						}
+					}
+				}
+			}
+		}
+
 		for (ServiceRegistration reg : serviceRegistrations) {
 			reg.unregister();
 		}
@@ -105,13 +136,17 @@ public class Activator extends Plugin implements BundleActivator {
 			executors.shutdown();
 		}
 		this.executors = null;
-		this.context = null;
+		Activator.context = null;
+
+		if (isTraceLogging) {
+			log.exiting(Activator.class.getName(), sourceMethod);
+		}
 	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.impl.CommandProvider#getBundleContext()
 	 */
-	protected BundleContext getBundleContext() {
+	static public BundleContext getBundleContext() {
 		return context;
 	}
 
@@ -124,6 +159,12 @@ public class Activator extends Plugin implements BundleActivator {
 	}
 
 	protected ServiceRegistration registerCommandProvider() throws InvalidSyntaxException {
+		final String sourceMethod = "registerCommandProvider"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(Activator.class.getName(), sourceMethod);
+		}
+
 		ServiceRegistration result = null;
 		Properties dict = new Properties();
 		// If CommandProcessor service is available, then register the felix command processor
@@ -158,6 +199,9 @@ public class Activator extends Plugin implements BundleActivator {
 								org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
 								new AggregatorCommandProvider(context), dict);
 			}
+		}
+		if (isTraceLogging) {
+			log.exiting(Activator.class.getName(), sourceMethod, result);
 		}
 		return result;
 	}
