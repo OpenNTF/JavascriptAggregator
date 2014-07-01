@@ -21,6 +21,8 @@ import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.PlatformServicesException;
 
+import com.ibm.jaggr.service.impl.Activator;
+
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.InvalidSyntaxException;
@@ -42,15 +44,15 @@ import java.util.logging.Logger;
 public class PlatformServicesImpl implements IPlatformServices {
 	private static final Logger log = Logger.getLogger(PlatformServicesImpl.class.getName());
 
-	private final BundleContext bundleContext;
+	private final Bundle contributingBundle;
 
-	public PlatformServicesImpl(BundleContext bc){
+	public PlatformServicesImpl(Bundle contributingBundle){
 		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{bc});
+			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{contributingBundle});
 		}
-		bundleContext = bc;
+		this.contributingBundle = contributingBundle;
 		if (isTraceLogging) {
 			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod);
 		}
@@ -72,6 +74,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		}
 		ServiceRegistrationOSGi serviceRegistrationOSGi = null;
 		ServiceRegistration serviceRegistration = null;
+		BundleContext bundleContext = Activator.getBundleContext();
 		if (bundleContext != null) {
 			serviceRegistration = bundleContext.registerService(clazz, service,
 					properties);
@@ -98,6 +101,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		}
 		ServiceReferenceOSGi[] refs = null;
 		try {
+			BundleContext bundleContext = Activator.getBundleContext();
 			if (bundleContext != null) {
 				ServiceReference[] platformRefs = bundleContext.getServiceReferences(clazz, filter);
 				if (platformRefs != null) {
@@ -131,6 +135,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, serviceReference);
 		}
 		Object result = null;
+		BundleContext bundleContext = Activator.getBundleContext();
 		if (bundleContext != null) {
 			result = bundleContext
 					.getService((ServiceReference) serviceReference.getPlatformObject());
@@ -155,6 +160,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{serviceReference});
 		}
 		boolean result = false;
+		BundleContext bundleContext = Activator.getBundleContext();
 		if (bundleContext != null) {
 			result = bundleContext
 					.ungetService((ServiceReference) serviceReference.getPlatformObject());
@@ -178,8 +184,8 @@ public class PlatformServicesImpl implements IPlatformServices {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{resourceName});
 		}
 		URL result = null;
-		if (bundleContext != null) {
-			result = bundleContext.getBundle().getResource(resourceName);
+		if (contributingBundle != null) {
+			result = contributingBundle.getResource(resourceName);
 		}
 		if (isTraceLogging) {
 			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
@@ -201,28 +207,8 @@ public class PlatformServicesImpl implements IPlatformServices {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
 		}
 		Dictionary<String, String> result = null;
-		if (bundleContext != null && bundleContext.getBundle() != null) {
-			result = bundleContext.getBundle().getHeaders();
-		}
-		if (isTraceLogging) {
-			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
-		}
-		return result;
-	}
-
-	@Override
-	public boolean isShuttingdown() {
-		final String sourceMethod = "isShuttingdown"; //$NON-NLS-1$
-		boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
-		}
-		boolean result = false;
-		if (bundleContext != null) {
-			int bundleState = bundleContext.getBundle().getState();
-			if (bundleState == Bundle.ACTIVE || bundleState == Bundle.STOPPING) {
-				result = true;
-			}
+		if (contributingBundle != null) {
+			result = contributingBundle.getHeaders();
 		}
 		if (isTraceLogging) {
 			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
@@ -238,7 +224,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod);
 		}
 		URI result = new URI("namedbundleresource://" +  //$NON-NLS-1$
-				bundleContext.getBundle().getSymbolicName()  + "/"); //$NON-NLS-1$
+				contributingBundle.getSymbolicName()  + "/"); //$NON-NLS-1$
 
 		if (isTraceLogging) {
 			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);

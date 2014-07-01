@@ -20,16 +20,21 @@ import static org.junit.Assert.assertEquals;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.resource.IResource;
 
+import com.ibm.jaggr.service.impl.Activator;
+
 import com.google.common.collect.ImmutableList;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.powermock.api.easymock.PowerMock;
+import org.powermock.core.classloader.annotations.PrepareForTest;
+import org.powermock.modules.junit4.PowerMockRunner;
 import org.powermock.reflect.Whitebox;
 
 import java.io.File;
@@ -48,6 +53,8 @@ import java.util.Map;
 
 import junit.framework.Assert;
 
+@RunWith(PowerMockRunner.class)
+@PrepareForTest(Activator.class)
 public class BundleResourceFactoryTest {
 
 	static private Map<String, Bundle> bundleNameMap = new HashMap<String, Bundle>();
@@ -138,18 +145,21 @@ public class BundleResourceFactoryTest {
 		URL fileUrl = new URL("file:///temp/path/name.ext");
 		URL bundleUrl = new URL(null, "bundleresource://25-5/path/name.ext", new DummyStreamHandler());
 		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
+		Bundle mockContributingBundle = EasyMock.createNiceMock(Bundle.class);
 		ServiceReference mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
 		URLConverter mockUrlConverter = EasyMock.createMock(URLConverter.class);
+		PowerMock.mockStatic(Activator.class);
+		EasyMock.expect(Activator.getBundleContext()).andReturn(mockContext).anyTimes();
 
 		/*
 		 * Test when URLConverter.toFileUrl returns a value
 		 */
 		factory = new TestBundleResourceFactory();
-		factory.setInitializationData(mockContext, mockUrlConverterSR);
+		factory.setInitializationData(mockContributingBundle, mockUrlConverterSR);
 		EasyMock.expect(mockContext.getService(mockUrlConverterSR)).andReturn(mockUrlConverter).once();
 		EasyMock.expect(mockContext.ungetService(mockUrlConverterSR)).andReturn(true).once();
 		EasyMock.expect(mockUrlConverter.toFileURL(bundleUrl)).andReturn(fileUrl);
-		EasyMock.replay(mockContext, mockUrlConverterSR, mockUrlConverter);
+		PowerMock.replay(Activator.class, mockContributingBundle, mockContext, mockUrlConverterSR, mockUrlConverter);
 		IResource res = factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
 		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));

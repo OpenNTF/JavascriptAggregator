@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.impl.resource.ResolverResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.PathUtil;
 
+import com.ibm.jaggr.service.impl.Activator;
 import com.ibm.jaggr.service.impl.AggregatorImpl;
 
 import org.eclipse.core.runtime.Platform;
@@ -47,7 +48,7 @@ import java.util.logging.Logger;
 public class BundleResourceFactory extends FileResourceFactory implements IExtensionInitializer {
 	static final Logger log = Logger.getLogger(BundleResourceFactory.class.getName());
 
-	private BundleContext context;
+	private Bundle contributingBundle;
 	private ServiceReference urlConverterSR;
 	private Object resolver;
 	private Method resolverGetBundleMethod;
@@ -66,6 +67,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 
 	@Override
 	public IResource newResource(URI uri) {
+		BundleContext context = Activator.getBundleContext();
 		IResource result = null;
 		String scheme = uri.getScheme();
 		if ("bundleresource".equals(scheme) || "bundleentry".equals(scheme)) { //$NON-NLS-1$ //$NON-NLS-2$
@@ -140,24 +142,24 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	/*
 	 * Package-private initializer for unit testing
 	 */
-	void setInitializationData(BundleContext context, ServiceReference urlConverterSR) {
-		if (this.context != null || this.urlConverterSR != null) {
+	void setInitializationData(Bundle contributingBundle, ServiceReference urlConverterSR) {
+		if (this.contributingBundle != null || this.urlConverterSR != null) {
 			throw new IllegalStateException();
 		}
-		this.context = context;
+		this.contributingBundle = contributingBundle;
 		this.urlConverterSR = urlConverterSR;
 	}
 
 	@Override
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
-		context = ((AggregatorImpl)aggregator).getBundleContext();
-		urlConverterSR = context.getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
+		contributingBundle = ((AggregatorImpl)aggregator).getContributingBundle();
+		urlConverterSR = Activator.getBundleContext().getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
 
 		// Try to load the BundleResolver class (will fail if not on OSGi 4.3).
 		try {
 			Class<?> resolverClass = Class.forName("com.ibm.jaggr.service.impl.resource.BundleResolver"); //$NON-NLS-1$
 			Constructor<?> ctor = resolverClass.getConstructor(new Class[]{Bundle.class});
-			resolver = ctor.newInstance(new Object[]{context.getBundle()});
+			resolver = ctor.newInstance(new Object[]{contributingBundle});
 			resolverGetBundleMethod = resolverClass.getMethod("getBundle", new Class[]{String.class}); //$NON-NLS-1$
 		} catch (ClassNotFoundException e) {
 			if (log.isLoggable(Level.FINE)) {

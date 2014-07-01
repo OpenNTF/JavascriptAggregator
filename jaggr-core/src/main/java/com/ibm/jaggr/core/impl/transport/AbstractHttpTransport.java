@@ -587,9 +587,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void shutdown(IAggregator aggregator) {
 		// unregister the service registrations
 		for (IServiceRegistration reg : serviceRegistrations) {
-			if (reg != null) {
-				reg.unregister();
-			}
+			reg.unregister();
 		}
 		serviceRegistrations.clear();
 	}

@@ -17,8 +17,8 @@
 package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.IServiceRegistration;
+import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
@@ -47,8 +47,10 @@ import java.io.Reader;
 import java.io.Serializable;
 import java.io.Writer;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -78,13 +80,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	private IAggregator _aggregator;
 
-	private IServiceRegistration _shutdownListener = null;
-
-	private IServiceRegistration _configUpdateListener = null;
-
-	private IServiceRegistration _depsUpdateListener = null;
-
-	private IServiceRegistration _optionsUpdateListener = null;
+	private List<IServiceRegistration> _serviceRegistrations = new ArrayList<IServiceRegistration>();
 
 	private long updateSequenceNumber = 0;
 
@@ -194,19 +190,19 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if(_aggregator.getPlatformServices() != null){
 			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_shutdownListener =  _aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict);
+			_serviceRegistrations.add(_aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 
 			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_configUpdateListener =  _aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict);
+			_serviceRegistrations.add(_aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, dict));
 
 			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_depsUpdateListener =  _aggregator.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict);
+			_serviceRegistrations.add(_aggregator.getPlatformServices().registerService(IDependenciesListener.class.getName(), this, dict));
 
 			dict = new Hashtable<String, String>();
 			dict.put("name", aggregator.getName()); //$NON-NLS-1$
-			_optionsUpdateListener =  _aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict);
+			_serviceRegistrations.add(_aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));
 		}
 
 		optionsUpdated(aggregator.getOptions(), 1);
@@ -253,18 +249,10 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
-		if (_shutdownListener != null) {
-			_shutdownListener.unregister();
+		for(IServiceRegistration reg : _serviceRegistrations) {
+			reg.unregister();
 		}
-		if (_configUpdateListener != null) {
-			_configUpdateListener.unregister();
-		}
-		if (_depsUpdateListener != null) {
-			_depsUpdateListener.unregister();
-		}
-		if (_optionsUpdateListener != null) {
-			_optionsUpdateListener.unregister();
-		}
+		_serviceRegistrations.clear();
 
 		// Serialize the cache metadata one last time
 		serializeCache();

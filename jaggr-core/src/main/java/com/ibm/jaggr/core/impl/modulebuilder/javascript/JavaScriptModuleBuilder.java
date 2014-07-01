@@ -248,6 +248,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		for (IServiceRegistration reg : registrations) {
 			reg.unregister();
 		}
+		registrations.clear();
 	}
 
 	@Override

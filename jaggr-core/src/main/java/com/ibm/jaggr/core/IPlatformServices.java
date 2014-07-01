@@ -106,13 +106,6 @@ public interface IPlatformServices {
 	public Dictionary<String, String> getHeaders();
 
 	/**
-	 * This method returns true when the platform is shutting down.
-	 *
-	 * @return boolean
-	 */
-	public boolean isShuttingdown();
-
-	/**
 	 * This method returns the URI pointing to the context root of the consuming application.
 	 *
 	 * @return URI object pointing to the context root of the consuming application.
