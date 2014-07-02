@@ -44,7 +44,7 @@ public class AbstractAggregatorImplTest {
 		File optionsDir = Files.createTempDir();
 		try {
 			final IOptions mockOptions = EasyMock.createMock(IOptions.class);
-			EasyMock.expect(mockOptions.getCacheDirectory()).andReturn(null).times(2);
+			EasyMock.expect(mockOptions.getCacheDirectory()).andReturn(null).anyTimes();
 			TestAggregatorImpl aggregator = EasyMock.createMockBuilder(TestAggregatorImpl.class)
 					.addMockedMethod("getOptions")
 					.addMockedMethod("getName")
@@ -53,18 +53,24 @@ public class AbstractAggregatorImplTest {
 				public IOptions answer() throws Throwable {
 					return mockOptions;
 				}
-			}).times(3);
-			EasyMock.expect(aggregator.getName()).andReturn("tester").times(3);
+			}).anyTimes();
+			EasyMock.expect(aggregator.getName()).andReturn("tester").anyTimes();
 			EasyMock.replay(mockOptions, aggregator);
 			File result = aggregator.initWorkingDirectory(defaultDir, null, "69");
-			Assert.assertEquals(new File(defaultDir, "tester/69"), result);
-			Assert.assertTrue(new File(defaultDir, "tester/69").exists());
+			Assert.assertEquals(new File(defaultDir, "69/tester"), result);
+			Assert.assertTrue(new File(defaultDir, "69/tester").exists());
 
 			// Change bundle id and make sure new bundle dir is create and old one is deleted
 			result = aggregator.initWorkingDirectory(defaultDir, null, "70");
-			Assert.assertEquals(new File(defaultDir, "tester/70"), result);
-			Assert.assertTrue(new File(defaultDir, "tester/70").exists());
-			Assert.assertFalse(new File(defaultDir, "tester/69").exists());
+			Assert.assertEquals(new File(defaultDir, "70/tester"), result);
+			Assert.assertTrue(new File(defaultDir, "70/tester").exists());
+			Assert.assertFalse(new File(defaultDir, "69/tester").exists());
+
+			// make sure that retained versions aren't deleted
+			result = aggregator.initWorkingDirectory(defaultDir, null, "71", Arrays.asList(new String[]{"70"}));
+			Assert.assertEquals(new File(defaultDir, "71/tester"), result);
+			Assert.assertTrue(new File(defaultDir, "71/tester").exists());
+			Assert.assertTrue(new File(defaultDir, "70/tester").exists());
 
 			// Make sure that cache directory specified in options is honored
 			EasyMock.verify(mockOptions);
@@ -72,10 +78,10 @@ public class AbstractAggregatorImplTest {
 			EasyMock.expect(mockOptions.getCacheDirectory()).andReturn(optionsDir.toString()).times(1);
 			EasyMock.replay(mockOptions);
 			result = aggregator.initWorkingDirectory(defaultDir, null, "70");
-			Assert.assertEquals(new File(optionsDir, "tester/70"), result);
-			Assert.assertTrue(new File(optionsDir, "tester/70").exists());
-
+			Assert.assertEquals(new File(optionsDir, "70/tester"), result);
+			Assert.assertTrue(new File(optionsDir, "70/tester").exists());
 			EasyMock.verify(mockOptions, aggregator);
+
 		} finally {
 			TestUtils.deleteRecursively(defaultDir);
 			TestUtils.deleteRecursively(optionsDir);

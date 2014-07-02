@@ -52,11 +52,13 @@ import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -196,14 +198,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			initOptions(initParams);
 			initialize();
 
-			String versionString = Long.toString(bundleContext.getBundle().getBundleId());
-			if (TypeUtil.asBoolean(getConfig().getProperty(DISABLEBUNDLEIDDIRSOPING_PROPNAME, null)) ||
-				TypeUtil.asBoolean(getOptions().getOption(DISABLEBUNDLEIDDIRSOPING_PROPNAME))) {
-				versionString = null;
-			}
-			workdir = initWorkingDirectory( // this must be after initOptions
-					Platform.getStateLocation(bundleContext.getBundle()).toFile(), configMap,
-					versionString);
+			initWorkingDirectory(configMap); // this must be after initOptions
 
 			// Notify listeners
 			notifyConfigListeners(1);
@@ -265,6 +260,46 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			propValue = super.getPropValue(propName);
 		}
 		return propValue;
+	}
+
+	/**
+	 * Initialize the working directory for the servlet.  The working directory is in the plugin's
+	 * workspace directory (returned by {@link Platform#getStateLocation(Bundle)} and is
+	 * qualified with the id of the contributing bundle (so that multiple versions can co-exist
+	 * in the framework without stepping on each other and so that new versions will start with
+	 * a clean cache).
+	 *
+	 * @param configMap
+	 *            Map of config name/value pairs
+	 *
+	 * @throws FileNotFoundException
+	 */
+	protected void initWorkingDirectory(Map<String, String> configMap) throws FileNotFoundException {
+		final String sourceMethod = "initWorkingDirectory"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configMap});
+		}
+		String versionString = Long.toString(contributingBundle.getBundleId());
+		if (TypeUtil.asBoolean(getConfig().getProperty(DISABLEBUNDLEIDDIRSOPING_PROPNAME, null)) ||
+			TypeUtil.asBoolean(getOptions().getOption(DISABLEBUNDLEIDDIRSOPING_PROPNAME))) {
+			versionString = null;
+		}
+		// Add the list of bundle ids with the same symbolic name as the contributing bundle so
+		// that the subdirectories for any bundles still installed on the system won't be deleted.
+		Collection<String> versionsToRetain = new HashSet<String>();
+		Bundle[] bundles = Platform.getBundles(contributingBundle.getSymbolicName(), null);
+		for (Bundle bundle : bundles) {
+			versionsToRetain.add(Long.toString(bundle.getBundleId()));
+		}
+
+		File baseDir = new File(Platform.getStateLocation(contributingBundle).toFile(), "JAGGR"); //$NON-NLS-1$
+		baseDir.mkdir();
+		workdir = super.initWorkingDirectory(baseDir, configMap, versionString, versionsToRetain);
+
+		if (isTraceLogging) {
+			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+		}
 	}
 
 	protected void initOptions(InitParams initParams) throws InvalidSyntaxException {

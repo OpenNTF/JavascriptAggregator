@@ -73,11 +73,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Dictionary;
 import java.util.HashMap;
@@ -1077,6 +1080,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		throw new NotSerializableException();
 	}
 
+	protected File initWorkingDirectory(File defaultLocation, Map<String, String> configMap, String versionString) throws FileNotFoundException {
+		return initWorkingDirectory(defaultLocation, configMap, versionString, Collections.<String>emptySet());
+	}
+
 	/**
 	 * Returns the working directory for this aggregator.
 	 * <p>
@@ -1084,17 +1091,36 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 * initialize the aggregator using a different working directory. Use the public
 	 * {@link #getWorkingDirectory()} method to get the working directory from an initialized
 	 * aggregator.
+	 * <p>
+	 * The working directory returned by this method will be located at
+	 * <code>&lt;defaultLocation&gt;/&lt;versionString&gt;/&lt;aggregator name&gt;</code>
+	 * <p>
+	 * If the directory <code>&lt;defaultLocation&gt;/&lt;versionString&gt;</code> does not already
+	 * exist when this method is called, then any files in <code>defaultLocation</code> and any
+	 * subdirectories in <code>defaultLocation</code> that are not listed in
+	 * <code>retaindedVersions</code> <strong>WILL BE DELETED</strong>.
 	 *
 	 * @param defaultLocation
-	 *            the default, unversioned, directory location
+	 *            The default, unversioned, directory location. The aggregator assumes that it owns
+	 *            this directory and all the files in it.
 	 * @param configMap
 	 *            the map of config name/value pairs
 	 * @param versionString
 	 *            the version string to qualify the directory location
+	 * @param retainedVersions
+	 *            collection of versions to retain when deleting stale version subdirectories.
+	 *
 	 * @return The {@code File} object for the working directory
 	 * @throws FileNotFoundException
 	 */
-	protected File initWorkingDirectory(File defaultLocation, Map<String, String> configMap, String versionString) throws FileNotFoundException {
+	protected File initWorkingDirectory(File defaultLocation, Map<String, String> configMap, String versionString, Collection<String> retainedVersions)
+			throws FileNotFoundException {
+
+		final String sourceMethod = "initWorkingDirectory"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{defaultLocation, configMap, versionString, retainedVersions});
+		}
 		String dirName = getOptions().getCacheDirectory();
 		File dirFile = null;
 		if (dirName == null) {
@@ -1107,19 +1133,47 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		if (!dirFile.exists()) {
 			throw new FileNotFoundException(dirFile.toString());
 		}
+		if (versionString == null || versionString.length() == 0) {
+			versionString = "default"; //$NON-NLS-1$
+		}
 		// Create a directory using the alias name within the contributing bundle's working
 		// directory
-		File workDir = new File(dirFile, getName());
-		// Create a bundle-version specific subdirectory.  If the directory doesn't exist, assume
-		// the bundle has been updated and clean out the workDir to remove all stale cache files.
-		File servletDir = versionString != null ? new File(workDir, versionString) : workDir;
+		File versionDir = new File(dirFile, versionString);
+		if (!versionDir.exists()) {
+			// Iterate through the default directory, deleting subdirectories who's names are not
+			// included in retainedVersions
+			File[] files = dirFile.listFiles();
+			for (File file : files) {
+				if (file.isDirectory()) {
+					if (!retainedVersions.contains(file.getName())) {
+						if (isTraceLogging) {
+							log.finer("deleting directory " + file.getAbsolutePath()); //$NON-NLS-1$
+						}
+						FileUtils.deleteQuietly(file);
+					}
+				} else {
+					// loose file in top level directory.  Delete it
+					if (isTraceLogging) {
+						log.finer("Deleting file " + file.getAbsolutePath()); //$NON-NLS-1$
+					}
+					file.delete();
+				}
+			}
+		}
 
-		if (!servletDir.exists()) {
-			FileUtils.deleteQuietly(workDir);
+		File servletDir = null;
+		try {
+			servletDir = new File(versionDir, URLEncoder.encode(getName(), "UTF-8")); //$NON-NLS-1$
+		} catch (UnsupportedEncodingException e) {
+			// Should never happen
+			throw new RuntimeException(e);
 		}
 		servletDir.mkdirs();
 		if (!servletDir.exists()) {
 			throw new FileNotFoundException(servletDir.getAbsolutePath());
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, servletDir);
 		}
 		return servletDir;
 	}
