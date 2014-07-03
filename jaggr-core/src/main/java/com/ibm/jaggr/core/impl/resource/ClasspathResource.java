@@ -142,9 +142,8 @@ public class ClasspathResource implements IResource {
 			if (classpathUriString.startsWith("jar:")) { //$NON-NLS-1$
 				classpathUriString = classpathUriString.substring(4);
 			}
-		System.out.println("original " + classpathUriString);
+
 		fileUri = new URI(classpathUriString).resolve(relative);
-		System.out.println("final " + fileUri);
 		finalclasspathString = getScheme() +":/" + fileUri; //$NON-NLS-1$
 		finalFileUri = new URI(finalclasspathString);
 		classpathResource = newInstance(finalFileUri);
