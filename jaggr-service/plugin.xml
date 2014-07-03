@@ -46,7 +46,7 @@
 		         class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
 		<factory scheme="namedbundleresource"
 		         class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
-		<factory scheme="classPath"
+		<factory scheme="classpath"
 		         class="com.ibm.jaggr.core.impl.resource.ClasspathResourceFactory"/>
 		<factory scheme="jar"
 		         class="com.ibm.jaggr.core.impl.resource.JarResourceFactory"/>

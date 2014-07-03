@@ -20,7 +20,6 @@ import com.ibm.jaggr.core.resource.IResource;
 
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -41,44 +40,16 @@ public class JarResource extends ClasspathResource {
 		super(entry, entries);
 	}
 
-	@Override
-	public String getPath() {
-		return "jar:///" + zipFileEntry; //$NON-NLS-1$
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.net.URI)
-	 */
-	@Override
-	public IResource resolve(String relative) {
-		String jarUriString, finaljarString = null;
-		URI fileUri, finalFileUri = null;
-		JarResource jarResource = null;
-		try {
-			jarUriString = getURI().toString();
-			if (jarUriString.startsWith("jar:")) { //$NON-NLS-1$
-				jarUriString = jarUriString.substring(4);
-			}
-
-			fileUri = new URI(jarUriString).resolve(relative);
-			finaljarString = "jar:/" + fileUri; //$NON-NLS-1$
-			finalFileUri = new URI(finaljarString);
-
-		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING)) {
-				log.log(Level.WARNING, e.getMessage(), e);
-			}
-		}
-		if (finalFileUri == null)
-			jarResource = newInstance(getURI().resolve(relative));
-		else
-			jarResource = newInstance(finalFileUri);
-		return jarResource;
-	}
-
 	protected JarResource newInstance(URI uri) {
 		return (JarResource) new ClasspathResourceFactory().newResource(uri);
+	}
+
+	/**
+	 * A utility method to return the scheme associated with this resource
+	 * @return Scheme associated with the resource.
+	 */
+	@Override
+	protected String getScheme(){
+		return "jar"; //$NON-NLS-1$
 	}
 }

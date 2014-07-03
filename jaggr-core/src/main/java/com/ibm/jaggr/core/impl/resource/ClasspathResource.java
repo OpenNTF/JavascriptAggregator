@@ -98,7 +98,7 @@ public class ClasspathResource implements IResource {
 	 */
 	@Override
 	public String getPath() {
-		return "classpath:///" + zipFileEntry; //$NON-NLS-1$
+		return zipFileEntry;
 	}
 
 	/*
@@ -142,8 +142,10 @@ public class ClasspathResource implements IResource {
 			if (classpathUriString.startsWith("jar:")) { //$NON-NLS-1$
 				classpathUriString = classpathUriString.substring(4);
 			}
+		System.out.println("original " + classpathUriString);
 		fileUri = new URI(classpathUriString).resolve(relative);
-		finalclasspathString = "classpath:/" + fileUri; //$NON-NLS-1$
+		System.out.println("final " + fileUri);
+		finalclasspathString = getScheme() +":/" + fileUri; //$NON-NLS-1$
 		finalFileUri = new URI(finalclasspathString);
 		classpathResource = newInstance(finalFileUri);
 		} catch (Exception e) {
@@ -348,6 +350,14 @@ public class ClasspathResource implements IResource {
 
 		private static final long serialVersionUID = 1L;
 
+	}
+
+	/**
+	 * A utility method to return the scheme associated with this resource
+	 * @return Scheme associated with the resource.
+	 */
+	protected String getScheme(){
+		return "classpath"; //$NON-NLS-1$
 	}
 
 
