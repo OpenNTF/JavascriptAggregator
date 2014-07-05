@@ -48,6 +48,7 @@ public class ClasspathResource implements IResource {
 	 String zipFileEntry;
 	 ZipEntry zipEntry;
 	 ZipFile zipFile;
+	 String scheme;
 
 
 
@@ -58,8 +59,10 @@ public class ClasspathResource implements IResource {
 	 *            the entry within the jar
 	 * @param entries
 	 * 			  list of all entries within the jar
+	 * @param scheme Scheme associated with the resource
 	 */
-	public ClasspathResource(String entry, ArrayList<String> entries) {
+	public ClasspathResource(String entry, ArrayList<String> entries, String scheme) {
+		setScheme(scheme);
 		zipEntryUri = entry;
 		zipFileEntries = entries;
 		try {
@@ -77,7 +80,9 @@ public class ClasspathResource implements IResource {
 				throw new ClassPathResourceException("Improper classpath resource"); //$NON-NLS-1$
 			}
 		} catch (Exception e) {
-			e.printStackTrace();
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, e.getMessage(), e);
+			}
 		}
 	}
 
@@ -98,7 +103,10 @@ public class ClasspathResource implements IResource {
 	 */
 	@Override
 	public String getPath() {
-		return zipFileEntry;
+		if(!zipFileEntry.startsWith("/")){//$NON-NLS-1$ // return the path preceded with /
+			return "/".concat(zipFileEntry); //$NON-NLS-1$
+		}else
+			return zipFileEntry;
 	}
 
 	/*
@@ -134,19 +142,14 @@ public class ClasspathResource implements IResource {
 	 */
 	@Override
 	public IResource resolve(String relative) {
-		String classpathUriString, finalclasspathString = null;
-		URI fileUri, finalFileUri = null;
+		URI finalFileUri = null;
 		ClasspathResource classpathResource = null;
 		try {
-			 classpathUriString = getURI().toString();
-			if (classpathUriString.startsWith("jar:")) { //$NON-NLS-1$
-				classpathUriString = classpathUriString.substring(4);
-			}
-
-		fileUri = new URI(classpathUriString).resolve(relative);
-		finalclasspathString = getScheme() +":/" + fileUri; //$NON-NLS-1$
-		finalFileUri = new URI(finalclasspathString);
-		classpathResource = newInstance(finalFileUri);
+			URI pathOnlyUri = new URI(getPath()); // should start with '/');
+			URI resolved = pathOnlyUri.resolve(relative);
+			int idx = getURI().toString().indexOf("!/"); //$NON-NLS-1$
+			finalFileUri = new URI(getURI().toString().substring(0, idx+1) + resolved.getPath());
+			classpathResource = newInstance(finalFileUri);
 		} catch (Exception e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
@@ -356,7 +359,15 @@ public class ClasspathResource implements IResource {
 	 * @return Scheme associated with the resource.
 	 */
 	protected String getScheme(){
-		return "classpath"; //$NON-NLS-1$
+		return scheme;
+	}
+
+	/**
+	 * A utility method to set the scheme associated with this resource
+	 * @param sch Scheme for this resource.
+	 */
+	protected void setScheme(String sch){
+		scheme = sch;
 	}
 
 

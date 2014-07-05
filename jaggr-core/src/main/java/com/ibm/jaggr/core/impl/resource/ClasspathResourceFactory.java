@@ -76,9 +76,9 @@ public class ClasspathResourceFactory implements IResourceFactory {
 						String resourceName = zipFileEntry.startsWith("/") ? zipFileEntry.substring(1) : zipFileEntry; //$NON-NLS-1$
 						if (resourceMap.get(classpathName).contains(resourceName)) {
 							if ("classpath".equals(scheme)) {//$NON-NLS-1$
-								result = new ClasspathResource(filePath, resourceMap.get(classpathName));
+								result = new ClasspathResource(filePath, resourceMap.get(classpathName), "classpath"); //$NON-NLS-1$
 							} else if ("jar".equals(scheme)) {//$NON-NLS-1$
-								result = new JarResource(filePath, resourceMap.get(classpathName));
+								result = new ClasspathResource(filePath, resourceMap.get(classpathName), "jar"); //$NON-NLS-1$
 							}
 						} else {
 							result = new NotFoundResource(uri);
