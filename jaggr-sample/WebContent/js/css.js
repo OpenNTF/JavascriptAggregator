@@ -18,8 +18,9 @@ define([
 	'dojo/_base/window',
 	'dojo/_base/html',
 	'dojo/dom-construct',
-	'dojo/has'
-], function(req, dwindow, dhtml, domConstruct, has, lesspp){
+	'dojo/has',
+	'dojo/text'
+], function(req, dwindow, dhtml, domConstruct, has){
 	/*
 	 * module:
 	 *    css
@@ -102,7 +103,7 @@ define([
 			loading.push(requestToken);
 
 			var pathParts = url.split('?').shift().split('/');
-			parentRequire(['text!' + absMid], function (text) {
+			parentRequire(['dojo/text!' + absMid], function (text) {
 				// Check if we need to compile LESS client-side
 				if (/\.less(?:$|\?)/.test(absMid) && !has('dojo-combo-api')) {
 					processLess(text);
