@@ -40,7 +40,8 @@
 
 			paths: {
 				js: "res/js",
-				theme: "res/theme"
+				theme: "res/theme",
+				lesspp: "//cdnjs.cloudflare.com/ajax/libs/less.js/1.7.3/less.min"
 			},
 
 		has: {
