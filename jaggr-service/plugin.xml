@@ -49,7 +49,7 @@
 		<factory scheme="classpath"
 		         class="com.ibm.jaggr.core.impl.resource.ClasspathResourceFactory"/>
 		<factory scheme="jar"
-		         class="com.ibm.jaggr.core.impl.resource.JarResourceFactory"/>
+		         class="com.ibm.jaggr.core.impl.resource.ClasspathResourceFactory"/>
 	</extension>
 
 	<extension
