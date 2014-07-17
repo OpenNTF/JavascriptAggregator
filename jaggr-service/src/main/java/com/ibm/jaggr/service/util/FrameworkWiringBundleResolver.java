@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ibm.jaggr.service.impl.resource;
+package com.ibm.jaggr.service.util;
+
+import com.ibm.jaggr.service.IBundleResolver;
 
 import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
@@ -34,8 +36,8 @@ import java.util.logging.Logger;
  * selected by the namedbundleresource protocol will be resolved in the same way that they
  * are resolved by the class loader.
  */
-public class BundleResolver {
-	static final Logger log = Logger.getLogger(BundleResolver.class.getName());
+public class FrameworkWiringBundleResolver implements IBundleResolver {
+	static final Logger log = Logger.getLogger(FrameworkWiringBundleResolver.class.getName());
 
 	/**
 	 * The bundle that loaded the aggregator bundle.
@@ -53,11 +55,11 @@ public class BundleResolver {
 	 * @param contributingBundle
 	 *            The bundle that loaded the aggregator bundle.
 	 */
-	public BundleResolver(Bundle contributingBundle) {
+	public FrameworkWiringBundleResolver(Bundle contributingBundle) {
 		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(BundleResolver.class.getName(), sourceMethod, new Object[]{contributingBundle});
+			log.entering(FrameworkWiringBundleResolver.class.getName(), sourceMethod, new Object[]{contributingBundle});
 		}
 		this.contributingBundle = contributingBundle;
 		Bundle systemBundle = contributingBundle.getBundleContext().getBundle(0);
@@ -81,7 +83,7 @@ public class BundleResolver {
 		}
 
 		if (isTraceLogging) {
-			log.exiting(BundleResolver.class.getName(), sourceMethod);
+			log.exiting(FrameworkWiringBundleResolver.class.getName(), sourceMethod);
 		}
 	}
 
@@ -96,7 +98,7 @@ public class BundleResolver {
 		final String sourceMethod = "getBundle"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(BundleResolver.class.getName(), sourceMethod, new Object[]{symbolicName});
+			log.entering(FrameworkWiringBundleResolver.class.getName(), sourceMethod, new Object[]{symbolicName});
 		}
 		Bundle[] candidates = Platform.getBundles(symbolicName, null);
 		if (isTraceLogging) {
@@ -104,21 +106,21 @@ public class BundleResolver {
 		}
 		if (candidates == null || candidates.length == 0) {
 			if (isTraceLogging) {
-				log.exiting(BundleResolver.class.getName(), sourceMethod, null);
+				log.exiting(FrameworkWiringBundleResolver.class.getName(), sourceMethod, null);
 			}
 			return null;
 		}
 		if (candidates.length == 1) {
 			// Only one choice, so return it
 			if (isTraceLogging) {
-				log.exiting(BundleResolver.class.getName(), sourceMethod, candidates[0]);
+				log.exiting(FrameworkWiringBundleResolver.class.getName(), sourceMethod, candidates[0]);
 			}
 			return candidates[0];
 		}
 		if (fw == null) {
 			if (isTraceLogging) {
 				log.finer("Framework wiring not available.  Returning bundle with latest version"); //$NON-NLS-1$
-				log.exiting(BundleResolver.class.getName(), sourceMethod, candidates[0]);
+				log.exiting(FrameworkWiringBundleResolver.class.getName(), sourceMethod, candidates[0]);
 			}
 			return candidates[0];
 		}
@@ -144,7 +146,7 @@ public class BundleResolver {
 			result =  candidates[0];
 		}
 		if (isTraceLogging) {
-			log.exiting(BundleResolver.class.getName(), sourceMethod, result);
+			log.exiting(FrameworkWiringBundleResolver.class.getName(), sourceMethod, result);
 		}
 		return result;
 	}

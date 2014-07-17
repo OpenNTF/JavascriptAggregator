@@ -22,8 +22,11 @@ import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfigScopeModifier;
 
+import com.ibm.jaggr.service.IBundleResolver;
+import com.ibm.jaggr.service.impl.AggregatorImpl;
+import com.ibm.jaggr.service.util.BundleResolverFactory;
+
 import org.apache.commons.codec.binary.Base64;
-import org.eclipse.core.runtime.Platform;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeArray;
@@ -74,6 +77,9 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 
 	private String propName = null;		// the name of the function (specified by plugin.xml)
 
+	private Bundle contributingBundle = null;
+	private IBundleResolver bundleResolver;
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.config.IConfigScopeModifier#modifyScope(com.ibm.jaggr.core.IAggregator, org.mozilla.javascript.Context, org.mozilla.javascript.Scriptable)
 	 */
@@ -84,7 +90,7 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 		if (isTraceLogging) {
 			log.entering(BundleVersionsHash.class.getName(), sourceMethod, new Object[]{aggregator, scope});
 		}
-		FunctionObject fn = new FunctionObject((Scriptable)scope);
+		FunctionObject fn = new FunctionObject((Scriptable)scope, this);
 		ScriptableObject.putProperty((Scriptable)scope, propName, fn);
 		if (isTraceLogging) {
 			log.exiting(BundleVersionsHash.class.getName(), sourceMethod);
@@ -111,6 +117,11 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 		if (isTraceLogging) {
 			log.finer("propName = " + propName); //$NON-NLS-1$
 		}
+		if (aggregator instanceof AggregatorImpl) {		// can be an IAggregator mock when unit testing
+			contributingBundle = ((AggregatorImpl)aggregator).getContributingBundle();
+		}
+		bundleResolver = BundleResolverFactory.getResolver(contributingBundle);
+
 		if (isTraceLogging) {
 			log.exiting(BundleVersionsHash.class.getName(), sourceMethod);
 		}
@@ -124,16 +135,15 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 	 * @return the bundle headers for the bundle.
 	 * @throws NotFoundException if no matching bundle is found.
 	 */
-	static private Dictionary<?, ?> getBundleHeaders(String bundleName) throws NotFoundException {
+	private Dictionary<?, ?> getBundleHeaders(String bundleName) throws NotFoundException {
 		final String sourceMethod = "getBundleHeaders"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(BundleVersionsHash.class.getName(), sourceMethod, new Object[]{bundleName});
 		}
 
-		// TODO: figure out how to get the same version of the bundle that was resolved for the
-		// current application
-		Bundle result = Platform.getBundle(bundleName);
+		Bundle result = ".".equals(bundleName) ? contributingBundle : bundleResolver.getBundle(bundleName); //$NON-NLS-1$
+
 		if (result == null) {
 			throw new NotFoundException("Bundle " + bundleName + " not found."); //$NON-NLS-1$ //$NON-NLS-2$
 		}
@@ -150,6 +160,8 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 
 		static final Set<String> defaultHeaders;
 
+		private BundleVersionsHash instance;
+
 		static {
 			try {
 				method = FunctionObject.class.getMethod("bundleVersionsHash", Context.class, Scriptable.class, Object[].class, Function.class); //$NON-NLS-1$
@@ -163,8 +175,9 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 			defaultHeaders = Collections.unmodifiableSet(headers);
 		}
 
-		FunctionObject(Scriptable scope) {
+		FunctionObject(Scriptable scope, BundleVersionsHash instance) {
 			super("bundleVersionsHash", method, scope); //$NON-NLS-1$
+			this.instance = instance;
 		}
 
 		public static Set<String> getHeaderNames(NativeArray nativeArray) {
@@ -206,7 +219,7 @@ public class BundleVersionsHash implements IExtensionInitializer, IConfigScopeMo
 					NativeArray nativeArray = (NativeArray)arg;
 					Object[] array = nativeArray.toArray(new Object[nativeArray.size()]);
 				} else if (arg instanceof String) {
-					Dictionary<?, ?> headers = BundleVersionsHash.getBundleHeaders(arg.toString());
+					Dictionary<?, ?> headers = javaThis.instance.getBundleHeaders(arg.toString());
 					for (String header : headersToInclude) {
 						Object obj = headers.get(header);
 						String value = obj.toString();

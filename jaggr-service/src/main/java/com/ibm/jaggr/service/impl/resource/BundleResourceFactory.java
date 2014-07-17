@@ -26,10 +26,11 @@ import com.ibm.jaggr.core.impl.resource.ResolverResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.PathUtil;
 
+import com.ibm.jaggr.service.IBundleResolver;
 import com.ibm.jaggr.service.impl.Activator;
 import com.ibm.jaggr.service.impl.AggregatorImpl;
+import com.ibm.jaggr.service.util.BundleResolverFactory;
 
-import org.eclipse.core.runtime.Platform;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -38,7 +39,6 @@ import org.osgi.framework.ServiceReference;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -50,8 +50,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 
 	private Bundle contributingBundle;
 	private ServiceReference urlConverterSR;
-	private Object resolver;
-	private Method resolverGetBundleMethod;
+	private IBundleResolver bundleResolver;
 
 	public BundleResourceFactory() {
 		super();
@@ -154,22 +153,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		contributingBundle = ((AggregatorImpl)aggregator).getContributingBundle();
 		urlConverterSR = Activator.getBundleContext().getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
-
-		// Try to load the BundleResolver class (will fail if not on OSGi 4.3).
-		try {
-			Class<?> resolverClass = Class.forName("com.ibm.jaggr.service.impl.resource.BundleResolver"); //$NON-NLS-1$
-			Constructor<?> ctor = resolverClass.getConstructor(new Class[]{Bundle.class});
-			resolver = ctor.newInstance(new Object[]{contributingBundle});
-			resolverGetBundleMethod = resolverClass.getMethod("getBundle", new Class[]{String.class}); //$NON-NLS-1$
-		} catch (ClassNotFoundException e) {
-			if (log.isLoggable(Level.FINE)) {
-				log.fine("Down level version of OSGi.  Bundle wiring support not available."); //$NON-NLS-1$
-			}
-		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING)) {
-				log.log(Level.WARNING, e.getMessage(), e);
-			}
-		}
+		bundleResolver = BundleResolverFactory.getResolver(contributingBundle);
 	}
 
 	@Override
@@ -233,19 +217,6 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	 * So that unit test cases can provide alternative implementation
 	 */
 	protected Bundle getBundle(String bundleName) {
-		Bundle result = null;
-		if (resolverGetBundleMethod != null) {
-			try {
-				result = (Bundle) resolverGetBundleMethod.invoke(resolver, new Object[]{bundleName});
-			} catch (Exception e) {
-				if (log.isLoggable(Level.WARNING)) {
-					log.log(Level.WARNING, e.getMessage(), e);
-				}
-				result = Platform.getBundle(bundleName);
-			}
-		} else {
-			result = Platform.getBundle(bundleName);
-		}
-		return result;
+		return bundleResolver.getBundle(bundleName);
 	}
 }
