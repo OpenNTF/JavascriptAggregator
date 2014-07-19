@@ -102,7 +102,7 @@ public class FrameworkWiringBundleResolver implements IBundleResolver {
 		}
 		Bundle[] candidates = Platform.getBundles(symbolicName, null);
 		if (isTraceLogging) {
-			log.finer("candidate bundles = " + candidates); //$NON-NLS-1$
+			log.finer("candidate bundles = " + Arrays.toString(candidates)); //$NON-NLS-1$
 		}
 		if (candidates == null || candidates.length == 0) {
 			if (isTraceLogging) {
