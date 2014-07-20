@@ -129,7 +129,7 @@ public class FrameworkWiringBundleResolver implements IBundleResolver {
 		for (Bundle candidate : candidates) {
 			Collection<Bundle> bundles = fw.getDependencyClosure(Arrays.asList(new Bundle[]{candidate}));
 			for (Bundle bundle : bundles) {
-				if (bundle == contributingBundle) {
+				if (bundle.equals(contributingBundle)) {
 					// found wired bundle.  Return the candidate.
 					result = candidate;
 					break;
