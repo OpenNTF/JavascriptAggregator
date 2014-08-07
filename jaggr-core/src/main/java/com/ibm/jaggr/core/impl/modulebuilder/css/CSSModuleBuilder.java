@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfig.IPackage;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
@@ -46,6 +47,8 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
 import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -377,7 +380,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			String fullMatch = m.group(0);
 			String importNameMatch = m.group(2);
 			String mediaTypes = m.group(4);
-
 			/*
 			 * CSS rules require that all @import statements appear before any
 			 * style definitions within a document. Most browsers simply ignore
@@ -400,12 +402,29 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// remove quotes.
 			importNameMatch = dequote(importNameMatch);
 			importNameMatch = forwardSlashPattern.matcher(importNameMatch).replaceAll("/"); //$NON-NLS-1$
+			if(importNameMatch.contains("../mixins")) {
+				String placeholder = "temp";
+				placeholder.trim();
+			}
 
-			// if name is not relative, then bail
 			if (importNameMatch.startsWith("/") || protocolPattern.matcher(importNameMatch).find()) { //$NON-NLS-1$
 				m.appendReplacement(buf, ""); //$NON-NLS-1$
 				buf.append(fullMatch);
 				continue;
+			}
+
+			//loop through the known modules checking if the import matches
+			for(String key: aggregator.getConfig().getPackages().keySet()) {
+				String importPackage = importNameMatch.split("/")[0];
+				IPackage tempPackage = aggregator.getConfig().getPackages().get(key);
+				String packageName = tempPackage.getName();
+				String packageLoc = tempPackage.getLocation().toString();
+
+				//check if the import is importing a known module
+				if(importPackage.equals(packageName)) {
+					importNameMatch = importNameMatch.replace(packageName + "/", (packageLoc));
+					break;
+				}
 			}
 
 			IResource importRes = res.resolve(importNameMatch);
@@ -485,6 +504,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 			m.appendTail(buf);
 			css = buf.toString();
+		}
+		if(css.contains("style-mixins")) {
+			String placeholder = "temp";
+			placeholder.trim();
 		}
 		return css;
 	}
