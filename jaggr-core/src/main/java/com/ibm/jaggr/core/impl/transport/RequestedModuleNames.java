@@ -17,6 +17,7 @@ package com.ibm.jaggr.core.impl.transport;
 
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.TypeUtil;
 
@@ -55,6 +56,8 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	private static final Pattern DECODE_JSON = Pattern.compile("([!()|*<>])"); //$NON-NLS-1$
 	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
+	protected static final String CONFIGPROP_IDLISTHASHERRMODULE = "idListHashErrorModule"; //$NON-NLS-1$
+
 	private List<String> modules = null;
 	private List<String> deps = Collections.emptyList();
 	private List<String> preloads = Collections.emptyList();
@@ -64,6 +67,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	private String moduleIdsQueryArg;
 	private final List<String> idList;
 	private final byte[] idListHash;
+	private byte[] base64decodedIdList = null;
 	private int count = 0;
 	// Instance of this object live only for the duration of a request, so ok to query trace logging flag in constructor
 	private final boolean isTraceLogging = log.isLoggable(Level.FINER);
@@ -96,6 +100,50 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				if (count < 1 || count > AbstractHttpTransport.REQUESTED_MODULES_MAX_COUNT) {
 					throw new BadRequestException("count:" + count); //$NON-NLS-1$
 				}
+			}
+			if (moduleIdsQueryArg.length() > 0) {
+				// Decode the id list so we can validate the id list hash
+				base64decodedIdList = Base64.decodeBase64(moduleIdsQueryArg);
+				if (isTraceLogging) {
+					log.finer("decoded = " + TypeUtil.byteArray2String(base64decodedIdList)); //$NON-NLS-1$
+				}
+
+				// Strip off hash code so we can validate
+				byte[] hash = Arrays.copyOf(base64decodedIdList, idListHash.length);
+				if (!Arrays.equals(hash, idListHash)) {
+					if (isTraceLogging) {
+						log.finer("Invalid hash in request" + TypeUtil.byteArray2String(hash)); //$NON-NLS-1$
+					}
+					/*
+					 * The hash in the request doesn't match the current hash, probably due to the request
+					 * being sent by stale cached javascript.  See if config specifies a module to return in
+					 * this case.  If not, the just throw BadRequestException.
+					 */
+					IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+					Object errModule = aggr.getConfig().getProperty(CONFIGPROP_IDLISTHASHERRMODULE, String.class);
+					if (errModule instanceof String) {
+						// Config specifies a module to return as the response (should be non-AMD).  Set
+						// the nocache attribute and set the specified module as the requested module.
+						// We use the 'scripts' property instead of 'modules' to ensure that any require
+						// list expansion done for the response will be done in line, avoiding use of the
+						// module id table.  This ensures that we won't get another id list hash error
+						// if the error module calls require() (after cleaning up loader state to
+						// account for requested modules that won't arrive) in order to load additional
+						// resources such as nls strings.
+						request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+						modules = Collections.emptyList();
+						scripts = Arrays.asList(new String[]{errModule.toString()});
+						count = 0;;
+						strRep = "scripts:" + scripts.toString(); //$NON-NLS-1$
+						if (log.isLoggable(Level.FINER)) {
+							log.exiting(RequestedModuleNames.class.getName(), sourceMethod, this);
+						}
+						return;
+					}
+					// No handler specified.  Throw an exception.
+					throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
+				}
+
 			}
 			try {
 				moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
@@ -267,20 +315,8 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{encoded, resultArray});
 		}
-		if (encoded != null && encoded.length() > 0) {
-			byte[] decoded = Base64.decodeBase64(encoded);
-			if (isTraceLogging) {
-				log.finer("decoded = " + TypeUtil.byteArray2String(decoded)); //$NON-NLS-1$
-			}
-
-			// Strip off hash code
-			byte[] hash = Arrays.copyOf(decoded, idListHash.length);
-			if (!Arrays.equals(hash, idListHash)) {
-				if (isTraceLogging) {
-					log.finer("Invalid hash in request" + TypeUtil.byteArray2String(hash)); //$NON-NLS-1$
-				}
-				throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
-			}
+		if (base64decodedIdList != null) {
+			byte[] decoded = base64decodedIdList;
 			// strip off base flag
 			boolean use32BitEncoding = decoded[idListHash.length] == 1;
 

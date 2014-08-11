@@ -22,8 +22,11 @@ import static org.junit.Assert.fail;
 
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
@@ -33,6 +36,8 @@ import org.easymock.EasyMock;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.io.File;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -389,8 +394,17 @@ public class RequestedModuleNamesTest {
 		String encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{0}), bytes));
 		System.out.println(encoded);
 		String resultArray[] = new String[11];
-		HttpServletRequest mockRequest = TestUtils.createMockRequest(null);
-		EasyMock.replay(mockRequest);
+
+		Ref<IConfig> configRef = new Ref<IConfig>(null);
+		File tmpDir = new File(System.getProperty("user.dir"));
+		IAggregator mockAggregator = TestUtils.createMockAggregator(configRef, tmpDir);
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParameters = new HashMap<String, String[]>();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, null);
+		EasyMock.replay(mockAggregator, mockRequest);
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encoded});
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM, new String[]{"4"});
 		RequestedModuleNames requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
 		requestedModules.decodeModuleIds(encoded, resultArray);
 		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar"},  resultArray);
@@ -406,6 +420,9 @@ public class RequestedModuleNamesTest {
 		}
 		encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{1}), bytes));
 		System.out.println(encoded);
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encoded});
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM, new String[]{"5"});
+		requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
 		resultArray = new String[13];
 		requestedModules.decodeModuleIds(encoded, resultArray);
 		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar",null,"bigId"},  resultArray);
@@ -413,11 +430,19 @@ public class RequestedModuleNamesTest {
 		// Make sure exception is thrown if hash is not correct
 		try {
 			encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(new byte[]{3, 2, 1}, bytes));
-			requestedModules.decodeModuleIds(encoded, new String[11]);
+			requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encoded});
+			requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
+			requestedModules.decodeModuleIds(encoded, new String[13]);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
 
 		}
+
+		// Make sure that request object specifies error module if configured instead of throwing exception
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{"+RequestedModuleNames.CONFIGPROP_IDLISTHASHERRMODULE+":'errModule'}"));
+		requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
+		Assert.assertEquals("scripts:[errModule]", requestedModules.toString());
+
 	}
 
 }
