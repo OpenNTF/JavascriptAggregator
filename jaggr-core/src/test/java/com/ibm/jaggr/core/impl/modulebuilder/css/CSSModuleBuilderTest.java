@@ -61,6 +61,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	static File tmpdir;
 	static File testdir;
+	static File testdirSML;
 	static final String base64PngData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAASCAYAAACaV7S8AAAAAXNSR0IArs4c6QAAACNJREFUCNdj+P///0cmBgaGJ0wMDAyPsbAgXIb////zMZACAIj0DUFA3QqvAAAAAElFTkSuQmCC";
 
 
@@ -89,6 +90,12 @@ public class CSSModuleBuilderTest extends EasyMock {
 		tmpdir = new File(System.getProperty("java.io.tmpdir"));
 		testdir = new File(tmpdir, "CSSModuleBuilderTest");
 		testdir.mkdir();
+		//mockAggregator.newResource(mockAggregator.getConfig().locateModuleResource("sml")).getURI().toString())
+		//create a second test directory in the sml folder
+		/**@TODO: need to make this the app folder for everyone*/
+//		tmpdir = new File("C:\\Users\\IBM_ADMIN\\workspace\\sequoia-module-library\\sml");
+//		testdirSML = new File(tmpdir, "CSSModuleBuilderTest");
+//		testdirSML.mkdir();
 	}
 
 	@AfterClass
@@ -180,6 +187,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		// create file to import
 		css = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
 		CopyUtil.copy(css, new FileWriter(new File(testdir, "imported.css")));
+
 		/*
 		 * Make sure imported css files get inlined
 		 */
@@ -305,9 +313,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		requestAttributes.remove(IHttpTransport.SHOWFILENAMES_REQATTRNAME);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".background-image:url('#images/img.jpg');", output);
-
 	}
-
 	@Test
 	public void testInlineUrls() throws Exception {
 		String css, output;
@@ -507,21 +513,22 @@ public class CSSModuleBuilderTest extends EasyMock {
 		builder.configLoaded(config, seq++);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.hello\\{background-image:url\\('data:image\\/svg\\+xml;base64\\,[^']*'\\)\\}"));
-
 	}
 
 	@Test
 	public void testCacheKeyGen() throws Exception {
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
-		Assert.assertEquals("expn:0;css:0:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:0;css:0:0:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, new String[]{"true"});
-		Assert.assertEquals("expn:0;css:0:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:0;css:0:1:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"true"});
-		Assert.assertEquals("expn:0;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:0;css:1:1:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		Assert.assertEquals("expn:1;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:1;css:1:1:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
-		Assert.assertEquals("expn:1;css:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:1;css:1:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		requestAttributes.put(CSSModuleBuilder.CSSINCLUDEPATHS_CONFIGPARAM, Boolean.TRUE);
+		Assert.assertEquals("expn:1;css:1:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
 	}
 
 	@Test
@@ -547,6 +554,34 @@ public class CSSModuleBuilderTest extends EasyMock {
 		Assert.assertFalse(regexp.matcher("/test/hello@$!.123").find());
 		regexp = builder.toRegexp("/a?c");
 		Assert.assertEquals("/a[^/]c$", regexp.toString());
+	}
+
+	@Test
+	public void testNonRelativeImports() throws Exception {
+		System.out.println("\n\n\nTESTING\n\n\n");
+		String css, output, importFile;
+		URI resuri = testdir.toURI();
+		css = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
+		//CopyUtil.copy(css, new FileWriter(new File(subdir, "imported.css")));
+
+		File subdir = new File(testdir, "randomDir");
+		File imported = new File(subdir, "randomFile.css");
+		subdir.mkdir();
+		String importedCss = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
+		CopyUtil.copy(importedCss, new FileWriter(imported));
+
+		/*
+		 * Make sure imported css files get inlined
+		 */
+		//configScript.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, configScript, Boolean.TRUE);
+		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{paths: {randomDir:'" + testdir.toString() + "'}, inlineImports: true}");
+
+		CSSModuleBuilderTester tempBuilder = builder;
+		builder.configLoaded(config, seq++);
+
+		css = "/* importing file */\n\r@import 'randomDir/randomFile.css'";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertEquals(".imported{color:black}", output);
 	}
 
 	private String buildCss(IResource css) throws Exception {

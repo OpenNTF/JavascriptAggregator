@@ -21,6 +21,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
@@ -47,8 +48,6 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
 import java.net.URLConnection;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -156,9 +155,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String EXCLUDELIST_CONFIGPARAM = "inlinedImageExcludeList"; //$NON-NLS-1$
 	static public final String IMAGETYPES_CONFIGPARAM = "inlineableImageTypes"; //$NON-NLS-1$
 	static public final String SIZETHRESHOLD_CONFIGPARAM = "inlinedImageSizeThreshold";  //$NON-NLS-1$
+	static public final String CSSINCLUDEPATHS_CONFIGPARAM = "cssEnableAMDIncludePaths";  //$NON-NLS-1$
 
 	// Custom server-side AMD config param default values
 	static public final boolean INLINEIMPORTS_DEFAULT_VALUE = true;
+	static public final boolean CSSINCLUDEPATHS_DEFAULT_VALUE = true;
 	static public final int SIZETHRESHOLD_DEFAULT_VALUE = 0;
 
 	static public final String INLINEIMPORTS_REQPARAM_NAME = "inlineImports"; //$NON-NLS-1$
@@ -186,10 +187,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			boolean inlineImports = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME));
 			boolean inlineImages = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME));
 			boolean showFilenames = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
+			boolean cssIncludePaths = TypeUtil.asBoolean(request.getAttribute(CSSModuleBuilder.CSSINCLUDEPATHS_CONFIGPARAM));
 			StringBuffer sb = new StringBuffer(eyecatcher)
 			.append(inlineImports ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(inlineImages ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			.append(showFilenames ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			.append(showFilenames ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(cssIncludePaths ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 			return sb.toString();
 		}
 		@Override
@@ -211,6 +214,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
+	public boolean cssIncludePaths = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
 	private Map<String, String> inlineableImageTypeMap = new HashMap<String, String>();
 	private Collection<Pattern> inlinedImageIncludeList = Collections.emptyList();
@@ -264,7 +268,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		StringWriter out = new StringWriter();
 		CopyUtil.copy(in, out);
 		return out.toString();
-
 	}
 
 	private static final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|url\\(([^)]+)\\)"); //$NON-NLS-1$
@@ -285,7 +288,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @return the minified css
 	 */
 	protected String minify(String css, IResource res) {
-
 		// replace all quoted strings and url(...) patterns with unique ids so that
 		// they won't be affected by whitespace removal.
 		LinkedList<String> quotedStringReplacements = new LinkedList<String>();
@@ -402,10 +404,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// remove quotes.
 			importNameMatch = dequote(importNameMatch);
 			importNameMatch = forwardSlashPattern.matcher(importNameMatch).replaceAll("/"); //$NON-NLS-1$
-			if(importNameMatch.contains("../mixins")) {
-				String placeholder = "temp";
-				placeholder.trim();
-			}
 
 			if (importNameMatch.startsWith("/") || protocolPattern.matcher(importNameMatch).find()) { //$NON-NLS-1$
 				m.appendReplacement(buf, ""); //$NON-NLS-1$
@@ -413,30 +411,58 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 
-			//loop through the known modules checking if the import matches
-			for(String key: aggregator.getConfig().getPackages().keySet()) {
-				String importPackage = importNameMatch.split("/")[0];
-				IPackage tempPackage = aggregator.getConfig().getPackages().get(key);
-				String packageName = tempPackage.getName();
-				String packageLoc = tempPackage.getLocation().toString();
-
-				//check if the import is importing a known module
-				if(importPackage.equals(packageName)) {
-					importNameMatch = importNameMatch.replace(packageName + "/", (packageLoc));
-					break;
-				}
-			}
+//			URI temp = aggregator.getConfig().locateModuleResource(importNameMatch);
+//
+//			//loop through the known modules checking if the import matches
+//			for(String key: aggregator.getConfig().getPackages().keySet()) {
+//				String importPackage = importNameMatch.split("/")[0];
+//				IPackage tempPackage = aggregator.getConfig().getPackages().get(key);
+//				String packageName = tempPackage.getName();
+//				String packageLoc = tempPackage.getLocation().toString();
+//
+//				//check if the import is importing a known module
+//				if(importPackage.equals(packageName)) {
+//					importNameMatch = importNameMatch.replace(packageName + "/", (packageLoc));
+//					break;
+//				}
+//			}
+//
+//			IResource importRes = res.resolve(importNameMatch);
+//			String importCss = null;
+//			importCss = readToString(
+//					new CommentStrippingReader(
+//							new InputStreamReader(
+//									importRes.getURI().toURL().openStream(),
+//									"UTF-8" //$NON-NLS-1$
+//									)
+//							)
+//					);
 
 			IResource importRes = res.resolve(importNameMatch);
-			String importCss = null;
-			importCss = readToString(
-					new CommentStrippingReader(
-							new InputStreamReader(
-									importRes.getURI().toURL().openStream(),
-									"UTF-8" //$NON-NLS-1$
-									)
-							)
-					);
+      URI uri = null;
+      if (importRes.exists()) {
+          uri = importRes.getURI();
+      } else if (cssIncludePaths && importNameMatch.contains("/") && !importNameMatch.startsWith(".")) { //$NON-NLS-1$ //$NON-NLS-2$
+          // Resource not found using relative path to res.  If path is not relative (starts with .)
+          // then try to find the resource using config paths and packages.
+          uri = aggregator.getConfig().locateModuleResource(importNameMatch);
+          if (uri != null) {
+          	uri = aggregator.newResource(uri).getURI();
+          }
+      }
+      if (uri == null) {
+          throw new NotFoundException(importNameMatch);
+      }
+
+      String importCss = null;
+      importCss = readToString(
+              new CommentStrippingReader(
+                      new InputStreamReader(
+                              uri.toURL().openStream(),
+                              "UTF-8" //$NON-NLS-1$
+                              )
+                      )
+              );
 			importCss = minify(importCss, importRes);
 			// Inline images
 			importCss = inlineImageUrls(req, importCss, importRes);
@@ -504,10 +530,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 			m.appendTail(buf);
 			css = buf.toString();
-		}
-		if(css.contains("style-mixins")) {
-			String placeholder = "temp";
-			placeholder.trim();
 		}
 		return css;
 	}
@@ -737,6 +759,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		/** True if &#064;import statements should be inlined */
 		obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
 		inlineImports = TypeUtil.asBoolean(obj, INLINEIMPORTS_DEFAULT_VALUE);
+
+		/** True if cross package css/less imports should be supported */
+		//obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
+		cssIncludePaths = TypeUtil.asBoolean(obj, CSSINCLUDEPATHS_DEFAULT_VALUE);
 
 		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
 		Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
