@@ -58,12 +58,10 @@ import javax.servlet.http.HttpServletRequest;
 import junit.framework.Assert;
 
 public class CSSModuleBuilderTest extends EasyMock {
-
 	static File tmpdir;
 	static File testdir;
 	static File testdirSML;
 	static final String base64PngData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAASCAYAAACaV7S8AAAAAXNSR0IArs4c6QAAACNJREFUCNdj+P///0cmBgaGJ0wMDAyPsbAgXIb////zMZACAIj0DUFA3QqvAAAAAElFTkSuQmCC";
-
 
 	Map<String, String[]> requestParams = new HashMap<String, String[]>();
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
@@ -90,12 +88,6 @@ public class CSSModuleBuilderTest extends EasyMock {
 		tmpdir = new File(System.getProperty("java.io.tmpdir"));
 		testdir = new File(tmpdir, "CSSModuleBuilderTest");
 		testdir.mkdir();
-		//mockAggregator.newResource(mockAggregator.getConfig().locateModuleResource("sml")).getURI().toString())
-		//create a second test directory in the sml folder
-		/**@TODO: need to make this the app folder for everyone*/
-//		tmpdir = new File("C:\\Users\\IBM_ADMIN\\workspace\\sequoia-module-library\\sml");
-//		testdirSML = new File(tmpdir, "CSSModuleBuilderTest");
-//		testdirSML.mkdir();
 	}
 
 	@AfterClass
@@ -313,7 +305,9 @@ public class CSSModuleBuilderTest extends EasyMock {
 		requestAttributes.remove(IHttpTransport.SHOWFILENAMES_REQATTRNAME);
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(".background-image:url('#images/img.jpg');", output);
+
 	}
+
 	@Test
 	public void testInlineUrls() throws Exception {
 		String css, output;
@@ -356,7 +350,6 @@ public class CSSModuleBuilderTest extends EasyMock {
 		css = ".foo {background-image:url( 'images/testImage.png' )}";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
-
 
 		// Set the size threshold just below the image size and make sure the image isn't inlined
 		css = ".foo {background-image:url(images/testImage.png)}";
@@ -558,11 +551,8 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	@Test
 	public void testNonRelativeImports() throws Exception {
-		System.out.println("\n\n\nTESTING\n\n\n");
-		String css, output, importFile;
+		String css, output;
 		URI resuri = testdir.toURI();
-		css = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
-		//CopyUtil.copy(css, new FileWriter(new File(subdir, "imported.css")));
 
 		File subdir = new File(testdir, "randomDir");
 		File imported = new File(subdir, "randomFile.css");
@@ -573,9 +563,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		/*
 		 * Make sure imported css files get inlined
 		 */
-		//configScript.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, configScript, Boolean.TRUE);
 		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{paths: {randomDir:'" + testdir.toString() + "'}, inlineImports: true}");
-
 		CSSModuleBuilderTester tempBuilder = builder;
 		builder.configLoaded(config, seq++);
 

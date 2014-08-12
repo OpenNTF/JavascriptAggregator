@@ -411,33 +411,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 
-//			URI temp = aggregator.getConfig().locateModuleResource(importNameMatch);
-//
-//			//loop through the known modules checking if the import matches
-//			for(String key: aggregator.getConfig().getPackages().keySet()) {
-//				String importPackage = importNameMatch.split("/")[0];
-//				IPackage tempPackage = aggregator.getConfig().getPackages().get(key);
-//				String packageName = tempPackage.getName();
-//				String packageLoc = tempPackage.getLocation().toString();
-//
-//				//check if the import is importing a known module
-//				if(importPackage.equals(packageName)) {
-//					importNameMatch = importNameMatch.replace(packageName + "/", (packageLoc));
-//					break;
-//				}
-//			}
-//
-//			IResource importRes = res.resolve(importNameMatch);
-//			String importCss = null;
-//			importCss = readToString(
-//					new CommentStrippingReader(
-//							new InputStreamReader(
-//									importRes.getURI().toURL().openStream(),
-//									"UTF-8" //$NON-NLS-1$
-//									)
-//							)
-//					);
-
 			IResource importRes = res.resolve(importNameMatch);
       URI uri = null;
       if (importRes.exists()) {
