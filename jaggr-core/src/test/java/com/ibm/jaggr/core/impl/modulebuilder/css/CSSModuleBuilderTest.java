@@ -63,7 +63,6 @@ import junit.framework.Assert;
 public class CSSModuleBuilderTest extends EasyMock {
 	static File tmpdir;
 	static File testdir;
-	static File testdirSML;
 	static final String base64PngData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAASCAYAAACaV7S8AAAAAXNSR0IArs4c6QAAACNJREFUCNdj+P///0cmBgaGJ0wMDAyPsbAgXIb////zMZACAIj0DUFA3QqvAAAAAElFTkSuQmCC";
 
 	Map<String, String[]> requestParams = new HashMap<String, String[]>();
