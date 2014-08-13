@@ -17,15 +17,18 @@
 package com.ibm.jaggr.core.impl.modulebuilder.css;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
+import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 
@@ -67,6 +70,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	Scriptable configScript;
 	IAggregator mockAggregator;
+	Ref<IConfig> configRef;
 	HttpServletRequest mockRequest;
 	CSSModuleBuilderTester builder = new CSSModuleBuilderTester();
 	List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
@@ -97,11 +101,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	@Before
 	public void setUp() throws Exception {
-		mockAggregator = TestUtils.createMockAggregator();
+		configRef = new Ref<IConfig>(null);
+		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
+		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
 	}
 
@@ -520,7 +526,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		Assert.assertEquals("expn:1;css:1:1:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
 		Assert.assertEquals("expn:1;css:1:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
-		requestAttributes.put(CSSModuleBuilder.CSSINCLUDEPATHS_CONFIGPARAM, Boolean.TRUE);
+		requestAttributes.put(CSSModuleBuilder.INCLUDEAMDPATHS_CONFIGPARAM, Boolean.TRUE);
 		Assert.assertEquals("expn:1;css:1:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
 	}
 
@@ -552,23 +558,36 @@ public class CSSModuleBuilderTest extends EasyMock {
 	@Test
 	public void testNonRelativeImports() throws Exception {
 		String css, output;
-		URI resuri = testdir.toURI();
 
+		//create a subdirectory and put a css file in it
 		File subdir = new File(testdir, "randomDir");
 		File imported = new File(subdir, "randomFile.css");
 		subdir.mkdir();
 		String importedCss = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
 		CopyUtil.copy(importedCss, new FileWriter(imported));
 
-		/*
-		 * Make sure imported css files get inlined
-		 */
-		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{paths: {randomDir:'" + testdir.toString() + "'}, inlineImports: true}");
-		CSSModuleBuilderTester tempBuilder = builder;
+		//test that a non relative import fails when includeAMDPaths is false
+		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{paths: {AMDDir:'" + subdir.toURI() + "'}, cssEnableAMDIncludePaths: false}");
 		builder.configLoaded(config, seq++);
+		css = "/* importing file */\n\r@import 'AMDDir/randomFile.css'";
+		File importingFile = new File(subdir, "importingFile.css");
+		CopyUtil.copy(css, new FileWriter(importingFile));
+		boolean exceptionCaught = false;
+		try {
+			output = buildCss(new FileResource(importingFile.toURI()));
+		} catch (NotFoundException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue("Expected FileNotFoundException", exceptionCaught);
 
-		css = "/* importing file */\n\r@import 'randomDir/randomFile.css'";
-		output = buildCss(new StringResource(css, resuri));
+		//test that non relative imports work when includeAMDPaths is true
+		config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{paths: {AMDDir:'" + subdir.toURI() + "'}, cssEnableAMDIncludePaths: true}");
+		configRef.set(config);
+		builder.configLoaded(config, seq++);
+		css = "/* importing file */\n\r@import 'AMDDir/randomFile.css'";
+		importingFile = new File(subdir, "importingFile.css");
+		CopyUtil.copy(css, new FileWriter(importingFile));
+		output = buildCss(new FileResource(importingFile.toURI()));
 		Assert.assertEquals(".imported{color:black}", output);
 	}
 

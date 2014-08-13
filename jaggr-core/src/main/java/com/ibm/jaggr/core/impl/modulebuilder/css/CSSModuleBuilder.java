@@ -25,7 +25,6 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.config.IConfig.IPackage;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
@@ -155,11 +154,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String EXCLUDELIST_CONFIGPARAM = "inlinedImageExcludeList"; //$NON-NLS-1$
 	static public final String IMAGETYPES_CONFIGPARAM = "inlineableImageTypes"; //$NON-NLS-1$
 	static public final String SIZETHRESHOLD_CONFIGPARAM = "inlinedImageSizeThreshold";  //$NON-NLS-1$
-	static public final String CSSINCLUDEPATHS_CONFIGPARAM = "cssEnableAMDIncludePaths";  //$NON-NLS-1$
+	static public final String INCLUDEAMDPATHS_CONFIGPARAM = "cssEnableAMDIncludePaths";  //$NON-NLS-1$
 
 	// Custom server-side AMD config param default values
 	static public final boolean INLINEIMPORTS_DEFAULT_VALUE = true;
-	static public final boolean CSSINCLUDEPATHS_DEFAULT_VALUE = true;
+	static public final boolean INCLUDEAMDPATHS_DEFAULT_VALUE = false;
 	static public final int SIZETHRESHOLD_DEFAULT_VALUE = 0;
 
 	static public final String INLINEIMPORTS_REQPARAM_NAME = "inlineImports"; //$NON-NLS-1$
@@ -187,12 +186,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			boolean inlineImports = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME));
 			boolean inlineImages = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME));
 			boolean showFilenames = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
-			boolean cssIncludePaths = TypeUtil.asBoolean(request.getAttribute(CSSModuleBuilder.CSSINCLUDEPATHS_CONFIGPARAM));
+			boolean includeAMDPaths = TypeUtil.asBoolean(request.getAttribute(CSSModuleBuilder.INCLUDEAMDPATHS_CONFIGPARAM));
 			StringBuffer sb = new StringBuffer(eyecatcher)
 			.append(inlineImports ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(inlineImages ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(showFilenames ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			.append(cssIncludePaths ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			.append(includeAMDPaths ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 			return sb.toString();
 		}
 		@Override
@@ -214,7 +213,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 	public int imageSizeThreshold = 0;
 	public boolean inlineImports = false;
-	public boolean cssIncludePaths = false;
+	public boolean includeAMDPaths = false;
 	private Collection<String> inlineableImageTypes = new ArrayList<String>(s_inlineableImageTypes);
 	private Map<String, String> inlineableImageTypeMap = new HashMap<String, String>();
 	private Collection<Pattern> inlinedImageIncludeList = Collections.emptyList();
@@ -412,30 +411,30 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 
 			IResource importRes = res.resolve(importNameMatch);
-      URI uri = null;
-      if (importRes.exists()) {
-          uri = importRes.getURI();
-      } else if (cssIncludePaths && importNameMatch.contains("/") && !importNameMatch.startsWith(".")) { //$NON-NLS-1$ //$NON-NLS-2$
-          // Resource not found using relative path to res.  If path is not relative (starts with .)
-          // then try to find the resource using config paths and packages.
-          uri = aggregator.getConfig().locateModuleResource(importNameMatch);
-          if (uri != null) {
-          	uri = aggregator.newResource(uri).getURI();
-          }
-      }
-      if (uri == null) {
-          throw new NotFoundException(importNameMatch);
-      }
+			URI uri = null;
+			if (importRes.exists()) {
+				uri = importRes.getURI();
+			} else if (includeAMDPaths && importNameMatch.contains("/") && !importNameMatch.startsWith(".")) { //$NON-NLS-1$ //$NON-NLS-2$
+				// Resource not found using relative path to res.  If path is not relative (starts with .)
+				// then try to find the resource using config paths and packages.
+				uri = aggregator.getConfig().locateModuleResource(importNameMatch);
+				if (uri != null) {
+					uri = aggregator.newResource(uri).getURI();
+				}
+			}
+			if (uri == null) {
+				throw new NotFoundException(importNameMatch);
+			}
 
-      String importCss = null;
-      importCss = readToString(
-              new CommentStrippingReader(
-                      new InputStreamReader(
-                              uri.toURL().openStream(),
-                              "UTF-8" //$NON-NLS-1$
-                              )
-                      )
-              );
+			String importCss = null;
+			importCss = readToString(
+					new CommentStrippingReader(
+							new InputStreamReader(
+									uri.toURL().openStream(),
+									"UTF-8" //$NON-NLS-1$
+									)
+							)
+					);
 			importCss = minify(importCss, importRes);
 			// Inline images
 			importCss = inlineImageUrls(req, importCss, importRes);
@@ -734,8 +733,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		inlineImports = TypeUtil.asBoolean(obj, INLINEIMPORTS_DEFAULT_VALUE);
 
 		/** True if cross package css/less imports should be supported */
-		//obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
-		cssIncludePaths = TypeUtil.asBoolean(obj, CSSINCLUDEPATHS_DEFAULT_VALUE);
+		obj = conf.getProperty(INCLUDEAMDPATHS_CONFIGPARAM, null);
+		includeAMDPaths = TypeUtil.asBoolean(obj, INCLUDEAMDPATHS_DEFAULT_VALUE);
 
 		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
 		Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
