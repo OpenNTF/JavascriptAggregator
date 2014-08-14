@@ -186,12 +186,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			boolean inlineImports = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME));
 			boolean inlineImages = TypeUtil.asBoolean(request.getParameter(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME));
 			boolean showFilenames = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME));
-			boolean includeAMDPaths = TypeUtil.asBoolean(request.getAttribute(CSSModuleBuilder.INCLUDEAMDPATHS_CONFIGPARAM));
 			StringBuffer sb = new StringBuffer(eyecatcher)
 			.append(inlineImports ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(inlineImages ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			.append(showFilenames ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			.append(includeAMDPaths ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			.append(showFilenames ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 			return sb.toString();
 		}
 		@Override
