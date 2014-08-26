@@ -754,9 +754,7 @@ public class ConfigTest {
 		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Object rawCfg = cfg.getRawConfig();
-		Context.enter();
-		String str = Context.toString(rawCfg);
-		Context.exit();
+		String str = ConfigImpl.toString(rawCfg);
 		Assert.assertEquals("{paths:{foo:\"fooloc\"}}", str);
 	}
 
@@ -765,9 +763,7 @@ public class ConfigTest {
 		String config = "(function(){ return{ paths: {'foo': 'fooloc'}};})()";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		Object rawCfg = cfg.getRawConfig();
-		Context.enter();
-		String str = Context.toString(rawCfg);
-		Context.exit();
+		String str = ConfigImpl.toString(rawCfg);
 		Assert.assertEquals(str,  cfg.toString());
 
 	}
