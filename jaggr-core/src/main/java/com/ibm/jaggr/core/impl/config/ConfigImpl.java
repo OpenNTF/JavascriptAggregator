@@ -104,7 +104,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private static class ConfigContextFactory extends ContextFactory {
 		@Override
 		protected boolean hasFeature(Context context, int feature) {
-			if (feature == Context.FEATURE_DYNAMIC_SCOPE || feature == Context.FEATURE_TO_STRING_AS_SOURCE) {
+			if (feature == Context.FEATURE_DYNAMIC_SCOPE) {
 				return true;
 			}
 			return super.hasFeature(context, feature);
@@ -218,7 +218,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	protected void init() throws IOException {
 		try {
 			registerServices();
-			strConfig = Context.toString(rawConfig);
+			strConfig = toString(rawConfig);
 			base = loadBaseURI(rawConfig);
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
 			paths = Collections.unmodifiableMap(loadPaths(rawConfig));
@@ -242,7 +242,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 */
 	protected void initForTest() throws IOException {
 		try {
-			strConfig = Context.toString(rawConfig);
+			strConfig = toString(rawConfig);
 			base = loadBaseURI(rawConfig);
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
 			paths = Collections.unmodifiableMap(loadPaths(rawConfig));
@@ -806,7 +806,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						// replacement is a javascript function.
 						Context cx = Context.enter();
 						if (isTraceLogging) {
-							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + Context.toString(replacement)); //$NON-NLS-1$ //$NON-NLS-2$
+							log.finer("Matched alias pattern " + alias.getPattern().toString() + ": " + toString(replacement)); //$NON-NLS-1$ //$NON-NLS-2$
 						}
 						try {
 							Scriptable threadScope = cx.newObject(sharedScope);
@@ -1014,7 +1014,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		Map<String, Location> paths = new HashMap<String, Location>();
 		if (pathlocs instanceof Scriptable) {
 			for (Object key : ((Scriptable)pathlocs).getIds()) {
-				String name = Context.toString(key);
+				String name = toString(key);
 
 				if (!paths.containsKey(name) && key instanceof String) {
 					Location location = loadLocation(((Scriptable)pathlocs).get(name, (Scriptable)pathlocs), false);
@@ -1047,10 +1047,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 						Object pattern = vec.get(0, vec);
 						Object replacement = vec.get(1, vec);
 						if (pattern == Scriptable.NOT_FOUND || replacement == Scriptable.NOT_FOUND) {
-							throw new IllegalArgumentException(Context.toString(entry));
+							throw new IllegalArgumentException(toString(entry));
 						}
 						if (pattern instanceof Scriptable && "RegExp".equals(((Scriptable)pattern).getClassName())) { //$NON-NLS-1$
-							String regexlit = Context.toString(pattern);
+							String regexlit = toString(pattern);
 							String regex = regexlit.substring(1, regexlit.lastIndexOf("/")); //$NON-NLS-1$
 							String flags = regexlit.substring(regexlit.lastIndexOf("/")+1); //$NON-NLS-1$
 							int options = 0;
@@ -1059,10 +1059,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 							}
 							pattern = Pattern.compile(regex, options);
 						} else {
-							pattern = Context.toString(pattern);
+							pattern = toString(pattern);
 						}
 						if (!(replacement instanceof Scriptable) || !"Function".equals(((Scriptable)replacement).getClassName())) { //$NON-NLS-1$
-							replacement = Context.toString(replacement);
+							replacement = toString(replacement);
 						}
 						aliases.add(newAlias(pattern, replacement));
 					}
@@ -1088,7 +1088,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				if (id instanceof Number) {
 					Number i = (Number)id;
 					Object entry = ((Scriptable)depsList).get((Integer)i, (Scriptable)depsList);
-					deps.add(Context.toString(entry));
+					deps.add(toString(entry));
 				}
 			}
 		}
@@ -1108,7 +1108,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		Object oExpires = cfg.get(EXPIRES_CONFIGPARAM, cfg);
 		if (oExpires != Scriptable.NOT_FOUND) {
 			try {
-				expires = Integer.parseInt(Context.toString(oExpires));
+				expires = Integer.parseInt(toString(oExpires));
 			} catch (NumberFormatException ignore) {
 				throw new IllegalArgumentException(EXPIRES_CONFIGPARAM+"="+oExpires); //$NON-NLS-1$
 			}
@@ -1130,7 +1130,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		boolean result = false;
 		Object value = cfg.get(DEPSINCLUDEBASEURL_CONFIGPARAM, cfg);
 		if (value != Scriptable.NOT_FOUND) {
-			result = TypeUtil.asBoolean(Context.toString(value), false);
+			result = TypeUtil.asBoolean(toString(value), false);
 		}
 		return result;
 	}
@@ -1148,7 +1148,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		boolean result = false;
 		Object value = cfg.get(COERCEUNDEFINEDTOFALSE_CONFIGPARAM, cfg);
 		if (value != Scriptable.NOT_FOUND) {
-			result = TypeUtil.asBoolean(Context.toString(value), false);
+			result = TypeUtil.asBoolean(toString(value), false);
 		}
 		return result;
 	}
@@ -1167,7 +1167,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		String notice = null;
 		Object noticeObj = cfg.get(NOTICE_CONFIGPARAM, cfg);
 		if (noticeObj != Scriptable.NOT_FOUND) {
-			String noticeUriStr = Context.toString(noticeObj);
+			String noticeUriStr = toString(noticeObj);
 			URI noticeUri = new URI(noticeUriStr).normalize();
 			if (!noticeUri.isAbsolute()) {
 				noticeUri = getConfigUri().resolve(noticeUri);
@@ -1229,9 +1229,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			Scriptable values = (Scriptable)locObj;
 			Object obj = values.get(0, values);
 			if (obj == Scriptable.NOT_FOUND) {
-				throw new IllegalArgumentException(Context.toString(locObj));
+				throw new IllegalArgumentException(toString(locObj));
 			}
-			String str = Context.toString(obj);
+			String str = toString(obj);
 			if (isFolder && !str.endsWith("/")) {  //$NON-NLS-1$
 				str += "/"; //$NON-NLS-1$
 			}
@@ -1239,10 +1239,10 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			obj = values.get(1, values);
 			Object extra = values.get(2, values);
 			if (extra != Scriptable.NOT_FOUND) {
-				throw new IllegalArgumentException(Context.toString(locObj));
+				throw new IllegalArgumentException(toString(locObj));
 			}
 			if (obj != Scriptable.NOT_FOUND) {
-				str = Context.toString(obj);
+				str = toString(obj);
 				if (isFolder && !str.endsWith("/")) {  //$NON-NLS-1$
 					str += "/"; //$NON-NLS-1$
 				}
@@ -1259,7 +1259,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 			result = new Location(primary, override);
 		} else {
-			String str = Context.toString(locObj);
+			String str = toString(locObj);
 			if (isFolder && !str.endsWith("/")) {  //$NON-NLS-1$
 				str += "/"; //$NON-NLS-1$
 			}
@@ -1279,7 +1279,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		String result = null;
 		Object value = cfg.get(CACHEBUST_CONFIGPARAM, cfg);
 		if (value != Scriptable.NOT_FOUND && value != Undefined.instance) {
-			result = Context.toString(value);
+			result = toString(value);
 		}
 		return result;
 
@@ -1443,6 +1443,27 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 	}
 
+	static public String toString(Object obj) {
+		String result = null;
+		if (obj instanceof Scriptable) {
+			Context ctx = Context.enter();
+			try {
+				// For functions, use the prototype's toSource method.
+				Function fn = (Function)((Scriptable)obj).getPrototype().get("toSource", (Scriptable)obj); //$NON-NLS-1$
+				if (fn == Scriptable.NOT_FOUND) {
+					throw new IllegalStateException("Missing object prototype: toSource"); //$NON-NLS-1$
+				}
+				result = (String)fn.call(ctx, (Scriptable)obj, (Scriptable)obj, new Object[]{});
+				result = result.replaceAll("^\\((.*)\\)$", "$1"); //$NON-NLS-1$ //$NON-NLS-2$
+			} finally {
+				Context.exit();
+			}
+		} else {
+			result = Context.toString(obj);
+		}
+		return result != null ? result.toString() : null;
+	}
+
 	protected GetPropertyFunction newGetPropertyFunction(Scriptable scriptable, IAggregator aggregator) {
 		return new GetPropertyFunction(scriptable, aggregator);
 
@@ -1476,13 +1497,13 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				Scriptable data = (Scriptable)obj;
 				Object nameObj = data.get(PKGNAME_CONFIGPARAM, data);
 				if (nameObj == Scriptable.NOT_FOUND) {
-					throw new IllegalArgumentException(Context.toString(obj));
+					throw new IllegalArgumentException(ConfigImpl.toString(obj));
 				}
-				name = Context.toString(nameObj);
+				name = ConfigImpl.toString(nameObj);
 				location = getBase().resolve(loadLocation(data.get(PKGLOCATION_CONFIGPARAM, data), true));
 				Object mainObj = data.get(PKGMAIN_CONFIGPARAM, data);
 				if (mainObj != Scriptable.NOT_FOUND) {
-					main = Context.toString(mainObj);
+					main = ConfigImpl.toString(mainObj);
 				}
 			} else {
 				throw new IllegalArgumentException(obj.toString());
@@ -1535,14 +1556,14 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		public Alias(/* String | Pattern */Object pattern, /* String | Function */Object replacement) {
 			// validate arguments
 			if (!(pattern instanceof String) && !(pattern instanceof Pattern)) {
-				throw new IllegalArgumentException(Context.toString(pattern));
+				throw new IllegalArgumentException(ConfigImpl.toString(pattern));
 			}
 			if (!(replacement instanceof String) && !(replacement instanceof Function)) {
-				throw new IllegalArgumentException(Context.toString(replacement));
+				throw new IllegalArgumentException(ConfigImpl.toString(replacement));
 			}
 			// replacement can be a Script only if pattern is a regular expression
 			if ((pattern instanceof String) && !(replacement instanceof String)) {
-				throw new IllegalArgumentException(Context.toString(replacement));
+				throw new IllegalArgumentException(ConfigImpl.toString(replacement));
 			}
 			this.pattern = pattern;
 			this.replacement = replacement;
