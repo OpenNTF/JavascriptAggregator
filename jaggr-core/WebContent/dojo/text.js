@@ -22,18 +22,17 @@
 define(["dojo/_base/lang", "__original_text_plugin"], function(lang, original_text_plugin) {
 	return lang.mixin({}, original_text_plugin, {
 		load:function(id, require, load){
-			if (/^(\/)|([^:\/]+:[\/]{2})/.test(id)) {
+			var url = require.toUrl(id),
+			    requireCacheUrl = "url:" + url;
+			if (requireCacheUrl in require.cache) {
+				load(require.cache[requireCacheUrl]);
+			} else if (!require.combo.isSupportedModule(id)) {
 				original_text_plugin.load(id, require, load);
 			} else {
-				var url = require.toUrl(id),
-				    requireCacheUrl = "url:" + url;
-				if (requireCacheUrl in require.cache) {
-					load(require.cache[requireCacheUrl]);
-				} else {
-					require(["__aggregator_text_plugin!"+id], function(text) {
-						load(text);
-					});
-				}
+				require(["__aggregator_text_plugin!"+id], function(text) {
+					require.cache[requireCacheUrl] = text;
+					load(text);
+				});
 			}			
 		}
 	});
