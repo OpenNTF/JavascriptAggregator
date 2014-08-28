@@ -30,7 +30,7 @@ import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.junit.Assert;
