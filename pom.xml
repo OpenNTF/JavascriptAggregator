@@ -380,7 +380,8 @@
       <dependency>
         <groupId>com.google.javascript</groupId>
         <artifactId>closure-compiler</artifactId>
-        <version>v20140730</version>
+        <!-- If we move to newer versions of closure-complier than v20131014, we need to drop java6 support. -->
+        <version>r1918</version>
       </dependency>
       <dependency>
         <groupId>org.mozilla</groupId>

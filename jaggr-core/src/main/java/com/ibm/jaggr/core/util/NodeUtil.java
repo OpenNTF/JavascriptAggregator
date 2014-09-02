@@ -143,7 +143,8 @@ public class NodeUtil {
 	 *         null.
 	 */
 	public static Node moduleDepsFromConfigDeps(Node cursor, String configVarName) {
-		if (cursor.getType() == Token.STRING && cursor.getString().equals("deps")) { //$NON-NLS-1$
+		int type = cursor.getType();
+		if ( type == Token.STRING && cursor.getString().equals("deps")) { //$NON-NLS-1$
 			// handle require.deps assignment of array literal
 			Node parent = cursor.getParent(),
 					previousSibling = parent.getChildBefore(cursor);
