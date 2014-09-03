@@ -55,7 +55,7 @@ public class ExportModuleNameCompilerPass implements CompilerPass {
 						name.getString().equals("define")) { // name is "define" //$NON-NLS-1$
 					Node param = name.getNext();
 					if (param != null && param.getType() != Token.STRING) {
-						String expname = name.getSourceFileName();
+						String expname = name.getProp(Node.SOURCENAME_PROP).toString();
 						if (source != null) {
 							source.insert("\"" + expname + "\",", param.getLineno(), param.getCharno()); //$NON-NLS-1$ //$NON-NLS-2$
 						}
