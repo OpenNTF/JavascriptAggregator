@@ -53,7 +53,7 @@ import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.DiagnosticGroups;
 import com.google.javascript.jscomp.JSError;
-import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.jscomp.Result;
 
 import java.io.IOException;
@@ -88,7 +88,7 @@ import javax.servlet.http.HttpServletRequest;
 public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, ILayerListener, IShutdownListener {
 	private static final Logger log = Logger.getLogger(JavaScriptModuleBuilder.class.getName());
 
-	private static final List<SourceFile> externs = Collections.emptyList();
+	private static final List<JSSourceFile> externs = Collections.emptyList();
 
 	/**
 	 * Name of the request attribute containing the expanded dependencies for
@@ -277,7 +277,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			throw new NotFoundException(resource.getURI().toString());
 		}
 
-		List<SourceFile> sources = this.getSource(mid, resource, request, keyGens);
+		List<JSSourceFile> sources = this.getJSSource(mid, resource, request, keyGens);
 
 		JSSource source = null;
 		if (level == null) {
@@ -285,7 +285,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			// when expanding require lists and exporting module names because the
 			// parsed AST produced by closure does not preserve whitespace and comments.
 			StringBuffer code = new StringBuffer();
-			for (SourceFile sf : sources) {
+			for (JSSourceFile sf : sources) {
 				code.append(sf.getCode());
 			}
 			source = new JSSource(code.toString(), mid);
@@ -417,7 +417,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				sb.replace(0, sb.length(), "\r\nconsole.error(\"") //$NON-NLS-1$
 				.append(escaped)
 				.append("\");\r\n"); //$NON-NLS-1$
-				for (SourceFile sf : sources) {
+				for (JSSourceFile sf : sources) {
 					sb.append(sf.getCode());
 				}
 				return new ModuleBuild(sb.toString(), null, true);
@@ -448,10 +448,11 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * @return the list of source files
 	 * @throws IOException
 	 */
-	protected List<SourceFile> getSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
-		List<SourceFile> result = new LinkedList<SourceFile>();
+	protected List<JSSourceFile> getJSSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
+
+		List<JSSourceFile> result = new LinkedList<JSSourceFile>();
 		InputStream in = resource.getInputStream();
-		SourceFile sf = SourceFile.fromInputStream(mid, in);
+		JSSourceFile sf = JSSourceFile.fromInputStream(mid, in);
 		sf.setOriginalPath(resource.getURI().toString());
 		in.close();
 		result.add(sf);

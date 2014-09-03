@@ -24,7 +24,7 @@ import com.ibm.jaggr.core.impl.deps.DepTreeNode;
 import com.ibm.jaggr.core.impl.deps.DepUtils;
 
 import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
 import org.junit.Test;
@@ -124,25 +124,25 @@ public class DepUtilsTest {
 
 
 		Compiler compiler = new Compiler();
-		Node node = compiler.parse(SourceFile.fromCode("js1", js1));
+		Node node = compiler.parse(JSSourceFile.fromCode("js1", js1));
 		Collection<String> deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.toString(), "[a, b, c]");
-		node = compiler.parse(SourceFile.fromCode("js2", js2));
+		node = compiler.parse(JSSourceFile.fromCode("js2", js2));
 		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.toString(), "[a, b, c]");
-		node = compiler.parse(SourceFile.fromCode("js3", js3));
+		node = compiler.parse(JSSourceFile.fromCode("js3", js3));
 		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.size(), 0);
-		node = compiler.parse(SourceFile.fromCode("js4", js4));
+		node = compiler.parse(JSSourceFile.fromCode("js4", js4));
 		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertEquals(deps.toString(), "[a, b, c]");
-		node = compiler.parse(SourceFile.fromCode("js5", js5));
+		node = compiler.parse(JSSourceFile.fromCode("js5", js5));
 		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertNull(deps);
-		node = compiler.parse(SourceFile.fromCode("js6", js6));
+		node = compiler.parse(JSSourceFile.fromCode("js6", js6));
 		deps = DepUtils.parseDependencies(node, new HashSet<String>());
 		assertNull(deps);
-		node = compiler.parse(SourceFile.fromCode("js6", js7));
+		node = compiler.parse(JSSourceFile.fromCode("js6", js7));
 		// Test dependent features
 		Set<String> dependentFeatures = new HashSet<String>();
 		deps = DepUtils.parseDependencies(node, dependentFeatures);

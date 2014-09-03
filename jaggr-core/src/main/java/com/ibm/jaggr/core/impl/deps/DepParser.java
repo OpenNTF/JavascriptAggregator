@@ -19,7 +19,7 @@ package com.ibm.jaggr.core.impl.deps;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
 import java.io.InputStream;
@@ -74,7 +74,7 @@ final class DepParser implements Callable<URI> {
 		InputStream in = resource.getInputStream();
 		Node node = null;
 		try {
-			node = compiler.parse(SourceFile.fromInputStream(resource.getURI().toString(), in));
+			node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
 		} catch (Throwable e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e); //$NON-NLS-1$ //$NON-NLS-2$

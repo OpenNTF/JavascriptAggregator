@@ -32,7 +32,7 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CustomPassExecutionTime;
-import com.google.javascript.jscomp.SourceFile;
+import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
 import org.easymock.EasyMock;
@@ -251,7 +251,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 
 	}
 
-	private static final List<SourceFile> externs = Collections.emptyList();
+	private static final List<JSSourceFile> externs = Collections.emptyList();
 
 	/*
 	 * Ensure that arrays of strings are not mutated into expressions of the form
@@ -261,8 +261,8 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 	@Test
 	public void testArrayMutation() throws Exception {
 		String code = "define([\"module\"],function(bar){require([\"foo\", \"abc\", \"bcd\", \"cde\", \"def\", \"efg\", \"fgh\", \"ghi\"]);});";
-		SourceFile sf = SourceFile.fromCode("test", code);
-		List<SourceFile> sources = new ArrayList<SourceFile>();
+		JSSourceFile sf = JSSourceFile.fromCode("test", code);
+		List<JSSourceFile> sources = new ArrayList<JSSourceFile>();
 		sources.add(sf);
 		Compiler compiler = new Compiler();
 		CompilerOptions compiler_options = new CompilerOptions();
@@ -553,7 +553,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 
 	private String runPass(RequireExpansionCompilerPass pass, String code) {
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(SourceFile.fromCode(moduleName, code));
+		Node root = compiler.parse(JSSourceFile.fromCode(moduleName, code));
 		pass.process(null, root);
 		CodeBuilder cb = new CodeBuilder();
 		compiler.toSource(cb, 0, root);
