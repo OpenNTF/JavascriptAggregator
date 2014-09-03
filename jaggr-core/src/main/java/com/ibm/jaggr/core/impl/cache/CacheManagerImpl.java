@@ -31,7 +31,7 @@ import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.CopyUtil;
 
 import org.apache.commons.io.input.ReaderInputStream;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;

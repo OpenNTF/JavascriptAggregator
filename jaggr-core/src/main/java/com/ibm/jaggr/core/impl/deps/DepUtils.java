@@ -25,7 +25,7 @@ import com.ibm.jaggr.core.util.PathUtil;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.net.URI;
 import java.util.ArrayList;

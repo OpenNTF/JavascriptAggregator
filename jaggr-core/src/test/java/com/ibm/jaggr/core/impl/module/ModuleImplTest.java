@@ -36,7 +36,7 @@ import com.ibm.jaggr.core.util.Features;
 
 import com.google.common.io.Files;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
