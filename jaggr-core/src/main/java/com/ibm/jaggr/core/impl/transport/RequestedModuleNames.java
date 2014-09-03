@@ -412,7 +412,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		}
 		Iterator<?> it = modules.keys();
 		String[] prefixes = null;
-		if (modules.has(PLUGIN_PREFIXES_PROP_NAME)) {
+		if (modules.containsKey(PLUGIN_PREFIXES_PROP_NAME)) {
 			@SuppressWarnings("unchecked")
 			Map<String, String> oPrefixes = (Map<String, String>) modules.get(PLUGIN_PREFIXES_PROP_NAME);
 			prefixes = new String[oPrefixes.size()];
@@ -455,7 +455,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		}
 		if (obj instanceof JSONObject) {
 			JSONObject jsonobj = (JSONObject)obj;
-			Iterator<?> it = jsonobj.keys();
+			Iterator<?> it = jsonobj.keySet().iterator();
 			while (it.hasNext()) {
 				String key = (String)it.next();
 				String newpath = path + "/" + key;  //$NON-NLS-1$
