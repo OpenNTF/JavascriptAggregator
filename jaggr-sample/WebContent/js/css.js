@@ -19,8 +19,9 @@ define([
 	'dojo/_base/html',
 	'dojo/dom-construct',
 	'dojo/has',
+	'dojo/query',
 	'dojo/text'
-], function(req, dwindow, dhtml, domConstruct, has){
+], function(req, dwindow, dhtml, domConstruct, has, query){
 	/*
 	 * module:
 	 *    css
@@ -41,13 +42,6 @@ define([
 	 *    behavior ensures proper cascading of styles based on order of request.
 	 */
 	var
-		cache = {},   // Cache of style sheets that have been added to DOM 
-		loading = [], // Ordered list of required modules that are loading. 
-		waiting = {}, // List of modules that have loaded but are waiting on 
-						//  previously required modules before the style-sheet
-						//  can be added to the DOM.
-		tokenId = 1,  // Unique token identifier for a request
-
 		head = dwindow.doc.getElementsByTagName('head')[0],
 		toAbsMid= has('dojo-loader') ?
 				function(id, require){
@@ -71,7 +65,7 @@ define([
 						if(parts[i] == '.'){
 							parts.splice(i, 1);
 						}else if(parts[i] == '..'){
-							if(i != 0 && parts[i - 1] != '..'){
+							if(i !== 0 && parts[i - 1] !== '..'){
 								parts.splice(i - 1, 2);
 							}
 						}
@@ -96,13 +90,24 @@ define([
 			}
 			var parts = id.split('!'),
 					url = parentRequire.toUrl(parts[0]).replace(/^\s+/g, ''), // Trim possible leading white-space
-					absMid= toAbsMid(parts[0], parentRequire),
-					requestToken = 'tok' + (tokenId++);   // A unique id for this request
+					absMid= toAbsMid(parts[0], parentRequire);
 
-			// Add this module's token to the ordered list of modules currently loading.
-			loading.push(requestToken);
-
-			var pathParts = url.split('?').shift().split('/');
+			// see if a stylesheet element has already been added for this module
+			var styles = query("head>style[url='" + url + "']"), style;
+			if (styles.length === 0) {
+				// create a new style element for this module and add it to the DOM
+				style = domConstruct.create('style', {}, head);
+				style.type = 'text/css';
+				dhtml.setAttr(style, 'url', url);
+				dhtml.setAttr(style, 'loading', '');
+			} else {
+				style = styles[0];
+				if (!dhtml.hasAttr(style, 'loading')) {
+					load(style);
+					return;
+				}
+			}
+			
 			parentRequire(['dojo/text!' + absMid], function (text) {
 				// Check if we need to compile LESS client-side
 				if (/\.less(?:$|\?)/.test(absMid) && !has('dojo-combo-api')) {
@@ -118,11 +123,12 @@ define([
 			 */
 			function processLess(lessText) {
 				req(['lesspp'], function (lesspp) {
+					var pathParts = url.split('?').shift().split('/');
 					var parser = new lesspp.Parser({
-						filename: pathParts.join('/'),
-						paths: [pathParts.pop() && pathParts.join('/')]
+						filename: pathParts.pop(),
+						paths: [pathParts.join('/')]
 					});
-					parser.parse(lessText, function (err, tree) {
+					parser.parse(fixUrlsInCssFile(url, lessText), function (err, tree) {
 						if (err) {
 							console.error('LESS Parser Error!');
 							console.error(err);
@@ -134,48 +140,24 @@ define([
 			}
 
 			/**
-			 * Injects CSS into the DOM in proper order, fixing relative URLs.
+			 * Injects CSS text into the stylesheet element, fixing relative URLs.
 			 * @param  {String} cssText The CSS to inject.
 			 */
 			function processCss(cssText) {
-				// Process modules in fifo order
-				if (requestToken === loading[0]) {
-					// this module is at the head of the list, so process it
-					loading.shift();        // remove from queue
-					delete waiting[requestToken]; // remove from waiting list, if there
-				} else {
-					// Other modules need to be processed before this one, so add to the
-					//  waiting list and return without processing the module
-					waiting[requestToken] = {fn:arguments.callee, args:arguments};
-					return;
-				}
-				// see if this module is already in the cache
-				var style = cache[absMid];
-				if (!style) {
-					// create a new style element for this module and add it to the DOM
-					style = domConstruct.create('style', {}, head);
-					style.type = 'text/css';
-					dhtml.setAttr(style, 'mid', absMid);
-					if (cssText && dojo.isString(cssText) && cssText.length) {
-						cssText = fixUrlsInCssFile(url, cssText);
-						if(style.styleSheet){
-							style.styleSheet.cssText = cssText;
-						}else{
-							style.appendChild(dwindow.doc.createTextNode(cssText));
+				if (cssText && dojo.isString(cssText) && cssText.length) {
+					cssText = fixUrlsInCssFile(url, cssText);
+					if(style.styleSheet){
+						style.styleSheet.cssText = cssText;
+					}else{
+						while (style.firstChild) {
+							style.removeChild(style.firstChild);
 						}
+						style.appendChild(dwindow.doc.createTextNode(cssText));
 					}
-					// Put in cache
-					cache[absMid] = style;
 				}
+				dhtml.removeAttr(style, "loading");
 				load(style);
-
-				// Now that we're done processing this module, see if a waiting module
-				//  is at the head of the queue and process it if there is.
-				if (loading.length && loading[0] in waiting) {
-					var o = waiting[loading[0]];
-					o.fn.apply(this, o.args);
-				}
-			};
+			}
 		}
 	};
 });
