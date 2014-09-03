@@ -67,8 +67,6 @@ userConfig.has = userConfig.has || {};
 //ground for anything specified in the config.
 featureFilter = combo.featureFilter || function(name) { return !/^config-/.test(name);};
 
-addFilter = combo.addFilter || addFilter;
-
 // Set this so that the loader won't synchronously call require.callback
 userConfig.has["dojo-built"] = true;
 
@@ -161,7 +159,7 @@ combo.done = function(load, config, opt_deps) {
 };
 
 combo.add = function (prefix, name, url, config) {
-	if (/^(\/)|([^:\/]+:[\/]{2})/.test(name) || config.cache[name] || !addFilter(prefix, name, url)) {
+	if (config.cache[name] || !combo.isSupportedModule(name, url)) {
 		return false;
 	}
 	if (!depmap[name] && (!prefix || prefix in plugins)) {
@@ -176,6 +174,17 @@ combo.add = function (prefix, name, url, config) {
 		config.trace("loader-inject-combo-reject", ["can't handle: " + prefix + "!" + name]);
 	}
 	return canHandle;
+};
+
+var isNotAbsoluteOrServerRelative = function(mid) {
+	return !/^(\/)|([^:\/]+:[\/]{2})/.test(mid);	// nothing starting with / or http://	
+};
+//Returns true if the aggregator supports the specified module id.  Apps can provide an 
+//implementation of this method in the loader config to exclude selected paths.
+//Default is to support anything that doesn't begin with / or http://
+var userSpecified = combo.isSupportedModule || function() { return true; };
+combo.isSupportedModule = function(mid) {
+	return isNotAbsoluteOrServerRelative(mid) && userSpecified(mid);
 };
 
 /*

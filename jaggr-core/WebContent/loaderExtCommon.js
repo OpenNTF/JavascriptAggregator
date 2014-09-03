@@ -56,14 +56,6 @@ var params = {
 	featureFilter = function(feature) {return true;},
 	
 	/**
-	 * Default add filter aggregates all modules
-	 * 
-	 * @return true if the the module should be included in the request
-	 *         to the aggregator
-	 */
-	addFilter = function(prefix, name, url) {return true;},
-
-	/**
 	 * Array of functions that process a url, returning the new,
 	 * updated url.  When building the URL to the aggregator 
 	 * servlet, the transport will call each of the functions
