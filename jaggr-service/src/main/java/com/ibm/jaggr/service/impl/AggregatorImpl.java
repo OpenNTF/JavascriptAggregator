@@ -141,7 +141,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			try {
 				StringWriter writer = new StringWriter();
 				CopyUtil.copy(url.openStream(), writer);
-				super.mimeTypes.addMimeTypes(writer.toString());
+				super.fileTypeMap.addMimeTypes(writer.toString());
 			} catch (IOException e) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.log(Level.WARNING, e.getMessage(), e);

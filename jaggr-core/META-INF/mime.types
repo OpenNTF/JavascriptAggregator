@@ -1,0 +1,5 @@
+# Make sure standard types we use are defined
+application/javascript js JS
+text/css css CSS less LESS
+text/html html HTML htm HTM
+

@@ -90,6 +90,7 @@
         <filtering>false</filtering>
         <includes>
           <include>WebContent/**</include>
+          <include>META-INF/mime.types</include>
         </includes>
       </resource>
     </resources>
