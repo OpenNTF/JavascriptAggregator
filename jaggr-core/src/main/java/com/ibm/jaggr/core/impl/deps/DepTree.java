@@ -24,7 +24,7 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.ConsoleService;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 
 import java.io.File;
 import java.io.FileInputStream;

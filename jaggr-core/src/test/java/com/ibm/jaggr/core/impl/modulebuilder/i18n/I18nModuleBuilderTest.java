@@ -22,7 +22,6 @@ import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.modulebuilder.i18n.I18nModuleBuilder;
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
