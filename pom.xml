@@ -209,7 +209,8 @@
           <excludeSubProjects>true</excludeSubProjects>
           <excludes combine.children="append">
             <exclude>.git/**</exclude>
-            <exclude>.gitignore</exclude>
+            <exclude>**/.gitignore</exclude>
+            <exclude>**/mime.types</exclude>
             <exclude>.classpath</exclude>
             <exclude>.project</exclude>
             <exclude>**/*.MF</exclude>
