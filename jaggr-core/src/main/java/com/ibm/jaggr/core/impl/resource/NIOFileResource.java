@@ -28,10 +28,13 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.URI;
+import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Logger;
 
@@ -56,7 +59,9 @@ public class NIOFileResource extends FileResource {
 			return;
 		}
 
-		java.nio.file.Files.walkFileTree(file.toPath(), new SimpleFileVisitor<Path>() {
+		Set<FileVisitOption> options = new HashSet<FileVisitOption>();
+		options.add(FileVisitOption.FOLLOW_LINKS);
+		java.nio.file.Files.walkFileTree(file.toPath(),  options, Integer.MAX_VALUE, new SimpleFileVisitor<Path>() {
 
 			@Override
 			public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)	throws IOException {
@@ -90,7 +95,7 @@ public class NIOFileResource extends FileResource {
 			}
 			@Override
 			public boolean isFolder() {
-				return attrs.isDirectory();
+				return attrs.isDirectory() || attrs.isSymbolicLink() && file.isDirectory();
 			}
 			@Override
 			public URI getURI() {
