@@ -74,8 +74,10 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
 import java.io.UnsupportedEncodingException;
+import java.net.FileNameMap;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLConnection;
 import java.net.URLEncoder;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -136,6 +138,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected static final String DEFAULT_HTTPTRANSPORT =
 			"com.ibm.jaggr.service.dojo.httptransport"; //$NON-NLS-1$
 
+	private final static String DEFAULT_CONTENT_TYPE = "application/octet-stream"; //$NON-NLS-1$
+
 	private static final Logger log = Logger.getLogger(AbstractAggregatorImpl.class.getName());
 
 	protected ICacheManager cacheMgr = null;
@@ -148,7 +152,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected List<IServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<IServiceReference>());
 	protected InitParams initParams = null;
 	protected IOptions localOptions = null;
-	protected MimetypesFileTypeMap mimeTypes = null;
+	protected MimetypesFileTypeMap fileTypeMap = null;
+	protected FileNameMap fileNameMap = null;
 
 	private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
@@ -176,10 +181,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{servletConfig});
 		}
 		super.init(servletConfig);
-		mimeTypes = new MimetypesFileTypeMap();
-		// The map typically doesn't contain an entry for javascript.
-		// Add it here.
-		mimeTypes.addMimeTypes("application/javascript js"); //$NON-NLS-1$
+
+		// Initialize the type maps (see getContentType)
+		fileTypeMap = new MimetypesFileTypeMap();
+		fileNameMap = URLConnection.getFileNameMap();
 
 		final ServletContext context = servletConfig.getServletContext();
 
@@ -355,7 +360,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 					"Cache-Control", //$NON-NLS-1$
 					"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			);
-			resp.setHeader("Content-Type", mimeTypes.getContentType(resolved.getPath())); //$NON-NLS-1$
+			resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
 
 			InputStream is = resolved.getInputStream();
 			OutputStream os = resp.getOutputStream();
@@ -902,6 +907,34 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 		notifyConfigListeners(seq);
 		return modified;
+	}
+
+	/**
+	 * Returns the content type string for the specified filename based on the filename's extension.
+	 * Uses use both MimetypeFileTypeMap and FileNameMap (from URLConnection) because
+	 * MimetypeFileTypeMap provides a convenient way for the application to add new mappings, but
+	 * doesn't provide any default mappings, while FileNameMap, from URLConnection, provides default
+	 * mappings (via <java_home>/lib/content-types.properties) but without easy extensibility.
+	 *
+	 * @param filename
+	 *            the file name for which the content type is desired
+	 *
+	 * @return the content type (mime part) string, or application/octet-stream if no match is
+	 *         found.
+	 */
+	protected String getContentType(String filename) {
+
+		String contentType = DEFAULT_CONTENT_TYPE;
+		if (fileTypeMap != null) {
+			contentType = fileTypeMap.getContentType(filename);
+		}
+		if (DEFAULT_CONTENT_TYPE.equals(contentType) && fileNameMap != null) {
+			String test = fileNameMap.getContentTypeFor(filename);
+			if (test != null) {
+				contentType = test;
+			}
+		}
+		return contentType;
 	}
 
 	/**
