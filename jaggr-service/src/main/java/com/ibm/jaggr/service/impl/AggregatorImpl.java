@@ -32,6 +32,7 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
@@ -53,6 +54,9 @@ import org.osgi.util.tracker.ServiceTracker;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.net.URL;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -66,6 +70,9 @@ import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
 
 /**
  * Implementation for IAggregator and HttpServlet interfaces.
@@ -120,6 +127,27 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			configMap.put("alias", configElem.getAttribute("alias")); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return configMap;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.impl.AbstractAggregatorImpl#init(javax.servlet.ServletConfig)
+	 */
+	public void init(ServletConfig servletConfig) throws ServletException {
+		// If contributing bundle has a mime.types file in the META-INF directory, then
+		// add the contents to the map
+		super.init(servletConfig);
+		URL url = getContributingBundle().getResource("META-INF/mime.types");
+		if (url != null) {
+			try {
+				StringWriter writer = new StringWriter();
+				CopyUtil.copy(url.openStream(), writer);
+				super.mimeTypes.addMimeTypes(writer.toString());
+			} catch (IOException e) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.log(Level.WARNING, e.getMessage(), e);
+				}
+			}
+		}
 	}
 
 	public InitParams getConfigInitParams(IConfigurationElement configElem) {

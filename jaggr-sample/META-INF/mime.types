@@ -1,0 +1,7 @@
+# Extend content types for non-aggregated resources here.  We use javax.activation.MimetypeFileTypeMap
+# to set Content-Type headers for non-aggregated resources.  If you need to use a content type that
+# isn't supported by this class, then you can add the definition in this file. 
+# 
+# See http://docs.oracle.com/javase/6/docs/api/javax/activation/MimetypesFileTypeMap.html for 
+# the format of this file.
+image/svg+xml svg SVG
