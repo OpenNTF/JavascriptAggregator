@@ -98,6 +98,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -147,6 +148,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected List<IServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<IServiceReference>());
 	protected InitParams initParams = null;
 	protected IOptions localOptions = null;
+	protected MimetypesFileTypeMap mimeTypes = null;
 
 	private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
@@ -174,6 +176,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{servletConfig});
 		}
 		super.init(servletConfig);
+		mimeTypes = new MimetypesFileTypeMap();
+		// The map typically doesn't contain an entry for javascript.
+		// Add it here.
+		mimeTypes.addMimeTypes("application/javascript js"); //$NON-NLS-1$
 
 		final ServletContext context = servletConfig.getServletContext();
 
@@ -329,14 +335,17 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp, res, path});
 		}
 		try {
+			IResource resolved = res;
 			URI uri = res.getURI();
-			if (path != null && path.length() > 0 && !uri.getPath().endsWith("/")) { //$NON-NLS-1$
-				// Make sure we resolve against a folder path
-				uri =  new URI(uri.getScheme(), uri.getAuthority(),
-						uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
-				res = newResource(uri);
+			if (path != null && path.length() > 0) {
+				if (!uri.getPath().endsWith("/")) { //$NON-NLS-1$
+					// Make sure we resolve against a folder path
+					uri =  new URI(uri.getScheme(), uri.getAuthority(),
+							uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
+					res = newResource(uri);
+				}
+				resolved = res.resolve(path);
 			}
-			IResource resolved = res.resolve(path);
 			if (!resolved.exists()) {
 				throw new NotFoundException(resolved.getURI().toString());
 			}
@@ -346,7 +355,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 					"Cache-Control", //$NON-NLS-1$
 					"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			);
-			InputStream is = res.resolve(path).getInputStream();
+			resp.setHeader("Content-Type", mimeTypes.getContentType(resolved.getPath())); //$NON-NLS-1$
+
+			InputStream is = resolved.getInputStream();
 			OutputStream os = resp.getOutputStream();
 			CopyUtil.copy(is, os);
 		} catch (NotFoundException e) {
