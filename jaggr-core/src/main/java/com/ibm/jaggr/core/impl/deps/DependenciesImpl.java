@@ -156,7 +156,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		return depsLastModified;
 	}
 
-	private synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
+	protected synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
 		if (aggregator.getConfig() == null || processingDeps) {
 			return;
 		}
