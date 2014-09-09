@@ -43,6 +43,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -172,103 +173,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 					// initialize the console service for the worker thread.
 					ConsoleService workerCs = new ConsoleService(cs);
 					try {
-						// Map of path names to URIs for locations to be scanned for js files
-						final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> baseOverrideURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> packageURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> pathURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> packageOverrideURIs = new LinkedHashMap<String, URI>();
-						final Map<String, URI> pathOverrideURIs = new LinkedHashMap<String, URI>();
-
-						// Add top level files and folders in the location specified by baseUrl
-						// unless disabled by servlet init-param
-						IConfig config = getAggregator().getConfig();
-						if (config.isDepsIncludeBaseUrl()) {
-							Location base = config.getBase();
-							if (base != null) {
-								baseURIs.put("",  base.getPrimary()); //$NON-NLS-1$
-								if (base.getOverride() != null) {
-									baseOverrideURIs.put("", base.getOverride()); //$NON-NLS-1$
-								}
-							}
-						}
-						for (Map.Entry<String, Location> entry  : config.getPackageLocations().entrySet()) {
-							packageURIs.put(entry.getKey(), entry.getValue().getPrimary());
-							if (entry.getValue().getOverride() != null) {
-								packageOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
-							}
-						}
-						for (Map.Entry<String, Location> entry  : config.getPaths().entrySet()) {
-							pathURIs.put(entry.getKey(), entry.getValue().getPrimary());
-							if (entry.getValue().getOverride() != null) {
-								pathOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
-							}
-						}
-
-						Collection<URI> paths = new LinkedList<URI>();
-						paths.addAll(baseURIs.values());
-						paths.addAll(baseOverrideURIs.values());
-						paths.addAll(packageURIs.values());
-						paths.addAll(packageOverrideURIs.values());
-						paths.addAll(pathURIs.values());
-						paths.addAll(pathOverrideURIs.values());
-
-						boolean cleanCache = clean;
-						while (true) {
-							DepTree deps = null;
-							try {
-								deps = new DepTree(
-										paths,
-										getAggregator(),
-										initStamp,
-										cleanCache,
-										validate);
-
-								DepTreeRoot depTree = new DepTreeRoot(config);
-								deps.mapDependencies(depTree, baseURIs, true);
-								deps.mapDependencies(depTree, baseOverrideURIs, false);
-								deps.mapDependencies(depTree, packageURIs, true);
-								deps.mapDependencies(depTree, packageOverrideURIs, false);
-								deps.mapDependencies(depTree, pathURIs, true);
-								deps.mapDependencies(depTree, pathOverrideURIs, false);
-								depTree.normalizeDependencies();
-								DependenciesImpl.this.depMap = new HashMap<String, DepTreeNode.DependencyInfo>();
-								depTree.populateDepMap(depMap);
-								depsLastModified = depTree.lastModifiedDepTree();
-							} catch (Exception e) {
-								if (!cleanCache && (deps == null || deps.isFromCache())) {
-									if (log.isLoggable(Level.WARNING)) {
-										log.log(Level.WARNING, e.getMessage(), e);
-										log.warning(Messages.DepTree_10);
-									}
-									cleanCache = true;
-									continue;
-								}
-								throw e;	// rethrow the exception
-							}
-							break;
-						}
-						// Notify listeners that dependencies have been updated
-						IServiceReference[] refs = null;
-
-						refs = aggregator.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
-
-						if (refs != null) {
-							for (IServiceReference ref : refs) {
-								IDependenciesListener listener = (IDependenciesListener)(aggregator.getPlatformServices().getService(ref));
-								if (listener != null) {
-									try {
-										listener.dependenciesLoaded(DependenciesImpl.this, sequence);
-									} catch (Exception e) {
-										if (log.isLoggable(Level.SEVERE)) {
-											log.log(Level.SEVERE, e.getMessage(), e);
-										}
-									} finally {
-										aggregator.getPlatformServices().ungetService(ref);
-									}
-								}
-							}
-						}
+						processDepsAsyncWorker(validate, clean, sequence, workerCs);
 					} catch (Throwable t) {
 						initFailed = true;
 						if (log.isLoggable(Level.SEVERE)) {
@@ -277,7 +182,6 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 					} finally {
 						rwl.writeLock().unlock();
 						executor.shutdown();
-						initialized.countDown();
 						processingDeps = false;
 						workerCs.close();
 					}
@@ -291,13 +195,123 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 			while (processingDeps && !processDepsThreadStarted.get() && maxWait-- > 0) {
 				Thread.sleep(100);
 			}
+		} catch (RejectedExecutionException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+			initFailed = true;
+			// thread never started, so do some cleanup that's normally done by the thread
+			processingDeps = false;
+			executor.shutdown();
+
 		} catch (InterruptedException e) {
 			if (log.isLoggable(Level.SEVERE)) {
 				log.log(Level.SEVERE, e.getMessage(), e);
 			}
 		} finally {
 			initialized.countDown();
-			processingDeps = false;
+		}
+	}
+
+	protected void processDepsAsyncWorker(final boolean validate, final boolean clean,
+			final long sequence, final ConsoleService cs) throws Exception {
+
+		// Map of path names to URIs for locations to be scanned for js files
+		final Map<String, URI> baseURIs = new LinkedHashMap<String, URI>();
+		final Map<String, URI> baseOverrideURIs = new LinkedHashMap<String, URI>();
+		final Map<String, URI> packageURIs = new LinkedHashMap<String, URI>();
+		final Map<String, URI> pathURIs = new LinkedHashMap<String, URI>();
+		final Map<String, URI> packageOverrideURIs = new LinkedHashMap<String, URI>();
+		final Map<String, URI> pathOverrideURIs = new LinkedHashMap<String, URI>();
+
+		// Add top level files and folders in the location specified by baseUrl
+		// unless disabled by servlet init-param
+		IConfig config = getAggregator().getConfig();
+		if (config.isDepsIncludeBaseUrl()) {
+			Location base = config.getBase();
+			if (base != null) {
+				baseURIs.put("",  base.getPrimary()); //$NON-NLS-1$
+				if (base.getOverride() != null) {
+					baseOverrideURIs.put("", base.getOverride()); //$NON-NLS-1$
+				}
+			}
+		}
+		for (Map.Entry<String, Location> entry  : config.getPackageLocations().entrySet()) {
+			packageURIs.put(entry.getKey(), entry.getValue().getPrimary());
+			if (entry.getValue().getOverride() != null) {
+				packageOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
+			}
+		}
+		for (Map.Entry<String, Location> entry  : config.getPaths().entrySet()) {
+			pathURIs.put(entry.getKey(), entry.getValue().getPrimary());
+			if (entry.getValue().getOverride() != null) {
+				pathOverrideURIs.put(entry.getKey(), entry.getValue().getOverride());
+			}
+		}
+
+		Collection<URI> paths = new LinkedList<URI>();
+		paths.addAll(baseURIs.values());
+		paths.addAll(baseOverrideURIs.values());
+		paths.addAll(packageURIs.values());
+		paths.addAll(packageOverrideURIs.values());
+		paths.addAll(pathURIs.values());
+		paths.addAll(pathOverrideURIs.values());
+
+		boolean cleanCache = clean;
+		while (true) {
+			DepTree deps = null;
+			try {
+				deps = new DepTree(
+						paths,
+						getAggregator(),
+						initStamp,
+						cleanCache,
+						validate);
+
+				DepTreeRoot depTree = new DepTreeRoot(config);
+				deps.mapDependencies(depTree, baseURIs, true);
+				deps.mapDependencies(depTree, baseOverrideURIs, false);
+				deps.mapDependencies(depTree, packageURIs, true);
+				deps.mapDependencies(depTree, packageOverrideURIs, false);
+				deps.mapDependencies(depTree, pathURIs, true);
+				deps.mapDependencies(depTree, pathOverrideURIs, false);
+				depTree.normalizeDependencies();
+				DependenciesImpl.this.depMap = new HashMap<String, DepTreeNode.DependencyInfo>();
+				depTree.populateDepMap(depMap);
+				depsLastModified = depTree.lastModifiedDepTree();
+			} catch (Exception e) {
+				if (!cleanCache && (deps == null || deps.isFromCache())) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.log(Level.WARNING, e.getMessage(), e);
+						log.warning(Messages.DepTree_10);
+					}
+					cleanCache = true;
+					continue;
+				}
+				throw e;	// rethrow the exception
+			}
+			break;
+		}
+		// Notify listeners that dependencies have been updated
+		IServiceReference[] refs = null;
+
+		refs = aggregator.getPlatformServices().getServiceReferences(IDependenciesListener.class.getName(),"(name="+servletName+")"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		if (refs != null) {
+			for (IServiceReference ref : refs) {
+				IDependenciesListener listener = (IDependenciesListener)(aggregator.getPlatformServices().getService(ref));
+				if (listener != null) {
+					try {
+						listener.dependenciesLoaded(DependenciesImpl.this, sequence);
+					} catch (Exception e) {
+						if (log.isLoggable(Level.SEVERE)) {
+							log.log(Level.SEVERE, e.getMessage(), e);
+						}
+					} finally {
+						aggregator.getPlatformServices().ungetService(ref);
+					}
+				}
+			}
 		}
 	}
 
