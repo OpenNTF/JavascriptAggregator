@@ -136,7 +136,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		// If contributing bundle has a mime.types file in the META-INF directory, then
 		// add the contents to the map
 		super.init(servletConfig);
-		URL url = getContributingBundle().getResource("META-INF/mime.types");
+		URL url = getContributingBundle().getResource("META-INF/mime.types"); //$NON-NLS-1$
 		if (url != null) {
 			try {
 				StringWriter writer = new StringWriter();
