@@ -19,6 +19,7 @@
 	
 	// make sure we use the global require object
 	this.require = {
+		async: true,
 		baseUrl: '..',
 		packages: [
 				{
