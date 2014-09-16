@@ -354,27 +354,17 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			if (!resolved.exists()) {
 				throw new NotFoundException(resolved.getURI().toString());
 			}
-			// See if this is a conditional GET
-			long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
-			if (modifiedSince >= resolved.lastModified()) {
-				if (log.isLoggable(Level.FINER)) {
-					log.finer("Returning Not Modified response for resource in servlet" +  //$NON-NLS-1$
-							getName() + ":" + resolved.getURI()); //$NON-NLS-1$
-				}
-				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
-			} else {
-				resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
-				int expires = getConfig().getExpires();
-				resp.addHeader(
-						"Cache-Control", //$NON-NLS-1$
-						"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				);
-				resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
+			resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
+			int expires = getConfig().getExpires();
+			resp.addHeader(
+					"Cache-Control", //$NON-NLS-1$
+					"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			);
+			resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
 
-				InputStream is = resolved.getInputStream();
-				OutputStream os = resp.getOutputStream();
-				CopyUtil.copy(is, os);
-			}
+			InputStream is = resolved.getInputStream();
+			OutputStream os = resp.getOutputStream();
+			CopyUtil.copy(is, os);
 		} catch (NotFoundException e) {
 			if (log.isLoggable(Level.INFO)) {
 				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$

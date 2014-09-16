@@ -21,8 +21,10 @@ define([
 	'dojo/has',
 	'dojo/query',
 	'dojo/_base/array',
+	'dojo/_base/lang',
+	'dojo/io-query',
 	'dojo/text'
-], function(require, dwindow, dhtml, domConstruct, has, query, arrays){
+], function(require, dwindow, dhtml, domConstruct, has, query, arrays, lang, ioQuery){
 	/*
 	 * module:
 	 *    css
@@ -124,8 +126,11 @@ define([
 		}, 
 	
 		addArgs = function(url, queryArgs) {
+			// Mix in the query args specified by queryArgs to the URL
 			if (queryArgs) {
-				url = url + (url.indexOf('?') === -1 ? '?' : '&') + queryArgs;
+				var queryObj = ioQuery.queryToObject(queryArgs),
+				    mixedObj = lang.mixin(queryObj, ioQuery.queryToObject(url.split('?')[1] || ''));
+				url = url.split('?').shift() + '?' + ioQuery.objectToQuery(mixedObj);
 			}
 			return url;
 		},
@@ -147,7 +152,7 @@ define([
 						url = resolve(dwindow.doc.baseURI, url);
 					}
 				}
-				return addArgs(url, queryArgs);
+				return addArgs(url, queryArgs);		// add cachebust arg from including file
 			};
 	
 			if (lessImportsOnly) {
