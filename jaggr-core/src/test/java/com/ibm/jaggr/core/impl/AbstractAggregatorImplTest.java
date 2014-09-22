@@ -97,8 +97,8 @@ public class AbstractAggregatorImplTest {
 	@Test
 	public void testAddAlias_overlappingPathsValidation() throws Exception {
 		TestAggregatorImpl aggregator = EasyMock.createMockBuilder(TestAggregatorImpl.class).createMock();
-		Map<String, IResource> map = new HashMap<String, IResource>();
-		IResource res = new StringResource("test resource", new URI("/test/resource"));
+		Map<String, URI> map = new HashMap<String, URI>();
+		URI res = new URI("/test/resource");
 		aggregator.addAlias("/test", res, "", map);
 		try {
 			aggregator.addAlias("/test/sub", res, "", map);
@@ -130,8 +130,8 @@ public class AbstractAggregatorImplTest {
 	@Test
 	public void testAddAlias_pathDelimFixup() throws Exception {
 		TestAggregatorImpl aggregator = EasyMock.createMockBuilder(TestAggregatorImpl.class).createMock();
-		Map<String, IResource> map = new HashMap<String, IResource>();
-		IResource res = new StringResource("test resource", new URI("/test/resource"));
+		Map<String, URI> map = new HashMap<String, URI>();
+		URI res = new URI("/test/resource");
 		aggregator.addAlias("/test", res, "", map);
 		Assert.assertTrue(map.containsKey("/test"));
 
@@ -172,10 +172,10 @@ public class AbstractAggregatorImplTest {
 					new InitParam("resid:base-name", "resBaseName", aggregator)
 				})
 		);
-		Map<String, IResource> map = aggregator.getPathsAndAliases(initParams);
+		Map<String, URI> map = aggregator.getPathsAndAliases(initParams);
 		Assert.assertTrue(map.containsKey("/aliasPath"));
 		Assert.assertNull(map.get("/aliasPath"));
-		Assert.assertEquals(URI.create("resBaseName"), map.get("/resAlias").getURI());
+		Assert.assertEquals(URI.create("resBaseName"), map.get("/resAlias"));
 		Assert.assertEquals(2, map.size());
 	}
 
@@ -289,26 +289,6 @@ public class AbstractAggregatorImplTest {
 		Assert.fail("Expected exception");
 	}
 
-	@Test (expected=NullPointerException.class)
-	public void testGetpathsAndAliases_nullResource() {
-		TestAggregatorImpl aggregator = EasyMock.createMockBuilder(TestAggregatorImpl.class)
-				.addMockedMethod("newResource").createMock();
-		EasyMock.expect(aggregator.newResource(EasyMock.isA(URI.class))).andAnswer(new IAnswer<IResource>() {
-			@Override public IResource answer() throws Throwable {
-				return null;
-			}
-		}).anyTimes();
-		EasyMock.replay(aggregator);
-		InitParams initParams = new InitParams(
-				Arrays.asList(new InitParam[] {
-					new InitParam(InitParams.RESOURCEID_INITPARAM, "resid", aggregator),
-					new InitParam("resid:alias", "aliasPath", aggregator),
-					new InitParam("resid:base-name", "resBaseName", aggregator),
-				})
-		);
-		aggregator.getPathsAndAliases(initParams);
-		Assert.fail("Expected exception");
-	}
 	@Test (expected=IllegalArgumentException.class)
 	public void testGetpathsAndAliases_rootResourceAlias() {
 		TestAggregatorImpl aggregator = EasyMock.createMockBuilder(TestAggregatorImpl.class)
