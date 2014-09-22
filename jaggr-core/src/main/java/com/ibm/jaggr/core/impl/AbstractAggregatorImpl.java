@@ -182,8 +182,15 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 		super.init(servletConfig);
 
+		// Default constructor for MimetypesFileTypeMap *should* read our bundle's
+		// META-INF/mime.types automatically, but some older platforms (Domino)
+		// don't use the right class loader, so get the input stream ourselves
+		// and pass it to the constructor.
+		ClassLoader cld = AbstractAggregatorImpl.class.getClassLoader();
+		InputStream is = cld.getResourceAsStream("META-INF/mime.types"); //$NON-NLS-1$
+
 		// Initialize the type maps (see getContentType)
-		fileTypeMap = new MimetypesFileTypeMap();
+		fileTypeMap = new MimetypesFileTypeMap(is);
 		fileNameMap = URLConnection.getFileNameMap();
 
 		final ServletContext context = servletConfig.getServletContext();
@@ -352,17 +359,28 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			if (!resolved.exists()) {
 				throw new NotFoundException(resolved.getURI().toString());
 			}
-			resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
-			int expires = getConfig().getExpires();
-			resp.addHeader(
-					"Cache-Control", //$NON-NLS-1$
-					"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			);
-			resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
+			// See if this is a conditional GET
+			long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
+			if (modifiedSince >= resolved.lastModified()) {
+				if (log.isLoggable(Level.FINER)) {
+					log.finer("Returning Not Modified response for resource in servlet" +  //$NON-NLS-1$
+							getName() + ":" + resolved.getURI()); //$NON-NLS-1$
+				}
+				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
+			} else {
+				resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
+				int expires = getConfig().getExpires();
+				boolean hasCacheBust = req.getHeader("cb") != null || req.getHeader("cachebust") != null; //$NON-NLS-1$ //$NON-NLS-2$
+				resp.addHeader(
+						"Cache-Control", //$NON-NLS-1$
+						"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				);
+				resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
 
-			InputStream is = resolved.getInputStream();
-			OutputStream os = resp.getOutputStream();
-			CopyUtil.copy(is, os);
+				InputStream is = resolved.getInputStream();
+				OutputStream os = resp.getOutputStream();
+				CopyUtil.copy(is, os);
+			}
 		} catch (NotFoundException e) {
 			if (log.isLoggable(Level.INFO)) {
 				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
@@ -444,9 +462,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				} else {
 					resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
 					int expires = getConfig().getExpires();
+					boolean hasCacheBust = req.getHeader("cb") != null || req.getHeader("cachebust") != null; //$NON-NLS-1$ //$NON-NLS-2$
 					resp.addHeader(
 							"Cache-Control", //$NON-NLS-1$
-							"public" + (expires > 0 ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					);
 				}
 				CopyUtil.copy(in, resp.getOutputStream());
