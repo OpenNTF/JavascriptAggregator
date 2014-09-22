@@ -182,8 +182,15 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 		super.init(servletConfig);
 
+		// Default constructor for MimetypesFileTypeMap *should* read our bundle's
+		// META-INF/mime.types automatically, but some older platforms (Domino)
+		// don't use the right class loader, so get the input stream ourselves
+		// and pass it to the constructor.
+		ClassLoader cld = AbstractAggregatorImpl.class.getClassLoader();
+		InputStream is = cld.getResourceAsStream("META-INF/mime.types"); //$NON-NLS-1$
+
 		// Initialize the type maps (see getContentType)
-		fileTypeMap = new MimetypesFileTypeMap();
+		fileTypeMap = new MimetypesFileTypeMap(is);
 		fileNameMap = URLConnection.getFileNameMap();
 
 		final ServletContext context = servletConfig.getServletContext();
