@@ -163,7 +163,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected IPlatformServices platformServices;
 
 
-	protected Map<String, IResource> resourcePaths;
+	protected Map<String, URI> resourcePaths;
 
 	enum RequestNotifierAction {
 		start,
@@ -314,7 +314,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		} else {
 			boolean processed = false;
 			// search resource paths to see if we should treat as aggregator request or resource request
-			for (Map.Entry<String, IResource> entry : resourcePaths.entrySet()) {
+			for (Map.Entry<String, URI> entry : resourcePaths.entrySet()) {
 				String path = entry.getKey();
 				if (path.equals(pathInfo) && entry.getValue() == null) {
 					processAggregatorRequest(req, resp);
@@ -324,7 +324,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				if (pathInfo.startsWith(path)) {
 					if ((path.length() == pathInfo.length() || pathInfo.charAt(path.length()) == '/') && entry.getValue() != null) {
 						String resPath = path.length() == pathInfo.length() ? "" : pathInfo.substring(path.length()+1); //$NON-NLS-1$
-						IResource res = entry.getValue();
+						URI res = entry.getValue();
 						processResourceRequest(req, resp, res, resPath);
 						processed = true;
 						break;
@@ -340,24 +340,22 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		}
 	}
 
-	protected void processResourceRequest(HttpServletRequest req, HttpServletResponse resp, IResource res, String path) {
+	protected void processResourceRequest(HttpServletRequest req, HttpServletResponse resp, URI uri, String path) {
 		final String sourceMethod = "processRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp, res, path});
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp, uri, path});
 		}
 		try {
-			IResource resolved = res;
-			URI uri = res.getURI();
 			if (path != null && path.length() > 0) {
 				if (!uri.getPath().endsWith("/")) { //$NON-NLS-1$
 					// Make sure we resolve against a folder path
 					uri =  new URI(uri.getScheme(), uri.getAuthority(),
 							uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
-					res = newResource(uri);
 				}
-				resolved = res.resolve(path);
+				uri = uri.resolve(path);
 			}
+			IResource resolved = newResource(uri);
 			if (!resolved.exists()) {
 				throw new NotFoundException(resolved.getURI().toString());
 			}
@@ -1344,13 +1342,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	 *
 	 * @return Mapping of aliases to IResources
 	 */
-	protected Map<String, IResource> getPathsAndAliases(InitParams initParams) {
+	protected Map<String, URI> getPathsAndAliases(InitParams initParams) {
 		final String sourceMethod = "getPahtsAndAliases"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{initParams});
 		}
-		Map<String, IResource> resourcePaths = new HashMap<String, IResource>();
+		Map<String, URI> resourcePaths = new HashMap<String, URI>();
 		List<String> aliases = initParams.getValues(InitParams.ALIAS_INITPARAM);
 		for (String alias : aliases) {
 			addAlias(alias, null, "alias", resourcePaths); //$NON-NLS-1$
@@ -1379,11 +1377,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			if (!isPathComp) {
 				throw new IllegalArgumentException(resourceId + ":alias = " + alias); //$NON-NLS-1$
 			}
-			IResource res = newResource(URI.create(baseName));
-			if (res == null) {
-				throw new NullPointerException();
-			}
-			addAlias(alias, res, resourceId + ":alias", resourcePaths); //$NON-NLS-1$
+			addAlias(alias, URI.create(baseName), resourceId + ":alias", resourcePaths); //$NON-NLS-1$
 		}
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, resourcePaths);
@@ -1391,7 +1385,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		return Collections.unmodifiableMap(resourcePaths);
 	}
 
-	protected void addAlias(String alias, IResource res, String initParamName, Map<String, IResource> map) {
+	protected void addAlias(String alias, URI res, String initParamName, Map<String, URI> map) {
 		final String sourceMethod = "addAlias"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
