@@ -58,6 +58,7 @@ import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
 
@@ -307,6 +308,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			}
 			return;
 		}
+		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
 		resp.addHeader("Server", "JavaScript Aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
@@ -359,22 +361,28 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			if (!resolved.exists()) {
 				throw new NotFoundException(resolved.getURI().toString());
 			}
+			getTransport().decorateRequest(req);
+			boolean isNoCache = RequestUtil.isIgnoreCached(req);
 			// See if this is a conditional GET
 			long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
-			if (modifiedSince >= resolved.lastModified()) {
+			if (modifiedSince >= resolved.lastModified() && !isNoCache) {
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning Not Modified response for resource in servlet" +  //$NON-NLS-1$
 							getName() + ":" + resolved.getURI()); //$NON-NLS-1$
 				}
 				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
 			} else {
-				resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
-				int expires = getConfig().getExpires();
-				boolean hasCacheBust = req.getHeader("cb") != null || req.getHeader("cachebust") != null; //$NON-NLS-1$ //$NON-NLS-2$
-				resp.addHeader(
-						"Cache-Control", //$NON-NLS-1$
-						"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-				);
+				if (isNoCache) {
+					resp.addHeader("Cache-Control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+				} else {
+					resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
+					int expires = getConfig().getExpires();
+					boolean hasCacheBust = req.getAttribute(IHttpTransport.CACHEBUST_REQATTRNAME) != null;
+					resp.addHeader(
+							"Cache-Control", //$NON-NLS-1$
+							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+					);
+				}
 				resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
 
 				InputStream is = resolved.getInputStream();
@@ -404,7 +412,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{req, resp});
 		}
-		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
 		ConcurrentMap<String, Object> concurrentMap = new ConcurrentHashMap<String, Object>();
 		req.setAttribute(CONCURRENTMAP_REQATTRNAME, concurrentMap);
 
@@ -432,7 +439,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 						String content = "alert('" +  //$NON-NLS-1$
 								StringUtil.escapeForJavaScript(Messages.ConfigModified) +
 								"');"; //$NON-NLS-1$
-						resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+						resp.addHeader("Cache-control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
 						CopyUtil.copy(new StringReader(content), resp.getOutputStream());
 						return;
 					}
@@ -445,7 +452,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 			ILayer layer = getLayer(req);
 			long modifiedSince = req.getDateHeader("If-Modified-Since"); //$NON-NLS-1$
 			long lastModified = (Math.max(getCacheManager().getCache().getCreated(), layer.getLastModified(req)) / 1000) * 1000;
-			if (modifiedSince >= lastModified) {
+			if (modifiedSince >= lastModified && !RequestUtil.isIgnoreCached(req)) {
 				if (log.isLoggable(Level.FINER)) {
 					log.finer("Returning Not Modified response for layer in servlet" +  //$NON-NLS-1$
 							getName() + ":" + req.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME).toString()); //$NON-NLS-1$
@@ -458,11 +465,11 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 				InputStream in = layer.getInputStream(req, resp);
 				// if any of the readers included an error response, then don't cache the layer.
 				if (req.getAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME) != null) {
-					resp.addHeader("Cache-Control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+					resp.addHeader("Cache-Control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
 				} else {
 					resp.setDateHeader("Last-Modified", lastModified); //$NON-NLS-1$
 					int expires = getConfig().getExpires();
-					boolean hasCacheBust = req.getHeader("cb") != null || req.getHeader("cachebust") != null; //$NON-NLS-1$ //$NON-NLS-2$
+					boolean hasCacheBust = req.getAttribute(IHttpTransport.CACHEBUST_REQATTRNAME) != null;
 					resp.addHeader(
 							"Cache-Control", //$NON-NLS-1$
 							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

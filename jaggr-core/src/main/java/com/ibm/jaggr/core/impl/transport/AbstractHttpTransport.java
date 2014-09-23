@@ -142,11 +142,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String[] SHOWFILENAMES_REQPARAMS = {"showFilenames", "fn"}; //$NON-NLS-1$ //$NON-NLS-2$
 
-	public static final String[] NOCACHE_REQPARAMS = {"noCache", "nc"}; //$NON-NLS-1$ //$NON-NLS-2$
+	public static final String[] NOCACHE_REQPARAMS = {"noCache", "nocache", "nc"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public static final String[] REQUESTEDLOCALES_REQPARAMS = {"locales", "locs"}; //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final String[] HASPLUGINBRANCHING_REQPARAMS = {"hasBranching", "hb"}; //$NON-NLS-1$ //$NON-NLS-2$
+
+	public static final String[] CACHEBUST_REQPARAMS = {"cacheBust", "cachebust", "cb"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 
@@ -240,6 +242,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		request.setAttribute(HASPLUGINBRANCHING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, HASPLUGINBRANCHING_REQPARAMS), true));
 
 		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
+
+		request.setAttribute(CACHEBUST_REQATTRNAME, getParameter(request, CACHEBUST_REQPARAMS));
 
 		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));

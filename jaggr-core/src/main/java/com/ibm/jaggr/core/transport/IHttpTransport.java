@@ -126,6 +126,12 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".NoCache"; //$NON-NLS-1$
 
 	/**
+	 * Name of the request attributes containing any recognized cache bust
+	 * argument from the request.
+	 */
+	public static final String CACHEBUST_REQATTRNAME = IHttpTransport.class
+			.getName() + ".CacheBust"; //$NON-NLS-1$
+	/**
 	 * Specifies that the text module builder should not wrap the text
 	 * in an AMD define(...) function call, and instead should return
 	 * the text content as an unadorned string.  Some use cases (e.g.
