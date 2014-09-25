@@ -13,26 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dojoConfig = {
-	baseUrl: '/',
-	
-	has: {
-		'dojo-combo-api': true
-	},
-	
-	// Assumes the first package is the app package
-	packages: [
-		{name: 'dojo', location: 'target/WebContent/dojo/dojo'},
-		{name: 'dojox', location: 'target/WebContent/dojo/dojox'},
-	],
-
-	paths: {
-		'spec': '/spec',
-		'combo': '/WebContent',
-		'combo/featureList': 'src/test/resources/testFeatureList'
-	},
-
-	async: true,
-		
-	combo: {plugins: {"combo/text":1}, serverOptions:{}}
-};
+(function() {
+	var originalAddFunction = dojoConfig.combo.add;
+	dojoConfig.combo.add = function() {
+		if (dojoConfig.combo.disabled) {
+			return false;
+		} else {
+			return originalAddFunction.apply(this, arguments);
+		}
+	};
+	dojoConfig.combo.disabled = true;
+})();

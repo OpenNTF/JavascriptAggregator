@@ -572,7 +572,9 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				if (id instanceof Number) max = Math.max(max, (Integer)((Number)id));
 			}
 			textPluginDelegators.put(max+1, textPluginDelegators, "dojo/text"); //$NON-NLS-1$
-			jsPluginDelegators.put(max+1, jsPluginDelegators, "dojo/i18n"); //$NON-NLS-1$
+			// Don't include i18n plugin by default because app may want to request i18n
+			// resources separately.
+			//jsPluginDelegators.put(max+1, jsPluginDelegators, "dojo/i18n"); //$NON-NLS-1$
 		} finally {
 			Context.exit();
 		}

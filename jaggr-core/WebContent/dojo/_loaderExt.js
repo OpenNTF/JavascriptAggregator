@@ -79,11 +79,21 @@ userConfig.has['dojo-sync-loader'] = 0;
 /**
  * urlProcessor to add query locale query arg
  */
-urlProcessors.push(function(url){
-	
-    if (typeof dojo !== 'undefined' && dojo.locale && !/[?&]locs=/.test(url)) {
-        url+=('&locs='+[dojo.locale].concat(userConfig.extraLocales || []).join(','));
-    }
+urlProcessors.push(function(url, deps){
+	// determine if any of the modules in the request are i18n resources
+	var isI18n = false;
+	for (var i = 0; i < deps.length; i++) {
+		if (combo.isI18nResource(deps[i])) {
+			isI18n = true;
+			break;
+		}
+	}
+	if (isI18n) {
+		// If request contains i18n resources, then add the locales to the request URL
+		if (typeof dojo !== 'undefined' && dojo.locale && !/[?&]locs=/.test(url)) {
+			url+=('&locs='+[dojo.locale].concat(dojo.config.extraLocale || []).join(','));
+		}
+	}
     return url;
 });
 
@@ -91,9 +101,27 @@ urlProcessors.push(function(url){
 combo.done = function(load, config, opt_deps) {
 	var hasArg = "", base64,
 	    sendRequest = function(load, config, opt_deps) {
-			var mids = [];
+			var mids = [], i, dep;
 			opt_deps = opt_deps || deps;
-			for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
+			
+			// Determine if we need to split the request into i18n/non-i18n parts
+			if (combo.i18nSplit) {
+				var i18nModules = [], nonI18nModules = [];
+				for (i = 0; i < opt_deps.length; i++) {
+					dep = opt_deps[i];
+					(combo.isI18nResource(dep) ? i18nModules : nonI18nModules).push(dep);
+				}
+				if (i18nModules.length && nonI18nModules.length) {
+					// Mixed request.  Separate into i18n and non-i18n requests
+					deps = [];
+					depmap = {};
+					sendRequest(load, config, nonI18nModules);
+					sendRequest(load, config, i18nModules);
+					return;
+				}
+			}
+			
+			for (i = 0, dep; !!(dep = opt_deps[i]); i++) {
 				mids[i] = dep.prefix ? (dep.prefix + "!" + dep.name) : dep.name;
 			}
 			
@@ -104,7 +132,7 @@ combo.done = function(load, config, opt_deps) {
 			// Allow any externally provided URL processors to make their contribution
 			// to the URL
 			for (i = 0; i < urlProcessors.length; i++) {
-				url = urlProcessors[i](url);
+				url = urlProcessors[i](url, opt_deps);
 			}
 			
 			if (config.has("dojo-trace-api")) {
@@ -221,6 +249,16 @@ combo.decodeUrl = function(url) {
 	require(['combo/dojo/requestDecoder'], function(decoder){
 		console.log(decoder.decode(url));
 	});
+};
+
+combo.isI18nResource = combo.isI18nResource || function(mid) {
+	if (combo.plugins["combo/i18n"]) {
+		// has combo/i18n plugin support
+		return mid.prefix === "combo/i18n";
+	} else {
+		// no combo/i18n plugin support.  Figure it out from the module name
+		return !mid.prefix && /.?\/nls\/.?/.test(mid.name); 
+	}
 };
 
 setTimeout(function() {
