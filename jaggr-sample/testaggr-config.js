@@ -35,7 +35,9 @@
 	paths: {
 	},
 	
-	textPluginDelegators: ["js/css"],
+	textPluginDelegators: ["dojo/text", "js/css"],	// for server-side expansion of app generated requests
+	
+	jsPluginDelegators: ["dojo/i18n"],				// for server-side expansion of app generated requests
 	
 	deps: ["js/bootstrap"],
 

@@ -287,8 +287,10 @@
           <jsTestSrcDir>${basedir}/src/test/javascript</jsTestSrcDir>
           <preloadSources>
             <source>${basedir}/src/test/resources/loader-config.js</source>
-            <source>/target/WebContent/dojo/dojo/dojo.js</source>
             <source>/WebContent/loaderExtCommon.js</source>
+            <source>/WebContent/dojo/_loaderExt.js</source>
+            <source>${basedir}/src/test/resources/testShim.js</source>
+            <source>/target/WebContent/dojo/dojo/dojo.js</source>
           </preloadSources>
           <customRunnerTemplate>${basedir}/src/test/resources/specRunner.htmltemplate</customRunnerTemplate>
           <timeout>30</timeout>
