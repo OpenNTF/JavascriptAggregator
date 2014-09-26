@@ -32,9 +32,6 @@ var params = {
 		// optimize can equal "none" | "whitespace" | "simple"(default)
 		optimize: ["simple", "opt"],
 	
-		// cache bust string 
-		cacheBust: [null, "cb"],
-	
 		// show filenames in responses
 		showFilenames: [null, "fn"],
 	
@@ -413,6 +410,28 @@ var params = {
 				}
 			}
 		}
+	},
+	
+	/**
+	 * Parses the provided href and returns an object map of the query args in the href.
+	 * This routine does not support multivalued query args.  If a query arg appears more 
+	 * than once, the value of the last instance will be represented in the map.  
+	 * 
+	 * The names of query args are converted to lower case in the property map.
+	 */
+	parseQueryArgs = function(href) {
+		var result = {};
+		if (href) {
+			var args = href.split('?')[1];
+			if (args) {
+				var argsAry = args.split('&');
+				for (var i = 0; i < argsAry.length; i++) {
+					var argAry = argsAry[i].split('=');
+					result[argAry[0].toLowerCase()] = argAry[1];
+				}
+			}
+		}
+		return result;
 	};
 
 urlProcessors.push(function(url) {

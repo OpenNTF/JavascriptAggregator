@@ -718,7 +718,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		String cacheBust = AggregatorUtil.getCacheBust(aggregator);
 		if (cacheBust != null && cacheBust.length() > 0) {
-			sb.append("if (!require.combo.cacheBust){combo.cacheBust = '") //$NON-NLS-1$
+			sb.append("if (!require.combo.cacheBust){require.combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
 		if (moduleIdListHash != null) {

@@ -53,6 +53,12 @@ var depmap = {},
     // Map of module name to number id pairs
     moduleIdMap = {};
 
+    // Query arg from window.location
+    windowArgs = parseQueryArgs(window.location.href) || {};
+    
+    // Query arg from script tag used to load this code
+    scriptArgs = combo.scriptId && parseQueryArgs((document.getElementById(combo.scriptId)||{}).src) || {};
+
 // Copy config params from the combo config property
 for (var s in params) {
 	if (typeof combo[s] !== 'undefined') {
@@ -77,14 +83,27 @@ userConfig.has['dojo-combo-api'] = 1;
 userConfig.has['dojo-sync-loader'] = 0;
 
 /**
+ * url processor for handling cache bust query arg
+ */
+urlProcessors.push(function(url) {
+	cb = windowArgs.cachebust ||
+	     scriptArgs.cachebust || scriptArgs.cb ||
+	     combo.cacheBust || dojo.config.cacheBust;
+	if (cb) {
+		url += ('&cb=' + cb);
+	}
+	return url;
+});
+
+/**
  * urlProcessor to add query locale query arg
  */
 urlProcessors.push(function(url){
 	
-    if (typeof dojo !== 'undefined' && dojo.locale && !/[?&]locs=/.test(url)) {
-        url+=('&locs='+[dojo.locale].concat(userConfig.extraLocales || []).join(','));
-    }
-    return url;
+	if (typeof dojo !== 'undefined' && dojo.locale && !/[?&]locs=/.test(url)) {
+		url+=('&locs='+[dojo.locale].concat(userConfig.extraLocales || []).join(','));
+	}
+	return url;
 });
 
 // require.combo needs to be defined before this code is loaded
