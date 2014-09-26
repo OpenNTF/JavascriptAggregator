@@ -23,7 +23,10 @@ import org.apache.commons.codec.binary.Base64;
 import org.osgi.framework.Bundle;
 
 import java.security.MessageDigest;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Dictionary;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -109,10 +112,17 @@ public class BundleVersionsHashBase {
 		if (isTraceLogging) {
 			log.entering(BundleVersionsHashBase.class.getName(), sourceMethod);
 		}
+
+		// Sort the input lists so result is independent of the order the names are specified
+		List<String> sortedHeaderNames = Arrays.asList(headerNames);
+		List<String> sortedBundleNames = Arrays.asList(bundleNames);
+		Collections.sort(sortedHeaderNames);
+		Collections.sort(sortedBundleNames);
+
 		StringBuffer sb = new StringBuffer();
-		for (String bundleName : bundleNames) {
+		for (String bundleName : sortedBundleNames) {
 			Dictionary<?, ?> bundleHeaders = getBundleHeaders(bundleName);
-			for (String headerName : headerNames) {
+			for (String headerName : sortedHeaderNames) {
 				Object value = bundleHeaders.get(headerName);
 				if (isTraceLogging) {
 					log.finer("Bundle = " + bundleName + ", Header name = " + headerName + ", Header value = " + value); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
