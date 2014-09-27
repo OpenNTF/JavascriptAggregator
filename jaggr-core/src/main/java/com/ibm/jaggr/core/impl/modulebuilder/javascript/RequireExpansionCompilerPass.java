@@ -256,6 +256,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				if (moduleDeps != null) {
 					enclosingDependencies = new LinkedList<DependencyList>(enclosingDependencies);
 					DependencyList depList = new DependencyList(
+							moduleName,
 							moduleDeps,
 							aggregator,
 							hasFeatures,
@@ -304,6 +305,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		String ref = (idx == -1) ? "" : moduleName.substring(0, idx); //$NON-NLS-1$
 		String[] normalizedNames = PathUtil.normalizePaths(ref, names.toArray(new String[names.size()]));
 		DependencyList depList = new DependencyList(
+				moduleName,
 				Arrays.asList(normalizedNames),
 				aggregator,
 				hasFeatures,
