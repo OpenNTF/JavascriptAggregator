@@ -126,7 +126,12 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				String resname = idx == -1 ? pathname : pathname.substring(idx+1);
 
 				if (resource.isFolder()) {
-					return !resname.startsWith("."); //$NON-NLS-1$
+					if (!resname.startsWith(".")) { //$NON-NLS-1$
+						root.createOrGet(pathname, resource.getURI());
+						return true;
+					} else {
+						return false;
+					}
 				}
 				if (!resource.getPath().endsWith(".js")) { //$NON-NLS-1$
 					// non-JavaScript resource
