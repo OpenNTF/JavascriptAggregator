@@ -23,7 +23,6 @@ public class Messages extends NLS {
 	public static String DependencyList_2;
 	public static String DependencyList_3;
 	public static String DependencyList_4;
-	public static String DependencyList_5;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

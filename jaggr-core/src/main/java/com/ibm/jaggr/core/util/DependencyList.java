@@ -42,11 +42,6 @@ public class DependencyList {
 	static final Pattern hasPattern = Pattern.compile("(^|\\/)has$"); //$NON-NLS-1$
 
 	/**
-	 * The declaring source for the dependencies.  This information is included
-	 * in the diagnostic details when <code>includeDetails</code> is true.
-	 */
-	private String source = null;
-	/**
 	 * The explicit dependencies (i.e. the modules specified in the names list, plus
 	 * any additional modules resulting from has! plugin evaluation and alias
 	 * resolution.
@@ -114,8 +109,6 @@ public class DependencyList {
 	 * done at object creation time, but rather, the first time that one of the
 	 * accessors is called.
 	 *
-	 * @param source
-	 *            The declaring source.  Included in diagnostic details.
 	 * @param names
 	 *            The list of normalized module ids for which expanded
 	 *            dependencies are needed.
@@ -133,13 +126,12 @@ public class DependencyList {
 	 *            the expanded dependencies
 	 */
 	@SuppressWarnings("unchecked")
-	public DependencyList(String source, Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails) {
+	public DependencyList(Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails) {
 		final boolean entryExitLogging = log.isLoggable(Level.FINER);
 		final String methodName = "<ctor>"; //$NON-NLS-1$
 		if (entryExitLogging) {
 			log.entering(DependencyList.class.getName(), methodName, new Object[]{names, aggr, features, resolveAliases, includeDetails});
 		}
-		this.source = source;
 		this.names = (Iterable<String>) (names != null ? names : Collections.emptySet());
 		this.aggr = aggr;
 		this.features = features;
@@ -442,7 +434,7 @@ public class DependencyList {
 
 		if (resolved != null && resolved.length() > 0 && !resolved.equals(name)) {
 			name = resolved;
-			if (includeDetails) comment = MessageFormat.format(Messages.DependencyList_5, source) + sb.toString();
+			if (includeDetails) comment = Messages.DependencyList_0 + sb.toString();
 			if (recursionCheck.contains(name)) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.warning(MessageFormat.format(
@@ -456,7 +448,7 @@ public class DependencyList {
 		} else {
 			if (includeDetails) {
 				comment = (dependee == null) ?
-						MessageFormat.format(Messages.DependencyList_5, source) + sb.toString() :
+						Messages.DependencyList_0 + sb.toString() :
 							MessageFormat.format(Messages.DependencyList_4, dependee);
 			}
 		}

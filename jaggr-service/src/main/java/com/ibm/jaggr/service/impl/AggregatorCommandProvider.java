@@ -84,8 +84,6 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_GETDEPSWITHHASBRANCHING
 	};
 
-	static final String DEPSOURCE_CONSOLE = "console"; //$NON-NLS-1$
-
 	private final BundleContext context;
 
 	public AggregatorCommandProvider(BundleContext context) {
@@ -299,7 +297,6 @@ public class AggregatorCommandProvider implements CommandProvider {
 			try {
 				if (aggregator.getDependencies() != null) {
 					moduleDeps = new DependencyList(
-							DEPSOURCE_CONSOLE,
 							new HashSet<String>(Arrays.asList(new String[]{moduleName})),
 							aggregator,
 							features,

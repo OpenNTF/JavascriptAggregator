@@ -127,7 +127,6 @@ public class LayerImpl_getModulesTest {
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature")));
 		PowerMock.expectNew(
 				DependencyList.class,
-				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList(new String[]{"dep/a"})),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
@@ -172,7 +171,6 @@ public class LayerImpl_getModulesTest {
 
 		PowerMock.expectNew(
 				DependencyList.class,
-				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList("dep/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
@@ -182,7 +180,6 @@ public class LayerImpl_getModulesTest {
 
 		PowerMock.expectNew(
 				DependencyList.class,
-				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
 				EasyMock.eq(Arrays.asList("preload/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
@@ -231,7 +228,6 @@ public class LayerImpl_getModulesTest {
 
 		PowerMock.expectNew(
 				DependencyList.class,
-				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList("dep/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
@@ -241,7 +237,6 @@ public class LayerImpl_getModulesTest {
 
 		PowerMock.expectNew(
 				DependencyList.class,
-				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
 				EasyMock.eq(Arrays.asList("preload/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),

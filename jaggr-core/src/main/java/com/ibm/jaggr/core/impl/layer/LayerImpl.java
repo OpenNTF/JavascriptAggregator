@@ -90,9 +90,6 @@ public class LayerImpl implements ILayer {
 	static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
 	static final String BOOTLAYERDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
 
-	static final String DEPSOURCE_REQDEPS = " URL - deps"; //$NON-NLS-1$
-	static final String DEPSOURCE_REQPRELOADS = "URL - preloads"; //$NON-NLS-1$
-
 	protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
 			new AbstractCacheKeyGenerator() {
 				// This is a singleton, so default equals() will do
@@ -722,7 +719,6 @@ public class LayerImpl implements ILayer {
 					// If there's a required module, then add it and its dependencies
 					// to the module list.
 					requiredList = new DependencyList(
-							DEPSOURCE_REQDEPS,
 							requestedModuleNames.getDeps(),
 							aggr,
 							features,
@@ -738,7 +734,6 @@ public class LayerImpl implements ILayer {
 				}
 				if (!requestedModuleNames.getPreloads().isEmpty()) {
 					preloadList = new DependencyList(
-							DEPSOURCE_REQPRELOADS,
 							requestedModuleNames.getPreloads(),
 							aggr,
 							features,

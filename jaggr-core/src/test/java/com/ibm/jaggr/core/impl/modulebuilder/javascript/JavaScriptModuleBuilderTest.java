@@ -559,11 +559,11 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExplicitDeps);
 		expectedDeps.addAll(layerExpandedDeps);
 
-		PowerMock.expectNew(DependencyList.class, isA(String.class), isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), eq(false))
+		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), eq(false))
 		.andAnswer(new IAnswer<DependencyList>() {
 			@Override public DependencyList answer() throws Throwable {
 				@SuppressWarnings("unchecked")
-				List<String> modules = (List<String>)getCurrentArguments()[1];
+				List<String> modules = (List<String>)getCurrentArguments()[0];
 				if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
 					return mockConfigDeps;
 				} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
@@ -646,11 +646,11 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExplicitDeps);
 		expectedDeps.addAll(layerExpandedDeps);
 
-		PowerMock.expectNew(DependencyList.class, isA(String.class), isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), anyBoolean())
+		PowerMock.expectNew(DependencyList.class, isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), anyBoolean())
 		.andAnswer(new IAnswer<DependencyList>() {
 			@Override public DependencyList answer() throws Throwable {
 				@SuppressWarnings("unchecked")
-				List<String> modules = (List<String>)getCurrentArguments()[1];
+				List<String> modules = (List<String>)getCurrentArguments()[0];
 				if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
 					return mockConfigDeps;
 				} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {

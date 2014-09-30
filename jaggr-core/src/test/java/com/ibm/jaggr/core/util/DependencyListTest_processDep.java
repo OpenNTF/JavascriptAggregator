@@ -69,7 +69,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_simple() throws Exception{
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/test"})), explicitDeps.getModuleIds());
 		assertTrue(depList.getDependentFeatures().isEmpty());
@@ -77,7 +77,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAlias() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'bar/test']]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"bar/test"})), explicitDeps.getModuleIds());
@@ -86,7 +86,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withConditionalizedAlias() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[[/^foo\\//, function(s){return (has('test')?'xxx':'yyy')+'/'}]]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"yyy/test"})), explicitDeps.getModuleIds());
@@ -109,7 +109,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withPlugin() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("bar/plugin!foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"bar/plugin!foo/test", "bar/plugin"})), explicitDeps.getModuleIds());
 		assertTrue(depList.getDependentFeatures().isEmpty());
@@ -117,7 +117,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withPluginNoModule() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("bar/plugin!", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"bar/plugin!", "bar/plugin"})), explicitDeps.getModuleIds());
 		assertTrue(depList.getDependentFeatures().isEmpty());
@@ -125,7 +125,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAliasIntroducedPlugin() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'foo/plugin!bar/test']]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/plugin", "foo/plugin!bar/test"})), explicitDeps.getModuleIds());
@@ -134,7 +134,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAliasedPlugin() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[[/^bar\\//, function(s){return (has('test')?'xxx':'yyy')+'/'}]]}"));
 		depList.processDep("bar/plugin!foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"yyy/plugin!foo/test", "yyy/plugin"})), explicitDeps.getModuleIds());
@@ -143,7 +143,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAliasedPluginAndModule() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[[/^foo\\//, function(s){return (has('testFoo')?'xxx':'yyy')+'/'}],[/^bar\\//, function(s){return (has('testBar')?'www':'zzz')+'/'}]]}"));
 		depList.processDep("bar/plugin!foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"zzz/plugin!yyy/test", "zzz/plugin"})), explicitDeps.getModuleIds());
@@ -152,7 +152,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAliasResolutionUsingDefinedFeatures1() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		features.put("testFoo", true);
 		features.put("testBar", false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[[/^foo\\//, function(s){return (has('testFoo')?'xxx':'yyy')+'/'}],[/^bar\\//, function(s){return (has('testBar')?'www':'zzz')+'/'}]]}"));
@@ -163,7 +163,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAliasResolutionUsingDefinedFeatures2() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		features.put("testFoo", true);
 		features.put("testBar", true);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[[/^foo\\//, function(s){return (has('testFoo')?'xxx':'yyy')+'/'}],[/^bar\\//, function(s){return (has('testBar')?'www':'zzz')+'/'}]]}"));
@@ -174,7 +174,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withHasPluginUsingDefinedFeatures() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("dojo/has!test?foo/test:bar/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"dojo/has", "dojo/has!test?foo/test", "dojo/has!test?:bar/test"})), explicitDeps.getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test"})), depList.getDependentFeatures());
@@ -182,7 +182,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withHasPluginTermsThatCancel() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("dojo/has!test?foo/test:foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"dojo/has", "foo/test"})), explicitDeps.getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test"})), depList.getDependentFeatures());
@@ -190,7 +190,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withCompoundHasExpression() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("dojo/has!test?test1?foo1/test:bar1/test:test2:foo2/test:bar2/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(5, explicitDeps.size());
 		assertEquals(new HashSet<String>(Arrays.asList(
@@ -211,7 +211,7 @@ public class DependencyListTest_processDep {
 		features.put("test", true);
 		features.put("test1", false);
 		features.put("test2", false);
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("dojo/has!test?test1?foo1/test:bar1/test:test2:foo2/test:bar2/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(5, explicitDeps.size());
 		assertEquals(new HashSet<String>(Arrays.asList(
@@ -228,7 +228,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withAliasIntroducedHasPlugin() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'dojo/has!test?foo/fooTest:foo/barTest']]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"dojo/has", "dojo/has!test?foo/fooTest", "dojo/has!test?:foo/barTest"})), explicitDeps.getModuleIds());
@@ -237,7 +237,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withHasPluginResultsWithPlugins() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("dojo/has!test?foo/plugin!foo/test:bar/plugin!bar/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(
 				new String[]{
@@ -252,7 +252,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void testProcessDep_withCompoundHasBranchingWithAliasResolution() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/bar', 'dojo/has!test1?foo/test:bar/test'],['bar/test','dojo/has!test2?foo/xxx:foo/yyy']]}"));
 		depList.processDep("foo/bar", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(new HashSet<String>(Arrays.asList(
@@ -267,55 +267,55 @@ public class DependencyListTest_processDep {
 
 	@Test(expected = IllegalStateException.class)
 	public void recursionTests_withPluginNameLoop() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'bar/test!foo/test'],['bar/test', 'foo/test!bar/test']]}"));
 		depList.processDep("foo/test!foo/test", explicitDeps, null, new HashSet<String>(), null);
 	}
 
 	@Test(expected = IllegalStateException.class)
 	public void recursionTests_withHasBranchingLoop() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'dojo/has!test?foo/test:bar/test']]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 	}
 
 	@Test (expected = IllegalStateException.class)
 	public void recursionTests_withMultiLevelHasBranchingLoop() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'dojo/has!test1?foo/xxx:foo/zzz'], ['foo/xxx', 'dojo/has!test2?bar/xxx:bar/yyy'], ['bar/xxx', 'dojo/has!test3?foo/test:bar/test']]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 	}
 
 	@Test
 	public void loggingTests_simple()  throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, true);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, true);
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(1, explicitDeps.size());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/test"})), explicitDeps.getModuleIds());
-		assertEquals(MessageFormat.format(Messages.DependencyList_5, "test"), explicitDeps.get("foo/test").getComment().trim());
+		assertEquals(Messages.DependencyList_0, explicitDeps.get("foo/test").getComment().trim());
 	}
 
 	@Test
 	public void loggingTests_withAliasing()  throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, true);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, true);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'foo/bar']]}"));
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(1, explicitDeps.size());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/bar"})), explicitDeps.getModuleIds());
-		assertEquals(MessageFormat.format(Messages.DependencyList_5, "test") + ", Aliased from: foo/test --> foo/bar", explicitDeps.get("foo/bar").getComment());
+		assertEquals(Messages.DependencyList_0 + ", Aliased from: foo/test --> foo/bar", explicitDeps.get("foo/bar").getComment());
 	}
 	@Test
 	public void loggingTests_withImplicitPluginDependency()  throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, true);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, true);
 		depList.processDep("foo/plugin!foo/bar", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(2, explicitDeps.size());
 		assertEquals(Messages.DependencyList_1, explicitDeps.get("foo/plugin").getComment());
-		assertEquals(MessageFormat.format(Messages.DependencyList_5, "test"), explicitDeps.get("foo/plugin!foo/bar").getComment());
+		assertEquals(Messages.DependencyList_0, explicitDeps.get("foo/plugin!foo/bar").getComment());
 	}
 
 	@Test
 	public void loggingTests_withHasBranching()  throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, true);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, true);
 		depList.processDep("dojo/has!test?foo/test:bar/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(3, explicitDeps.size());
 		assertEquals(Messages.DependencyList_1, explicitDeps.get("dojo/has").getComment());
@@ -327,7 +327,7 @@ public class DependencyListTest_processDep {
 	@Test
 	public void hasBranchingDisabledTests_noDefinedFeatures() throws Exception {
 		mockAggregator.getOptions().setOption(IOptions.DISABLE_HASPLUGINBRANCHING, true);
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		depList.processDep("dojo/has!test?foo/test:bar/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(2, explicitDeps.size());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"dojo/has", "dojo/has!test?foo/test:bar/test"})), explicitDeps.getModuleIds());
@@ -337,7 +337,7 @@ public class DependencyListTest_processDep {
 	@Test
 	public void hasBranchingDisabledTests_withDefinedFeature() throws Exception {
 		mockAggregator.getOptions().setOption(IOptions.DISABLE_HASPLUGINBRANCHING, true);
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		features.put("test", true);
 		depList.processDep("dojo/has!test?foo/test:bar/test", explicitDeps, null, new HashSet<String>(), null);
 		assertEquals(2, explicitDeps.size());
@@ -347,7 +347,7 @@ public class DependencyListTest_processDep {
 
 	public void hasBranchingDisabledTests_withDefinedFeatures() throws Exception {
 		mockAggregator.getOptions().setOption(IOptions.DISABLE_HASPLUGINBRANCHING, true);
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, true, false);
 		features.put("test", true);
 		features.put("test1", true);
 		depList.processDep("dojo/has!test?test1?foo1/test:bar1/test:test2:foo2/test:bar2/test", explicitDeps, null, new HashSet<String>(), null);
@@ -358,7 +358,7 @@ public class DependencyListTest_processDep {
 
 	@Test
 	public void resolveAliasesDisabledTests() throws Exception {
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, false, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, false, false);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test', 'bar/test']]}"));
 		explicitDeps = new ModuleDeps();
 		depList.processDep("foo/test", explicitDeps, null, new HashSet<String>(), null);
@@ -370,7 +370,7 @@ public class DependencyListTest_processDep {
 	public void resolveAliasesDisabledAndHasBranchingDisabled_withDefinedFeatures() throws Exception {
 		mockAggregator.getOptions().setOption(IOptions.DISABLE_HASPLUGINBRANCHING, true);
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo1/test', 'bar/test']]}"));
-		DependencyList depList = new DependencyList("test", new HashSet<String>(), mockAggregator, features, false, false);
+		DependencyList depList = new DependencyList(new HashSet<String>(), mockAggregator, features, false, false);
 		features.put("test", true);
 		features.put("test1", true);
 		depList.processDep("dojo/has!test?test1?foo1/test:bar1/test:test2:foo2/test:bar2/test", explicitDeps, null, new HashSet<String>(), null);

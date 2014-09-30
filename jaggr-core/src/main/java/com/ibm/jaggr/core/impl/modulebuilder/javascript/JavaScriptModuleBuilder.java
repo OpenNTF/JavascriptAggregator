@@ -114,9 +114,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 */
 	static final String EXPDEPS_VARNAME = "_$$JAGGR_DEPS$$_"; //$NON-NLS-1$
 
-	static final String DEPSOURCE_CONFIGDEPS = "config deps"; //$NON-NLS-1$
-	static final String DEPSOURCE_LAYER = "layer"; //$NON-NLS-1$
-
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
 
 	private static final ICacheKeyGenerator exportNamesCacheKeyGenerator =
@@ -176,7 +173,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
 				DependencyList configDepList = new DependencyList(
-						DEPSOURCE_CONFIGDEPS,
 						aggr.getConfig().getDeps(),
 						aggr,
 						features,
@@ -184,7 +180,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						isReqExpLogging);
 
 				DependencyList layerDepList = new DependencyList(
-						DEPSOURCE_LAYER,
 						moduleIds,
 						aggr,
 						features,

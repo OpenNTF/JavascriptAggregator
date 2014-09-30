@@ -85,7 +85,7 @@ public class DependencyListTest {
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{}"));
 
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"foo/test", "bar/test"}));
-		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false) {
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false) {
 			@Override
 			public void processDep(String name, ModuleDeps deps, ModuleDepInfo callerInfo, Set<String> recursionCheck, String dependee) {
 				deps.add(name, new ModuleDepInfo(null, null, null));
@@ -101,7 +101,7 @@ public class DependencyListTest {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"foo/test", "bar/test"}));
 		moduleDeps.put("foo/test", new String[]{"foo/dep1", "foo/dep2"});
 		moduleDeps.put("bar/test", new String[]{"bar/dep"});
-		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/test", "bar/test"})),depList.getExplicitDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"foo/dep1", "foo/dep2", "bar/dep"})),depList.getExpandedDeps().getModuleIds());
 		assertTrue(depList.getDependentFeatures().isEmpty());
@@ -112,7 +112,7 @@ public class DependencyListTest {
 		configRef.set(new ConfigImpl(mockAggregator, tmpDir, "{aliases:[['foo/test','bar/test']]}"));
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"foo/test"}));
 		moduleDeps.put("bar/test", new String[]{"bar/dep1", "bar/dep2"});
-		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"bar/test"})),depList.getExplicitDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"bar/dep1", "bar/dep2"})),depList.getExpandedDeps().getModuleIds());
 		assertTrue(depList.getDependentFeatures().isEmpty());
@@ -122,7 +122,7 @@ public class DependencyListTest {
 	public void testExpandedDepsWithANDedHasConditioning() throws Exception {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"has!test?foo/test"}));
 		moduleDeps.put("foo/test", new String[]{"has!zzz?foo/dep1", "foo/dep2"});
-		DependencyList depList = new DependencyList("test",names, mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "has!test?foo/test"})),depList.getExplicitDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has!test?has", "has!test?zzz?foo/dep1", "has!test?foo/dep2"})),depList.getExpandedDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test", "zzz"})), depList.getDependentFeatures());
@@ -132,7 +132,7 @@ public class DependencyListTest {
 	public void testExpandedDepsWithORedHasConditioning() throws Exception {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"has!test?foo/test"}));
 		moduleDeps.put("foo/test", new String[]{"has!zzz?foo/dep", "has!yyy?foo/dep"});
-		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "has!test?foo/test"})),depList.getExplicitDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has!test?has", "has!test?zzz?foo/dep", "has!test?yyy?foo/dep"})),depList.getExpandedDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test", "yyy", "zzz"})), depList.getDependentFeatures());
@@ -143,7 +143,7 @@ public class DependencyListTest {
 		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"has!test?foo/test"}));
 		moduleDeps.put("foo/test", new String[]{"has!zzz?foo/dep", "has!yyy?foo/dep"});
 		features.put("test", true);
-		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "foo/test"})),depList.getExplicitDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "has!zzz?foo/dep", "has!yyy?foo/dep"})),depList.getExpandedDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test", "yyy", "zzz"})), depList.getDependentFeatures());
@@ -155,7 +155,7 @@ public class DependencyListTest {
 		moduleDeps.put("foo/test", new String[]{"has!zzz?foo/dep1", "has!yyy?foo/dep2"});
 		features.put("yyy", true);
 		features.put("zzz", false);
-		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false);
+		DependencyList depList = new DependencyList(names, mockAggregator, features, true, false);
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "has!test?foo/test"})),depList.getExplicitDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has!test?has", "has!test?foo/dep2"})),depList.getExpandedDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test", "yyy", "zzz"})), depList.getDependentFeatures());

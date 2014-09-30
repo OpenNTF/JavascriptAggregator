@@ -19,6 +19,9 @@ package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.RequireExpansionCompilerPass;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.RuntimeDependencyVerificationException;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.util.Features;
@@ -38,7 +41,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -543,12 +545,9 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		output = runPass(pass, code);
 		System.out.println(output);
 		Assert.assertTrue("Expected pattern not found.", Pattern.compile("console\\.log\\(\\\"[^)\"]*Expanding requires list").matcher(output).find());
-		Assert.assertTrue("Output does not contain expected value.",
-				output.contains("foo ("+ MessageFormat.format(com.ibm.jaggr.core.util.Messages.DependencyList_5, "test") + ")"));
-		Assert.assertTrue("Output does not contain expected value.",
-				output.contains("bar (" + MessageFormat.format(com.ibm.jaggr.core.util.Messages.DependencyList_4, "foo") + ")"));
-		Assert.assertTrue("Output does not contain expected value.",
-				output.contains("a/b (" + MessageFormat.format(com.ibm.jaggr.core.util.Messages.DependencyList_4, "bar") + ")"));
+		Assert.assertTrue("Output does not contain expected value.", output.contains("foo (Declared.)"));
+		Assert.assertTrue("Output does not contain expected value.", output.contains("bar (Referenced by foo)"));
+		Assert.assertTrue("Output does not contain expected value.", output.contains("a/b (Referenced by bar)"));
 
 	}
 
