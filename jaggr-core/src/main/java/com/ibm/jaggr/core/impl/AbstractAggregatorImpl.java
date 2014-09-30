@@ -152,7 +152,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 	protected List<IServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<IServiceReference>());
 	protected InitParams initParams = null;
-	protected IOptions localOptions = null;
 	protected MimetypesFileTypeMap fileTypeMap = null;
 	protected FileNameMap fileNameMap = null;
 

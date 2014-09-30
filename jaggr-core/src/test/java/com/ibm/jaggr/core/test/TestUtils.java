@@ -211,7 +211,7 @@ public class TestUtils {
 			IHttpTransport transport) throws Exception {
 
 		final IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);
-		IOptions options = new OptionsImpl("test", false, null);
+		IOptions options = new OptionsImpl(false, null);
 		options.setOption(IOptions.DELETE_DELAY, "0");
 		if (initParams == null) {
 			initParams = new LinkedList<InitParam>();
@@ -223,7 +223,7 @@ public class TestUtils {
 		}
 		final Ref<ICacheManager> cacheMgrRef = new Ref<ICacheManager>(null);
 		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new TestDojoHttpTransport() : transport);
-		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(null,
+		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(
 				new SynchronousExecutor(),
 				null,
 				new SynchronousScheduledExecutor(),
