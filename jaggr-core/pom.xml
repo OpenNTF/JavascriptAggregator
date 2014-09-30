@@ -165,6 +165,7 @@
             <Import-Package>
               javax.servlet;version="[2,4)",
               javax.servlet.http;version="[2,4)",
+              javax.activation;version="1.1",
               !*
             </Import-Package>
             <Embed-Dependency>
