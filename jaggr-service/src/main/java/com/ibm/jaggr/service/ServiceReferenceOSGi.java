@@ -44,14 +44,4 @@ public class ServiceReferenceOSGi implements IServiceReference {
 		return ref.toString();
 	}
 
-	@Override
-	public String getProperty(String key) {
-		return ref.getProperty(key).toString();
-	}
-
-	@Override
-	public String[] getPropertyKeys() {
-		return ref.getPropertyKeys();
-	}
-
 }

@@ -20,10 +20,6 @@ package com.ibm.jaggr.core;
  */
 public interface IServiceReference {
 
-	public String getProperty(String key);
-
-	public String[] getPropertyKeys();
-
 	/**
 	 * @return the platform service reference object
 	 */

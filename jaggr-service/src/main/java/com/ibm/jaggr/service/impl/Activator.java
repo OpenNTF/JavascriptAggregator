@@ -18,6 +18,7 @@ package com.ibm.jaggr.service.impl;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.options.IOptions;
@@ -72,6 +73,10 @@ public class Activator extends Plugin implements BundleActivator {
 		Activator.context = context;
 		Properties dict = new Properties();
 		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
+		// Create an options object and register the service
+		IOptions options = newOptions();
+		serviceRegistrations.add(
+				context.registerService(IOptions.class.getName(), options, dict));
 
 		ServiceRegistration commandProviderReg = registerCommandProvider();
 		if (commandProviderReg != null) {
@@ -82,10 +87,15 @@ public class Activator extends Plugin implements BundleActivator {
 		// aggregators created by this bundle.
 		dict = new Properties();
 		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
-		executors = newExecutors();
+		executors = newExecutors(options);
 		serviceRegistrations.add(
 				context.registerService(IExecutors.class.getName(), executors, dict));
 
+		if (options.isDevelopmentMode() && log.isLoggable(Level.WARNING)) {
+			log.warning(Messages.Activator_1);
+		} else if (options.isDebugMode() && log.isLoggable(Level.WARNING)) {
+			log.warning(Messages.Activator_2);
+		}
 		if (isTraceLogging) {
 			log.exiting(Activator.class.getName(), sourceMethod);
 		}
@@ -144,8 +154,8 @@ public class Activator extends Plugin implements BundleActivator {
 		return new OptionsImpl(Activator.BUNDLE_NAME, null);
 	}
 
-	protected IExecutors newExecutors() {
-		return new ExecutorsImpl();
+	protected IExecutors newExecutors(IOptions options) {
+		return new ExecutorsImpl(options);
 	}
 
 	protected ServiceRegistration registerCommandProvider() throws InvalidSyntaxException {

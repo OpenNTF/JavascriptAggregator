@@ -92,10 +92,10 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	public static final String DISABLEBUNDLEIDDIRSOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
 
 	protected Bundle contributingBundle;
+	private ServiceTracker optionsServiceTracker = null;
 	private ServiceTracker executorsServiceTracker = null;
 	private ServiceTracker variableResolverServiceTracker = null;
 	private File workdir = null;
-	private IOptions options = null;
 	private boolean isShuttingDown = false;
 
 
@@ -109,7 +109,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 
 	@Override
 	public IOptions getOptions() {
-		return options;
+		return (localOptions != null) ? localOptions : (IOptions) optionsServiceTracker.getService();
 	}
 
 	@Override
@@ -260,6 +260,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (!isShuttingDown) {
 			isShuttingDown = true;
 			super.shutdown();
+			optionsServiceTracker.close();
 			executorsServiceTracker.close();
 			variableResolverServiceTracker.close();
 		}
@@ -330,23 +331,26 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	}
 
 	protected void initOptions(InitParams initParams) throws InvalidSyntaxException {
+		optionsServiceTracker = getOptionsServiceTracker(Activator.getBundleContext());
+		String registrationName = getServletBundleName();
 		List<String> values = initParams.getValues(InitParams.OPTIONS_INITPARAM);
 		if (values != null && values.size() > 0) {
 			String value = values.get(0);
 			final File file = new File(value);
-			options = new OptionsImpl(true, this) {
-				@Override public File getPropsFile() { return file; }
-			};
-			if (log.isLoggable(Level.INFO)) {
-				log.info(
-						MessageFormat.format(Messages.CustomOptionsFile,new Object[] {file.toString()})
-						);
+			if (file.exists()) {
+				registrationName = registrationName + ":" + getName(); //$NON-NLS-1$
+				localOptions = new OptionsImpl(registrationName, true, this) {
+					@Override public File getPropsFile() { return file; }
+				};
+				if (log.isLoggable(Level.INFO)) {
+					log.info(
+							MessageFormat.format(Messages.CustomOptionsFile,new Object[] {file.toString()})
+							);
+				}
 			}
-		} else {
-			options = new OptionsImpl(true, this);
 		}
 		Properties dict = new Properties();
-		dict.put("name", getName()); //$NON-NLS-1$
+		dict.put("name", registrationName); //$NON-NLS-1$
 		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
 				IOptionsListener.class.getName(), this, dict)));
 
