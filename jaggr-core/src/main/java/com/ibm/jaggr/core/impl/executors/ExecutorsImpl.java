@@ -18,7 +18,6 @@ package com.ibm.jaggr.core.impl.executors;
 
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.executors.IExecutors;
-import com.ibm.jaggr.core.options.IOptions;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -61,12 +60,11 @@ public class ExecutorsImpl implements IExecutors {
 
 	private transient boolean opened = false;
 
-	public ExecutorsImpl(IOptions options) {
-		this(options, null, null, null, null);
+	public ExecutorsImpl() {
+		this(null, null, null, null);
 	}
 
 	public ExecutorsImpl(
-			IOptions options,
 			ExecutorService createExecutor,
 			ExecutorService buildExecutor,
 			ScheduledThreadPoolExecutor deleteExecutor,

@@ -51,7 +51,6 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
-import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
@@ -120,7 +119,7 @@ import javax.servlet.http.HttpServletResponse;
  * attempts will be made to serialize instances of this class.
  */
 @SuppressWarnings({ "serial", "deprecation" })
-public abstract class AbstractAggregatorImpl extends HttpServlet implements IOptionsListener, IAggregator {
+public abstract class AbstractAggregatorImpl extends HttpServlet implements IAggregator {
 	/**
 	 * Default value for resourcefactories init-param
 	 */
@@ -152,7 +151,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	protected List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 	protected List<IServiceReference> serviceReferences = Collections.synchronizedList(new LinkedList<IServiceReference>());
 	protected InitParams initParams = null;
-	protected IOptions localOptions = null;
 	protected MimetypesFileTypeMap fileTypeMap = null;
 	protected FileNameMap fileNameMap = null;
 
@@ -731,43 +729,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IOpt
 	public IModuleCache newModuleCache() {
 		return ModuleImpl.newModuleCache(this);
 	}
-
-	/**
-	 * Options update listener forwarder.  This listener is registered under the option's
-	 * name (the name of the servlet's bundle), and forwards listener events to listeners
-	 * that are registered under the aggregator name.
-	 *
-	 * @param options The options object
-	 * @param sequence The event sequence number
-	 */
-	@Override
-	public void optionsUpdated(IOptions options, long sequence) {
-		// Options have been updated.  Notify any listeners that registered using this
-		// aggregator instance's name.
-		IServiceReference[] refs = null;
-		try {
-			refs = getPlatformServices().getServiceReferences(IOptionsListener.class.getName(), "(name=" + getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-		} catch (PlatformServicesException e) {
-			if (log.isLoggable(Level.SEVERE)) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			}
-		}
-
-		if (refs != null) {
-			for (IServiceReference ref : refs) {
-				IOptionsListener listener = (IOptionsListener)getPlatformServices().getService(ref);
-				if (listener != null) {
-					try {
-						listener.optionsUpdated(options, sequence);
-					} catch (Throwable ignore) {
-					} finally {
-						getPlatformServices().ungetService(ref);
-					}
-				}
-			}
-		}
-	}
-
 
 
 

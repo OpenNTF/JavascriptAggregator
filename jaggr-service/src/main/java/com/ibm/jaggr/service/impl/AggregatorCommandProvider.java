@@ -21,6 +21,7 @@ import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.Messages;
+import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
@@ -38,6 +39,7 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.text.MessageFormat;
@@ -68,6 +70,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
 	static final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
 	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
+	static final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
 
 	static final String[] COMMANDS = new String[] {
@@ -81,10 +84,12 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_GETOPTIONS,
 		CMD_SETOPTION,
 		CMD_SHOWCONFIG,
+		CMD_GETSERVLETDIR,
 		CMD_GETDEPSWITHHASBRANCHING
 	};
 
 	private final BundleContext context;
+	private final String newline = System.getProperty("line.separator"); //$NON-NLS-1$
 
 	public AggregatorCommandProvider(BundleContext context) {
 		this.context = context;
@@ -100,41 +105,44 @@ public class AggregatorCommandProvider implements CommandProvider {
 	}
 
 	protected String getHelp(String scopeSep) {
-		String newline = System.getProperty("line.separator"); //$NON-NLS-1$
 		StringBuffer sb = new StringBuffer(Messages.CommandProvider_0).append(newline)
 				.append(MessageFormat.format(
 						Messages.CommandProvider_1,
 						new Object[]{EYECATCHER, scopeSep, CMD_HELP})).append(newline)
-						.append(MessageFormat.format(
-								Messages.CommandProvider_2,
-								new Object[]{EYECATCHER, scopeSep, CMD_LIST})).append(newline)
-								.append(MessageFormat.format(
-										Messages.CommandProvider_3,
-										new Object[]{EYECATCHER, scopeSep, CMD_RELOADCONFIG})).append(newline)
-										.append(MessageFormat.format(
-												Messages.CommandProvider_4,
-												new Object[]{EYECATCHER, scopeSep, CMD_VALIDATEDEPS, PARAM_CLEAN})).append(newline)
-												.append(MessageFormat.format(
-														Messages.CommandProvider_5,
-														new Object[]{EYECATCHER, scopeSep, CMD_GETDEPS})).append(newline)
-														.append(MessageFormat.format(
-																Messages.CommandProvider_16,
-																new Object[]{EYECATCHER, scopeSep, CMD_GETDEPSWITHHASBRANCHING, CMD_GETDEPS})).append(newline)
-																.append(MessageFormat.format(
-																		Messages.CommandProvider_6,
-																		new Object[]{EYECATCHER, scopeSep, CMD_CLEARCACHE})).append(newline)
-																		.append(MessageFormat.format(
-																				Messages.CommandProvider_7,
-																				new Object[]{EYECATCHER, scopeSep, CMD_DUMPCACHE, PARAM_CONSOLE, PARAM_FILE})).append(newline)
-																				.append(MessageFormat.format(
-																						Messages.CommandProvider_8,
-																						new Object[]{EYECATCHER, scopeSep, CMD_GETOPTIONS})).append(newline)
-																						.append(MessageFormat.format(
-																								Messages.CommandProvider_9,
-																								new Object[]{EYECATCHER, scopeSep, CMD_SETOPTION})).append(newline)
-																								.append(MessageFormat.format(
-																										Messages.CommandProvider_17,
-																										new Object[]{EYECATCHER, scopeSep, CMD_SHOWCONFIG})).append(newline);
+				.append(MessageFormat.format(
+						Messages.CommandProvider_2,
+						new Object[]{EYECATCHER, scopeSep, CMD_LIST})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_3,
+						new Object[]{EYECATCHER, scopeSep, CMD_RELOADCONFIG})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_4,
+						new Object[]{EYECATCHER, scopeSep, CMD_VALIDATEDEPS, PARAM_CLEAN})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_5,
+						new Object[]{EYECATCHER, scopeSep, CMD_GETDEPS})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_16,
+						new Object[]{EYECATCHER, scopeSep, CMD_GETDEPSWITHHASBRANCHING, CMD_GETDEPS})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_6,
+						new Object[]{EYECATCHER, scopeSep, CMD_CLEARCACHE})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_7,
+						new Object[]{EYECATCHER, scopeSep, CMD_DUMPCACHE, PARAM_CONSOLE, PARAM_FILE})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_8,
+						new Object[]{EYECATCHER, scopeSep, CMD_GETOPTIONS})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_9,
+						new Object[]{EYECATCHER, scopeSep, CMD_SETOPTION})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_17,
+						new Object[]{EYECATCHER, scopeSep, CMD_SHOWCONFIG})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_18,
+						new Object[]{EYECATCHER, scopeSep, CMD_GETSERVLETDIR})).append(newline);
+
 
 		return sb.toString();
 	}
@@ -174,6 +182,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 				ci.println(setoption(args));
 			} else if (command.equals(CMD_SHOWCONFIG)) {
 				ci.println(showconfig(args));
+			} else if (command.equals(CMD_GETSERVLETDIR)) {
+				ci.println(getServletDir(args));
 			} else {
 				ci.print(getHelp());
 			}
@@ -396,7 +406,18 @@ public class AggregatorCommandProvider implements CommandProvider {
 		if (ref != null) {
 			try {
 				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
-				sb.append(aggregator.getOptions().getOptionsMap().toString());
+				IOptions options = aggregator.getOptions();
+				sb.append(options.getOptionsMap().toString());
+				// If options object has a public getPropsFile() method, then
+				// call it and display the location of the properties file.
+				File file = null;
+				try {
+					Method getPropsFile = options.getClass().getMethod("getPropsFile", (Class<?>[]) null); //$NON-NLS-1$
+					file = (File)getPropsFile.invoke(options, (Object[])null);
+					if (file != null) {
+						sb.append(newline).append(file.getAbsolutePath());
+					}
+				}  catch (Exception ignore) {}
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
@@ -435,6 +456,20 @@ public class AggregatorCommandProvider implements CommandProvider {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
 				sb.append(aggregator.getConfig().toString());
+			} finally {
+				getBundleContext().ungetService(ref);
+			}
+		}
+		return sb.toString();
+	}
+
+	protected String getServletDir(String[] args) throws InvalidSyntaxException {
+		StringBuffer sb = new StringBuffer();
+		ServiceReference ref = getServiceRef(args, sb);
+		if (ref != null) {
+			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
+			try {
+				sb.append(aggregator.getWorkingDirectory());
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
