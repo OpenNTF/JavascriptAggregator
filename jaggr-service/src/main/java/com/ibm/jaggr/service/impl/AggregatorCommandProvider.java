@@ -88,6 +88,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_GETDEPSWITHHASBRANCHING
 	};
 
+	static final String DEPSOURCE_CONSOLE = "console"; //$NON-NLS-1$
+
 	private final BundleContext context;
 	private final String newline = System.getProperty("line.separator"); //$NON-NLS-1$
 
@@ -307,6 +309,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 			try {
 				if (aggregator.getDependencies() != null) {
 					moduleDeps = new DependencyList(
+							DEPSOURCE_CONSOLE,
 							new HashSet<String>(Arrays.asList(new String[]{moduleName})),
 							aggregator,
 							features,
