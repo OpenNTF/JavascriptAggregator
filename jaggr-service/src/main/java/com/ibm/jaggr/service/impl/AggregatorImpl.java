@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
 import com.ibm.jaggr.core.impl.AggregatorExtension;
@@ -88,7 +89,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 
 	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
 
-	public static final String DISABLEBUNDLEIDDIRSOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
+	public static final String DISABLEBUNDLEIDDIRSCOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
 
 	protected Bundle contributingBundle;
 	private ServiceTracker executorsServiceTracker = null;
@@ -223,12 +224,9 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			variableResolverServiceTracker = getVariableResolverServiceTracker(bundleContext);
 			initExtensions(configElem);
 			initOptions(initParams);
-			initialize();
-
-			initWorkingDirectory(configMap); // this must be after initOptions
-
-			// Notify listeners
-			notifyConfigListeners(1);
+			IConfig config = newConfig();
+			initWorkingDirectory(configMap, config); // this must be after initOptions
+			super.initialize(config);
 
 		} catch (Exception e) {
 			throw new CoreException(
@@ -297,18 +295,20 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	 *
 	 * @param configMap
 	 *            Map of config name/value pairs
+	 * @param config
+	 *            aggregator config object
 	 *
 	 * @throws FileNotFoundException
 	 */
-	protected void initWorkingDirectory(Map<String, String> configMap) throws FileNotFoundException {
+	protected void initWorkingDirectory(Map<String, String> configMap, IConfig config) throws FileNotFoundException {
 		final String sourceMethod = "initWorkingDirectory"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configMap});
 		}
 		String versionString = Long.toString(contributingBundle.getBundleId());
-		if (TypeUtil.asBoolean(getConfig().getProperty(DISABLEBUNDLEIDDIRSOPING_PROPNAME, null)) ||
-			TypeUtil.asBoolean(getOptions().getOption(DISABLEBUNDLEIDDIRSOPING_PROPNAME))) {
+		if (TypeUtil.asBoolean(config.getProperty(DISABLEBUNDLEIDDIRSCOPING_PROPNAME, null)) ||
+			TypeUtil.asBoolean(getOptions().getOption(DISABLEBUNDLEIDDIRSCOPING_PROPNAME))) {
 			versionString = null;
 		}
 		// Add the list of bundle ids with the same symbolic name as the contributing bundle so

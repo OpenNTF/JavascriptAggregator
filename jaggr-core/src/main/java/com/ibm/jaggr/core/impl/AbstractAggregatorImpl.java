@@ -1276,16 +1276,14 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	 * This method does some initialization for the aggregator servlet. This method is called from platform
 	 * dependent Aggregator implementation during its initialization.
 	 *
+	 * @param config
+	 *            The aggregator config
+	 *
 	 * @throws Exception
 	 */
 
-	public void initialize()
+	public void initialize(IConfig config)
 			throws Exception {
-
-		// create the config. Keep it local so it won't be seen by deps and cacheMgr
-		// until after we check for customization last-mods. Then we'll set the config
-		// in the instance data and call the config listeners.
-		IConfig config = newConfig();
 
 		// Check last-modified times of resources in the overrides folders. These resources
 		// are considered to be dynamic in a production environment and we want to
@@ -1296,8 +1294,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		deps = newDependencies(walker.getLastModifiedJS());
 		cacheMgr = newCacheManager(walker.getLastModified());
 		resourcePaths = getPathsAndAliases(getInitParams());
-		this.config = config;
 
+		// Notify listeners
+		this.config = config;
+		notifyConfigListeners(1);
 	}
 
 	/**
