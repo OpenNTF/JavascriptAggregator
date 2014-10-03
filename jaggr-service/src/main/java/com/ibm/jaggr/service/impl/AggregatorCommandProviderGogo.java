@@ -51,8 +51,10 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	}
 
 	@Descriptor("reloads the config script")
-	public String reloadconfig(@Descriptor("<servlet>")String servlet)
+	public String reloadconfig(CommandSession cs,
+			@Descriptor("<servlet>")String servlet)
 			throws IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.reloadconfig(new String[]{servlet});
 	}
 
@@ -74,19 +76,21 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	}
 
 	@Descriptor("displays dependencies for the specified module")
-	public String getdeps(
+	public String getdeps(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("<modle>")String module
 			) throws InvalidSyntaxException, IOException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.getdeps(makeArgumentArray(servlet, module));
 	}
 
 	@Descriptor("displays dependencies for the specified module with the specified features defined")
-	public String getdeps(
+	public String getdeps(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("<modle>")String module,
 			@Descriptor("<feature list> (false features begin with !)")String[] featureList
 			) throws InvalidSyntaxException, IOException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.getdeps(makeArgumentArray(servlet, module, featureList));
 	}
 
@@ -99,51 +103,65 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	}
 
 	@Descriptor("outputs the cache metadata for the specified servlet")
-	public String dumpcache(
+	public String dumpcache(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("(con | file)")String target
 			) throws InvalidSyntaxException, IOException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.dumpcache(new String[]{servlet, target});
 	}
 
 	@Descriptor("outputs the cache metadata for the specified servlet, filtered using the specified regular expression")
-	public String dumpcache(
+	public String dumpcache(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("(con | file)")String target,
 			@Descriptor("<filter> (regular expression to filter output by module name)")String filter
 			) throws InvalidSyntaxException, IOException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.dumpcache(new String[]{servlet, target, filter});
 	}
 
 	@Descriptor("displays the current options and their values for the specified servlet")
-	public String getoptions(
+	public String getoptions(CommandSession cs,
 			@Descriptor("<servlet>")String servlet
 			) throws InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.getoptions(new String[]{servlet});
 	}
 
 	@Descriptor("resets the specified option to the default value")
-	public String setoption(
+	public String setoption(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("<name>")String name
 			) throws IOException, InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.setoption(new String[]{servlet, name});
 	}
 
 	@Descriptor("sets the specified option to the specified value")
-	public String setoption(
+	public String setoption(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("<name>")String name,
 			@Descriptor("<value>")String value
 			) throws IOException, InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.setoption(new String[]{servlet, name, value});
 	}
 
 	@Descriptor("displays the config for the servlet")
-	public String showconfig(
+	public String showconfig(CommandSession cs,
 			@Descriptor("<servlet>")String servlet
 			) throws InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.showconfig(new String[]{servlet});
+	}
+
+	@Descriptor("displays the location of the servlet directory for the specified servlet")
+	public String getservletdir(CommandSession cs,
+			@Descriptor("<servlet>")String servlet
+			) throws InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
+		return super.getServletDir(new String[]{servlet});
 	}
 
 	private String[] makeArgumentArray(Object... args) {

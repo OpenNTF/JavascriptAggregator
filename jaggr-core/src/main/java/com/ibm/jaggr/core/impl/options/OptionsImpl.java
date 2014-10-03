@@ -17,27 +17,36 @@
 package com.ibm.jaggr.core.impl.options;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.IServiceRegistration;
+import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
+import org.lesscss.deps.org.apache.commons.io.FilenameUtils;
+
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.ConcurrentModificationException;
+import java.util.Dictionary;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class OptionsImpl  implements IOptions {
+public class OptionsImpl  implements IOptions, IShutdownListener {
 	private static final Logger log = Logger.getLogger(OptionsImpl.class.getName());
 
 	private static final Map<String, String> defaults;
@@ -68,31 +77,37 @@ public class OptionsImpl  implements IOptions {
 
 	private String registrationName = null;
 
+	private Properties defaultOptions;
+
 	private IAggregator aggregator = null;
-	private boolean updating = false;
 
-	public OptionsImpl(String registrationName, IAggregator aggregator) {
-		this(registrationName, true, aggregator);
-	}
+	private Collection<IServiceRegistration> serviceRegistrations;
 
-	public OptionsImpl(String registrationName, boolean loadFromPropertiesFile, IAggregator aggregator) {
+	public OptionsImpl(boolean loadFromPropertiesFile, IAggregator aggregator) {
 		this.aggregator = aggregator;
-		this.registrationName = registrationName;
-		Properties defaultOptions = new Properties(getDefaultOptions());
+		this.registrationName = aggregator != null ? aggregator.getName() : ""; //$NON-NLS-1$
+		defaultOptions = new Properties(initDefaultOptions());
 		if (loadFromPropertiesFile) {
 			setProps(loadProps(defaultOptions));
 		} else {
 			setProps(defaultOptions);
 		}
-	}
 
-	public OptionsImpl(boolean loadFromPropertiesFile, IAggregator aggregator) {
-		this.aggregator = aggregator;
-		Properties defaultOptions = new Properties(getDefaultOptions());
-		if (loadFromPropertiesFile) {
-			setProps(loadProps(defaultOptions));
-		} else {
-			setProps(defaultOptions);
+		// Create the properties file if necessary
+		tryCreatePropsFile();
+
+		serviceRegistrations = new LinkedList<IServiceRegistration>();
+		if (aggregator != null) {
+			// Register properties file changed service listener
+			Dictionary<String, String> dict = new Hashtable<String, String>();
+			dict.put("name", registrationName); //$NON-NLS-1$
+			dict.put("propsFileName", getPropsFile().getAbsolutePath()); //$NON-NLS-1$
+			serviceRegistrations.add(aggregator.getPlatformServices().registerService(OptionsImpl.class.getName(), this, dict));
+
+			// Register shutdown listener
+			dict = new Hashtable<String, String>();
+			dict.put("name", registrationName); //$NON-NLS-1$
+			serviceRegistrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, dict));
 		}
 	}
 
@@ -166,30 +181,23 @@ public class OptionsImpl  implements IOptions {
 	 */
 	@Override
 	public synchronized void setOption(String name, String value) throws IOException {
-		if (isUpdating()) {
-			// This will happen if setOption is called from within an options
-			// update listener.
-			throw new ConcurrentModificationException();
+		// update the property
+		Properties props = getProps();
+		if (value == null) {
+			props.remove(name);
+		} else {
+			props.setProperty(name, value);
 		}
-		setUpdating(true);
-		try {
-			// update the property
-			Properties props = getProps();
-			if (value == null) {
-				props.remove(name);
-			} else {
-				props.setProperty(name, value);
-			}
-			setProps(props);
+		setProps(props);
+		// Persist the new properties
+		saveProps(props);
 
-			// Notify update listeners
-			updateNotify(SequenceNumberProvider.incrementAndGetSequenceNumber());
+		long seq = SequenceNumberProvider.incrementAndGetSequenceNumber();
+		// Notify update listeners
+		updateNotify(seq);
+		// Notify options instances using the same properties file
+		propsFileUpdateNotify(props, seq);
 
-			// Persist the new properties
-			saveProps(props);
-		} finally {
-			setUpdating(false);
-		}
 	}
 
 	/* (non-Javadoc)
@@ -249,32 +257,15 @@ public class OptionsImpl  implements IOptions {
 		// try to load the properties file first from the user's home directory
 		File file = getPropsFile();
 		if (file != null) {
-			InputStream in = null;
-			try {
-				// Try to load the file from the user's home directory
-				if (file.exists()) {
-					in = new FileInputStream(file);
-				}
-				if (in == null) {
-					// Try to load it from the bundle
-					if(aggregator != null){
-						URL url = aggregator.getPlatformServices().getResource(getPropsFilename());
-						if (url != null) {
-							in = url.openStream();
-						}
+			// Try to load the file from the user's home directory
+			if (file.exists()) {
+				try {
+					URL url = file.toURI().toURL();
+					loadFromUrl(props, url);
+				} catch (MalformedURLException ex) {
+					if (log.isLoggable(Level.WARNING)) {
+						log.log(Level.WARNING, ex.getMessage(), ex);
 					}
-				}
-				if (in == null) {
-					// try using the class loader
-					in = this.getClass().getClassLoader().getResourceAsStream(getPropsFilename());
-				}
-				if (in != null) {
-					props.load(in);
-					in.close();
-				}
-			} catch (IOException e) {
-				if (log.isLoggable(Level.WARNING)) {
-					log.log(Level.SEVERE, e.getMessage(), e);
 				}
 			}
 		}
@@ -335,33 +326,140 @@ public class OptionsImpl  implements IOptions {
 	}
 
 	/**
+	 * Listener method for being informed of changes to the properties file by another
+	 * instance of this class.  Called by other instances of this class for instances
+	 * that use the same properties file when properties are saved.
+	 *
+	 * @param updated
+	 *            the updated properties
+	 * @param sequence
+	 *            the update sequence number
+	 */
+	protected void propertiesFileUpdated(Properties updated, long sequence) {
+		Properties newProps = new Properties(getDefaultOptions());
+		Enumeration<?> propsEnum = updated.propertyNames();
+		while (propsEnum.hasMoreElements()) {
+			String name = (String)propsEnum.nextElement();
+			newProps.setProperty(name, updated.getProperty(name));
+		}
+		setProps(newProps);
+		updateNotify(sequence);
+	}
+
+	void tryCreatePropsFile() {
+		// If the properties file doesn't exist, create it
+		File propsFile = getPropsFile();
+		if (!propsFile.exists()) {
+			try {
+				new File(FilenameUtils.getFullPath(propsFile.getAbsolutePath())).mkdirs();
+				saveProps(props);
+			} catch (IOException ex) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.log(Level.WARNING, ex.getMessage(), ex);
+				}
+			}
+		}
+
+	}
+	/**
+	 * Notify implementations of this class that are listening for properties file updates
+	 * on the same properties file that the properties file has been updated.
+	 *
+	 * @param updatedProps
+	 *            the updated properties
+	 * @param sequence
+	 *            the update sequence number
+	 */
+	protected void propsFileUpdateNotify(Properties updatedProps, long sequence) {
+		if(aggregator == null || aggregator.getPlatformServices() == null) return;	// unit tests?
+		IPlatformServices platformServices = aggregator.getPlatformServices();
+		try {
+			IServiceReference[] refs = platformServices.getServiceReferences(OptionsImpl.class.getName(),
+					"(propsFileName=" + getPropsFile().getAbsolutePath().replace("\\", "\\\\") + ")");	//$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			if (refs != null) {
+				for (IServiceReference ref : refs) {
+					String name = ref.getProperty("name"); //$NON-NLS-1$
+					if (!registrationName.equals(name)) {
+						OptionsImpl impl = (OptionsImpl)platformServices.getService(ref);
+						if (impl != null) {
+							try {
+								impl.propertiesFileUpdated(updatedProps, sequence);
+							} catch (Throwable ignore) {}
+							finally {
+								platformServices.ungetService(ref);
+							}
+						}
+					}
+				}
+			}
+		} catch (PlatformServicesException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IShutdownListener#shutdown(com.ibm.jaggr.core.IAggregator)
+	 */
+	@Override
+	public void shutdown(IAggregator aggregator) {
+		for(IServiceRegistration reg : serviceRegistrations) {
+			reg.unregister();
+		}
+		serviceRegistrations.clear();
+		aggregator = null;
+	}
+
+
+	/**
+	 * Load the properties in the specified url into <code>props</code>.
+	 *
+	 * @param props the properties object to update
+	 * @param url the properties file to load
+	 */
+	protected void loadFromUrl(Properties props, URL url) {
+		InputStream is = null;
+		try {
+			is = url.openStream();
+			props.load(is);
+		} catch (IOException ex) {
+			if (log.isLoggable(Level.WARNING)) {
+				log.log(Level.WARNING, ex.getMessage(), ex);
+			}
+		} finally {
+			try { if (is != null) is.close(); } catch (IOException ignore) {}
+		}
+	}
+
+	/**
 	 * Returns the default options for this the aggregator service.
 	 *
 	 * @return The default options.
 	 */
-	protected Properties getDefaultOptions() {
+	protected Properties initDefaultOptions() {
 		Properties defaultValues = new Properties();
 		defaultValues.putAll(defaults);
+
+		// See if there's an aggregator.properties in the class loader's root
+		ClassLoader cl = OptionsImpl.class.getClassLoader();
+		URL url = cl.getResource(getPropsFilename());
+		if (url != null) {
+			loadFromUrl(defaultValues, url);
+		}
+
+		// If the bundle defines properties, then load those too
+		if(aggregator != null){
+			url = aggregator.getPlatformServices().getResource(getPropsFilename());
+			if (url != null) {
+				loadFromUrl(defaultValues, url);
+			}
+		}
 		return defaultValues;
 	}
 
-	/**
-	 * Returns true if properties are being updated, including calling
-	 * of options update listeners resulting from an update.
-	 *
-	 * @return The update flag
-	 */
-	protected boolean isUpdating() {
-		return updating;
-	}
-
-	/**
-	 * Sets the update flag.
-	 *
-	 * @param updating The new value of the update flag.
-	 */
-	protected void setUpdating(boolean updating) {
-		this.updating = updating;
+	protected Properties getDefaultOptions() {
+		return defaultOptions;
 	}
 
 	/**
