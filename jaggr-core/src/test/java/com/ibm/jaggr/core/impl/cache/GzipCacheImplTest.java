@@ -236,7 +236,7 @@ public class GzipCacheImplTest {
 		Assert.assertTrue(cacheFile1.getName().startsWith("source.gzip."));
 		Assert.assertTrue(cacheFile1.getName().endsWith(".cache"));
 		long newTestDataLastMod = cacheFile1.lastModified();
-		Assert.assertTrue(Math.abs(oldLastMod - newTestDataLastMod) > 10000);
+		Assert.assertTrue(Math.abs(oldLastMod - newTestDataLastMod) >= 10000);
 
 		// reset the latches
 		latch1 = new CountDownLatch(1);
@@ -273,7 +273,7 @@ public class GzipCacheImplTest {
 		Assert.assertTrue(cacheFile2.getName().endsWith(".cache"));
 		Assert.assertFalse(cacheFile1.getName().equals(cacheFile2.getName()));
 		long newTestData2LastMod = cacheFile2.lastModified();
-		Assert.assertTrue(Math.abs(newTestDataLastMod - newTestData2LastMod) > 10000);
+		Assert.assertTrue(Math.abs(newTestDataLastMod - newTestData2LastMod) >= 10000);
 		Assert.assertEquals(cacheFile1.getName(), deletedCacheFiles.get(0));
 
 	}
@@ -285,6 +285,7 @@ public class GzipCacheImplTest {
 		EasyMock.replay(mockAggregator, mockCacheManager);
 		impl.setAggregator(mockAggregator);
 		final MutableInt retLength = new MutableInt();
+		final CountDownLatch latch3 = new CountDownLatch(1);
 
 		EasyMock.reset(mockCacheManager);
 		EasyMock.expect(mockCacheManager.getCacheDir()).andReturn(tempdir).anyTimes();
@@ -293,6 +294,7 @@ public class GzipCacheImplTest {
 			@Override
 			public Object answer() throws Throwable {
 				latch1.countDown();
+				latch2.await();
 				throw new IOException("test generated exception");
 			}
 		}).anyTimes();
@@ -309,13 +311,14 @@ public class GzipCacheImplTest {
 				} catch (Exception ex) {
 					exceptionCaught.setTrue();
 				}
-				latch2.countDown();
+				latch3.countDown();
 			}
 		}).start();
 
 		latch1.await();
 		IGzipCache.ICacheEntry cacheEntry = impl.get("key");
-		latch2.await();
+		latch2.countDown();
+		latch3.await();
 
 		Assert.assertTrue(exceptionCaught.isTrue());
 		Assert.assertNotNull(Whitebox.getInternalState(cacheEntry, "ex"));

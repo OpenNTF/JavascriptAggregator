@@ -19,6 +19,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.IGenericCache;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.Writer;
 import java.util.Map;
 import java.util.Set;
@@ -27,9 +28,18 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class GenericCacheImpl <T> implements IGenericCache<T> {
+public class GenericCacheImpl <T> implements IGenericCache<T>, Serializable {
+	private static final long serialVersionUID = 7063606966797433122L;
 
-	protected ConcurrentMap<String, T> cacheMap = new ConcurrentHashMap<String, T>();
+	protected ConcurrentMap<String, T> cacheMap;
+
+	public GenericCacheImpl() {
+		cacheMap = new ConcurrentHashMap<String, T>();
+	}
+
+	protected GenericCacheImpl(GenericCacheImpl<T> other) {
+		cacheMap = other.cacheMap;
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cache.IGenericCache#get(java.lang.String)

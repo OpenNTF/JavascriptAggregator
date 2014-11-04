@@ -36,14 +36,13 @@ import java.io.ObjectStreamException;
 import java.io.Serializable;
 import java.io.Writer;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -75,7 +74,6 @@ import javax.servlet.http.HttpServletRequest;
  * removed from the layerMap.
  */
 public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCache, Serializable {
-	private static final long serialVersionUID = -3231549218609175774L;
 
 	static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
 
@@ -100,7 +98,7 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 	 * @param layerCache
 	 */
 	protected LayerCacheImpl(LayerCacheImpl layerCache) {
-		cacheMap = layerCache.cacheMap;
+		super(layerCache);
 		layerBuildMap = layerCache.layerBuildMap;
 		aggregator = layerCache.aggregator;
 		newLayerId = layerCache.newLayerId;
@@ -111,7 +109,6 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 
 	public LayerCacheImpl(IAggregator aggregator) {
 		maxCapacity = getMaxCapacity(aggregator);
-		cacheMap = new ConcurrentHashMap<String, ILayer>();
 		layerBuildMap = new ConcurrentLinkedHashMap.Builder<String, CacheEntry>()
 				.maximumWeightedCapacity(maxCapacity)
 				.listener(newEvictionListener())
@@ -324,13 +321,13 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 	}
 
 	protected static class SerializationProxy implements Serializable {
-		private static final long serialVersionUID = 1956233862324653291L;
+		private static final long serialVersionUID = 1626266857238222300L;
 
 		private final int newLayerId;
 		private final int maxCapacity;
 		private final int numEvictions;
 		private final Class<?> clazz;
-		private final ConcurrentMap<String, ILayer> layerMap;
+		private final Map<String, ILayer> cacheMap;
 		private final Map<String, CacheEntry> layerBuildMap;
 
 		protected SerializationProxy(LayerCacheImpl cache) throws InvalidObjectException {
@@ -340,9 +337,9 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 				newLayerId = cache.newLayerId.get();
 				maxCapacity = cache.maxCapacity;
 				numEvictions = cache.numEvictions.get();
-				layerMap = new ConcurrentHashMap<String, ILayer>();
+				cacheMap = new HashMap<String, ILayer>();
 				for (Map.Entry<String, ILayer> entry : cache.cacheMap.entrySet()) {
-					layerMap.put(entry.getKey(), ((LayerImpl)entry.getValue()).cloneForSerialization());
+					cacheMap.put(entry.getKey(), ((LayerImpl)entry.getValue()).cloneForSerialization());
 				}
 
 				layerBuildMap = cache.layerBuildMap.ascendingMap();
@@ -358,7 +355,7 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-			cache.cacheMap = layerMap;
+			cache.cacheMap.putAll(cacheMap);
 			cache.newLayerId = new AtomicInteger(newLayerId);
 			cache.maxCapacity = maxCapacity;
 			cache.numEvictions = new AtomicInteger(numEvictions);

@@ -41,7 +41,7 @@ import javax.servlet.http.HttpServletRequest;
  * and adds methods for cloning and dumping the cache contents.
  */
 public class ModuleCacheImpl extends GenericCacheImpl<IModule> implements IModuleCache, Serializable {
-	private static final long serialVersionUID = 1739429773011306523L;
+	private static final long serialVersionUID = 6091565036994759152L;
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleCache#getBuild(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.module.IModule)
