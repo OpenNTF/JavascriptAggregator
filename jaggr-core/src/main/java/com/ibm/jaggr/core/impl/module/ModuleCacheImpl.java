@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.module;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.impl.cache.GenericCacheImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -29,14 +30,9 @@ import com.ibm.jaggr.core.util.RequestUtil;
 
 import java.io.IOException;
 import java.io.Serializable;
-import java.io.Writer;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -44,27 +40,8 @@ import javax.servlet.http.HttpServletRequest;
  * This class implements the {@link IModuleCache} interface by extending {@link ConcurrentHashMap}
  * and adds methods for cloning and dumping the cache contents.
  */
-public class ModuleCacheImpl implements IModuleCache, Serializable {
+public class ModuleCacheImpl extends GenericCacheImpl<IModule> implements IModuleCache, Serializable {
 	private static final long serialVersionUID = 1739429773011306523L;
-
-	private ConcurrentMap<String, IModule> cacheMap = new ConcurrentHashMap<String, IModule>();
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.IModuleCache#dump(java.io.Writer, java.util.regex.Pattern)
-	 */
-	@Override
-	public void dump(Writer writer, Pattern filter) throws IOException {
-		String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
-		for (Map.Entry<String, IModule> entry : cacheMap.entrySet()) {
-			if (filter != null) {
-				Matcher m = filter.matcher(entry.getKey());
-				if (!m.find())
-					continue;
-			}
-			writer.append("IModule key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
-			writer.append(entry.getValue().toString()).append(linesep).append(linesep);
-		}
-	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.module.IModuleCache#getBuild(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.module.IModule)
@@ -110,48 +87,5 @@ public class ModuleCacheImpl implements IModuleCache, Serializable {
 			module = cachedModule != null ? cachedModule : module;
 		}
 		return module.getBuild(request);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.IModuleCache#get(java.lang.String)
-	 */
-	@Override
-	public IModule get(String key) {
-		return cacheMap.get(key);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.IModuleCache#size()
-	 */
-	@Override
-	public int size() {
-		return cacheMap.size();
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.IModuleCache#contains(java.lang.String)
-	 */
-	@Override
-	public boolean contains(String key) {
-		return cacheMap.containsKey(key);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.module.IModuleCache#getKeys()
-	 */
-	@Override
-	public Set<String> getKeys() {
-		return cacheMap.keySet();
-	}
-
-	@Override
-	public void clear() {
-		cacheMap.clear();
-
-	}
-
-	@Override
-	public void setAggregator(IAggregator aggregator) {
-		// Not currently used by this implementation
 	}
 }

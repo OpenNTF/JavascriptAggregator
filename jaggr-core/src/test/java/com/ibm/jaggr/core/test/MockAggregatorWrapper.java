@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
@@ -156,6 +157,11 @@ public class MockAggregatorWrapper implements IAggregator {
 	@Override
 	public IModuleCache newModuleCache() {
 		return mock.newModuleCache();
+	}
+
+	@Override
+	public IGzipCache newGzipCache() {
+		return mock.newGzipCache();
 	}
 
 	@Override

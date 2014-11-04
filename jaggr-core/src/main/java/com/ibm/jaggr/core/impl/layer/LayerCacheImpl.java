@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.impl.cache.GenericCacheImpl;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -73,12 +74,10 @@ import javax.servlet.http.HttpServletRequest;
  * no longer has any CacheEntry objects in the layerBuildMap, it is
  * removed from the layerMap.
  */
-public class LayerCacheImpl implements ILayerCache, Serializable {
+public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCache, Serializable {
 	private static final long serialVersionUID = -3231549218609175774L;
 
 	static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
-
-	private ConcurrentMap<String, LayerImpl> layerMap;
 
 	private ConcurrentLinkedHashMap<String, CacheEntry> layerBuildMap;
 
@@ -101,7 +100,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	 * @param layerCache
 	 */
 	protected LayerCacheImpl(LayerCacheImpl layerCache) {
-		layerMap = layerCache.layerMap;
+		cacheMap = layerCache.cacheMap;
 		layerBuildMap = layerCache.layerBuildMap;
 		aggregator = layerCache.aggregator;
 		newLayerId = layerCache.newLayerId;
@@ -112,7 +111,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 
 	public LayerCacheImpl(IAggregator aggregator) {
 		maxCapacity = getMaxCapacity(aggregator);
-		layerMap = new ConcurrentHashMap<String, LayerImpl>();
+		cacheMap = new ConcurrentHashMap<String, ILayer>();
 		layerBuildMap = new ConcurrentLinkedHashMap.Builder<String, CacheEntry>()
 				.maximumWeightedCapacity(maxCapacity)
 				.listener(newEvictionListener())
@@ -126,7 +125,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	public void clear() {
 		cloneLock.readLock().lock();
 		try {
-			layerMap.clear();
+			cacheMap.clear();
 			layerBuildMap.clear();
 		} finally {
 			cloneLock.readLock().unlock();
@@ -139,7 +138,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 	@Override
 	public void dump(Writer writer, Pattern filter) throws IOException {
 		String linesep = System.getProperty("line.separator"); //$NON-NLS-1$
-		for (Map.Entry<String, LayerImpl> entry : layerMap.entrySet()) {
+		for (Map.Entry<String, ILayer> entry : cacheMap.entrySet()) {
 			if (filter != null) {
 				Matcher m = filter.matcher(entry.getKey());
 				if (!m.find())
@@ -148,7 +147,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			writer.append("ILayer key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
 			writer.append(entry.getValue().toString()).append(linesep).append(linesep);
 		}
-		writer.append("Number of layer cache entires = ").append(Integer.toString(layerMap.size())).append(linesep); //$NON-NLS-1$
+		writer.append("Number of layer cache entires = ").append(Integer.toString(cacheMap.size())).append(linesep); //$NON-NLS-1$
 		writer.append("Number of layer cache evictions = ").append(Integer.toString(numEvictions.get())).append(linesep); //$NON-NLS-1$
 	}
 
@@ -163,13 +162,13 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			ILayer result = null;
 			boolean ignoreCached = RequestUtil.isIgnoreCached(request);
 			if (!ignoreCached) {
-				result = layerMap.get(key);
+				result = cacheMap.get(key);
 			}
 			if (result == null) {
 				int id = newLayerId.incrementAndGet();
 				LayerImpl newLayer = new LayerImpl(key, id);
 				if (!ignoreCached) {
-					result = layerMap.putIfAbsent(key, newLayer);
+					result = cacheMap.putIfAbsent(key, newLayer);
 				}
 				if (result == null) {
 					newLayer.setLayerBuildsAccessor(new LayerBuildsAccessor(id, layerBuildMap, aggregator.getCacheManager(), cloneLock, null, this));
@@ -182,45 +181,13 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		}
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayerCache#get(java.lang.String)
-	 */
-	@Override
-	public ILayer get(String key) {
-		return layerMap.get(key);
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayerCache#contains(java.lang.String)
-	 */
-	@Override
-	public boolean contains(String key) {
-		return layerMap.containsKey(key);
-	}
-
 	boolean remove(String key, ILayer layer) {
 		cloneLock.readLock().lock();
 		try {
-			return layerMap.remove(key, layer);
+			return cacheMap.remove(key, layer);
 		} finally {
 			cloneLock.readLock().unlock();
 		}
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayerCache#getKeys()
-	 */
-	@Override
-	public Set<String> getKeys() {
-		return layerMap.keySet();
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.layer.ILayerCache#size()
-	 */
-	@Override
-	public int size() {
-		return layerMap.size();
 	}
 
 	Map<String, CacheEntry> getLayerBuildMap() {
@@ -287,8 +254,8 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		NavigableSet<String> sorted = new TreeSet<String>(buildKeys);
 		Set<String> evictionKeys = new HashSet<String>();	// list of layer keys to remove because they
 		// have no layer builds in the layerBuildMap
-		for (Map.Entry<String, LayerImpl> entry : layerMap.entrySet()) {
-			LayerImpl layer = entry.getValue();
+		for (Map.Entry<String, ILayer> entry : cacheMap.entrySet()) {
+			LayerImpl layer = (LayerImpl)entry.getValue();
 			LayerBuildsAccessor accessor = new LayerBuildsAccessor(layer.getId(), layerBuildMap, aggregator.getCacheManager(),  cloneLock, sorted, this);
 			if (accessor.getCount() > 0) {
 				layer.setLayerBuildsAccessor(accessor);
@@ -298,7 +265,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		}
 		// Now remove the layers that are missing layer builds in the layerBuildMap
 		for (String key : evictionKeys) {
-			layerMap.remove(key);
+			cacheMap.remove(key);
 		}
 	}
 
@@ -306,11 +273,11 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		return new EvictionListener<String, CacheEntry>() {
 			@Override
 			public void onEviction(String layerKey, CacheEntry cacheEntry) {
-				LayerImpl layer = layerMap.get(cacheEntry.layerKey);
+				LayerImpl layer = (LayerImpl)cacheMap.get(cacheEntry.layerKey);
 				if (layer != null) {
 					numEvictions.incrementAndGet();
 					if (layer.cacheEntryEvicted(cacheEntry)) {
-						layerMap.remove(layer.getKey(), layer);
+						cacheMap.remove(layer.getKey(), layer);
 					}
 				}
 				// Delete the cache entry persistent storage.
@@ -363,7 +330,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 		private final int maxCapacity;
 		private final int numEvictions;
 		private final Class<?> clazz;
-		private final ConcurrentMap<String, LayerImpl> layerMap;
+		private final ConcurrentMap<String, ILayer> layerMap;
 		private final Map<String, CacheEntry> layerBuildMap;
 
 		protected SerializationProxy(LayerCacheImpl cache) throws InvalidObjectException {
@@ -373,9 +340,9 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 				newLayerId = cache.newLayerId.get();
 				maxCapacity = cache.maxCapacity;
 				numEvictions = cache.numEvictions.get();
-				layerMap = new ConcurrentHashMap<String, LayerImpl>();
-				for (Map.Entry<String, LayerImpl> entry : cache.layerMap.entrySet()) {
-					layerMap.put(entry.getKey(), (LayerImpl)entry.getValue().cloneForSerialization());
+				layerMap = new ConcurrentHashMap<String, ILayer>();
+				for (Map.Entry<String, ILayer> entry : cache.cacheMap.entrySet()) {
+					layerMap.put(entry.getKey(), ((LayerImpl)entry.getValue()).cloneForSerialization());
 				}
 
 				layerBuildMap = cache.layerBuildMap.ascendingMap();
@@ -391,7 +358,7 @@ public class LayerCacheImpl implements ILayerCache, Serializable {
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
-			cache.layerMap = layerMap;
+			cache.cacheMap = layerMap;
 			cache.newLayerId = new AtomicInteger(newLayerId);
 			cache.maxCapacity = maxCapacity;
 			cache.numEvictions = new AtomicInteger(numEvictions);

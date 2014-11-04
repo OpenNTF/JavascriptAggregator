@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICache;
+import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModuleCache;
 
@@ -27,18 +28,20 @@ import java.util.Date;
 import java.util.regex.Pattern;
 
 public class CacheImpl implements ICache {
-	private static final long serialVersionUID = 8499083762317350377L;
+	private static final long serialVersionUID = 7009828162307975619L;
 	/// The caches
 	private ILayerCache _layerCache;
 	private IModuleCache _moduleCache;
+	private IGzipCache _gzipCache;
 
 	private Object _control;	// used by cache manager to control cache life span
 
 	private final long _created;
 
-	public CacheImpl(ILayerCache layerCache, IModuleCache moduleCache, Object control) {
+	public CacheImpl(ILayerCache layerCache, IModuleCache moduleCache, IGzipCache gzipCache, Object control) {
 		_layerCache = layerCache;
 		_moduleCache = moduleCache;
+		_gzipCache = gzipCache;
 		_control = control;
 
 		_created = new Date().getTime();
@@ -61,6 +64,11 @@ public class CacheImpl implements ICache {
 	}
 
 	@Override
+	public IGzipCache getGzipCache() {
+		return _gzipCache;
+	}
+
+	@Override
 	public long getCreated() {
 		return _created;
 	}
@@ -75,6 +83,7 @@ public class CacheImpl implements ICache {
 	public synchronized void clear() {
 		_layerCache.clear();
 		_moduleCache.clear();
+		_gzipCache.clear();
 	}
 
 	/* (non-Javadoc)
@@ -84,12 +93,14 @@ public class CacheImpl implements ICache {
 	public void dump(Writer writer, Pattern filter) throws IOException {
 		_layerCache.dump(writer, filter);
 		_moduleCache.dump(writer, filter);
+		_gzipCache.dump(writer, filter);
 	}
 
 	@Override
 	public void setAggregator(IAggregator aggregator) {
 		_layerCache.setAggregator(aggregator);
 		_moduleCache.setAggregator(aggregator);
+		_gzipCache.setAggregator(aggregator);
 	}
 
 }
