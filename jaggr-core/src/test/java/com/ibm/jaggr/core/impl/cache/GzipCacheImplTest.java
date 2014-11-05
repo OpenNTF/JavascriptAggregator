@@ -236,7 +236,8 @@ public class GzipCacheImplTest {
 		Assert.assertTrue(cacheFile1.getName().startsWith("source.gzip."));
 		Assert.assertTrue(cacheFile1.getName().endsWith(".cache"));
 		long newTestDataLastMod = cacheFile1.lastModified();
-		Assert.assertTrue(Math.abs(oldLastMod - newTestDataLastMod) >= 10000);
+		Assert.assertTrue("oldLastMod = " + oldLastMod + ", newTestDataLastMod = " + newTestDataLastMod,
+				Math.abs(oldLastMod - newTestDataLastMod) >= 10000);
 
 		// reset the latches
 		latch1 = new CountDownLatch(1);
@@ -273,7 +274,8 @@ public class GzipCacheImplTest {
 		Assert.assertTrue(cacheFile2.getName().endsWith(".cache"));
 		Assert.assertFalse(cacheFile1.getName().equals(cacheFile2.getName()));
 		long newTestData2LastMod = cacheFile2.lastModified();
-		Assert.assertTrue(Math.abs(newTestDataLastMod - newTestData2LastMod) >= 10000);
+		Assert.assertTrue("newTestDataLastMod = " + newTestDataLastMod + ", newTestData2LastMod = " + newTestData2LastMod,
+				Math.abs(newTestDataLastMod - newTestData2LastMod) >= 10000);
 		Assert.assertEquals(cacheFile1.getName(), deletedCacheFiles.get(0));
 
 	}
