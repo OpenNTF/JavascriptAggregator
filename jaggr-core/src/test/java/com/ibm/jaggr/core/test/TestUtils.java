@@ -22,8 +22,10 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.cache.GzipCacheImpl;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.executors.ExecutorsImpl;
 import com.ibm.jaggr.core.impl.layer.LayerCacheImpl;
@@ -267,6 +269,11 @@ public class TestUtils {
 				return new ModuleCacheImpl();
 			}
 		}).anyTimes();
+		EasyMock.expect(mockAggregator.newGzipCache()).andAnswer(new IAnswer<IGzipCache>() {
+			public IGzipCache answer() throws Throwable {
+				return new GzipCacheImpl();
+			}
+		}).anyTimes();
 		EasyMock.expect(mockAggregator.getInitParams()).andAnswer(new IAnswer<InitParams>() {
 			public InitParams answer() throws Throwable {
 				return aggInitParams;
@@ -334,6 +341,11 @@ public class TestUtils {
 		EasyMock.expect(mockAggregator.newModuleCache()).andAnswer(new IAnswer<IModuleCache>() {
 			public IModuleCache answer() throws Throwable {
 				return new ModuleCacheImpl();
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.newGzipCache()).andAnswer(new IAnswer<IGzipCache>() {
+			public IGzipCache answer() throws Throwable {
+				return new GzipCacheImpl();
 			}
 		}).anyTimes();
 		EasyMock.expect(mockAggregator.substituteProps((String)EasyMock.anyObject())).andAnswer(new IAnswer<String>() {

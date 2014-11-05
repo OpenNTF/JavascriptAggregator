@@ -45,6 +45,13 @@ public interface ICache extends Serializable {
 	public IModuleCache getModules();
 
 	/**
+	 * Returns the cache of gzipped modules
+	 *
+	 * @return the gzip module cache
+	 */
+	public IGzipCache getGzipCache();
+
+	/**
 	 * Returns the date and time that this cache object was created.
 	 *
 	 * @return The creation date of this cache

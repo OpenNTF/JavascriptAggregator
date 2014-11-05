@@ -18,6 +18,7 @@ package com.ibm.jaggr.core;
 
 import com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -273,6 +274,13 @@ public interface IAggregator {
 	 * @return the new IModuleCache instance
 	 */
 	public IModuleCache newModuleCache();
+
+	/**
+	 * Factory method for IGZipCache
+	 *
+	 * @return the new IGzipCache instance
+	 */
+	public IGzipCache newGzipCache();
 
 	/**
 	 * Performs substitution of variable names of the form ${name} with the values

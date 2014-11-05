@@ -60,7 +60,7 @@ import java.util.regex.Pattern;
 
 public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConfigListener, IDependenciesListener, IOptionsListener {
 
-	private static final Logger log = Logger.getLogger(ICacheManager.class.getName());
+	private static final Logger log = Logger.getLogger(CacheManagerImpl.class.getName());
 
 	private static final String CACHEDIR_NAME = "cache"; //$NON-NLS-1$
 	/**
@@ -227,8 +227,12 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	}
 
 	public synchronized void clearCache() {
-		CacheImpl newCache = new CacheImpl(_aggregator.newLayerCache(), _aggregator.newModuleCache(), _control);
-		newCache.setAggregator(_aggregator);
+		CacheImpl newCache = new CacheImpl(_aggregator.newLayerCache(), _aggregator.newModuleCache(), _aggregator.newGzipCache(), _control);
+		// Use AggregatorProxy so that getCacheManager will return non-null
+		// if called from within setAggregator.  Need to do this because
+		// IAggregator.getCacheManager() may be unable to return this object
+		// if it is still being constructed.
+		newCache.setAggregator(AggregatorProxy.newInstance(_aggregator, this));
 		clean(_directory);
 		CacheImpl oldCache = _cache.getAndSet(newCache);
 		if (oldCache != null) {

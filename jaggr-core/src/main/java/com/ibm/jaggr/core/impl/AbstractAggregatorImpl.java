@@ -34,11 +34,13 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.cache.CacheManagerImpl;
+import com.ibm.jaggr.core.impl.cache.GzipCacheImpl;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.deps.DependenciesImpl;
 import com.ibm.jaggr.core.impl.layer.LayerImpl;
@@ -63,6 +65,7 @@ import com.ibm.jaggr.core.util.StringUtil;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -381,9 +384,19 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					);
 				}
-				resp.setHeader("Content-Type", getContentType(resolved.getPath())); //$NON-NLS-1$
+				String contentType = getContentType(resolved.getPath());
+				resp.setHeader("Content-Type", contentType); //$NON-NLS-1$
 
-				InputStream is = resolved.getInputStream();
+				InputStream is = null;
+				if (RequestUtil.isGzipEncoding(req) && !contentType.startsWith("image/")) { //$NON-NLS-1$
+					MutableInt contentLength = new MutableInt();
+					is = getCacheManager().getCache().getGzipCache().getInputStream(path, resolved.getURI(), contentLength);
+					resp.setContentLength(contentLength.getValue());
+					resp.addHeader("Content-Encoding", "gzip"); //$NON-NLS-1$ //$NON-NLS-2$
+				} else {
+					is = resolved.getInputStream();
+					resp.setContentLength(resolved.getURI().toURL().openConnection().getContentLength());
+				}
 				OutputStream os = resp.getOutputStream();
 				CopyUtil.copy(is, os);
 			}
@@ -730,7 +743,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		return ModuleImpl.newModuleCache(this);
 	}
 
-
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#newGzipCache()
+	 */
+	@Override
+	public IGzipCache newGzipCache() {
+		return new GzipCacheImpl();
+	}
 
 	/**
 	 * Sets response status and headers for an error response based on the information in the
