@@ -97,7 +97,7 @@ public class DepTreeNodeTest extends EasyMock {
 	public void testLastModified() {
 		DepTreeNode node = new DepTreeNode("foo", null);
 		assertEquals(node.lastModified(), -1);
-		node.setDependencies(new String[]{"dep1", "dep2"}, new String[0], 1234567890L, 0L);
+		node.setDependencies(new String[]{"dep1", "dep2"}, new String[0], new String[0], 1234567890L, 0L);
 		assertEquals(node.lastModified(), 1234567890L);
 	}
 
@@ -105,7 +105,7 @@ public class DepTreeNodeTest extends EasyMock {
 	public void testLastModifiedDep() {
 		DepTreeNode node = new DepTreeNode("foo", null);
 		assertEquals(node.lastModifiedDep(), -1);
-		node.setDependencies(new String[]{"dep1", "dep2"}, new String[0], 0L, 1234567890L);
+		node.setDependencies(new String[]{"dep1", "dep2"}, new String[0], new String[0], 0L, 1234567890L);
 		assertEquals(node.lastModifiedDep(), 1234567890L);
 	}
 
@@ -116,9 +116,9 @@ public class DepTreeNodeTest extends EasyMock {
 		DepTreeNode ab = new DepTreeNode("ab", null);
 		a.add(aa);
 		a.add(ab);
-		a.setDependencies(new String[]{"b", "c"}, new String[0], 1234567890L, 1234567890L);
-		aa.setDependencies(new String[]{"b", "c"}, new String[0], 1234567890L, 1234567890L);
-		ab.setDependencies(new String[]{"b", "c"}, new String[0], 1234567890L, 2000000000L);
+		a.setDependencies(new String[]{"b", "c"}, new String[0], new String[0], 1234567890L, 1234567890L);
+		aa.setDependencies(new String[]{"b", "c"}, new String[0], new String[0], 1234567890L, 1234567890L);
+		ab.setDependencies(new String[]{"b", "c"}, new String[0], new String[0], 1234567890L, 2000000000L);
 		assertEquals(a.lastModifiedDepTree(), 2000000000L);
 	}
 
@@ -144,11 +144,13 @@ public class DepTreeNodeTest extends EasyMock {
 	}
 
 	@Test
-	public void testGetDepArray() {
-		String[] deps = new String[] { "dep1", "dep2" };
+	public void testGetDepArrays() {
+		String[] defineDeps = new String[] { "dep1", "dep2" };
+		String[] requireDeps = new String[] { "req1", "req2" };
 		DepTreeNode node = new DepTreeNode("node", null);
-		node.setDependencies(deps, new String[0], 1234567890L, 1234567890L);
-		assert(Arrays.equals(node.getDepArray(), deps));
+		node.setDependencies(defineDeps, requireDeps, new String[0], 1234567890L, 1234567890L);
+		assert(Arrays.equals(node.getDefineDepArray(), defineDeps));
+		assert(Arrays.equals(node.getRequireDepArray(), requireDeps));
 	}
 
 	@Test
@@ -270,9 +272,9 @@ public class DepTreeNodeTest extends EasyMock {
 		root.createOrGet("a/b", null);
 		root.createOrGet("a/b/a", null);
 		root.createOrGet("a/b/b", URI.create("a/b/b"));
-		root.getDescendent("a/b").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
-		root.getDescendent("c").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
-		root.getDescendent("a/b/a").setDependencies(new String[]{"dep"}, new String[0], 0L, 0L);
+		root.getDescendent("a/b").setDependencies(new String[]{"dep"}, new String[0], new String[0], 0L, 0L);
+		root.getDescendent("c").setDependencies(new String[]{"dep"}, new String[0], new String[0], 0L, 0L);
+		root.getDescendent("a/b/a").setDependencies(new String[]{"dep"}, new String[0], new String[0], 0L, 0L);
 		root.prune();
 		assertNotNull(root.getChild("a"));
 		assertNotNull(root.getChild("c"));
@@ -287,9 +289,11 @@ public class DepTreeNodeTest extends EasyMock {
 	@Test
 	public void testSetDependencies() {
 		DepTreeNode root = new DepTreeNode("root", null);
-		String[] deps = new String[]{"dep1", "dep2"};
-		root.setDependencies(deps, new String[0], 0L, 1L);
-		assert(Arrays.equals(root.getDepArray(), deps));
+		String[] defineDeps = new String[]{"dep1", "dep2"};
+		String[] requireDeps = new String[]{"req1", "req2"};
+		root.setDependencies(defineDeps, requireDeps, new String[0], 0L, 1L);
+		assert(Arrays.equals(root.getDefineDepArray(), defineDeps));
+		assert(Arrays.equals(root.getRequireDepArray(), requireDeps));
 		assertEquals(root.lastModified(), 0L);
 		assertEquals(root.lastModifiedDep(), 1L);
 	}
@@ -297,41 +301,45 @@ public class DepTreeNodeTest extends EasyMock {
 	@Test
 	public void testToString() {
 		DepTreeNode root = new DepTreeNode("root", null);
-		root.setDependencies(new String[] {"a", "b"}, new String[0], 0L, 1L);
+		root.setDependencies(new String[] {"a", "b"}, new String[0], new String[0], 0L, 1L);
 		root.createOrGet("child", null);
 		String str = root.toString();
-		assertEquals(str, "root = [a, b]\n");
+		assertEquals(str, "root = define:[a, b], require:[]\n");
 	}
 
 	@Test
 	public void testToStringTree() {
 		DepTreeNode root = new DepTreeNode("root", null);
-		root.setDependencies(new String[] {"a", "b"}, new String[0], 0L, 1L);
+		root.setDependencies(new String[] {"a", "b"}, new String[0], new String[0], 0L, 1L);
 		DepTreeNode child = root.createOrGet("child", null);
-		child.setDependencies(new String[] {"b", "c"}, new String[0], 0L, 1L);
+		child.setDependencies(new String[] {"b", "c"}, new String[0], new String[0], 0L, 1L);
 		String str = root.toStringTree();
-		assertEquals("root = [a, b]\nroot/child = [b, c]\n", str);
+		assertEquals("root = define:[a, b], require:[]\nroot/child = define:[b, c], require:[]\n", str);
 	}
 
 	@Test
 	public void testClone() {
 		DepTreeNode root = new DepTreeNode("root", null);
 		DepTreeNode child = root.createOrGet("child", null);
-		root.setDependencies(new String[]{"a", "b"}, new String[0], 0L, 1L);
-		child.setDependencies(new String[]{"c", "d"}, new String[0], 0L, 1L);
+		root.setDependencies(new String[]{"a", "b"}, new String[]{"c", "d"}, new String[0], 0L, 1L);
+		child.setDependencies(new String[]{"e", "f"}, new String[]{"g", "h"}, new String[0], 0L, 1L);
 		DepTreeNode clone = null;
 		try {
 			clone = (DepTreeNode)root.clone();
 		} catch (CloneNotSupportedException e) {
 			fail(e.getMessage());
 		}
-		assertArrayEquals(root.getDepArray(), clone.getDepArray());
-		assertNotSame(root.getDepArray(), clone.getDepArray());
+		assertArrayEquals(root.getDefineDepArray(), clone.getDefineDepArray());
+		assertNotSame(root.getDefineDepArray(), clone.getDefineDepArray());
+		assertArrayEquals(root.getRequireDepArray(), clone.getRequireDepArray());
+		assertNotSame(root.getRequireDepArray(), clone.getRequireDepArray());
 		assertEquals(root.lastModified(), clone.lastModified());
 		assertEquals(root.lastModifiedDep(), clone.lastModifiedDep());
 		DepTreeNode clonedChild = clone.getChild("child");
-		assertArrayEquals(child.getDepArray(), clonedChild.getDepArray());
-		assertNotSame(child.getDepArray(), clonedChild.getDepArray());
+		assertArrayEquals(child.getDefineDepArray(), clonedChild.getDefineDepArray());
+		assertNotSame(child.getDefineDepArray(), clonedChild.getDefineDepArray());
+		assertArrayEquals(child.getRequireDepArray(), clonedChild.getRequireDepArray());
+		assertNotSame(child.getRequireDepArray(), clonedChild.getRequireDepArray());
 		assertEquals(child.lastModified(), clonedChild.lastModified());
 		assertEquals(child.lastModifiedDep(), clonedChild.lastModifiedDep());
 	}

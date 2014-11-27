@@ -98,6 +98,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Set<String> textPluginDelegators;
 	private Set<String> jsPluginDelegators;
 	private Scriptable sharedScope;
+	private Map<String, Object> defaultFeatureMap;
 
 	protected List<IServiceRegistration> serviceRegs = new LinkedList<IServiceRegistration>();
 
@@ -231,6 +232,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			cacheBust = loadCacheBust(rawConfig);
 			textPluginDelegators = loadTextPluginDelegators(rawConfig);
 			jsPluginDelegators = loadJsPluginDelegators(rawConfig);
+			defaultFeatureMap = loadDefaultFeatures(rawConfig);
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		}
@@ -373,6 +375,33 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public Set<String> getJsPluginDelegators() {
 		return jsPluginDelegators;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.service.config.IConfig#getDefaultFeatures()
+	 */
+	@Override
+	public Features getDefaultFeatures(String url) {
+		Features result = new Features();
+		for (Map.Entry<String, Object> entry : defaultFeatureMap.entrySet()) {
+			// value is either a Boolean or Function
+			Object value = entry.getValue();
+			if (value instanceof Function) {
+				Context cx = Context.enter();
+				try {
+					Scriptable threadScope = cx.newObject(sharedScope);
+					threadScope.setPrototype(sharedScope);
+					threadScope.setParentScope(null);
+					Boolean booleanValue = Context.toBoolean(((Function)value).call(cx, threadScope, null, new Object[]{url}));
+					result.put(entry.getKey(), booleanValue);
+				} finally {
+					Context.exit();
+				}
+			} else {
+				result.put(entry.getKey(), (Boolean)value);
+			}
+		}
+		return result;
 	}
 
 	/* (non-Javadoc)
@@ -1065,7 +1094,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 							replacement = toString(replacement);
 						}
 						aliases.add(newAlias(pattern, replacement));
+					} else {
+						throw new IllegalArgumentException(Context.toString(ALIASES_CONFIGPARAM + "[" + i + "] = " + Context.toString(entry))); //$NON-NLS-1$ //$NON-NLS-2$
 					}
+				} else {
+					throw new IllegalArgumentException("Unrecognized type for " + ALIASES_CONFIGPARAM + " - " + aliasList.getClass().toString()); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			}
 		}
@@ -1283,6 +1316,19 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		return result;
 
+	}
+
+	protected Map<String, Object> loadDefaultFeatures(Scriptable cfg) {
+		Map<String, Object> result = new HashMap<String, Object>();
+		Object hasProp = cfg.get(HAS_CONFIGPARAM, cfg);
+		if (hasProp instanceof Scriptable) {
+			for (Object key : ((Scriptable)hasProp).getIds()) {
+				String name = toString(key);
+				Object valueObj = ((Scriptable)hasProp).get(name, (Scriptable)hasProp);
+				result.put(name, valueObj instanceof Function ? valueObj : (Boolean)Context.toBoolean(valueObj));
+			}
+		}
+		return Collections.unmodifiableMap(result);
 	}
 
 	/**
@@ -1584,6 +1630,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		@Override
 		public Object getReplacement() {
 			return replacement;
+		}
+
+		@Override
+		public String toString() {
+			return new StringBuffer("[").append(pattern.toString()).append(", ").append(replacement).append("]").toString(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
 	}

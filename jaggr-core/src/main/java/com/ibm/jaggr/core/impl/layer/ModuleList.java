@@ -34,7 +34,10 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	static class ModuleListEntry {
 		final IModule module;
 		final ModuleSpecifier source;
-		ModuleListEntry(IModule module, ModuleSpecifier source) {
+		final boolean isServerExpanded;
+		ModuleListEntry(IModule module, ModuleSpecifier source) { this(module, source, false); }
+		ModuleListEntry(IModule module, ModuleSpecifier source, boolean isServerExpanded) {
+			this.isServerExpanded = isServerExpanded;
 			this.module = module;
 			this.source = source;
 		}
@@ -43,6 +46,9 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		}
 		IModule getModule() {
 			return module;
+		}
+		boolean isServerExpanded() {
+			return isServerExpanded;
 		}
 	}
 	private Set<String> dependentFeatures = null;

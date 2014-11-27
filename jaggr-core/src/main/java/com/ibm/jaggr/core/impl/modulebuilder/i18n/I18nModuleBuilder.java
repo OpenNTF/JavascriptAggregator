@@ -121,7 +121,15 @@ extends JavaScriptModuleBuilder {
 			@SuppressWarnings("unchecked")
 			Collection<String> locales = (Collection<String>)request.getAttribute(IHttpTransport.REQUESTEDLOCALES_REQATTRNAME);
 			String bundleName = m.group(4);
+
 			if (locales != null && !locales.isEmpty()) {
+				// check for special case locales="*" meaning all available locales.
+				for (String locale : locales) {
+					if ("*".equals(locale)) { //$NON-NLS-1$
+						locales = new HashSet<String>(availableLocales);
+						break;
+					}
+				}
 				for (String locale : locales) {
 					processLocale(resource, result, m, availableLocales, added,
 							aggr, bundleName, locale);

@@ -26,6 +26,7 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 	private List<String> deps = Collections.emptyList();
 	private List<String> preloads = Collections.emptyList();
 	private List<String> scripts = Collections.emptyList();
+	private List<String> excludes = Collections.emptyList();
 	private String strRep = null;
 
 	public List<String> getModules() {
@@ -72,6 +73,17 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 		this.scripts = scripts;
 	}
 
+	public List<String> getExcludes() {
+		return excludes;
+	}
+
+	public void setExcludes(List<String> excludes) {
+		if (excludes == null) {
+			throw new NullPointerException();
+		}
+		this.excludes = excludes;
+	}
+
 	public void setString(String strRep) {
 		this.strRep = strRep;
 	}
@@ -94,6 +106,9 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 			}
 			if (preloads != null && !preloads.isEmpty()) {
 				sb.append(sb.length() > 0 ? ";":"").append("preloads:").append(preloads); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			}
+			if (excludes != null && !excludes.isEmpty()) {
+				sb.append(sb.length() > 0 ? ";":"").append("excludes:").append(excludes); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			result = sb.toString();
 		}

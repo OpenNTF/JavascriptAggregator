@@ -807,6 +807,25 @@ public class ConfigTest {
 	}
 
 	@Test
+	public void testGetDefaultFeatures() throws Exception {
+		String config = "{has:{foo:true, bar:false, fee:1, fie:0}}";
+		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		Features features = cfg.getDefaultFeatures(null);
+		Assert.assertTrue(features.isFeature("foo"));
+		Assert.assertTrue(features.isFeature("fee"));
+		Assert.assertTrue(features.contains("bar") && !features.isFeature("bar"));
+		Assert.assertTrue(features.contains("fie") && !features.isFeature("fie"));
+
+		config = "{has:{foo:function(url){return url.indexOf(\"foo=\") !== -1;}}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		features = cfg.getDefaultFeatures("http://server.com/?foo=1");
+		Assert.assertTrue(features.isFeature("foo"));
+
+		features = cfg.getDefaultFeatures("http://server.com/");
+		Assert.assertTrue(features.contains("foo") && !features.isFeature("foo"));
+	}
+
+	@Test
 	public void testResolve() throws Exception {
 		Features features = new Features();
 		Set<String> dependentFeatures = new HashSet<String>();

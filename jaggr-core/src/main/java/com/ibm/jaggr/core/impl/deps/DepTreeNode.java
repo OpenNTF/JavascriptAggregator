@@ -48,7 +48,7 @@ import java.util.regex.Pattern;
  * bar and a javascript module named bar (named bar.js on the file system).
  */
 public class DepTreeNode implements Cloneable, Serializable {
-	private static final long serialVersionUID = -4890341014663635619L;
+	private static final long serialVersionUID = -7506166918682469345L;
 
 	static final Logger log = Logger.getLogger(DepTreeNode.class.getName());
 
@@ -59,8 +59,10 @@ public class DepTreeNode implements Cloneable, Serializable {
 	private Map<String, DepTreeNode> children;
 	/** The name of this node */
 	private String name;
-	/** The list of module name dependencies for this node if it is a module */
-	private String[] dependencies;
+	/** The list of define() module name dependencies for this node if it is a module */
+	private String[] defineDependencies;
+	/** The list of require() module name dependencies for this node if it is a module */
+	private String[] requireDependencies;
 	/** The list of dependent features in the module */
 	private String[] dependentFeatures;
 	/** The file last modified date if this node is for a module */
@@ -85,18 +87,23 @@ public class DepTreeNode implements Cloneable, Serializable {
 
 	class DependencyInfo {
 		private List<String> declaredDependencies;
+		private List<String> requireDependencies;
 		private List<String> dependentFeatures;
 		private final URI uri;
-		private DependencyInfo(String[] declaredDependencies, String[] dependentFeatures, URI uri) {
+		private DependencyInfo(String[] declaredDependencies, String[] requireDependencies, String[] dependentFeatures, URI uri) {
 			this.declaredDependencies = declaredDependencies != null ?
 					Collections.unmodifiableList(Arrays.asList(declaredDependencies)) :
 						Collections.<String>emptyList();
-					this.dependentFeatures = dependentFeatures != null ?
-							Collections.unmodifiableList(Arrays.asList(dependentFeatures)) :
-								Collections.<String>emptyList();
-					this.uri = uri;
+			this.requireDependencies = requireDependencies != null ?
+					Collections.unmodifiableList(Arrays.asList(requireDependencies)) :
+						Collections.<String>emptyList();
+			this.dependentFeatures = dependentFeatures != null ?
+					Collections.unmodifiableList(Arrays.asList(dependentFeatures)) :
+						Collections.<String>emptyList();
+			this.uri = uri;
 		}
 		public List<String> getDeclaredDependencies() { return declaredDependencies; }
+		public List<String> getRequireDependencies() { return requireDependencies; }
 		public List<String> getDepenedentFeatures() { return dependentFeatures; }
 		public URI getURI() { return uri; }
 	}
@@ -114,7 +121,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 			throw new IllegalArgumentException(name);
 		}
 		children = null;
-		dependencies = null;
+		defineDependencies = null;
+		requireDependencies = null;
 		parent = new WeakReference<DepTreeNode>(null);
 		this.name = name;
 		this.uri = uri;
@@ -183,11 +191,20 @@ public class DepTreeNode implements Cloneable, Serializable {
 	}
 
 	/**
-	 * @return The dependency array
+	 * @return The define() dependency array
 	 */
-	public String[] getDepArray() {
-		return dependencies;
+	public String[] getDefineDepArray() {
+		return defineDependencies;
 	}
+
+	/**
+	 * @return The require() dependency array
+	 */
+	public String[] getRequireDepArray() {
+		return requireDependencies;
+	}
+
+
 
 	/**
 	 * @return The depenedent features array
@@ -251,8 +268,8 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * @param node
 	 */
 	public void overlay(DepTreeNode node) {
-		if (node.dependencies != null) {
-			setDependencies(node.dependencies, node.dependentFeatures, node.lastModified(), node.lastModifiedDep());
+		if (node.defineDependencies != null || node.requireDependencies != null) {
+			setDependencies(node.defineDependencies, node.requireDependencies, node.dependentFeatures, node.lastModified(), node.lastModifiedDep());
 		}
 		node.uri = uri;
 		if (node.getChildren() == null) {
@@ -397,7 +414,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
 				DepTreeNode child = entry.getValue();
 				child.prune();
-				if ((child.dependencies == null && child.uri == null)
+				if ((child.defineDependencies == null && child.requireDependencies == null && child.uri == null)
 						&& (child.children == null || child.children.isEmpty())) {
 					removeList.add(entry.getKey());
 				}
@@ -413,8 +430,10 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * node, along with the last modified date of the javascript file that the
 	 * dependency list was obtained from.
 	 *
-	 * @param dependencies
-	 *            The dependency list of module names
+	 * @param defineDependencies
+	 *            The define() dependency list of module names
+	 * @param requireDependencies
+	 *            The require() dependency list of module names
 	 * @param dependentFeatures
 	 *            The dependent features for the module
 	 * @param lastModifiedFile
@@ -423,8 +442,9 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 *            The last modified date of the dependency list. See
 	 *            {@link #lastModifiedDep()}
 	 */
-	public void setDependencies(String[] dependencies, String[] dependentFeatures, long lastModifiedFile, long lastModifiedDep) {
-		this.dependencies = dependencies;
+	public void setDependencies(String[] defineDependencies, String[] requireDependencies, String[] dependentFeatures, long lastModifiedFile, long lastModifiedDep) {
+		this.defineDependencies = defineDependencies;
+		this.requireDependencies = requireDependencies;
 		this.dependentFeatures = dependentFeatures;
 		this.lastModified = lastModifiedFile;
 		this.lastModifiedDep = lastModifiedDep;
@@ -436,13 +456,26 @@ public class DepTreeNode implements Cloneable, Serializable {
 	@Override
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
-		if (dependencies != null) {
-			sb.append(getFullPathName()).append(" = ").append("["); //$NON-NLS-1$ //$NON-NLS-2$
-			int count = 0;
-			for (String str : dependencies) {
-				sb.append(count++ == 0 ? "" : ", ").append(str); //$NON-NLS-1$ //$NON-NLS-2$
+		if (defineDependencies != null || requireDependencies != null) {
+			sb.append(getFullPathName()).append(" = "); //$NON-NLS-1$
+			if (defineDependencies != null) {
+				sb.append("define:["); //$NON-NLS-1$
+				int count = 0;
+				for (String str : defineDependencies) {
+					sb.append(count++ == 0 ? "" : ", ").append(str); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				sb.append("]"); //$NON-NLS-1$
 			}
-			sb.append("]").append('\n'); //$NON-NLS-1$
+			if (requireDependencies != null) {
+				sb.append(requireDependencies != null ? ", " : ""); //$NON-NLS-1$ //$NON-NLS-2$
+				sb.append("require:["); //$NON-NLS-1$
+				int count = 0;
+				for (String str : requireDependencies) {
+					sb.append(count++ == 0 ? "" : ", ").append(str); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				sb.append("]"); //$NON-NLS-1$
+			}
+			sb.append('\n');
 		}
 		return sb.toString();
 	}
@@ -475,8 +508,11 @@ public class DepTreeNode implements Cloneable, Serializable {
 			}
 		}
 		// clone the dependency array.
-		if (dependencies != null) {
-			clone.dependencies = Arrays.copyOf(dependencies, dependencies.length);
+		if (defineDependencies != null) {
+			clone.defineDependencies = Arrays.copyOf(defineDependencies, defineDependencies.length);
+		}
+		if (requireDependencies != null) {
+			clone.requireDependencies = Arrays.copyOf(requireDependencies, requireDependencies.length);
 		}
 		clone.uri = uri;
 		return clone;
@@ -511,7 +547,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 *         descendants
 	 */
 	private long lastModifiedDepTree(long lm) {
-		long result = (dependencies == null) ? lm : Math.max(lm, this.lastModifiedDep);
+		long result = (defineDependencies == null && requireDependencies == null) ? lm : Math.max(lm, this.lastModifiedDep);
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : this.children.entrySet()) {
 				result = entry.getValue().lastModifiedDepTree(result);
@@ -550,8 +586,11 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 * entire tree rooted at this node is normalized.
 	 */
 	void normalizeDependencies() {
-		if (dependencies != null) {
-			dependencies = PathUtil.normalizePaths(getParentPath(), dependencies);
+		if (defineDependencies != null) {
+			defineDependencies = PathUtil.normalizePaths(getParentPath(), defineDependencies);
+		}
+		if (requireDependencies != null) {
+			requireDependencies = PathUtil.normalizePaths(getParentPath(), requireDependencies);
 		}
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
@@ -569,7 +608,7 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 */
 	void populateDepMap(Map<String, DependencyInfo> depMap) {
 		if (uri != null) {
-			depMap.put(getFullPathName(), new DependencyInfo(dependencies, dependentFeatures, uri));
+			depMap.put(getFullPathName(), new DependencyInfo(defineDependencies, requireDependencies, dependentFeatures, uri));
 		}
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {

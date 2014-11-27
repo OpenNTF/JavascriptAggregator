@@ -31,7 +31,7 @@ public class RequestUtil {
 	public static boolean isIgnoreCached(HttpServletRequest request) {
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
-		return (options.isDevelopmentMode() || options.isDebugMode()) &&
+		return  options != null && (options.isDevelopmentMode() || options.isDebugMode()) &&
 				TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOCACHE_REQATTRNAME));
 
 	}
@@ -58,13 +58,16 @@ public class RequestUtil {
 	 * @return True if require list explosion should be performed.
 	 */
 	public static boolean isExplodeRequires(HttpServletRequest request) {
+		if (isIncludeRequireDeps(request)) {
+			// don't expand require deps if we're including them in the response.
+			return false;
+		}
 		boolean result = false;
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
 		Boolean reqattr = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME));
 		result = (options == null || !options.isDisableRequireListExpansion())
-				&& reqattr != null && reqattr
-				&& aggr.getDependencies() != null;
+				&& reqattr != null && reqattr;
 		return result;
 	}
 
@@ -101,7 +104,34 @@ public class RequestUtil {
 	 * @return True if module names should be exported in the response
 	 */
 	public static boolean isExportModuleName(HttpServletRequest request) {
-		Boolean value = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
-		return value != null ? value : false;
+		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
 	}
+
+	/**
+	 * @param request
+	 * @return True if require call dependencies should be included when expanding a modules's
+	 *         dependencies.
+	 */
+	public static boolean isIncludeRequireDeps(HttpServletRequest request) {
+		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.INCLUDEREQUIREDEPS_REQATTRNAME));
+	}
+
+	/**
+	 * @param request
+	 * @return True if both branches of a has! loader plugin expression for an undefined feature
+	 *         should be included when doing server-side expansion of module dependencies.
+	 */
+	public static boolean isIncludeUndefinedFeatureDeps(HttpServletRequest request) {
+		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME));
+	}
+
+	/**
+	 * @param request
+	 * @return True if an error response should be returned if the requested modules or their
+	 *         dependencies include nls modules.
+	 */
+	public static boolean isAssertNoNLS(HttpServletRequest request) {
+		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.ASSERTNONLS_REQATTRNAME));
+	}
+
 }

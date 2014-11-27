@@ -45,9 +45,9 @@ public interface IRequestedModuleNames {
 
 	/**
 	 * Returns the list of modules specified by the <code>deps</code> request parameter. Deps are
-	 * specified in application generated requests to load a boot layer. Dep modules are included in
-	 * the boot layer and are automatically required by the loader. The name of this property was
-	 * chosen so as to mirror the <code>deps</code> AMD config property.
+	 * specified in application generated requests to load a server-expanded layer. Dep modules are
+	 * included in the layer and are automatically required by the loader. The name of this property
+	 * was chosen so as to mirror the <code>deps</code> AMD config property.
 	 *
 	 * @return the list of dep modules
 	 * @throws BadRequestException
@@ -56,8 +56,8 @@ public interface IRequestedModuleNames {
 
 	/**
 	 * Returns the list of modules specified by the <code>preloads</code> request parameter.
-	 * Preloads are specified in application generated requests to load a boot layer. Preload
-	 * modules are included in the boot layer but are not activated until required by the
+	 * Preloads are specified in application generated requests to load a server-expanded layer.
+	 * Preload modules are included in the layer but are not activated until required by the
 	 * application.
 	 *
 	 * @return the list of preload modules
@@ -68,15 +68,26 @@ public interface IRequestedModuleNames {
 	/**
 	 * Returns the list of script modules specified by the <code>scripts</code> request parameter.
 	 * Script modules are specified in application generated requests to load a boot layer. Script
-	 * modules are non-AMD modules that are included at the beginning of a boot layer. These
-	 * typically include the AMD loader config, the Aggregator loader config extension and the AMD
-	 * loader. It can also include any other non-AMD script files needed by the application, as long
-	 * as the file can be located using the AMD configuration.
+	 * modules are non-AMD modules that are included at the beginning of a layer. These typically
+	 * include the AMD loader config, the Aggregator loader config extension and the AMD loader. It
+	 * can also include any other non-AMD script files needed by the application, as long as the
+	 * file can be located using the AMD configuration.
 	 *
 	 * @return the list of script modules
 	 * @throws BadRequestException
 	 */
 	public List<String> getScripts() throws BadRequestException;
+
+	/**
+	 * Returns the list of modules specified by the <code>excludes</code> request parameter.
+	 * Excludes are specified in application generated requests to load a static layer.  The
+	 * excluded modules, and their expanded dependencies, will not be included in the aggregated
+	 * response.
+	 *
+	 * @return the list of excluded modules
+	 * @throws BadRequestException
+	 */
+	public List<String> getExcludes() throws BadRequestException;
 
 	/**
 	 * @return a (possibly encoded) string representation of the requested modules.

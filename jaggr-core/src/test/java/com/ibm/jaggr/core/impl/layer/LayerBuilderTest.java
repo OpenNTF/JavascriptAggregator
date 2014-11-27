@@ -27,6 +27,7 @@ import static org.easymock.EasyMock.reset;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
@@ -521,6 +522,9 @@ public class LayerBuilderTest {
 		expect(mockModuleCache.getBuild(eq(mockRequest), isA(IModule.class))).andAnswer(new IAnswer<Future<ModuleBuildReader>>() {
 			@Override public Future<ModuleBuildReader> answer() throws Throwable {
 				IModule module = (IModule)getCurrentArguments()[1];
+				if (module.getModuleName().equals("notfound")) {
+					throw new NotFoundException(module.getModuleName());
+				}
 				return new CompletedFuture<ModuleBuildReader>(
 						new ModuleBuildReader(new StringReader(module.getModuleId() + " build"))
 						);
@@ -530,9 +534,11 @@ public class LayerBuilderTest {
 		((TestCacheManager)mockAggregator.getCacheManager()).setCache(mockCache);
 		ModuleList moduleList = new ModuleList();
 		IModule module1 = new ModuleImpl("module1", new URI("file://module1.js")),
-				module2 = new ModuleImpl("module2", new URI("file://module2.js"));
-		moduleList.add(new ModuleListEntry(module1, ModuleSpecifier.MODULES));
-		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.LAYER));
+				module2 = new ModuleImpl("module2", new URI("file://module2.js")),
+				notfound = new ModuleImpl("notfound", new URI("file://notfound.js"));
+		moduleList.add(new ModuleListEntry(module1, ModuleSpecifier.MODULES, true));
+		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.LAYER, true));
+		moduleList.add(new ModuleListEntry(notfound, ModuleSpecifier.LAYER, true /* server expanded */));
 		LayerBuilder builder = new LayerBuilder(mockRequest, null, moduleList);
 		List<ModuleBuildFuture> futures = builder.collectFutures(moduleList, mockRequest);
 		Assert.assertEquals(2, futures.size());
@@ -545,7 +551,19 @@ public class LayerBuilderTest {
 		Assert.assertEquals(ModuleSpecifier.LAYER, future.getModuleSpecifier());
 		Assert.assertEquals("module2 build", toString(future.get()));
 
-		// Verfity
+		// now make sure exception is thrown for not found module that isn't server expanded
+		moduleList = new ModuleList();
+		moduleList.add(new ModuleListEntry(module1, ModuleSpecifier.LAYER, true));
+		moduleList.add(new ModuleListEntry(module2, ModuleSpecifier.LAYER, true));
+		moduleList.add(new ModuleListEntry(notfound, ModuleSpecifier.MODULES, false /* not server expanded */));
+		builder = new LayerBuilder(mockRequest, null, moduleList);
+		boolean exceptionCaught = false;
+		try {
+			builder.collectFutures(moduleList, mockRequest);
+		} catch (NotFoundException e) {
+			exceptionCaught = true;
+		}
+		Assert.assertTrue(exceptionCaught);
 	}
 
 	@Test

@@ -141,6 +141,10 @@ public interface IConfig {
 	public static final String CACHEBUST_CONFIGPARAM = "cacheBust"; //$NON-NLS-1$
 
 	/**
+	 * Static constant specifying the name of the {@code has} config property
+	 */
+	public static final String HAS_CONFIGPARAM = "has";  //$NON-NLS-1$
+	/**
 	 * Static constant specifying the name of the {@code textPluginDelegators}
 	 * config param.
 	 */
@@ -344,6 +348,23 @@ public interface IConfig {
 	 * @return The list of loader plugins that delegate to the javascript module loader.
 	 */
 	public Set<String> getJsPluginDelegators();
+
+	/**
+	 * Returns the default features specified using the {@link #HAS_CONFIGPARAM} config param. These
+	 * are default values for features that are overridden by any features defined in the request.
+	 * <p>
+	 * The default features are specified as a property map of name/value pairs. If the value of a
+	 * property is a JavaScript function, then the function is invoked at the time this method is
+	 * called to evalute the value of the feature. The function takes one formal parameter which is
+	 * the request URL, and the returned value will be coerced to a boolean before being assigned as
+	 * the value of the feature.
+	 *
+	 * @param url
+	 *            the request URL, or null.
+	 *
+	 * @return The default features.
+	 */
+	public Features getDefaultFeatures(String url);
 
 	/**
 	 * Returns the raw config data after the config has been modified by any {@link IConfigModifier}

@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 
 import java.io.IOException;
 import java.text.MessageFormat;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -98,6 +99,11 @@ public class DependencyList {
 	 */
 	private final boolean includeDetails;
 
+	/**
+	 * Flag indicating whether or not to include dependencies specified in require() calls.
+	 */
+	private final boolean includeRequireDeps;
+
 
 	/**
 	 * Flag indicating if this object has been initialized.
@@ -108,6 +114,7 @@ public class DependencyList {
 	 * Optional label string to associate with this object
 	 */
 	private String label = null;
+
 
 	/**
 	 * Object constructor. Note that resolution of expanded dependencies is not
@@ -132,8 +139,38 @@ public class DependencyList {
 	 *            Flag indicating if diagnostic details should be included with
 	 *            the expanded dependencies
 	 */
-	@SuppressWarnings("unchecked")
 	public DependencyList(String source, Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails) {
+		this(source, names, aggr, features, resolveAliases, includeDetails, false);
+	}
+
+	/**
+	 * Object constructor. Note that resolution of expanded dependencies is not
+	 * done at object creation time, but rather, the first time that one of the
+	 * accessors is called.
+	 *
+	 * @param source
+	 *            The declaring source.  Included in diagnostic details.
+	 * @param names
+	 *            The list of normalized module ids for which expanded
+	 *            dependencies are needed.
+	 * @param aggr
+	 *            The aggregator servlet
+	 * @param features
+	 *            The map of feature-name value pairs to use for resolving has!
+	 *            plugin expressions and aliases
+	 * @param resolveAliases
+	 *            Flag indicating if alias resolution should be performed on the
+	 *            module ids specified in <code>names</code>. (Note: alias
+	 *            resolution is always performed for expanded dependencies.
+	 * @param includeDetails
+	 *            Flag indicating if diagnostic details should be included with
+	 *            the expanded dependencies
+	 * @param includeRequireDeps
+	 *            Flag indicating whether or not to include dependencies specified
+	 *            in require() calls.
+	 */
+	@SuppressWarnings("unchecked")
+	public DependencyList(String source, Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails, boolean includeRequireDeps) {
 		final boolean entryExitLogging = log.isLoggable(Level.FINER);
 		final String methodName = "<ctor>"; //$NON-NLS-1$
 		if (entryExitLogging) {
@@ -145,6 +182,7 @@ public class DependencyList {
 		this.features = features;
 		this.resolveAliases = resolveAliases;
 		this.includeDetails = includeDetails;
+		this.includeRequireDeps = includeRequireDeps;
 		this.dependentFeatures = new HashSet<String>();
 		if (entryExitLogging) {
 			log.exiting(DependencyList.class.getName(), methodName);
@@ -167,6 +205,7 @@ public class DependencyList {
 		includeDetails = false;
 		features = null;
 		aggr = null;
+		includeRequireDeps = false;
 	}
 
 	/**
@@ -370,12 +409,25 @@ public class DependencyList {
 			log.entering(DependencyList.class.getName(), methodName, new Object[]{name, depInfo, expandedDependencies});
 		}
 
+		List<String> dependencies = new ArrayList<String>();
 		List<String> declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
 		if (traceLogging) {
 			log.finest("declaredDeps = " + declaredDeps); //$NON-NLS-1$
 		}
 		if (declaredDeps != null) {
-			for (String dep : declaredDeps) {
+			dependencies.addAll(declaredDeps);
+		}
+		if (includeRequireDeps) {
+			List<String> requireDeps = aggr.getDependencies().getRequireDependencies(name);
+			if (traceLogging) {
+				log.finest("requireDeps = " + requireDeps); //$NON-NLS-1$
+			}
+			if (requireDeps != null) {
+				dependencies.addAll(requireDeps);
+			}
+		}
+		if (dependencies != null) {
+			for (String dep : dependencies) {
 				ModuleDeps moduleDeps = new ModuleDeps();
 				processDep(dep, moduleDeps, depInfo, new HashSet<String>(), name);
 				for (Map.Entry<String, ModuleDepInfo> entry : moduleDeps.entrySet()) {

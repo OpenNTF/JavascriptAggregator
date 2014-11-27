@@ -109,27 +109,28 @@ public class DependenciesTest extends EasyMock {
 		assertEquals(0, p2Node.getChild("p1").getChild("p1").getChild("foo").getChildren().size());
 
 		assertEquals("[./b]",
-				Arrays.asList(p1Node.getChild("a").getDepArray()).toString());
+				Arrays.asList(p1Node.getChild("a").getDefineDepArray()).toString());
 		assertEquals("[./c]",
-				Arrays.asList(p1Node.getChild("b").getDepArray()).toString());
+				Arrays.asList(p1Node.getChild("b").getDefineDepArray()).toString());
 		assertEquals("[./a, ./b, ./noexist]",
-				Arrays.asList(p1Node.getChild("c").getDepArray()).toString());
+				Arrays.asList(p1Node.getChild("c").getDefineDepArray()).toString());
 		assertEquals("[p1/a, p2/p1/b, p2/p1/p1/c, p2/noexist]",
-				Arrays.asList(p1Node.getChild("p1").getDepArray()).toString());
+				Arrays.asList(p1Node.getChild("p1").getDefineDepArray()).toString());
 		assertEquals("[./b]",
-				Arrays.asList(p2Node.getChild("a").getDepArray()).toString());
+				Arrays.asList(p2Node.getChild("a").getDefineDepArray()).toString());
 		assertEquals("[./c]",
-				Arrays.asList(p2Node.getChild("b").getDepArray()).toString());
+				Arrays.asList(p2Node.getChild("b").getDefineDepArray()).toString());
 		assertEquals("[./b]",
-				Arrays.asList(p2Node.getChild("p1").getChild("a").getDepArray()).toString());
+				Arrays.asList(p2Node.getChild("p1").getChild("a").getDefineDepArray()).toString());
 		assertEquals("[./c]",
-				Arrays.asList(p2Node.getChild("p1").getChild("p1").getDepArray()).toString());
+				Arrays.asList(p2Node.getChild("p1").getChild("p1").getDefineDepArray()).toString());
 		assertEquals("[p1/a, p2/p1/b, p2/p1/p1/c, p2/noexist]",
-				Arrays.asList(p2Node.getChild("p1").getChild("p1").getChild("foo").getDepArray()).toString());
-
+				Arrays.asList(p2Node.getChild("p1").getChild("p1").getChild("foo").getDefineDepArray()).toString());
+		assertEquals("[p2/a]",
+				Arrays.asList(p2Node.getChild("p1").getChild("p1").getChild("foo").getRequireDepArray()).toString());
 		DepTreeNode p1_a_node = p1Node.getChild("a");
 		long yesterday = new Date().getTime()- 24*60*60*1000;
-		p1_a_node.setDependencies(new String[]{"p2/p1/b", "p2/p1/p1/c", "p2/noexist"}, null, yesterday, yesterday);
+		p1_a_node.setDependencies(new String[]{"p2/p1/b", "p2/p1/p1/c", "p2/noexist"}, new String[0], null, yesterday, yesterday);
 
 	}
 
@@ -149,18 +150,18 @@ public class DependenciesTest extends EasyMock {
 		DepTreeNode p2Node = depMap.get(p2Path);
 
 		long yesterday = new Date().getTime() - 24*60*60*1000;
-		p1Node.getChild("a").setDependencies(new String[]{"foo/bar"}, new String[0], yesterday, yesterday);
+		p1Node.getChild("a").setDependencies(new String[]{"foo/bar"}, new String[0], new String[0], yesterday, yesterday);
 		// Leave deps the same to test that lastModifiedDep doesn't change
-		p1Node.getChild("b").setDependencies(p1Node.getChild("b").getDepArray(), new String[0], yesterday, yesterday);
+		p1Node.getChild("b").setDependencies(p1Node.getChild("b").getDefineDepArray(), new String[0], new String[0], yesterday, yesterday);
 		DepTreeNode p3Node = new DepTreeNode("p3", null);
 		p3Node.add(new DepTreeNode("a", null));
 		// create a node that is not on the file system
-		p3Node.getChild("a").setDependencies(new String[]{"./b"}, new String[0], yesterday, yesterday);
+		p3Node.getChild("a").setDependencies(new String[]{"./b"}, new String[0], new String[0], yesterday, yesterday);
 		depMap.put(p3Path, p3Node);
 		long p2_p1_a_lastMod = new File(tmpdir, "p2/p1/a.js").lastModified();
 		// change deps but leave timestamps the same so that the deps won't be updated by validation
 		// but will be updated by clean.
-		p2Node.getChild("p1").getChild("a").setDependencies(new String[]{"xxx"}, new String[0], p2_p1_a_lastMod, p2_p1_a_lastMod);
+		p2Node.getChild("p1").getChild("a").setDependencies(new String[]{"xxx"}, new String[0], new String[0], p2_p1_a_lastMod, p2_p1_a_lastMod);
 
 		File cacheFile = new File(tmpdir, "deps/depmap.cache");
 		String configJson = "{paths: {p1Alias:'p1', p2Alias:'p2'}}";
@@ -185,15 +186,15 @@ public class DependenciesTest extends EasyMock {
 		assertEquals("", root.getName());
 		assertEquals(3, root.getChildren().size());
 		assertEquals("[foo/bar]",
-				Arrays.asList(root.getChild("p1Alias").getChild("a").getDepArray()).toString());
+				Arrays.asList(root.getChild("p1Alias").getChild("a").getDefineDepArray()).toString());
 		assertEquals(yesterday, root.getChild("p1Alias").getChild("a").lastModified());
 		assertEquals(yesterday, root.getChild("p1Alias").getChild("a").lastModifiedDep());
 		assertEquals(yesterday, root.getChild("p1Alias").getChild("b").lastModified());
 		assertEquals(yesterday, root.getChild("p1Alias").getChild("b").lastModifiedDep());
 		assertEquals("[./b]",
-				Arrays.asList(root.getChild("p3Alias").getChild("a").getDepArray()).toString());
+				Arrays.asList(root.getChild("p3Alias").getChild("a").getDefineDepArray()).toString());
 		assertEquals("[xxx]",
-				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDepArray()).toString());
+				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDefineDepArray()).toString());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModified());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModifiedDep());
 
@@ -205,13 +206,13 @@ public class DependenciesTest extends EasyMock {
 		assertEquals(3, root.getChildren().size());
 		assertEquals(0, root.getChild("p3Alias").getChildren().size());
 		assertEquals("[./b]",
-				Arrays.asList(root.getChild("p1Alias").getChild("a").getDepArray()).toString());
+				Arrays.asList(root.getChild("p1Alias").getChild("a").getDefineDepArray()).toString());
 		assertEquals(new File(tmpdir, "p1/a.js").lastModified(), root.getChild("p1Alias").getChild("a").lastModified());
 		assertEquals(new File(tmpdir, "p1/a.js").lastModified(), root.getChild("p1Alias").getChild("a").lastModifiedDep());
 		assertEquals(new File(tmpdir, "p1/b.js").lastModified(), root.getChild("p1Alias").getChild("b").lastModified());
 		assertEquals(yesterday, root.getChild("p1Alias").getChild("b").lastModifiedDep());
 		assertEquals("[xxx]",
-				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDepArray()).toString());
+				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDefineDepArray()).toString());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModified());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModifiedDep());
 
@@ -221,7 +222,7 @@ public class DependenciesTest extends EasyMock {
 		deps = new TestDependenciesWrapper(tmpdir, mockAggregator, true, false);
 		deps.mapDependencies(root, map, true);
 		assertEquals("[./b]",
-				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDepArray()).toString());
+				Arrays.asList(root.getChild("p2Alias").getChild("p1").getChild("a").getDefineDepArray()).toString());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModified());
 		assertEquals(p2_p1_a_lastMod, root.getChild("p2Alias").getChild("p1").getChild("a").lastModifiedDep());
 

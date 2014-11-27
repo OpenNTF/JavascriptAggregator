@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
@@ -334,6 +335,7 @@ public class LayerBuilder {
 	protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 			throws IOException {
 
+		final String sourceMethod = "collectFutures"; //$NON-NLS-1$
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>();
 
@@ -341,13 +343,23 @@ public class LayerBuilder {
 
 		// For each source file, add a Future<IModule.ModuleReader> to the list
 		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
-			IModule module = moduleListEntry.getModule();
-			Future<ModuleBuildReader> future = moduleCache.getBuild(request, module);
-			futures.add(new ModuleBuildFuture(
-					moduleListEntry.getModule(),
-					future,
-					moduleListEntry.getSource()
-					));
+			try {
+				IModule module = moduleListEntry.getModule();
+				Future<ModuleBuildReader> future = moduleCache.getBuild(request, module);
+				futures.add(new ModuleBuildFuture(
+						moduleListEntry.getModule(),
+						future,
+						moduleListEntry.getSource()
+						));
+			} catch (NotFoundException e) {
+				// Don't error on server expanded modules that are not found
+				if (log.isLoggable(Level.FINER)) {
+					log.logp(Level.FINER, LayerBuilder.class.getName(), sourceMethod, "Server expanded module " + moduleListEntry.getModule().getModuleId() + " not found."); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				if (!moduleListEntry.isServerExpanded()) {
+					throw e;
+				}
+			}
 		}
 		return futures;
 	}

@@ -101,15 +101,15 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 
 	/**
-	 * Request param specifying the non-AMD script files to include in an application boot layer.
-	 * This typically includes the applications AMD loader config file, the aggregator loader
-	 * extension config and the AMD loader itself, as well as any other non-AMD script files
-	 * that the application wishes to include in the boot layer.
+	 * Request param specifying the non-AMD script files to include in an application specified
+	 * boot layer. This typically includes the applications AMD loader config file, the
+	 * aggregator loader extension config and the AMD loader itself, as well as any other non-AMD
+	 * script files that the application wishes to include in the layer.
 	 */
 	public static final String SCRIPTS_REQPARAM = "scripts"; //$NON-NLS-1$
 
 	/**
-	 * Request param specifying the AMD modules to include in the boot layer.  These modules will
+	 * Request param specifying the AMD modules to include in the application specified server-expanded layer.  These modules will
 	 * be 'required' by the AMD loader (i.e. a synthetic require call will be executed specifying
 	 * these modules after the loader has been initialized).
 	 */
@@ -122,17 +122,30 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String REQUIRED_REQPARAM = "required"; //$NON-NLS-1$
 
 	/**
-	 * Request param specifying the AMD modules to preload in the boot layer.  These modules
-	 * will be included in the boot layer, but will not be initialized (i.e. their define
-	 * function callbacks will not be invoked) unless they are direct or nested dependencies
-	 * of modules specified by the 'required' request param.  Instead, they will reside in the
-	 * loader's module cache, inactive, until needed by the loader to resolve a module
-	 * dependency.
+	 * Request param specifying the AMD modules to preload in the application specified
+	 * server-expanded layer. These modules will be included in the layer, but will not be
+	 * initialized (i.e. their define function callbacks will not be invoked) unless they are direct
+	 * or nested dependencies of modules specified by the 'required' request param. Instead, they
+	 * will reside in the loader's module cache, inactive, until needed by the loader to resolve a
+	 * module dependency.
 	 */
 	public static final String PRELOADS_REQPARAM = "preloads"; //$NON-NLS-1$
 
+	/**
+	 * Request param specifying the AMD modules to exclude from a server-expanded layer.  The specified
+	 * modules, plus their expanded dependencies will not be included in application requested layers
+	 * using the <code>deps</deps> or <code>preloads</code> request parameters
+	 */
+	public static final String EXCLUDES_REQPARAM = "excludes";  //$NON-NLS-1$
+
 	public static final String FEATUREMAP_REQPARAM = "has"; //$NON-NLS-1$
 	public static final String FEATUREMAPHASH_REQPARAM = "hashash"; //$NON-NLS-1$
+
+	public static final String[] INCLUDEREQUIREDEPS_REQPARAM = {"includeRequireDeps", "ird"};  //$NON-NLS-1$ //$NON-NLS-2$
+
+	public static final String[] INCLUDEUNDEFINEDFEATUREDEPS_REQPARAM = {"includeUndefinedFeatureDeps", "iufd"}; //$NON-NLS-1$ //$NON-NLS-2$
+
+	public static final String[] ASSERTNONLS_REQPARAM = {"assertNoNLS", "nonls"}; //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final String[] OPTIMIZATIONLEVEL_REQPARAMS = {"optimize", "opt"}; //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -145,8 +158,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String[] NOCACHE_REQPARAMS = {"noCache", "nocache", "nc"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
 	public static final String[] REQUESTEDLOCALES_REQPARAMS = {"locales", "locs"}; //$NON-NLS-1$ //$NON-NLS-2$
-
-	public static final String[] HASPLUGINBRANCHING_REQPARAMS = {"hasBranching", "hb"}; //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final String[] CACHEBUST_REQPARAMS = {"cacheBust", "cachebust", "cb"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
@@ -239,14 +250,20 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));
 
-		request.setAttribute(HASPLUGINBRANCHING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, HASPLUGINBRANCHING_REQPARAMS), true));
-
 		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
 
 		request.setAttribute(CACHEBUST_REQATTRNAME, getParameter(request, CACHEBUST_REQPARAMS));
 
+		request.setAttribute(INCLUDEREQUIREDEPS_REQATTRNAME, getParameter(request, INCLUDEREQUIREDEPS_REQPARAM));
+
+		request.setAttribute(INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME, getParameter(request, INCLUDEUNDEFINEDFEATUREDEPS_REQPARAM));
+
+		request.setAttribute(ASSERTNONLS_REQATTRNAME, getParameter(request, ASSERTNONLS_REQPARAM));
+
 		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));
+		} else if (getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class) != null) {
+			request.setAttribute(CONFIGVARNAME_REQATTRNAME, getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class).toString());
 		}
 	}
 
@@ -340,9 +357,14 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request});
 		}
-		Features features = getFeaturesFromRequestEncoded(request);
+		StringBuffer sb = request.getRequestURL();
+		if (sb != null && request.getQueryString() != null) {
+			sb.append("?").append(request.getQueryString()); //$NON-NLS-1$
+		}
+		Features defaultFeatures = getAggregator().getConfig().getDefaultFeatures(sb != null ? sb.toString() : null);
+		Features features = getFeaturesFromRequestEncoded(request, defaultFeatures);
 		if (features == null) {
-			features = new Features();
+			features = new Features(defaultFeatures);
 			String has  = getHasConditionsFromRequest(request);
 			if (has != null) {
 				for (String s : has.split("[;*]")) { //$NON-NLS-1$
@@ -716,7 +738,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		for (String contribution : getExtensionContributions()) {
 			sb.append(contribution).append("\r\n"); //$NON-NLS-1$
 		}
-		String cacheBust = AggregatorUtil.getCacheBust(aggregator);
+		String cacheBust = AggregatorUtil.getCacheBust(getAggregator());
 		if (cacheBust != null && cacheBust.length() > 0) {
 			sb.append("if (!require.combo.cacheBust){require.combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
@@ -853,10 +875,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 *
 	 * @param request
 	 *            The http request object
+	 * @param defaultFeatures
+	 *            The default features from the config
+	 *
 	 * @return the decoded feature list as a string, or null
 	 * @throws IOException
 	 */
-	protected Features getFeaturesFromRequestEncoded(HttpServletRequest request) throws IOException {
+	protected Features getFeaturesFromRequestEncoded(HttpServletRequest request, Features defaultFeatures) throws IOException {
 		final String methodName = "getFeaturesFromRequestEncoded"; //$NON-NLS-1$
 		boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
@@ -905,7 +930,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				q = q / 3;
 			}
 		}
-		Features result = new Features();
+		Features result = new Features(defaultFeatures);
 		int i = 0;
 		for (byte b : bos.toByteArray()) {
 			if (b < 2) {
