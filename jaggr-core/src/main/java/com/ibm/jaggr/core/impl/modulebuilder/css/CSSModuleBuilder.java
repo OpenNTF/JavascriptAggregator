@@ -417,7 +417,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				// then try to find the resource using config paths and packages.
 				uri = aggregator.getConfig().locateModuleResource(importNameMatch);
 				if (uri != null) {
-					uri = aggregator.newResource(uri).getURI();
+					importRes = aggregator.newResource(uri);
+					uri = importRes.getURI();
 				}
 			}
 			if (uri == null) {
