@@ -412,17 +412,17 @@ public class DependencyList {
 		List<String> dependencies = new ArrayList<String>();
 		List<String> declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
 		if (traceLogging) {
-			log.finest("declaredDeps = " + declaredDeps); //$NON-NLS-1$
+			log.finest("declaredDeps for " + name + " = " + declaredDeps); //$NON-NLS-1$ $NON-NLS-2$
 		}
 		if (declaredDeps != null) {
 			dependencies.addAll(declaredDeps);
 		}
 		if (includeRequireDeps) {
 			List<String> requireDeps = aggr.getDependencies().getRequireDependencies(name);
-			if (traceLogging) {
-				log.finest("requireDeps = " + requireDeps); //$NON-NLS-1$
-			}
-			if (requireDeps != null) {
+			if (requireDeps != null && requireDeps.size() > 0) {
+				if (traceLogging) {
+					log.finest("requireDeps for " + name + " = " + requireDeps); //$NON-NLS-1$ $NON-NLS-2$
+				}
 				dependencies.addAll(requireDeps);
 			}
 		}
