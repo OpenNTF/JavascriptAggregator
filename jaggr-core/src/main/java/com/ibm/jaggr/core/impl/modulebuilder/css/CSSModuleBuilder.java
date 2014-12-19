@@ -164,7 +164,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String INLINEIMPORTS_REQPARAM_NAME = "inlineImports"; //$NON-NLS-1$
 	static public final String INLINEIMAGES_REQPARAM_NAME = "inlineImages"; //$NON-NLS-1$
 
-	static final protected Pattern urlPattern = Pattern.compile("url\\(\\s*([^\\)]+)\\s*\\)?"); //$NON-NLS-1$
+	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
 
 	static final protected Collection<String> s_inlineableImageTypes;
@@ -267,7 +267,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return out.toString();
 	}
 
-	private static final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|url\\(([^)]+)\\)"); //$NON-NLS-1$
+	private static final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|" + urlPattern.toString()); //$NON-NLS-1$
 	private static final Pattern whitespacePattern = Pattern.compile("\\s+", Pattern.MULTILINE); //$NON-NLS-1$
 	private static final Pattern endsPattern = Pattern.compile("^\\s|\\s$"); //$NON-NLS-1$
 	private static final Pattern closeBracePattern = Pattern.compile("[;\\s]+\\}"); //$NON-NLS-1$
