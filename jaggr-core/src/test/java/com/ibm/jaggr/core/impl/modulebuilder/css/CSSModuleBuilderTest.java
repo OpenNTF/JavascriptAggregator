@@ -356,6 +356,13 @@ public class CSSModuleBuilderTest extends EasyMock {
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertTrue(output.matches("\\.foo\\{background-image:url\\('data:image\\/png;base64\\,[^']*'\\)\\}"));
 
+		// Test for Issue #250 (https://github.com/OpenNTF/JavascriptAggregator/issues/250)
+		// Nested url() functions
+		String dataUrl = "data:image/svg+xml;utf8, <svg version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" x=\"0px\" y=\"0px\" viewBox=\"0 0 16 16\" enable-background=\"new 0 0 16 16\" xml:space=\"preserve\"><g><defs><circle id=\"SVGID_1_\" cx=\"2.4\" cy=\"-7.5\" r=\"2.5\"/></defs><clipPath id=\"SVGID_2_\"><use xlink:href=\"#SVGID_1_\" overflow=\"visible\"/></clipPath><g clip-path=\"url(#SVGID_2_)\"><path fill=\"#264a60\" d=\"M10.5-2C9.2-2,8.2-1.2,8,0H4.9C4.8-0.3,4.7-0.6,4.5-0.9l4.5-4.5C9.5-5.2,9.9-5,10.5-5 C11.8-5,13-6.1,13-7.5S11.8-10,10.5-10C9.2-10,8.2-9.2,8-8H4.9c-0.2-1.1-1.2-2-2.4-2C1.1-10,0-8.9,0-7.5S1.1-5,2.5-5 c1.2,0,2.2-0.9,2.4-2H8c0.1,0.3,0.2,0.6,0.4,0.9L3.8-1.6C3.4-1.9,3-2,2.5-2C1.1-2,0-0.9,0,0.5S1.1,3,2.5,3c1.2,0,2.2-0.9,2.4-2 H8c0.2,1.1,1.2,2,2.4,2C11.8,3,13,1.9,13,0.5S11.8-2,10.5-2z M10.5-9C11.3-9,12-8.3,12-7.5S11.3-6,10.5-6S9-6.7,9-7.5 S9.6-9,10.5-9z M2.5-6C1.6-6,1-6.7,1-7.5S1.6-9,2.5-9S4-8.3,4-7.5S3.3-6,2.5-6z M2.5,2C1.6,2,1,1.3,1,0.5S1.6-1,2.5-1 S4-0.3,4,0.5S3.3,2,2.5,2z\"/></g></g><polygon fill=\"#264a60\" points=\"2,10 2,12 2,12 6.4,16 8,16 8,10 \"/><rect x=\"2\" fill=\"#264a60\" width=\"11\" height=\"1\"/><rect x=\"2\" fill=\"#264a60\" width=\"1\" height=\"2\"/><rect x=\"12\" fill=\"#264a60\" width=\"1\" height=\"2\"/><polygon fill=\"#264a60\" points=\"15,9 13,9 13,7 2,7 2,9 0,9 0,2 15,2 \"/><rect x=\"12\" y=\"7\" fill=\"#264a60\" width=\"1\" height=\"9\"/><rect x=\"7\" y=\"15\" fill=\"#264a60\" width=\"6\" height=\"1\"/><rect x=\"2\" y=\"7\" fill=\"#264a60\" width=\"1\" height=\"4\"/></svg>";
+		css = ".foo {background-image:url( '" + dataUrl + "' )}";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertEquals(".foo{background-image:url('" + dataUrl + "')}", output);
+
 		// Set the size threshold just below the image size and make sure the image isn't inlined
 		css = ".foo {background-image:url(images/testImage.png)}";
 		output = buildCss(new StringResource(css, resuri));
