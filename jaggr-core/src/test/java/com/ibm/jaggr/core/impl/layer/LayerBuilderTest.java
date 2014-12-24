@@ -721,7 +721,7 @@ public class LayerBuilderTest {
 				if (mbrKeygens != null) {
 					mbrKeygen = mbrKeygens.get(mid);
 				}
-				ModuleBuildReader mbr = new ModuleBuildReader(new StringReader(content.get(mid)), mbrKeygen, false);
+				ModuleBuildReader mbr = new ModuleBuildReader(new StringReader(content.get(mid)), mbrKeygen, null);
 				ModuleBuildFuture future = new ModuleBuildFuture(
 						new ModuleImpl(mid, entry.getModule().getURI()),
 						new CompletedFuture<ModuleBuildReader>(mbr),

@@ -18,9 +18,11 @@ package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IServiceReference;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.module.NotFoundModule;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -70,7 +72,6 @@ public class LayerBuilder {
 	final ModuleList moduleList;
 	final IHttpTransport transport;
 	final List<IModule> layerListenerModuleList;
-	boolean hasErrors = false;
 
 	/**
 	 * Count of modules for the current contribution type (modules or required
@@ -87,6 +88,13 @@ public class LayerBuilder {
 	boolean required = false;
 
 	/**
+	 * List of error message from build errors
+	 */
+	final List<String> errorMessages;
+
+	final List<String> nonErrorMessages;
+
+	/**
 	 * @param request
 	 *            The servlet request object
 	 * @param keyGens
@@ -99,6 +107,8 @@ public class LayerBuilder {
 		this.request = request;
 		this.keyGens = keyGens;
 		this.moduleList = moduleList;
+		errorMessages = new ArrayList<String>();
+		nonErrorMessages = new ArrayList<String>();
 		aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		options = aggr.getOptions();
 		transport = aggr.getTransport();
@@ -123,7 +133,7 @@ public class LayerBuilder {
 		Set<String> dependentFeatures = new HashSet<String>();
 		request.setAttribute(ILayer.DEPENDENT_FEATURES, dependentFeatures);
 
-		if (RequestUtil.isExplodeRequires(request)) {
+		if (RequestUtil.isRequireExpLogging(request)) {
 			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.BOOTLAYERDEPS_PROPNAME);
 			if (depList != null) {
 				// Output require expansion logging
@@ -168,6 +178,16 @@ public class LayerBuilder {
 		addTransportContribution(request, transport, sb,
 				LayerContributionType.END_RESPONSE, null);
 
+		// Output any messages to the console if debug mode is enabled
+		if (options.isDebugMode() || options.isDevelopmentMode()) {
+			for (String errorMsg : errorMessages) {
+				sb.append("\r\nconsole.error(\"" + errorMsg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			for (String msg : nonErrorMessages) {
+				sb.append("\r\nconsole.warn(\"" + msg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+
 		if (dependentFeatures.size() > 0) {
 			moduleList.getDependentFeatures().addAll(dependentFeatures);
 			dependentFeatures.clear();
@@ -183,7 +203,7 @@ public class LayerBuilder {
 	 * @return true if there was an error in one of the module builds
 	 */
 	protected boolean hasErrors() {
-		return hasErrors;
+		return !errorMessages.isEmpty();
 	}
 
 	/**
@@ -265,19 +285,29 @@ public class LayerBuilder {
 		} else {
 			type = required ? LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
 		}
-		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
+		String mid = future.getModule().getModuleId();
+		// Remove the plugin name from the mid provided to the transport addTransportContribution() if this
+		// is an error module. We do this because an error module is a JavaScript module, and we don't
+		// want the transport contribution to treat the module as a non-JavaScript module (e.g. text module)
+		// in order to prevent JavaScript syntax errors.
+		if (reader.isError()) {
+			mid = future.getModule().getModuleName();
+		}
+		addTransportContribution(request, transport, sb, type, mid);
 
 		count++;
 		// Add the reader to the result
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		sb.append(writer.toString());
-		hasErrors |= reader.isError();
+		if (reader.isError()) {
+			errorMessages.add(reader.getErrorMessage());
+		}
 
 		// Add post-module transport contribution
 		type = (source == ModuleSpecifier.LAYER || source == ModuleSpecifier.BUILD_ADDED && required) ?
 				LayerContributionType.AFTER_LAYER_MODULE : LayerContributionType.AFTER_MODULE;
-		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
+		addTransportContribution(request, transport, sb, type, mid);
 
 		// Process any after modules by recursively calling this method
 		if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
@@ -334,6 +364,7 @@ public class LayerBuilder {
 	protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
 			throws IOException {
 
+		final String sourceMethod = "collectFutures"; //$NON-NLS-1$
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>();
 
@@ -342,12 +373,45 @@ public class LayerBuilder {
 		// For each source file, add a Future<IModule.ModuleReader> to the list
 		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
 			IModule module = moduleListEntry.getModule();
-			Future<ModuleBuildReader> future = moduleCache.getBuild(request, module);
+			Future<ModuleBuildReader> future = null;
+			try {
+				future = moduleCache.getBuild(request, module);
+			} catch (NotFoundException e) {
+				if (log.isLoggable(Level.FINER)) {
+					log.logp(Level.FINER, LayerBuilder.class.getName(), sourceMethod, "Server expanded module " + moduleListEntry.getModule().getModuleId() + " not found."); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+				future = new NotFoundModule(module.getModuleId(), module.getURI()).getBuild(request);
+				if (!moduleListEntry.isServerExpanded()) {
+					// Treat as error.  Return error response, or if debug mode, then include
+					// the NotFoundModule in the response.
+					if (options.isDevelopmentMode() || options.isDebugMode()) {
+						// Don't cache responses containing error modules.
+						request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+					} else {
+						// Rethrow the exception to return an error response
+						throw e;
+					}
+				} else {
+					// Not an error if we're doing server-side expansion, but if debug mode
+					// then get the error message from the completed future so that we can output
+					// a console warning in the browser.
+					if (options.isDevelopmentMode() || options.isDebugMode()) {
+						try {
+							nonErrorMessages.add(future.get().getErrorMessage());
+						} catch (Exception ignore) {
+							// Sholdn't ever happen as this is a CompletedFuture
+							throw new RuntimeException(ignore);
+						}
+					}
+					// Don't add the future for the error module to the response.
+					continue;
+				}
+			}
 			futures.add(new ModuleBuildFuture(
-					moduleListEntry.getModule(),
+					module,
 					future,
 					moduleListEntry.getSource()
-					));
+			));
 		}
 		return futures;
 	}

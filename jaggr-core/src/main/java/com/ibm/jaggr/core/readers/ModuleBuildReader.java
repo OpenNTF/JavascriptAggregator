@@ -41,7 +41,7 @@ public class ModuleBuildReader extends Reader {
 	private List<ModuleBuildFuture> before;
 	private List<ModuleBuildFuture> after;
 	private List<ICacheKeyGenerator> keyGenerators;
-	private boolean error;
+	private String error;
 
 	/**
 	 * Constructor for a Build object specifying a reader, key generator
@@ -49,9 +49,9 @@ public class ModuleBuildReader extends Reader {
 	 *
 	 * @param reader A {@link Reader} to the build content
 	 * @param keyGens The {@link ICacheKeyGenerator} list for this IModule
-	 * @param error True if this module build contains an error response
+	 * @param error If not null, then an message describing the error
 	 */
-	public ModuleBuildReader(Reader reader, List<ICacheKeyGenerator> keyGens, boolean error) {
+	public ModuleBuildReader(Reader reader, List<ICacheKeyGenerator> keyGens, String error) {
 		this.reader = reader;
 		this.keyGenerators = keyGens;
 		this.error = error;
@@ -67,7 +67,7 @@ public class ModuleBuildReader extends Reader {
 	 * @param reader A {@link Reader} to the build content
 	 */
 	public ModuleBuildReader(Reader reader) {
-		this(reader, null, false);
+		this(reader, null, null);
 	}
 
 	/**
@@ -98,6 +98,10 @@ public class ModuleBuildReader extends Reader {
 	 * @return The error flag for the build
 	 */
 	public boolean isError() {
+		return error != null;
+	}
+
+	public String getErrorMessage() {
 		return error;
 	}
 
