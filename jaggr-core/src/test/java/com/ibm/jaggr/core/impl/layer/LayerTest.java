@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.layer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -448,7 +449,8 @@ public class LayerTest extends EasyMock {
 		.append("\\\"p1/b\\\":function\\(\\)\\{.*?\\},")
 		.append("\\\"p1/c\\\":function\\(\\)\\{.*?\\},")
 		.append("\\\"p1/noexist\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
-		.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);").toString());
+		.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);")
+		.append("\\s*console.error\\(\\\"Module not found:[^\\\"]*/p1/noexist.js\\\"\\);").toString());
 		assertTrue(p.matcher(result).find());
 
 		// Ensure that package name in require list get's translated to package main module
@@ -464,8 +466,10 @@ public class LayerTest extends EasyMock {
 		p = Pattern.compile(new StringBuffer()
 		.append("require\\(\\{cache:\\{")
 		.append("\\\"foo/main\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
-		.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"foo/main\\\"\\]\\);").toString());
+		.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"foo/main\\\"\\]\\);")
+		.append("\\s*console.error\\(\\\"Module not found:[^\\\"]*/foo/main.js\\\"\\);").toString());
 		assertTrue(p.matcher(result).find());
+
 	}
 
 	/**

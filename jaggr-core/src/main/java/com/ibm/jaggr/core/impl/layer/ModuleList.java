@@ -44,6 +44,7 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		IModule getModule() {
 			return module;
 		}
+		boolean isServerExpanded() { return false; }
 	}
 	private Set<String> dependentFeatures = null;
 	private Set<String> requiredModules = null;

@@ -26,7 +26,7 @@ public class JavaScriptEscapingReader extends CharacterEscapingReader {
 	 * within javascript strings.
 	 */
 	public static final Collection<Character> escapeChars = Arrays
-			.asList(new Character[] { '\'', '\n', '\r', '\\' });
+			.asList(new Character[] { '\'', '"', '\n', '\r', '\\' });
 
 
 	public JavaScriptEscapingReader(Reader reader) {

@@ -326,8 +326,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		System.out.println(compiled);
-		Assert.assertTrue(Pattern.compile("\\sconsole\\.error\\(\\\"Error compiling module:[^\"]*\\\"\\);\\s*\\/\\* Comment \\*\\/").matcher(compiled).find());
-		Assert.assertTrue(compiled.endsWith(TestUtils.err));
+		Assert.assertEquals(compiled, TestUtils.err);
+		Assert.assertTrue(future.get().isError());
+		Assert.assertNotNull(future.get().getErrorMessage());
 
 	}
 

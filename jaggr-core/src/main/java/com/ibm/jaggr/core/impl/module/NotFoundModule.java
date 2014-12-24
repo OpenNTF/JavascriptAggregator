@@ -48,20 +48,21 @@ public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneab
 	 */
 	@Override
 	public Future<ModuleBuildReader> getBuild(HttpServletRequest request) {
+		String errorMessage = MessageFormat.format(
+				Messages.NotFoundModule_0,
+				new Object[]{StringUtil.escapeForJavaScript(uri.toString())}
+		);
 		return
 			new CompletedFuture<ModuleBuildReader>(
 				new ModuleBuildReader(
 					new ErrorModuleReader(
-						ErrorModuleReader.ConsoleMethod.warn,
-						MessageFormat.format(
-								Messages.NotFoundModule_0,
-								new Object[]{StringUtil.escapeForJavaScript(uri.toString())}
-								),
-								getModuleName(),
-								request
+						ErrorModuleReader.ConsoleMethod.error,
+						errorMessage,
+						getModuleName(),
+						request
 					),
 					null,
-					true
+					errorMessage
 				)
 			);
 	}

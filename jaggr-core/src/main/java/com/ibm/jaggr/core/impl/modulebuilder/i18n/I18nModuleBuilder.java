@@ -96,7 +96,7 @@ extends JavaScriptModuleBuilder {
 			newKeyGens.add(new CacheKeyGenerator(availableLocales, false));
 			keyGens = newKeyGens;
 		}
-		ModuleBuild mb = new ModuleBuild(result.getBuildOutput(), keyGens, result.isError());
+		ModuleBuild mb = new ModuleBuild(result.getBuildOutput(), keyGens, result.getErrorMessage());
 		if (!result.isError()) {
 			for (IModule module : additionalModules) {
 				mb.addBefore(module);

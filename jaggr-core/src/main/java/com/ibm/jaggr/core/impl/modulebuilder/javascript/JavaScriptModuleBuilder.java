@@ -414,18 +414,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				.append(" (").append(error.lineNumber).append(")."); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 			if (aggr.getOptions().isDevelopmentMode() || aggr.getOptions().isDebugMode()) {
-				// In development mode, return the error console output
+				// In development mode, return the error message
 				// together with the uncompressed source.
-				String escaped = StringUtil.escapeForJavaScript(sb.toString());
-				// Reuse the string buffer and output a console error message
-				// along with the uncompiled source files as the build output.
-				sb.replace(0, sb.length(), "\r\nconsole.error(\"") //$NON-NLS-1$
-				.append(escaped)
-				.append("\");\r\n"); //$NON-NLS-1$
+				String errorMsg = StringUtil.escapeForJavaScript(sb.toString());
+				StringBuffer code = new StringBuffer();
 				for (JSSourceFile sf : sources) {
-					sb.append(sf.getCode());
+					code.append(sf.getCode());
 				}
-				return new ModuleBuild(sb.toString(), null, true);
+				return new ModuleBuild(code.toString(), null, errorMsg);
 			} else {
 				throw new Exception(sb.toString());
 			}
@@ -436,7 +432,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						createNewKeyGen ?
 								getCacheKeyGenerators(discoveredHasConditionals) :
 									keyGens,
-									false);
+									null);
 	}
 
 	/**

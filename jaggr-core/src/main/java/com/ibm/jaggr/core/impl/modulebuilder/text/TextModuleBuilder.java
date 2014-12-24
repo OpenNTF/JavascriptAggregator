@@ -73,7 +73,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 				);
 		sb.append(writer.toString());
 		sb.append(noTextAdorn ? "'" : "');"); //$NON-NLS-1$ //$NON-NLS-2$
-		return new ModuleBuild(sb.toString(), keyGens, false);
+		return new ModuleBuild(sb.toString(), keyGens, null);
 	}
 
 	protected Reader getContentReader(String mid,	IResource resource,	HttpServletRequest request,	List<ICacheKeyGenerator> keyGens)	throws IOException {

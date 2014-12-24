@@ -372,7 +372,7 @@ public class DependencyList {
 
 		List<String> declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
 		if (traceLogging) {
-			log.finest("declaredDeps = " + declaredDeps); //$NON-NLS-1$
+			log.finest("declaredDeps for " + name + " = " + declaredDeps); //$NON-NLS-1$ //$NON-NLS-2$ $NON-NLS-2$
 		}
 		if (declaredDeps != null) {
 			for (String dep : declaredDeps) {

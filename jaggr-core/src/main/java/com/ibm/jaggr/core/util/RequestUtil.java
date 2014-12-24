@@ -86,12 +86,10 @@ public class RequestUtil {
 	 */
 	public static boolean isRequireExpLogging(HttpServletRequest request) {
 		boolean result = false;
-		if (isExplodeRequires(request) ) {
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			IOptions options = aggr.getOptions();
-			if (options.isDebugMode() || options.isDevelopmentMode()) {
-				result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME));
-			}
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		if (options.isDebugMode() || options.isDevelopmentMode()) {
+			result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME));
 		}
 		return result;
 	}

@@ -295,7 +295,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							+ key);
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(reader,
-						cacheKeyGenerators, false);
+						cacheKeyGenerators, null);
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
@@ -317,7 +317,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							+ key);
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(reader,
-						cacheKeyGenerators, false);
+						cacheKeyGenerators, null);
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
@@ -364,7 +364,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 										+ key);
 							}
 							ModuleBuildReader mbr = new ModuleBuildReader(reader,
-									_cacheKeyGenerators, false);
+									_cacheKeyGenerators, null);
 							processExtraModules(mbr, request, cacheEntry);
 							return mbr;
 						}
@@ -378,7 +378,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						if (build.isError()) {
 							// Don't cache error results
 							return new ModuleBuildReader(new StringReader(build
-									.getBuildOutput().toString()), null, true);
+									.getBuildOutput().toString()), null, build.getErrorMessage());
 						}
 						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
 
@@ -441,18 +441,19 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							// In debug/development mode, don't throw an exception.
 							// Instead, log the
 							// error on the client.
+							String errorMsg = StringUtil.escapeForJavaScript(
+									ex.getClass().getName() +
+									": " + 	ex.getMessage() + //$NON-NLS-1$
+									"\r\n" + //$NON-NLS-1$
+									Messages.ModuleImpl_2
+							);
 							return new ModuleBuildReader(
 									new ErrorModuleReader(
-											StringUtil.escapeForJavaScript(
-													ex.getClass().getName() +
-													": " + 	ex.getMessage() + //$NON-NLS-1$
-													"\r\n" + //$NON-NLS-1$
-													Messages.ModuleImpl_2
-													),
-													getModuleName(),
-													request
-											), null, true
-									);
+											errorMsg,
+											getModuleName(),
+											request
+									), null, errorMsg
+								);
 
 						} else {
 							throw ex;
@@ -461,7 +462,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(
 						cacheEntry.getReader(mgr.getCacheDir(), request),
-						newCacheKeyGenerators, false);
+						newCacheKeyGenerators, null);
 				processExtraModules(mbr, request, cacheEntry);
 				// return a build reader object
 				return mbr;
