@@ -82,7 +82,8 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class LayerImpl implements ILayer {
 	private static final long serialVersionUID = 2491460740123061848L;
-	static final Logger log = Logger.getLogger(LayerImpl.class.getName());
+	static final String sourceClass = LayerImpl.class.getName();
+	static final Logger log = Logger.getLogger(sourceClass);
 
 	static final String LAST_MODIFIED_PROPNAME = LayerImpl.class.getName() + ".LAST_MODIFIED_FILES"; //$NON-NLS-1$
 	static final String MODULE_FILES_PROPNAME = LayerImpl.class.getName() + ".MODULE_FILES"; //$NON-NLS-1$
@@ -695,6 +696,11 @@ public class LayerImpl implements ILayer {
 	 * @throws IOException
 	 */
 	protected ModuleList getModules(HttpServletRequest request) throws IOException {
+		final String sourceMethod = "getModules"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceMethod, sourceMethod, new Object[]{request});
+		}
 		ModuleList result = (ModuleList)request.getAttribute(MODULE_FILES_PROPNAME);
 		if (result == null) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
@@ -796,9 +802,18 @@ public class LayerImpl implements ILayer {
 							Collection<String> prefixes = info.getHasPluginPrefixes();
 							if (prefixes == null ||		// condition is TRUE
 									RequestUtil.isIncludeUndefinedFeatureDeps(request) && !prefixes.isEmpty()) {
+								IModule module = newModule(request, name);
+								if (!explicit.containsKey(name) && aggr.getResourceFactory(module.getURI()) == null) {
+									// Module is server-expanded and it's not a server resource type that we
+									// know how handle, so just ignore it.
+									if (isTraceLogging) {
+										log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring module " + name + " due to no resource factory found."); //$NON-NLS-1$ //$NON-NLS-2$
+									}
+									continue;
+								}
 								result.add(
 										new ModuleList.ModuleListEntry(
-												newModule(request, name),
+												module,
 												ModuleSpecifier.LAYER,
 												!explicit.containsKey(name)
 												)
@@ -829,6 +844,9 @@ public class LayerImpl implements ILayer {
 				throw new BadRequestException(request.getQueryString());
 			}
 			request.setAttribute(MODULE_FILES_PROPNAME, result);
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod, result);
 		}
 		return result;
 	}

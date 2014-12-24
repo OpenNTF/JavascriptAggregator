@@ -620,6 +620,52 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	}
 
 	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#getResourceFactory(java.net.URI)
+	 */
+	@Override
+	public IResourceFactory getResourceFactory(URI uri) {
+		final String sourceMethod = "getResourceFactory"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{uri});
+		}
+		IResourceFactory factory = null;
+		if (!uri.isAbsolute()) {
+			if (uri.getPath().startsWith("/")) { //$NON-NLS-1$
+				// server relative URI not supported for server resources.  Probably meant
+				// to refer to a web resource.
+				if (isTraceLogging) {
+					log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, null);
+				}
+				return null;
+			}
+			// URI is not absolute, so make it absolute.
+			try {
+				uri = getPlatformServices().getAppContextURI().resolve(uri.getPath());
+			} catch (URISyntaxException e) {
+				throw new IllegalArgumentException(e);
+			}
+		}
+
+		Iterable<IAggregatorExtension> extensions = getExtensions(IResourceFactoryExtensionPoint.ID);
+		if (extensions != null) {	// may be null when unit testing
+			for (IAggregatorExtension extension : getExtensions(IResourceFactoryExtensionPoint.ID)) {
+				if (uri.getScheme().equals(extension.getAttribute(IResourceFactoryExtensionPoint.SCHEME_ATTRIBUTE))) {
+					IResourceFactory test = (IResourceFactory)extension.getInstance();
+					if (test.handles(uri)) {
+						factory = test;
+						break;
+					}
+				}
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, factory);
+		}
+		return factory;
+	}
+
+	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResourceProvider#getResource(java.net.URI)
 	 */
 	@Override
@@ -629,27 +675,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{uri});
 		}
-		if (!uri.isAbsolute()) {
-			// URI is not absolute, so make it absolute.
-			try {
-				uri = getPlatformServices().getAppContextURI().resolve(uri.getPath());
-			} catch (URISyntaxException e) {
-				throw new IllegalArgumentException(e);
-			}
-		}
-
-		IResourceFactory factory = null;
-		String scheme = uri.getScheme();
-
-		for (IAggregatorExtension extension : getExtensions(IResourceFactoryExtensionPoint.ID)) {
-			if (scheme.equals(extension.getAttribute(IResourceFactoryExtensionPoint.SCHEME_ATTRIBUTE))) {
-				IResourceFactory test = (IResourceFactory)extension.getInstance();
-				if (test.handles(uri)) {
-					factory = test;
-					break;
-				}
-			}
-		}
+		IResourceFactory factory = getResourceFactory(uri);
 		if (factory == null) {
 			throw new UnsupportedOperationException(
 					"No resource factory for " + uri.toString() //$NON-NLS-1$
@@ -1052,7 +1078,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				boolean inserted = false;
 				for (int i = 0; i < list.size(); i++) {
 					if (list.get(i) == before) {
-						resourceFactoryExtensions.add(i, ext);
+						list.add(i, ext);
 						inserted = true;
 						break;
 					}
@@ -1061,8 +1087,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 					throw new IllegalArgumentException();
 				}
 			}
-			// If this is a service provider extension the  register the specified service if
-			// one is indicated.
+			// If this is a service provider extension then register the specified service with the
+			// OSGi service registry if an interface name is provided.
 			if (IServiceProviderExtensionPoint.ID.equals(id)) {
 				String interfaceName = ext.getAttribute(IServiceProviderExtensionPoint.SERVICE_ATTRIBUTE);
 				if (interfaceName != null) {

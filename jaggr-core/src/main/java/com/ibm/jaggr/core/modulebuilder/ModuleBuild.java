@@ -38,7 +38,7 @@ public final class ModuleBuild {
 	private List<IModule> before;
 	private List<IModule> after;
 	private List<ICacheKeyGenerator> keyGenerators;
-	private boolean error;
+	private String error;
 
 	/**
 	 * Convenience constructor utilizing a null cache key generator and no
@@ -48,7 +48,7 @@ public final class ModuleBuild {
 	 *            The built output for the module
 	 */
 	public ModuleBuild(Object buildOutput) {
-		this(buildOutput, null, false);
+		this(buildOutput, null, null);
 	}
 
 	/**
@@ -64,9 +64,9 @@ public final class ModuleBuild {
 	 *            the built output for the module is invariant with regard to
 	 *            the request, then <code>keyGens</code> may be null.
 	 * @param error
-	 *            True if an error occurred while generating the build
+	 *            If not null, then a message describing the build error
 	 */
-	public ModuleBuild(Object buildOutput, List<ICacheKeyGenerator> keyGens, boolean error) {
+	public ModuleBuild(Object buildOutput, List<ICacheKeyGenerator> keyGens, String error) {
 		this.buildOutput = buildOutput;
 		this.keyGenerators = keyGens;
 		this.before = this.after = null;
@@ -105,6 +105,10 @@ public final class ModuleBuild {
 	 * @return True if a build error occurred
 	 */
 	public boolean isError() {
+		return error != null;
+	}
+
+	public String getErrorMessage() {
 		return error;
 	}
 

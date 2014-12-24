@@ -184,6 +184,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @return A {@link Future}{@code <}{@link ModuleBuildReader}{@code >} that can
 	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
+	 * @throws UnsupportedOperationException
+	 *            if no resource factory or module builder can be found for this resource.
 	 */
 	public Future<ModuleBuildReader> getBuild(final HttpServletRequest request)
 			throws IOException {
@@ -204,6 +206,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @return A {@link Future}{@code <}{@link ModuleBuildReader}{@code >} that can
 	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
+	 * @throws UnsupportedOperationException
+	 *            if no resource factory or module builder can be found for this resource.
 	 */
 	protected Future<ModuleBuildReader> getBuild(final HttpServletRequest request,
 			boolean fromCacheOnly) throws IOException {
@@ -239,6 +243,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					.toString());
 		}
 
+		final IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
+		if (builder == null) {
+			throw new UnsupportedOperationException("No module builder for " + resource.getURI()); //$NON-NLS-1$
+		}
 		// Get the last modified date of the source file.
 		long modified = resource.lastModified();
 
@@ -258,7 +266,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				oldModuleBuilds = _moduleBuilds;
 				_moduleBuilds = null;
 				_lastModified = modified;
-				IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
 				_cacheKeyGenerators = Collections.unmodifiableList(builder.getCacheKeyGenerators(aggr));
 				if (_cacheKeyGenerators == null) {
 					_cacheKeyGenerators = defaultCacheKeyGenerators;
@@ -295,7 +302,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							+ key);
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(reader,
-						cacheKeyGenerators, false);
+						cacheKeyGenerators, null);
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
@@ -317,7 +324,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							+ key);
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(reader,
-						cacheKeyGenerators, false);
+						cacheKeyGenerators, null);
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
@@ -364,12 +371,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 										+ key);
 							}
 							ModuleBuildReader mbr = new ModuleBuildReader(reader,
-									_cacheKeyGenerators, false);
+									_cacheKeyGenerators, null);
 							processExtraModules(mbr, request, cacheEntry);
 							return mbr;
 						}
 						// Build the output
-						IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
 						build = builder.build(
 								getModuleId(),
 								resource,
@@ -378,7 +384,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						if (build.isError()) {
 							// Don't cache error results
 							return new ModuleBuildReader(new StringReader(build
-									.getBuildOutput().toString()), null, true);
+									.getBuildOutput().toString()), null, build.getErrorMessage());
 						}
 						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
 
@@ -441,18 +447,19 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							// In debug/development mode, don't throw an exception.
 							// Instead, log the
 							// error on the client.
+							String errorMsg = StringUtil.escapeForJavaScript(
+									ex.getClass().getName() +
+									": " + 	ex.getMessage() + //$NON-NLS-1$
+									"\r\n" + //$NON-NLS-1$
+									Messages.ModuleImpl_2
+							);
 							return new ModuleBuildReader(
 									new ErrorModuleReader(
-											StringUtil.escapeForJavaScript(
-													ex.getClass().getName() +
-													": " + 	ex.getMessage() + //$NON-NLS-1$
-													"\r\n" + //$NON-NLS-1$
-													Messages.ModuleImpl_2
-													),
-													getModuleName(),
-													request
-											), null, true
-									);
+											errorMsg,
+											getModuleName(),
+											request
+									), null, errorMsg
+								);
 
 						} else {
 							throw ex;
@@ -461,7 +468,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(
 						cacheEntry.getReader(mgr.getCacheDir(), request),
-						newCacheKeyGenerators, false);
+						newCacheKeyGenerators, null);
 				processExtraModules(mbr, request, cacheEntry);
 				// return a build reader object
 				return mbr;

@@ -549,7 +549,17 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 
-			URI imageUri = res.resolve(urlMatch).getURI();
+			URI imageUri = null;
+			// Catch IllegalArgumentExceptions when trying to resolve the match URL in case
+			// parsing of the URL failed and gave us a malformed URL.
+			try {
+				imageUri = res.resolve(urlMatch).getURI();
+			} catch (IllegalArgumentException ignore) {
+				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				buf.append(fullMatch);
+				continue;
+			}
+
 			boolean exclude = false, include = false;
 
 			// Determine if this image is in the include list

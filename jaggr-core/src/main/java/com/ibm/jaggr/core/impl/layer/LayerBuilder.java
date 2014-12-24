@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.module.NotFoundModule;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -63,7 +64,8 @@ import javax.servlet.http.HttpServletRequest;
  * {@link ModuleBuildFuture}s into the response stream.
  */
 public class LayerBuilder {
-	private static final Logger log = Logger.getLogger(LayerBuilder.class.getName());
+	private static final String sourceClass = LayerBuilder.class.getName();
+	private static final Logger log = Logger.getLogger(sourceClass);
 	final HttpServletRequest request;
 	final List<ICacheKeyGenerator> keyGens;
 	final IAggregator aggr;
@@ -88,6 +90,13 @@ public class LayerBuilder {
 	boolean required = false;
 
 	/**
+	 * List of error message from build errors
+	 */
+	final List<String> errorMessages;
+
+	final List<String> nonErrorMessages;
+
+	/**
 	 * @param request
 	 *            The servlet request object
 	 * @param keyGens
@@ -100,6 +109,8 @@ public class LayerBuilder {
 		this.request = request;
 		this.keyGens = keyGens;
 		this.moduleList = moduleList;
+		errorMessages = new ArrayList<String>();
+		nonErrorMessages = new ArrayList<String>();
 		aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		options = aggr.getOptions();
 		transport = aggr.getTransport();
@@ -124,7 +135,7 @@ public class LayerBuilder {
 		Set<String> dependentFeatures = new HashSet<String>();
 		request.setAttribute(ILayer.DEPENDENT_FEATURES, dependentFeatures);
 
-		if (RequestUtil.isExplodeRequires(request)) {
+		if (RequestUtil.isRequireExpLogging(request)) {
 			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.BOOTLAYERDEPS_PROPNAME);
 			if (depList != null) {
 				// Output require expansion logging
@@ -169,6 +180,16 @@ public class LayerBuilder {
 		addTransportContribution(request, transport, sb,
 				LayerContributionType.END_RESPONSE, null);
 
+		// Output any messages to the console if debug mode is enabled
+		if (options.isDebugMode() || options.isDevelopmentMode()) {
+			for (String errorMsg : errorMessages) {
+				sb.append("\r\nconsole.error(\"" + errorMsg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			for (String msg : nonErrorMessages) {
+				sb.append("\r\nconsole.warn(\"" + msg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+		}
+
 		if (dependentFeatures.size() > 0) {
 			moduleList.getDependentFeatures().addAll(dependentFeatures);
 			dependentFeatures.clear();
@@ -184,7 +205,7 @@ public class LayerBuilder {
 	 * @return true if there was an error in one of the module builds
 	 */
 	protected boolean hasErrors() {
-		return hasErrors;
+		return !errorMessages.isEmpty();
 	}
 
 	/**
@@ -266,19 +287,29 @@ public class LayerBuilder {
 		} else {
 			type = required ? LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
 		}
-		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
+		String mid = future.getModule().getModuleId();
+		// Remove the plugin name from the mid provided to the transport addTransportContribution() if this
+		// is an error module. We do this because an error module is a JavaScript module, and we don't
+		// want the transport contribution to treat the module as a non-JavaScript module (e.g. text module)
+		// in order to prevent JavaScript syntax errors.
+		if (reader.isError()) {
+			mid = future.getModule().getModuleName();
+		}
+		addTransportContribution(request, transport, sb, type, mid);
 
 		count++;
 		// Add the reader to the result
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		sb.append(writer.toString());
-		hasErrors |= reader.isError();
+		if (reader.isError()) {
+			errorMessages.add(reader.getErrorMessage());
+		}
 
 		// Add post-module transport contribution
 		type = (source == ModuleSpecifier.LAYER || source == ModuleSpecifier.BUILD_ADDED && required) ?
 				LayerContributionType.AFTER_LAYER_MODULE : LayerContributionType.AFTER_MODULE;
-		addTransportContribution(request, transport, sb, type, future.getModule().getModuleId());
+		addTransportContribution(request, transport, sb, type, mid);
 
 		// Process any after modules by recursively calling this method
 		if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
@@ -336,6 +367,10 @@ public class LayerBuilder {
 			throws IOException {
 
 		final String sourceMethod = "collectFutures"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{moduleList, request});
+		}
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>();
 
@@ -343,23 +378,64 @@ public class LayerBuilder {
 
 		// For each source file, add a Future<IModule.ModuleReader> to the list
 		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
+			IModule module = moduleListEntry.getModule();
+			Future<ModuleBuildReader> future = null;
 			try {
-				IModule module = moduleListEntry.getModule();
-				Future<ModuleBuildReader> future = moduleCache.getBuild(request, module);
-				futures.add(new ModuleBuildFuture(
-						moduleListEntry.getModule(),
-						future,
-						moduleListEntry.getSource()
-						));
+				future = moduleCache.getBuild(request, module);
 			} catch (NotFoundException e) {
-				// Don't error on server expanded modules that are not found
 				if (log.isLoggable(Level.FINER)) {
-					log.logp(Level.FINER, LayerBuilder.class.getName(), sourceMethod, "Server expanded module " + moduleListEntry.getModule().getModuleId() + " not found."); //$NON-NLS-1$ //$NON-NLS-2$
+					log.logp(Level.FINER, sourceClass, sourceMethod, moduleListEntry.getModule().getModuleId() + " not found."); //$NON-NLS-1$
 				}
+				future = new NotFoundModule(module.getModuleId(), module.getURI()).getBuild(request);
 				if (!moduleListEntry.isServerExpanded()) {
-					throw e;
+					// Treat as error.  Return error response, or if debug mode, then include
+					// the NotFoundModule in the response.
+					if (options.isDevelopmentMode() || options.isDebugMode()) {
+						// Don't cache responses containing error modules.
+						request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+					} else {
+						// Rethrow the exception to return an error response
+						throw e;
+					}
+				} else {
+					// Not an error if we're doing server-side expansion, but if debug mode
+					// then get the error message from the completed future so that we can output
+					// a console warning in the browser.
+					if (options.isDevelopmentMode() || options.isDebugMode()) {
+						try {
+							nonErrorMessages.add(future.get().getErrorMessage());
+						} catch (Exception ex) {
+							// Sholdn't ever happen as this is a CompletedFuture
+							throw new RuntimeException(ex);
+						}
+					}
+					if (isTraceLogging) {
+						log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring exception for server expanded module " + e.getMessage(), e); //$NON-NLS-1$
+					}
+					// Don't add the future for the error module to the response.
+					continue;
+				}
+			} catch (UnsupportedOperationException ex) {
+				// Missing resource factory or module builder for this resource
+				if (moduleListEntry.isServerExpanded()) {
+					// ignore the error if it's a server expanded module
+					if (isTraceLogging) {
+						log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring exception for server expanded module " + ex.getMessage(), ex); //$NON-NLS-1$
+					}
+					continue;
+				} else {
+					// re-throw the exception
+					throw ex;
 				}
 			}
+			futures.add(new ModuleBuildFuture(
+					module,
+					future,
+					moduleListEntry.getSource()
+			));
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod, futures);
 		}
 		return futures;
 	}

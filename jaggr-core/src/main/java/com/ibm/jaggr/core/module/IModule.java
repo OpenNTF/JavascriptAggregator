@@ -64,6 +64,8 @@ public interface IModule extends Serializable {
 	 * @return A {@link Future} to a {@link ModuleBuildReader} object that will be available
 	 *         at some point in the future.
 	 * @throws IOException
+	 * @throws UnsupportedOperationException
+	 *            If no resource factory or module builder can be found for this resource.
 	 */
 	public Future<ModuleBuildReader> getBuild(HttpServletRequest request) throws IOException;
 

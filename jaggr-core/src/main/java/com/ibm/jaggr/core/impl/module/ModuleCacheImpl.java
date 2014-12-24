@@ -19,11 +19,9 @@ package com.ibm.jaggr.core.impl.module;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.impl.cache.GenericCacheImpl;
-import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.module.ModuleIdentifier;
-import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.RequestUtil;
@@ -52,18 +50,12 @@ public class ModuleCacheImpl extends GenericCacheImpl<IModule> implements IModul
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		@SuppressWarnings("unchecked")
 		Map<String, String> moduleCacheInfo = (Map<String, String>)request.getAttribute(IModuleCache.MODULECACHEINFO_PROPNAME);
-		IOptions options = aggr.getOptions();
 		IResource resource = module.getResource(aggr);
 		String cacheKey = new ModuleIdentifier(module.getModuleId()).getModuleName();
 		// Try to get the module from the module cache first
 		IModule cachedModule = null;
 		if (!resource.exists()) {
 			// Source file doesn't exist.
-			if (!options.isDevelopmentMode()) {
-				// Avoid the potential for DoS attack in production mode by throwing
-				// an exceptions instead of letting the cache grow unbounded
-				throw new NotFoundException(resource.getURI().toString());
-			}
 			// NotFound modules are not cached.  If the module is in the cache (because a
 			// source file has been deleted), then remove the cached module.
 			cachedModule = cacheMap.remove(cacheKey);
@@ -73,9 +65,7 @@ public class ModuleCacheImpl extends GenericCacheImpl<IModule> implements IModul
 				}
 				cachedModule.clearCached(aggr.getCacheManager());
 			}
-			// create a new NotFoundModule
-			module = new NotFoundModule(module.getModuleId(), module.getURI());
-			request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+			throw new NotFoundException(resource.getURI().toString());
 		} else {
 			// add it to the module cache if not already there
 			if (!RequestUtil.isIgnoreCached(request)) {

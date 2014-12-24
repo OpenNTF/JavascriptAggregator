@@ -123,6 +123,8 @@ public interface IAggregator {
 	 */
 	public IHttpTransport getTransport();
 
+	public IResourceFactory getResourceFactory(URI uri);
+
 	/**
 	 * Returns a new {@link IResource} for the specified URI. The aggregator
 	 * will create the new resource using one of the registered resource
@@ -162,42 +164,35 @@ public interface IAggregator {
 	public IResource newResource(URI uri);
 
 	/**
-	 * Returns an {@link IModuleBuilder} for the specified arguments. The
-	 * aggregator will select the builder from among the registered module
-	 * builder extensions by testing the provided <code>mid</code> and
-	 * <code>res</code> arguments against the attributes for each of the
+	 * Returns an {@link IModuleBuilder} for the specified arguments. The aggregator will select the
+	 * builder from among the registered module builder extensions by testing the provided
+	 * <code>mid</code> and <code>res</code> arguments against the attributes for each of the
 	 * registered extensions as follows:
 	 * <p>
-	 * Iterate through the registered module builder extensions looking for
-	 * extensions that specify an <code>extension</code> attribute that matches
-	 * the file extension of the resource specified by <code>res</code> or an
-	 * <code>extension</code> attribute of <code>*</code>. For each matching
-	 * module builder extension, if the extension does not specify a
-	 * <code>plugin</code> attribute or the value of the <code>plugin</code>
-	 * attribute matches the plugin specified by <code>mid</code> (if any), then
-	 * call the module builder's
-	 * {@link IModuleBuilder#handles(String, IResource)} method. If the method
-	 * returns true, then the module builder is returned to the caller.
+	 * Iterate through the registered module builder extensions looking for extensions that specify
+	 * an <code>extension</code> attribute that matches the file extension of the resource specified
+	 * by <code>res</code> or an <code>extension</code> attribute of <code>*</code>. For each
+	 * matching module builder extension, if the extension does not specify a <code>plugin</code>
+	 * attribute or the value of the <code>plugin</code> attribute matches the plugin specified by
+	 * <code>mid</code> (if any), then call the module builder's
+	 * {@link IModuleBuilder#handles(String, IResource)} method. If the method returns true, then
+	 * the module builder is returned to the caller.
 	 * <p>
-	 * The iteration order of the module builders is determined by the order
-	 * that <code>modulebuilders</code> init-params are declared within the
-	 * <code>servlet</code> element defining the aggregator servlet, the order
-	 * that the <code>builder</code> elements are declared in the module
-	 * builder extensions within the plugin.xml{s}, and on the insertion
+	 * The iteration order of the module builders is determined by the order that
+	 * <code>modulebuilders</code> init-params are declared within the <code>servlet</code> element
+	 * defining the aggregator servlet, the order that the <code>builder</code> elements are
+	 * declared in the module builder extensions within the plugin.xml{s}, and on the insertion
 	 * positions of extensions registered programatically using
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
 	 * The registered module builder extensions may be obtained by calling
 	 * {@link #getExtensions(String)}.
-	 * <p>
-	 * If a satisfactory module builder still cannot be found, then the
-	 * unchecked {@link UnsupportedOperationException} is thrown.
 	 *
 	 * @param mid
 	 *            The module id for the module to be built
 	 * @param res
 	 *            The resource for the module
-	 * @return The module builder for the source
+	 * @return The module builder for the source, or null if no module builder can be found.
 	 */
 	public IModuleBuilder getModuleBuilder(String mid, IResource res);
 
