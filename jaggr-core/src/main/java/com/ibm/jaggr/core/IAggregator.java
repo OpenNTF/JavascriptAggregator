@@ -123,12 +123,9 @@ public interface IAggregator {
 	 */
 	public IHttpTransport getTransport();
 
-	public IResourceFactory getResourceFactory(URI uri);
-
 	/**
-	 * Returns a new {@link IResource} for the specified URI. The aggregator
-	 * will create the new resource using one of the registered resource
-	 * factories.
+	 * Returns the resource factory for the specified URI, or null if no
+	 * resource factory can be found.
 	 * <p>
 	 * The aggregator will select the factory from among the registered
 	 * {@link IResourceFactory} extensions by testing the provided {@code uri}
@@ -151,15 +148,29 @@ public interface IAggregator {
 	 * positions of extensions registered programatically using
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
-	 * The registered resource factory extension may be obtained by calling
+	 * The registered resource factory extensions may be obtained by calling
 	 * {@link IAggregator#getExtensions(String)};
 	 * <p>
-	 * If a satisfactory resource factory cannot be found, then the unchecked
+	 * If a satisfactory resource factory cannot be found, then null is returned.
+	 *
+	 * @param uri
+	 *            The URI for the resource
+	 * @return The resource factory for the specified URI, or null
+	 */
+	public IResourceFactory getResourceFactory(URI uri);
+
+	/**
+	 * Returns a new {@link IResource} for the specified URI. The aggregator
+	 * will create the new resource using the resource factory obtained by
+	 * calling {@link #getResourceFactory(URI)}.
+	 * <p>
+	 * If {@link #getResourceFactory(URI)} returns null, then the unchecked
 	 * {@link UnsupportedOperationException} is thrown.
 	 *
 	 * @param uri
 	 *            The URI for the resource
 	 * @return The newly created resource object.
+	 * @throws UnsupportedOperationException
 	 */
 	public IResource newResource(URI uri);
 
