@@ -42,6 +42,8 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
+import org.apache.commons.lang3.mutable.MutableObject;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -803,7 +805,7 @@ public class LayerImpl implements ILayer {
 							if (prefixes == null ||		// condition is TRUE
 									RequestUtil.isIncludeUndefinedFeatureDeps(request) && !prefixes.isEmpty()) {
 								IModule module = newModule(request, name);
-								if (!explicit.containsKey(name) && aggr.getResourceFactory(module.getURI()) == null) {
+								if (!explicit.containsKey(name) && aggr.getResourceFactory(new MutableObject<URI>(module.getURI())) == null) {
 									// Module is server-expanded and it's not a server resource type that we
 									// know how handle, so just ignore it.
 									if (isTraceLogging) {

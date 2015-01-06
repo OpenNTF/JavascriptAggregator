@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
+import org.apache.commons.lang3.mutable.Mutable;
 import org.easymock.EasyMock;
 
 import java.io.File;
@@ -182,7 +183,7 @@ public class MockAggregatorWrapper implements IAggregator {
 	}
 
 	@Override
-	public IResourceFactory getResourceFactory(URI uri) {
+	public IResourceFactory getResourceFactory(Mutable<URI> uri) {
 		// TODO Auto-generated method stub
 		return mock.getResourceFactory(uri);
 	}

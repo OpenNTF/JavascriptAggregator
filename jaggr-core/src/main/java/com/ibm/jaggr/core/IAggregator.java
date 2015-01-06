@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -31,6 +32,8 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import org.apache.commons.lang3.mutable.Mutable;
 
 import java.io.File;
 import java.io.IOException;
@@ -124,27 +127,23 @@ public interface IAggregator {
 	public IHttpTransport getTransport();
 
 	/**
-	 * Returns the resource factory for the specified URI, or null if no
-	 * resource factory can be found.
+	 * Returns the resource factory for the specified URI, or null if no resource factory can be
+	 * found.
 	 * <p>
-	 * The aggregator will select the factory from among the registered
-	 * {@link IResourceFactory} extensions by testing the provided {@code uri}
-	 * against the scheme attribute of each of the registered resource factories
-	 * as follows:
+	 * The aggregator will select the factory from among the registered {@link IResourceFactory}
+	 * extensions by testing the provided {@code uri} against the scheme attribute of each of the
+	 * registered resource factories as follows:
 	 * <p>
-	 * Iterate through the registered resource factory extensions looking for
-	 * extensions that specify a <code>scheme</code> attribute matching the
-	 * scheme of <code>uri</code> or a <code>scheme</code> attribute of
-	 * <code>*</code>. For each matching extension, call the
-	 * {@link IResourceFactory#handles(URI)} method and if the method returns
-	 * true, then call the {@link IResourceFactory#newResource(URI)} method to
-	 * create the new resource.
+	 * Iterate through the registered resource factory extensions looking for extensions that
+	 * specify a <code>scheme</code> attribute matching the scheme of <code>uri</code> or a
+	 * <code>scheme</code> attribute of <code>*</code>. For each matching extension, call the
+	 * {@link IResourceFactory#handles(URI)} method and if the method returns true, then call the
+	 * {@link IResourceFactory#newResource(URI)} method to create the new resource.
 	 * <p>
-	 * The iteration order of the resource factories is determined by the order
-	 * that <code>resourcefactories</code> init-params are declared within the
-	 * <code>servlet</code> element defining the aggregator servlet, the order
-	 * that the <code>factory</code> elements are declared in the resource
-	 * factory extensions within the plugin.xml{s}, and on the insertion
+	 * The iteration order of the resource factories is determined by the order that
+	 * <code>resourcefactories</code> init-params are declared within the <code>servlet</code>
+	 * element defining the aggregator servlet, the order that the <code>factory</code> elements are
+	 * declared in the resource factory extensions within the plugin.xml{s}, and on the insertion
 	 * positions of extensions registered programatically using
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
@@ -153,24 +152,26 @@ public interface IAggregator {
 	 * <p>
 	 * If a satisfactory resource factory cannot be found, then null is returned.
 	 *
-	 * @param uri
-	 *            The URI for the resource
+	 * @param uri (Input/Output)
+	 *            A mutable reference to the input uri which may be modified to reference a
+	 *            different uri for the same resource if the uri needs to be transformed in order to
+	 *            match to a resource factory (e.g. a relative uri transformed into an absolute
+	 *            uri).
 	 * @return The resource factory for the specified URI, or null
 	 */
-	public IResourceFactory getResourceFactory(URI uri);
+	public IResourceFactory getResourceFactory(Mutable<URI> uri);
 
 	/**
 	 * Returns a new {@link IResource} for the specified URI. The aggregator
 	 * will create the new resource using the resource factory obtained by
-	 * calling {@link #getResourceFactory(URI)}.
+	 * calling {@link #getResourceFactory(Mutable)}.
 	 * <p>
-	 * If {@link #getResourceFactory(URI)} returns null, then the unchecked
-	 * {@link UnsupportedOperationException} is thrown.
+	 * This method may return an instance of {@link NotFoundResource} if a resource factory
+	 * for the URI cannot be found.
 	 *
 	 * @param uri
 	 *            The URI for the resource
 	 * @return The newly created resource object.
-	 * @throws UnsupportedOperationException
 	 */
 	public IResource newResource(URI uri);
 

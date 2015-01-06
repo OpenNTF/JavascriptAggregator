@@ -46,6 +46,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
+import org.apache.commons.lang3.mutable.Mutable;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 
@@ -306,9 +307,10 @@ public class TestUtils {
 				return mockAggregatorNewResource((URI)EasyMock.getCurrentArguments()[0], workdir);
 			}
 		}).anyTimes();
-		EasyMock.expect(mockAggregator.getResourceFactory(EasyMock.isA(URI.class))).andAnswer(new IAnswer<IResourceFactory>() {
+		EasyMock.expect(mockAggregator.getResourceFactory(EasyMock.isA(Mutable.class))).andAnswer(new IAnswer<IResourceFactory>() {
 			public IResourceFactory answer() throws Throwable {
-				URI uri = (URI)EasyMock.getCurrentArguments()[0];
+				Mutable<URI> uriRef = (Mutable<URI>)EasyMock.getCurrentArguments()[0];
+				URI uri = uriRef.getValue();
 				if (!uri.isAbsolute() && uri.getPath().startsWith("/")) return null;
 				return ("file".equals(uri.getScheme())) ? new FileResourceFactory() : null;
 			}
