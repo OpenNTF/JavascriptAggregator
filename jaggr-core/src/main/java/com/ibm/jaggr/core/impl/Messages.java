@@ -48,9 +48,13 @@ public class Messages extends NLS {
 	public static String CommandProvider_18;
 	public static String CommandProvider_19;
 	public static String CommandProvider_20;
+	public static String CommandProvider_21;
 	public static String CommandProvider_22;
 	public static String CommandProvider_23;
 	public static String CommandProvider_26;
+	public static String CommandProvider_27;
+	public static String CommandProvider_28;
+	public static String CommandProvider_29;
 	public static String ConfigModified;
 	public static String CustomOptionsFile;
 	static {
