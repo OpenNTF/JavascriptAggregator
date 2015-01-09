@@ -87,6 +87,8 @@ import java.util.zip.Deflater;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import junit.framework.Assert;
+
 @RunWith(PowerMockRunner.class)
 @PrepareForTest(LayerImpl.class)
 public class LayerTest extends EasyMock {
@@ -447,10 +449,9 @@ public class LayerTest extends EasyMock {
 		.append("require\\(\\{cache:\\{")
 		.append("\\\"p1/a\\\":function\\(\\)\\{.*?\\},")
 		.append("\\\"p1/b\\\":function\\(\\)\\{.*?\\},")
-		.append("\\\"p1/c\\\":function\\(\\)\\{.*?\\},")
-		.append("\\\"p1/noexist\\\":function\\(\\)\\{.*?Module not found: .*?\\}")
+		.append("\\\"p1/c\\\":function\\(\\)\\{.*?\\}")
 		.append("\\}\\}\\);require\\(\\{cache:\\{\\}\\}\\);require\\(\\[\\\"p1/a\\\"\\]\\);")
-		.append("\\s*console.error\\(\\\"Module not found:[^\\\"]*/p1/noexist.js\\\"\\);").toString());
+		.append("\\s*console.warn\\(\\\"Module not found:[^\\\"]*/p1/noexist.js\\\"\\);").toString());
 		assertTrue(p.matcher(result).find());
 
 		// Ensure that package name in require list get's translated to package main module
@@ -541,7 +542,7 @@ public class LayerTest extends EasyMock {
 		in.close();
 		String s = layer.toString();
 		System.out.println(s);
-		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};lyr:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
+		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};lyr:0:0:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
 	}
 
 	/**
@@ -794,6 +795,20 @@ public class LayerTest extends EasyMock {
 		assertEquals("[hit_1]",layerCacheInfo.toString());
 		assertEquals("weighted size error", zipped.length + unzipped.length, cacheMap.weightedSize());
 		assertEquals("cache file size error", zipped.length + unzipped.length, TestUtils.getDirListSize(cacheDir, layerFilter));
+	}
+
+	@Test
+	public void testCacheKeyGenerator() throws Exception {
+		replay(mockAggregator, mockRequest);
+		Assert.assertEquals("lyr:0:0:0:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		requestHeaders.put("Accept-Encoding", "gzip");
+		Assert.assertEquals("lyr:1:0:0:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		mockRequest.setAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME, true);
+		Assert.assertEquals("lyr:1:1:0:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		mockRequest.setAttribute(IHttpTransport.INCLUDEREQUIREDEPS_REQATTRNAME, true);
+		Assert.assertEquals("lyr:1:1:1:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		mockRequest.setAttribute(IHttpTransport.INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME, true);
+		Assert.assertEquals("lyr:1:1:1:1", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
 	}
 
 	@SuppressWarnings("serial")

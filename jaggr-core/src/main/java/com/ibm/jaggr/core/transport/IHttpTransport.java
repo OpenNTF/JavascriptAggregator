@@ -103,13 +103,6 @@ public interface IHttpTransport extends IExtensionInitializer {
 
 	/**
 	 * Name of the request attribute specifying the Boolean flag indicating if
-	 * has! plugin branching should be performed during require list expansion.
-	 */
-	public static final String HASPLUGINBRANCHING_REQATTRNAME = IHttpTransport.class
-			.getName() + ".HasPluginBranching"; //$NON-NLS-1$
-
-	/**
-	 * Name of the request attribute specifying the Boolean flag indicating if
 	 * the response should be annotated with comments indicating the names of
 	 * the module source files.
 	 */
@@ -171,6 +164,52 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 */
 	public static final String CONFIGVARNAME_REQATTRNAME = IHttpTransport.class
 			.getName() + ".ConfigVarName"; //$NON-NLS-1$
+
+	/**
+	 * Name of the request attribute specifying whether or not dependencies specified in require
+	 * calls that are contained within AMD modules should be expanded when performing server-side
+	 * expansion of dependent modules. Used only for application generated requests specifying the
+	 * <code>deps</code> and/or <code>preloads</code> request parameters.
+	 * <p>
+	 * This request attribute corresponds to the <code>includeRequireDeps</code> request parameter
+	 * and is set by the transport based on the value of the request parameter.
+	 */
+	public static final String INCLUDEREQUIREDEPS_REQATTRNAME = IHttpTransport.class
+			.getName() + ".IncludeRequireDeps";  //$NON-NLS-1$
+
+
+	/**
+	 * Name of the request attribute specifying whether or not dependencies specified using has!
+	 * loader plugin conditionals for undefined features (either in define or require dependencies)
+	 * should be included when performing server-side expansion of dependent modules. Used only for
+	 * application generated requests specifying the <code>deps</code> and/or <code>preloads</code>
+	 * request parameters.
+	 * <p>
+	 * If this attribute is true, then the modules specified by both branches of a has! plugin
+	 * conditional for an undefined feature will be added to the layer being built, along with both
+	 * of those modules' dependencies.
+	 * <p>
+	 * This request attribute corresponds to the <code>includeUndefinedFeatureDeps</code> request
+	 * parameter and is set by the transport based on the value of the request parameter.
+	 */
+	public static final String INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME = IHttpTransport.class
+			.getName() + ".IncludeUndefinedFeatureDeps"; //$NON-NLS-1$
+
+
+	/**
+	 * Name of the request attribute specifying if the server should assert that the modules
+	 * specified by the <code>deps</code> and/or <code>preloads</code>
+	 * request parameters, plus their nested dependencies, include no nls modules.  This is
+	 * helpful for keeping nls resources out of the bootstrap layer in cases where code needs
+	 * to run on the client to determine the user's preferred locale.  If this options is
+	 * specified and the response would contain nls resources, then a 400 - Bad Request
+	 * response status is returned.
+	 * <p>
+	 * This request attribute corresponds to the <code>assertNoNLS</code> request
+	 * parameter and is set by the transport based on the value of the request parameter.
+	 */
+	public static final String ASSERTNONLS_REQATTRNAME = IHttpTransport.class
+			.getName() + "AssertNoNLS"; //$NON-NLS-1$
 
 	/**
 	 * Supported optimization levels. Module builders are not required to

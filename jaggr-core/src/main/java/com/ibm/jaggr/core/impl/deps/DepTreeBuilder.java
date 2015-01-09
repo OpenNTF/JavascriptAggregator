@@ -139,7 +139,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 					String extension = idx == -1 ? "" : resname.substring(idx+1); //$NON-NLS-1$
 					if (nonJSExtensions.contains(extension)) {
 						DepTreeNode node = root.createOrGet(pathname, resource.getURI());
-						node.setDependencies(null,  null,  resource.lastModified(), resource.lastModified());
+						node.setDependencies(null, null,  null,  resource.lastModified(), resource.lastModified());
 					}
 					return false;
 				}
@@ -153,7 +153,10 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 					cachedNode = (pathname.length() > 0) ? cached.getDescendent(pathname) : cached;
 				}
 				if (cachedNode != null) {
-					node.setDependencies(cachedNode.getDepArray(), cachedNode.getDependentFeatures(),
+					node.setDependencies(
+							cachedNode.getDefineDepArray(),
+							cachedNode.getRequireDepArray(),
+							cachedNode.getDependentFeatures(),
 							cachedNode.lastModified(), cachedNode.lastModifiedDep());
 				}
 				/*

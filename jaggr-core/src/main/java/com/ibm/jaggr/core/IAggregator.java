@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.ForcedErrorResponse;
+import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -32,6 +33,8 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import org.apache.commons.lang3.mutable.Mutable;
 
 import java.io.File;
 import java.io.IOException;
@@ -136,36 +139,48 @@ public interface IAggregator {
 	public String setForceError(String forceError);
 
 	/**
-	 * Returns a new {@link IResource} for the specified URI. The aggregator
+	 * Returns a new {@link IResourceFactory} for the specified URI. The aggregator
 	 * will create the new resource using one of the registered resource
 	 * factories.
 	 * <p>
-	 * The aggregator will select the factory from among the registered
-	 * {@link IResourceFactory} extensions by testing the provided {@code uri}
-	 * against the scheme attribute of each of the registered resource factories
-	 * as follows:
+	 * The aggregator will select the factory from among the registered {@link IResourceFactory}
+	 * extensions by testing the provided {@code uri} against the scheme attribute of each of the
+	 * registered resource factories as follows:
 	 * <p>
-	 * Iterate through the registered resource factory extensions looking for
-	 * extensions that specify a <code>scheme</code> attribute matching the
-	 * scheme of <code>uri</code> or a <code>scheme</code> attribute of
-	 * <code>*</code>. For each matching extension, call the
-	 * {@link IResourceFactory#handles(URI)} method and if the method returns
-	 * true, then call the {@link IResourceFactory#newResource(URI)} method to
-	 * create the new resource.
+	 * Iterate through the registered resource factory extensions looking for extensions that
+	 * specify a <code>scheme</code> attribute matching the scheme of <code>uri</code> or a
+	 * <code>scheme</code> attribute of <code>*</code>. For each matching extension, call the
+	 * {@link IResourceFactory#handles(URI)} method and if the method returns true, then call the
+	 * {@link IResourceFactory#newResource(URI)} method to create the new resource.
 	 * <p>
-	 * The iteration order of the resource factories is determined by the order
-	 * that <code>resourcefactories</code> init-params are declared within the
-	 * <code>servlet</code> element defining the aggregator servlet, the order
-	 * that the <code>factory</code> elements are declared in the resource
-	 * factory extensions within the plugin.xml{s}, and on the insertion
+	 * The iteration order of the resource factories is determined by the order that
+	 * <code>resourcefactories</code> init-params are declared within the <code>servlet</code>
+	 * element defining the aggregator servlet, the order that the <code>factory</code> elements are
+	 * declared in the resource factory extensions within the plugin.xml{s}, and on the insertion
 	 * positions of extensions registered programatically using
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
-	 * The registered resource factory extension may be obtained by calling
+	 * The registered resource factory extensions may be obtained by calling
 	 * {@link IAggregator#getExtensions(String)};
 	 * <p>
-	 * If a satisfactory resource factory cannot be found, then the unchecked
-	 * {@link UnsupportedOperationException} is thrown.
+	 * If a satisfactory resource factory cannot be found, then null is returned.
+	 *
+	 * @param uri (Input/Output)
+	 *            A mutable reference to the input uri which may be modified to reference a
+	 *            different uri for the same resource if the uri needs to be transformed in order to
+	 *            match to a resource factory (e.g. a relative uri transformed into an absolute
+	 *            uri).
+	 * @return The resource factory for the specified URI, or null
+	 */
+	public IResourceFactory getResourceFactory(Mutable<URI> uri);
+
+	/**
+	 * Returns a new {@link IResource} for the specified URI. The aggregator
+	 * will create the new resource using the resource factory obtained by
+	 * calling {@link #getResourceFactory(Mutable)}.
+	 * <p>
+	 * This method may return an instance of {@link NotFoundResource} if a resource factory
+	 * for the URI cannot be found.
 	 *
 	 * @param uri
 	 *            The URI for the resource
@@ -174,42 +189,35 @@ public interface IAggregator {
 	public IResource newResource(URI uri);
 
 	/**
-	 * Returns an {@link IModuleBuilder} for the specified arguments. The
-	 * aggregator will select the builder from among the registered module
-	 * builder extensions by testing the provided <code>mid</code> and
-	 * <code>res</code> arguments against the attributes for each of the
+	 * Returns an {@link IModuleBuilder} for the specified arguments. The aggregator will select the
+	 * builder from among the registered module builder extensions by testing the provided
+	 * <code>mid</code> and <code>res</code> arguments against the attributes for each of the
 	 * registered extensions as follows:
 	 * <p>
-	 * Iterate through the registered module builder extensions looking for
-	 * extensions that specify an <code>extension</code> attribute that matches
-	 * the file extension of the resource specified by <code>res</code> or an
-	 * <code>extension</code> attribute of <code>*</code>. For each matching
-	 * module builder extension, if the extension does not specify a
-	 * <code>plugin</code> attribute or the value of the <code>plugin</code>
-	 * attribute matches the plugin specified by <code>mid</code> (if any), then
-	 * call the module builder's
-	 * {@link IModuleBuilder#handles(String, IResource)} method. If the method
-	 * returns true, then the module builder is returned to the caller.
+	 * Iterate through the registered module builder extensions looking for extensions that specify
+	 * an <code>extension</code> attribute that matches the file extension of the resource specified
+	 * by <code>res</code> or an <code>extension</code> attribute of <code>*</code>. For each
+	 * matching module builder extension, if the extension does not specify a <code>plugin</code>
+	 * attribute or the value of the <code>plugin</code> attribute matches the plugin specified by
+	 * <code>mid</code> (if any), then call the module builder's
+	 * {@link IModuleBuilder#handles(String, IResource)} method. If the method returns true, then
+	 * the module builder is returned to the caller.
 	 * <p>
-	 * The iteration order of the module builders is determined by the order
-	 * that <code>modulebuilders</code> init-params are declared within the
-	 * <code>servlet</code> element defining the aggregator servlet, the order
-	 * that the <code>builder</code> elements are declared in the module
-	 * builder extensions within the plugin.xml{s}, and on the insertion
+	 * The iteration order of the module builders is determined by the order that
+	 * <code>modulebuilders</code> init-params are declared within the <code>servlet</code> element
+	 * defining the aggregator servlet, the order that the <code>builder</code> elements are
+	 * declared in the module builder extensions within the plugin.xml{s}, and on the insertion
 	 * positions of extensions registered programatically using
 	 * {@link IExtensionRegistrar#registerExtension}.
 	 * <p>
 	 * The registered module builder extensions may be obtained by calling
 	 * {@link #getExtensions(String)}.
-	 * <p>
-	 * If a satisfactory module builder still cannot be found, then the
-	 * unchecked {@link UnsupportedOperationException} is thrown.
 	 *
 	 * @param mid
 	 *            The module id for the module to be built
 	 * @param res
 	 *            The resource for the module
-	 * @return The module builder for the source
+	 * @return The module builder for the source, or null if no module builder can be found.
 	 */
 	public IModuleBuilder getModuleBuilder(String mid, IResource res);
 

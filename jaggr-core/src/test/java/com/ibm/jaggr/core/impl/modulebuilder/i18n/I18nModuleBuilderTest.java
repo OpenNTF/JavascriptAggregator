@@ -231,6 +231,20 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(1, build.getBefore().size());
 		Assert.assertEquals("nls/eb/strings", build.getBefore().get(0).getModuleId());
 		Assert.assertEquals(file.toURI(), build.getBefore().get(0).getURI());
+
+		requestAttributes.put(
+				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
+				Arrays.asList(new String[]{"*"}));
+
+		s = KeyGenUtil.generateKey(mockRequest, keyGens);
+		System.out.println(s);
+		Assert.assertTrue(s.contains("i18n{*}"));
+		build = buildIt();
+		output = build.getBuildOutput().toString();
+		System.out.println(output);
+		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
+		Assert.assertEquals(7, build.getBefore().size());
+
 	}
 
 	@Test

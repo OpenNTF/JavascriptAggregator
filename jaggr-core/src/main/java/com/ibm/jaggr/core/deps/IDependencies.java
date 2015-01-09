@@ -72,6 +72,24 @@ public interface IDependencies {
 			throws ProcessingDependenciesException;
 
 	/**
+	 * Returns the list of modules specified in the dependency lists of any require calls contained
+	 * within the specified module. If the specified module does not contain any require calls, then
+	 * an empty list is returned.
+	 * <p>
+	 * Note that no attempt is made to determine if the require call will ever be executed by the
+	 * client by looking for dead code, etc. Any require calls that appear within the module will be
+	 * used in collecting require dependencies.
+	 *
+	 * @param mid
+	 *            The module id
+	 * @return An unmodifiable list of require call dependencies, or null if the specified module
+	 *         was not found when the dependencies were processed.
+	 * @throws ProcessingDependenciesException
+	 */
+	List<String> getRequireDependencies(String mid)
+			throws ProcessingDependenciesException;
+
+	/**
 	 * Returns the list of dependent features for the specified module. This
 	 * includes features specified as string literals in has() function calls,
 	 * as well as features specified using a has! loader plugin in require and

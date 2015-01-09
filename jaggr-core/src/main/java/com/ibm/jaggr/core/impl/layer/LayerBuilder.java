@@ -64,7 +64,8 @@ import javax.servlet.http.HttpServletRequest;
  * {@link ModuleBuildFuture}s into the response stream.
  */
 public class LayerBuilder {
-	private static final Logger log = Logger.getLogger(LayerBuilder.class.getName());
+	private static final String sourceClass = LayerBuilder.class.getName();
+	private static final Logger log = Logger.getLogger(sourceClass);
 	final HttpServletRequest request;
 	final List<ICacheKeyGenerator> keyGens;
 	final IAggregator aggr;
@@ -72,6 +73,7 @@ public class LayerBuilder {
 	final ModuleList moduleList;
 	final IHttpTransport transport;
 	final List<IModule> layerListenerModuleList;
+	boolean hasErrors = false;
 
 	/**
 	 * Count of modules for the current contribution type (modules or required
@@ -365,6 +367,10 @@ public class LayerBuilder {
 			throws IOException {
 
 		final String sourceMethod = "collectFutures"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{moduleList, request});
+		}
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>();
 
@@ -378,7 +384,7 @@ public class LayerBuilder {
 				future = moduleCache.getBuild(request, module);
 			} catch (NotFoundException e) {
 				if (log.isLoggable(Level.FINER)) {
-					log.logp(Level.FINER, LayerBuilder.class.getName(), sourceMethod, "Server expanded module " + moduleListEntry.getModule().getModuleId() + " not found."); //$NON-NLS-1$ //$NON-NLS-2$
+					log.logp(Level.FINER, sourceClass, sourceMethod, moduleListEntry.getModule().getModuleId() + " not found."); //$NON-NLS-1$
 				}
 				future = new NotFoundModule(module.getModuleId(), module.getURI()).getBuild(request);
 				if (!moduleListEntry.isServerExpanded()) {
@@ -398,13 +404,28 @@ public class LayerBuilder {
 					if (options.isDevelopmentMode() || options.isDebugMode()) {
 						try {
 							nonErrorMessages.add(future.get().getErrorMessage());
-						} catch (Exception ignore) {
+						} catch (Exception ex) {
 							// Sholdn't ever happen as this is a CompletedFuture
-							throw new RuntimeException(ignore);
+							throw new RuntimeException(ex);
 						}
+					}
+					if (isTraceLogging) {
+						log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring exception for server expanded module " + e.getMessage(), e); //$NON-NLS-1$
 					}
 					// Don't add the future for the error module to the response.
 					continue;
+				}
+			} catch (UnsupportedOperationException ex) {
+				// Missing resource factory or module builder for this resource
+				if (moduleListEntry.isServerExpanded()) {
+					// ignore the error if it's a server expanded module
+					if (isTraceLogging) {
+						log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring exception for server expanded module " + ex.getMessage(), ex); //$NON-NLS-1$
+					}
+					continue;
+				} else {
+					// re-throw the exception
+					throw ex;
 				}
 			}
 			futures.add(new ModuleBuildFuture(
@@ -412,6 +433,9 @@ public class LayerBuilder {
 					future,
 					moduleListEntry.getSource()
 			));
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod, futures);
 		}
 		return futures;
 	}

@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.core.impl.deps;
 
+import com.ibm.jaggr.core.impl.deps.DepUtils.ParseResult;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 import com.google.javascript.jscomp.Compiler;
@@ -86,26 +87,31 @@ final class DepParser implements Callable<URI> {
 			// walk the AST for the node looking for define calls
 			// and pull out the required dependency list.
 			Set<String> features = new HashSet<String>();
-			Collection<String> deps = DepUtils.parseDependencies(node, features);
-			String[] depArray = (deps == null) ?
-					new String[0] : deps.toArray(new String[deps.size()]);
-					String[] featureArray = (features == null) ?
-							new String[0] : features.toArray(new String[features.size()]);
-							/*
-							 * Determine if the dependency list has changed.  We keep track of
-							 * dependency list changes separate from code changes in general
-							 * because a dependency list change necessitates invalidating all
-							 * cached responses for the configs that reference this file, and
-							 * we want to do this only when necessary.
-							 */
-							if (lastModifiedDep ==  -1 ||
-									!Arrays.equals(depArray, treeNode.getDepArray()) ||
-									!Arrays.equals(featureArray, treeNode.getDependentFeatures())) {
-								lastModifiedDep = lastModified;
-							}
-							// update the dependency info in the node
-							treeNode.setDependencies(depArray, featureArray,
-									lastModified, lastModifiedDep);
+			ParseResult parseResult = DepUtils.parseDependencies(node, features);
+			Collection<String> defineDeps = parseResult.getDefineDependencies();
+			Collection<String> requireDeps = parseResult.getRequireDependencies();
+			String[] defineDepArray = (defineDeps == null) ?
+					new String[0] : defineDeps.toArray(new String[defineDeps.size()]);
+			String[] requireDepArray = (requireDeps == null) ?
+					new String[0] : requireDeps.toArray(new String[requireDeps.size()]);
+			String[] featureArray = (features == null) ?
+					new String[0] : features.toArray(new String[features.size()]);
+			/*
+			 * Determine if the dependency list has changed.  We keep track of
+			 * dependency list changes separate from code changes in general
+			 * because a dependency list change necessitates invalidating all
+			 * cached responses for the configs that reference this file, and
+			 * we want to do this only when necessary.
+			 */
+			if (lastModifiedDep ==  -1 ||
+					!Arrays.equals(defineDepArray, treeNode.getDefineDepArray()) ||
+					!Arrays.equals(requireDepArray, treeNode.getRequireDepArray()) ||
+					!Arrays.equals(featureArray, treeNode.getDependentFeatures())) {
+				lastModifiedDep = lastModified;
+			}
+			// update the dependency info in the node
+			treeNode.setDependencies(defineDepArray, requireDepArray, featureArray,
+					lastModified, lastModifiedDep);
 		}
 		return resource.getURI();
 	}

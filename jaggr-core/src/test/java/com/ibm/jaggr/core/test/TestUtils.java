@@ -35,6 +35,7 @@ import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.impl.resource.FileResource;
+import com.ibm.jaggr.core.impl.resource.FileResourceFactory;
 import com.ibm.jaggr.core.impl.transport.DojoHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
@@ -42,8 +43,10 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
+import org.apache.commons.lang3.mutable.Mutable;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 
@@ -302,6 +305,14 @@ public class TestUtils {
 		EasyMock.expect(mockAggregator.newResource((URI)EasyMock.anyObject())).andAnswer(new IAnswer<IResource>() {
 			public IResource answer() throws Throwable {
 				return mockAggregatorNewResource((URI)EasyMock.getCurrentArguments()[0], workdir);
+			}
+		}).anyTimes();
+		EasyMock.expect(mockAggregator.getResourceFactory(EasyMock.isA(Mutable.class))).andAnswer(new IAnswer<IResourceFactory>() {
+			public IResourceFactory answer() throws Throwable {
+				Mutable<URI> uriRef = (Mutable<URI>)EasyMock.getCurrentArguments()[0];
+				URI uri = uriRef.getValue();
+				if (!uri.isAbsolute() && uri.getPath().startsWith("/")) return null;
+				return ("file".equals(uri.getScheme())) ? new FileResourceFactory() : null;
 			}
 		}).anyTimes();
 		EasyMock.expect(mockAggregator.getModuleBuilder((String)EasyMock.anyObject(), (IResource)EasyMock.anyObject())).andAnswer(new IAnswer<IModuleBuilder>() {

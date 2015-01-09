@@ -184,6 +184,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @return A {@link Future}{@code <}{@link ModuleBuildReader}{@code >} that can
 	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
+	 * @throws UnsupportedOperationException
+	 *            if no resource factory or module builder can be found for this resource.
 	 */
 	public Future<ModuleBuildReader> getBuild(final HttpServletRequest request)
 			throws IOException {
@@ -204,6 +206,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @return A {@link Future}{@code <}{@link ModuleBuildReader}{@code >} that can
 	 *         be used to obtain a reader to the minified output.
 	 * @throws IOException
+	 * @throws UnsupportedOperationException
+	 *            if no resource factory or module builder can be found for this resource.
 	 */
 	protected Future<ModuleBuildReader> getBuild(final HttpServletRequest request,
 			boolean fromCacheOnly) throws IOException {
@@ -239,6 +243,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					.toString());
 		}
 
+		final IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
+		if (builder == null) {
+			throw new UnsupportedOperationException("No module builder for " + resource.getURI()); //$NON-NLS-1$
+		}
 		// Get the last modified date of the source file.
 		long modified = resource.lastModified();
 
@@ -258,7 +266,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				oldModuleBuilds = _moduleBuilds;
 				_moduleBuilds = null;
 				_lastModified = modified;
-				IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
 				_cacheKeyGenerators = Collections.unmodifiableList(builder.getCacheKeyGenerators(aggr));
 				if (_cacheKeyGenerators == null) {
 					_cacheKeyGenerators = defaultCacheKeyGenerators;
@@ -369,7 +376,6 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 							return mbr;
 						}
 						// Build the output
-						IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
 						build = builder.build(
 								getModuleId(),
 								resource,

@@ -30,6 +30,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,6 +44,36 @@ import java.util.regex.Pattern;
 public class DepUtils {
 
 	static final Pattern hasPattern = Pattern.compile("(^|\\/)has!"); //$NON-NLS-1$
+
+	static public class ParseResult {
+		private Collection<String> defineDeps;
+		private Collection<String> requireDeps;
+
+		public Collection<String> getDefineDependencies() {
+			return defineDeps == null ? null : Collections.unmodifiableCollection(defineDeps);
+		}
+
+		public Collection<String> getRequireDependencies() {
+			return requireDeps == null ? null : Collections.unmodifiableCollection(requireDeps);
+		}
+
+		private void addAll(Collection<String> defineDeps, Collection<String> requireDeps) {
+			if (this.defineDeps == null) {
+				this.defineDeps = defineDeps;
+			} else if (defineDeps != null) {
+				this.defineDeps.addAll(defineDeps);
+			}
+			if (this.requireDeps == null) {
+				this.requireDeps = requireDeps;
+			} else if (requireDeps != null) {
+				this.requireDeps.addAll(requireDeps);
+			}
+		}
+
+		private void addAll(ParseResult other) {
+			addAll(other.defineDeps, other.requireDeps);
+		}
+	}
 
 	/**
 	 * Removes URIs containing duplicate and non-orthogonal paths so that the
@@ -153,54 +184,55 @@ public class DepUtils {
 	 *            will be added to this set.
 	 * @return The String array of module dependencies.
 	 */
-	static public Collection<String> parseDependencies(Node node, Set<String> dependentFeatures) {
-		Collection<String> result = null;
+	static public ParseResult parseDependencies(Node node, Set<String> dependentFeatures) {
+		ParseResult result = new ParseResult();
 		for (Node cursor = node.getFirstChild(); cursor != null; cursor = cursor
 				.getNext()) {
-			Node defineDeps = null, requireDeps = null;
+			Node defineDeps = null, requireDeps = null, dependencies;
 			String condition;
 			if ((condition = NodeUtil.conditionFromHasNode(cursor)) != null) {
 				dependentFeatures.add(condition);
-			} else if ((defineDeps = NodeUtil.moduleDepsFromDefine(cursor)) != null ||
-					(requireDeps = NodeUtil.moduleDepsFromRequire(cursor)) != null) {
-				Node dependencies = defineDeps != null ? defineDeps : requireDeps;
+			} else {
+				@SuppressWarnings("unchecked")
+				LinkedHashSet<String>[] resultArray = new LinkedHashSet[]{null, null};
+				defineDeps = NodeUtil.moduleDepsFromDefine(cursor);
+				requireDeps = NodeUtil.moduleDepsFromRequire(cursor);
 				// Found the array.  Now copy the string values to the buildReader.
-				result = new LinkedHashSet<String>();
-				Node strNode = dependencies.getFirstChild();
-				while (strNode != null) {
-					if (strNode.getType() == Token.STRING) {
-						String mid = strNode.getString();
-						// Don't add module ids with invalid characters
-						if (!PathUtil.invalidChars.matcher(mid).find()) {
-							if (defineDeps != null) {
-								result.add(mid);
-							}
-							// if the id specifies a has loader plugin, then add the
-							// has dependencies to the dependencies list
-							if (hasPattern.matcher(mid).find()) {
-								int idx = mid.indexOf("!"); //$NON-NLS-1$
-								HasNode hasNode = new HasNode(mid.substring(idx+1));
-								hasNode.evaluateAll(
-										mid.substring(0, idx),
-										Features.emptyFeatures,
-										dependentFeatures,
-										BooleanTerm.TRUE, null);
+				int i;
+				for (i = 0, dependencies = defineDeps; i < 2; i++, dependencies = requireDeps) {
+					if (dependencies == null) {
+						continue;
+					}
+					resultArray[i] = new LinkedHashSet<String>();
+					Node strNode = dependencies.getFirstChild();
+					while (strNode != null) {
+						if (strNode.getType() == Token.STRING) {
+							String mid = strNode.getString();
+							URI uri = URI.create(mid);
+							// Don't add module ids with invalid characters or that specify an absolute or server relative resource
+							if (!PathUtil.invalidChars.matcher(mid).find() && !uri.isAbsolute() && !uri.getPath().startsWith("/")) { //$NON-NLS-1$
+								resultArray[i].add(mid);
+								// if the id specifies a has loader plugin, then add the
+								// has dependencies to the dependencies list
+								if (hasPattern.matcher(mid).find()) {
+									int idx = mid.indexOf("!"); //$NON-NLS-1$
+									HasNode hasNode = new HasNode(mid.substring(idx+1));
+									hasNode.evaluateAll(
+											mid.substring(0, idx),
+											Features.emptyFeatures,
+											dependentFeatures,
+											BooleanTerm.TRUE, null);
+								}
 							}
 						}
+						strNode = strNode.getNext();
 					}
-					strNode = strNode.getNext();
 				}
+				result.addAll(resultArray[0], resultArray[1]);
 			}
 			// Recursively call this method to process the child nodes
 			if (cursor.hasChildren()) {
-				Collection<String> childDeps = parseDependencies(cursor, dependentFeatures);
-				if (childDeps != null) {
-					if (result != null) {
-						result.addAll(childDeps);
-					} else {
-						result = childDeps;
-					}
-				}
+				result.addAll(parseDependencies(cursor, dependentFeatures));
 			}
 		}
 		return result;

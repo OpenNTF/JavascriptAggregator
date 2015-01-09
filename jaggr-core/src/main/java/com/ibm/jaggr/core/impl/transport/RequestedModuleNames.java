@@ -62,6 +62,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	private List<String> deps = Collections.emptyList();
 	private List<String> preloads = Collections.emptyList();
 	private List<String> scripts = Collections.emptyList();
+	private List<String> excludes = Collections.emptyList();
 	private String strRep = null;
 	private String moduleQueryArg;
 	private String moduleIdsQueryArg;
@@ -94,7 +95,13 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		if (moduleQueryArg == null) moduleQueryArg = ""; //$NON-NLS-1$
 		if (moduleIdsQueryArg == null) moduleIdsQueryArg = ""; //$NON-NLS-1$
 		try {
+			// Validate parameter combination.  Requests must be loader generated, specifying
+			// count and one of modules or moduleIds, or application generated, specifying
+			// one or more of scripts, deps and preloads.
 			if (countParam != null) {
+				if (moduleQueryArg.length() == 0 && moduleIdsQueryArg.length() == 0) {
+					throw new BadRequestException(request.getQueryString());
+				}
 				count = Integer.parseInt(request.getParameter(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM));
 				// put a reasonable upper limit on the value of count
 				if (count < 1 || count > AbstractHttpTransport.REQUESTED_MODULES_MAX_COUNT) {
@@ -102,6 +109,9 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				}
 			}
 			if (moduleIdsQueryArg.length() > 0) {
+				if (countParam == null) {
+					throw new BadRequestException(request.getQueryString());
+				}
 				// Decode the id list so we can validate the id list hash
 				base64decodedIdList = Base64.decodeBase64(moduleIdsQueryArg);
 				if (isTraceLogging) {
@@ -144,13 +154,16 @@ class RequestedModuleNames implements IRequestedModuleNames {
 					throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
 				}
 
+			} else if (moduleQueryArg.length() > 0) {
+				if (moduleIdsQueryArg.length() > 0) {  // allow empty count param for deprecated use of modules
+					throw new BadRequestException(request.getQueryString());
+				}
+				try {
+					moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
+				} catch (UnsupportedEncodingException e) {
+					throw new BadRequestException(e.getMessage());
+				}
 			}
-			try {
-				moduleQueryArg = URLDecoder.decode(moduleQueryArg, "UTF-8"); //$NON-NLS-1$
-			} catch (UnsupportedEncodingException e) {
-				throw new BadRequestException(e.getMessage());
-			}
-
 			if (count > 0) {
 				// Defer decoding the module list from the request until it is asked for.
 				// For now, just set the value returned by toString().
@@ -172,6 +185,9 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		@SuppressWarnings("deprecation")
 		List<String> required = getNameListFromQueryArg(request, AbstractHttpTransport.REQUIRED_REQPARAM);
 		if (required != null) {
+			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0) {
+				throw new BadRequestException(request.getQueryString());
+			}
 			deps = required;
 			// Log console warning about deprecated query arg if in debug/dev mode
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
@@ -183,24 +199,31 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		// Get the scripts list
 		List<String> names = getNameListFromQueryArg(request, AbstractHttpTransport.SCRIPTS_REQPARAM);
 		if (names != null) {
-			if (moduleQueryArg.length() != 0 || required != null) {
+			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null) {
 				throw new BadRequestException(request.getQueryString());
 			}
 			scripts = Collections.unmodifiableList(names);
 		}
 		names = getNameListFromQueryArg(request, AbstractHttpTransport.DEPS_REQPARAM);
 		if (names != null) {
-			if (moduleQueryArg.length() != 0 || required != null) {
+			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null) {
 				throw new BadRequestException(request.getQueryString());
 			}
 			deps = Collections.unmodifiableList(names);
 		}
 		names = getNameListFromQueryArg(request, AbstractHttpTransport.PRELOADS_REQPARAM);
 		if (names != null) {
-			if (moduleQueryArg.length() != 0 || required != null) {
+			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null) {
 				throw new BadRequestException(request.getQueryString());
 			}
 			preloads = Collections.unmodifiableList(names);
+		}
+		names = getNameListFromQueryArg(request, AbstractHttpTransport.EXCLUDES_REQPARAM);
+		if (names != null) {
+			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null) {
+				throw new BadRequestException(request.getQueryString());
+			}
+			excludes = Collections.unmodifiableList(names);
 		}
 		if (isTraceLogging) {
 			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, this);
@@ -556,6 +579,20 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	}
 
 	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#getExcludes()
+	 */
+	@Override
+	public List<String> getExcludes() {
+		final String sourceMethod = "getExcludes"; //$NON-NLS-1$
+		if (isTraceLogging) {
+			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, excludes);
+		}
+		return excludes;
+	}
+
+
+	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#toString()
 	 */
 	@Override
@@ -580,6 +617,9 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			}
 			if (preloads != null && !preloads.isEmpty()) {
 				sb.append(sb.length() > 0 ? ";":"").append("preloads:").append(preloads); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			}
+			if (excludes != null && !excludes.isEmpty()) {
+				sb.append(sb.length() > 0 ? ";":"").append("excludes:").append(excludes); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			result = sb.toString();
 		}

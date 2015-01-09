@@ -339,6 +339,32 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		return result;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.deps.IDependencies#getRequireDependencies(java.lang.String)
+	 */
+	@Override
+	public List<String> getRequireDependencies(String mid) throws ProcessingDependenciesException {
+		List<String> result = null;
+		try {
+			getReadLock();
+			try {
+				DepTreeNode.DependencyInfo depInfo = depMap.get(mid);
+				if (depInfo != null) {
+					result = depInfo.getRequireDependencies();
+				}
+			} finally {
+				releaseReadLock();
+			}
+		} catch (InterruptedException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+		return result;
+	}
+
+
+
 	@Override
 	public URI getURI(String mid) throws ProcessingDependenciesException {
 		URI result = null;

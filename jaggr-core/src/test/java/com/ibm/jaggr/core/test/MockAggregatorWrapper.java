@@ -32,9 +32,11 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
+import org.apache.commons.lang3.mutable.Mutable;
 import org.easymock.EasyMock;
 
 import java.io.File;
@@ -178,6 +180,11 @@ public class MockAggregatorWrapper implements IAggregator {
 	@Override
 	public IPlatformServices getPlatformServices() {
 		return mock.getPlatformServices();
+	}
+
+	@Override
+	public IResourceFactory getResourceFactory(Mutable<URI> uri) {
+		return mock.getResourceFactory(uri);
 	}
 
 	@Override

@@ -20,9 +20,12 @@ import static org.junit.Assert.assertNull;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
 
@@ -38,6 +41,7 @@ import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
@@ -77,7 +81,12 @@ public class AbstractHttpTransportTest {
 	public void testGetFeaturesFromRequest() throws Exception {
 		Map<String, Object> requestAttributes = new HashMap<String, Object>();
 		Map<String, String[]> requestParameters = new HashMap<String, String[]>();
-		AbstractHttpTransport transport = new TestHttpTransport();
+		Ref<IConfig> configRef = new Ref<IConfig>(null);
+		File tmpdir = new File(System.getProperty("java.io.tmpdir"));
+		IAggregator mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		EasyMock.replay(mockAggregator);
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{has:{def1:1,def2:0}}"));
+		AbstractHttpTransport transport = new TestHttpTransport(mockAggregator);
 		Cookie[] cookies = new Cookie[1];
 		HttpServletRequest request = TestUtils.createMockRequest(null, requestAttributes, requestParameters, cookies, null);
 		EasyMock.replay(request);
@@ -86,31 +95,72 @@ public class AbstractHttpTransportTest {
 		String hasConditions = "foo;!bar";
 		requestParameters.put("has", new String[]{hasConditions});
 		Features features = transport.getFeaturesFromRequest(request);
-		assertEquals(2, features.featureNames().size());
-		Assert.assertTrue(features.featureNames().contains("foo") && features.featureNames().contains("bar"));
+		assertEquals(4, features.featureNames().size());
+		Assert.assertTrue(features.featureNames().contains("foo") &&
+				          features.featureNames().contains("bar") &&
+				          features.featureNames().contains("def1") &&
+				          features.featureNames().contains("def2"));
 		Assert.assertTrue(features.isFeature("foo"));
 		Assert.assertFalse(features.isFeature("bar"));
+		Assert.assertTrue(features.isFeature("def1"));
+		Assert.assertFalse(features.isFeature("def2"));
 
 		// Now try specifying the has conditions in the cookie
 		requestParameters.clear();
 		requestParameters.put("hashash", new String[]{"xxxx"}); // value not checked by server
 		cookies[0] = new Cookie("has", hasConditions);
 		features = transport.getFeaturesFromRequest(request);
-		assertEquals(2, features.featureNames().size());
-		Assert.assertTrue(features.featureNames().contains("foo") && features.featureNames().contains("bar"));
+		assertEquals(4, features.featureNames().size());
+		Assert.assertTrue(features.featureNames().contains("foo") &&
+				          features.featureNames().contains("bar") &&
+				          features.featureNames().contains("def1") &&
+				          features.featureNames().contains("def2"));
 		Assert.assertTrue(features.isFeature("foo"));
 		Assert.assertFalse(features.isFeature("bar"));
+		Assert.assertTrue(features.isFeature("def1"));
+		Assert.assertFalse(features.isFeature("def2"));
 
 		// Make sure we handle null cookie values without throwing
 		requestParameters.put("hashash", new String[]{"xxxx"}); // value not checked by server
 		cookies[0] = new Cookie("has", null);
 		features = transport.getFeaturesFromRequest(request);
-		assertEquals(0, features.featureNames().size());
+		assertEquals(2, features.featureNames().size());
 
 		// Try missing cookie
 		cookies[0] = new Cookie("foo", "bar");
 		features = transport.getFeaturesFromRequest(request);
-		assertEquals(0, features.featureNames().size());
+		assertEquals(2, features.featureNames().size());
+	}
+
+	// Test that getFeaturesFromRequest calls IConfig.getDefaultFeatures() with the right parameters
+	@Test
+	public void testGetFeaturesFromRequest_IConfig_defaultFeatures_parameter() throws Exception {
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParameters = new HashMap<String, String[]>();
+		Ref<IConfig> configRef = new Ref<IConfig>(null);
+		IConfig mockConfig = EasyMock.createNiceMock(IConfig.class);
+		configRef.set(mockConfig);
+		File tmpdir = new File(System.getProperty("java.io.tmpdir"));
+		IAggregator mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		AbstractHttpTransport transport = new TestHttpTransport(mockAggregator);
+		EasyMock.replay(mockAggregator);
+		final Features defaultFeatures = new Features();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(null, requestAttributes, requestParameters, null, null);
+		EasyMock.expect(mockRequest.getRequestURL()).andReturn(new StringBuffer("http://server.com")).anyTimes();
+		EasyMock.expect(mockRequest.getQueryString()).andReturn("abc=1").anyTimes();
+		EasyMock.expect(mockConfig.getDefaultFeatures("http://server.com?abc=1")).andReturn(defaultFeatures).once();
+		EasyMock.replay(mockConfig, mockRequest);
+		transport.getFeaturesFromRequest(mockRequest);
+		EasyMock.verify(mockRequest, mockConfig);
+
+		// Test with null query arg
+		EasyMock.reset(mockRequest, mockConfig);
+		mockRequest = TestUtils.createMockRequest(null, requestAttributes, requestParameters, null, null);
+		EasyMock.expect(mockRequest.getRequestURL()).andReturn(new StringBuffer("http://server.com")).anyTimes();
+		EasyMock.expect(mockConfig.getDefaultFeatures("http://server.com")).andReturn(defaultFeatures).once();
+		EasyMock.replay(mockRequest, mockConfig);
+		transport.getFeaturesFromRequest(mockRequest);
+		EasyMock.verify(mockRequest, mockConfig);
 	}
 
 	@Test
@@ -129,19 +179,19 @@ public class AbstractHttpTransportTest {
 		features.put("50", true);
 		features.put("99", true);
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
-		Features result = transport.getFeaturesFromRequestEncoded(mockRequest);
+		Features result = transport.getFeaturesFromRequestEncoded(mockRequest, new Features());
 		System.out.println(result);
 		Assert.assertEquals(features, result);
 
 		features = new Features();
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
-		result = transport.getFeaturesFromRequestEncoded(mockRequest);
+		result = transport.getFeaturesFromRequestEncoded(mockRequest, new Features());
 		Assert.assertEquals(features, result);
 
 		features = new Features();
 		for (String name : featureList) {features.put(name, true); }
 		requestParams.put(AbstractHttpTransport.ENCODED_FEATURE_MAP_REQPARAM, new String[]{encode(features)});
-		result = transport.getFeaturesFromRequestEncoded(mockRequest);
+		result = transport.getFeaturesFromRequestEncoded(mockRequest, new Features());
 		System.out.println(result);
 		Assert.assertEquals(features, result);
 	}
@@ -183,12 +233,12 @@ public class AbstractHttpTransportTest {
 
 
 	@Test
-	public void testclientRegisterSyntheticModules() {
+	public void testclientRegisterSyntheticModules() throws Exception {
 		final Map<String, Integer> moduleIdMap = new HashMap<String, Integer>();
 		final Collection<String> syntheticModuleNames = new ArrayList<String>();
 		moduleIdMap.put("combo/text", 100);
 		moduleIdMap.put("fooplugin", 200);
-		TestHttpTransport transport = new TestHttpTransport() {
+		TestHttpTransport transport = new TestHttpTransport(TestUtils.createMockAggregator()) {
 			@Override public Map<String, Integer> getModuleIdMap() { return moduleIdMap; }
 			@Override public String getModuleIdRegFunctionName() { return "reg"; }
 			@Override public Collection<String> getSyntheticModuleNames() { return syntheticModuleNames; }
@@ -214,7 +264,7 @@ public class AbstractHttpTransportTest {
 		final String[] moduleIdRegFunctionName = new String[]{"reg"};
 		final Collection<String> syntheticModuleNames = new ArrayList<String>();
 		final Set<String> dependencyNames = new HashSet<String>();
-		TestHttpTransport transport = new TestHttpTransport() {
+		TestHttpTransport transport = new TestHttpTransport(TestUtils.createMockAggregator()) {
 			@Override public String getModuleIdRegFunctionName() { return moduleIdRegFunctionName[0]; }
 			@Override public Collection<String> getSyntheticModuleNames() { return syntheticModuleNames; }
 		};
@@ -278,7 +328,8 @@ public class AbstractHttpTransportTest {
 	}
 
 	class TestHttpTransport extends AbstractHttpTransport {
-		TestHttpTransport() {}
+		private IAggregator aggregator;
+		TestHttpTransport(IAggregator aggregator) {this.aggregator = aggregator;}
 		TestHttpTransport(CountDownLatch latch, List<String> dependentFeatures, long lastMod) {super(latch, dependentFeatures, lastMod);}
 		@Override protected URI getComboUri() { return URI.create("namedbundleresource://bundlename/combo"); }
 		@Override public String getLayerContribution(HttpServletRequest request, LayerContributionType type, Object arg) { return null; }
@@ -287,6 +338,7 @@ public class AbstractHttpTransportTest {
 		@Override protected String getTransportId() { return null; }
 		@Override protected String getResourcePathId() { return "combo"; }
 		@Override protected String getAggregatorTextPluginName() { return "combo/text"; }
+		@Override protected IAggregator getAggregator() { return aggregator; }
 	};
 
 	static List<String> featureList = Arrays.asList(new String[]{
