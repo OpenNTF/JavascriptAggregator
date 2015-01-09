@@ -128,8 +128,6 @@ public interface IAggregator {
 	public IHttpTransport getTransport();
 
 	/**
-	 * Returns the resource factory for the specified URI, or null if no resource factory can be
-	 * found.
 	 * Command provider function for setting forced errors in development mode.
 	 *
 	 * @param forceError
@@ -141,7 +139,7 @@ public interface IAggregator {
 	public String setForceError(String forceError);
 
 	/**
-	 * Returns a new {@link IResource} for the specified URI. The aggregator
+	 * Returns a new {@link IResourceFactory} for the specified URI. The aggregator
 	 * will create the new resource using one of the registered resource
 	 * factories.
 	 * <p>
