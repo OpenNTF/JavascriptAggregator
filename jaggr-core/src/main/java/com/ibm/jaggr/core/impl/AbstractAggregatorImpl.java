@@ -167,6 +167,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	private boolean isShuttingDown = false;
 	protected IPlatformServices platformServices;
 
+	// Forced error handling
+	private ForcedErrorResponse forcedErrorResponse = null;
 
 	protected Map<String, URI> resourcePaths;
 
@@ -314,6 +316,30 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		}
 		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
 		resp.addHeader("Server", "JavaScript Aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
+
+		// Check for forced error response in development mode
+		if (forcedErrorResponse != null && getOptions().isDevelopmentMode()) {
+			int status = forcedErrorResponse.getStatus();
+			if (status > 0) {
+				// return a forced error status
+				resp.setStatus(status);
+				URI uri = forcedErrorResponse.getResponseBody();
+				if (uri != null) {
+					resp.setContentType(getContentType(uri.getPath()));
+					try {
+						CopyUtil.copy(newResource(uri).getInputStream(), resp.getOutputStream());
+					} catch (IOException e) {
+						throw new ServletException(e);
+					}
+				}
+				log.logp(Level.WARNING, AbstractAggregatorImpl.class.getName(), sourceMethod, "Returning forced error status " + status); //$NON-NLS-1$
+				return;
+			} else if (status < 0) {
+				// Forced error response is spent.  Remove it.
+				forcedErrorResponse = null;
+			}
+		}
+
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
 			processAggregatorRequest(req, resp);
@@ -1306,6 +1332,18 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	}
 
 	/**
+	 * Instantiates a new ForcedErrorResponse object
+	 *
+	 * @param info
+	 *            The configuration string
+	 * @return the new object
+	 * @throws URISyntaxException
+	 */
+	protected ForcedErrorResponse newForcedErrorResponse(String info) throws URISyntaxException {
+		return new ForcedErrorResponse(info);
+	}
+
+	/**
 	 * Instantiates a new cache manager
 	 * @param stamp
 	 *            the time stamp
@@ -1486,6 +1524,30 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		dict.put("name", getName()); //$NON-NLS-1$
 		registrations.add(getPlatformServices().registerService(
 				ILayerListener.class.getName(), new AggregatorLayerListener(this), dict));
+	}
+
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#setForceError(java.lang.String)
+	 */
+	@Override
+	public String setForceError(String forceError) {
+		String result = ""; //$NON-NLS-1$
+		// Listen for FORCE_ERROR option.  FORCED_ERROR is a transient options, so we
+		// can only learn that it is set in optionsUpdated.
+		if (getOptions().isDevelopmentMode()) {
+			ForcedErrorResponse resp;
+			try {
+				resp = newForcedErrorResponse(forceError);
+				result = MessageFormat.format(Messages.CommandProvider_27, new Object[]{resp.toString()});
+				forcedErrorResponse = resp;
+			} catch (Exception e) {
+				result = MessageFormat.format(Messages.CommandProvider_28, new Object[]{forceError});
+			}
+		} else {
+			result = Messages.CommandProvider_29;
+		}
+		return result;
 	}
 }
 

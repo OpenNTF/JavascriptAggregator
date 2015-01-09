@@ -29,6 +29,7 @@ import com.ibm.jaggr.core.util.StringBufferWriter;
 
 import com.ibm.jaggr.service.util.CIConsoleWriter;
 
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.osgi.framework.console.CommandInterpreter;
 import org.eclipse.osgi.framework.console.CommandProvider;
 import org.osgi.framework.BundleContext;
@@ -71,6 +72,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
 	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
 	static final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
+	static final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
 
 	static final String[] COMMANDS = new String[] {
@@ -85,7 +87,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_SETOPTION,
 		CMD_SHOWCONFIG,
 		CMD_GETSERVLETDIR,
-		CMD_GETDEPSWITHHASBRANCHING
+		CMD_GETDEPSWITHHASBRANCHING,
+		CMD_FORCEERROR
 	};
 
 	static final String DEPSOURCE_CONSOLE = "console"; //$NON-NLS-1$
@@ -143,7 +146,10 @@ public class AggregatorCommandProvider implements CommandProvider {
 						new Object[]{EYECATCHER, scopeSep, CMD_SHOWCONFIG})).append(newline)
 				.append(MessageFormat.format(
 						Messages.CommandProvider_18,
-						new Object[]{EYECATCHER, scopeSep, CMD_GETSERVLETDIR})).append(newline);
+						new Object[]{EYECATCHER, scopeSep, CMD_GETSERVLETDIR})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_21,
+						new Object[]{EYECATCHER, scopeSep, CMD_FORCEERROR})).append(newline);
 
 
 		return sb.toString();
@@ -186,6 +192,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 				ci.println(showconfig(args));
 			} else if (command.equals(CMD_GETSERVLETDIR)) {
 				ci.println(getServletDir(args));
+			} else if (command.equals(CMD_FORCEERROR)) {
+				ci.println(setForceError(args));
 			} else {
 				ci.print(getHelp());
 			}
@@ -459,6 +467,21 @@ public class AggregatorCommandProvider implements CommandProvider {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
 				sb.append(aggregator.getConfig().toString());
+			} finally {
+				getBundleContext().ungetService(ref);
+			}
+		}
+		return sb.toString();
+	}
+
+	protected String setForceError(Object[] args) throws InvalidSyntaxException {
+		StringBuffer sb = new StringBuffer();
+		ServiceReference ref = getServiceRef(new String[]{(String)args[0]}, sb);
+		if (ref != null) {
+			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
+			try {
+				// Let aggregator process the args
+				sb.append(aggregator.setForceError(StringUtils.join(Arrays.copyOfRange(args, 1, args.length)," "))); //$NON-NLS-1$
 			} finally {
 				getBundleContext().ungetService(ref);
 			}

@@ -184,8 +184,12 @@ public class MockAggregatorWrapper implements IAggregator {
 
 	@Override
 	public IResourceFactory getResourceFactory(Mutable<URI> uri) {
-		// TODO Auto-generated method stub
 		return mock.getResourceFactory(uri);
+	}
+
+	@Override
+	public String setForceError(String forceError) {
+		return mock.setForceError(forceError);
 	}
 
 }
