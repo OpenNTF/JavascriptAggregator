@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.ForcedErrorResponse;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -122,6 +123,17 @@ public interface IAggregator {
 	 * @return the HTTP transport
 	 */
 	public IHttpTransport getTransport();
+
+	/**
+	 * Command provider function for setting forced errors in development mode.
+	 *
+	 * @param forceError
+	 *            the error parameters. See {@link ForcedErrorResponse#ForcedErrorResponse(String)}
+	 *            for description.
+	 *
+	 * @return a string that will be displayed on the console.
+	 */
+	public String setForceError(String forceError);
 
 	/**
 	 * Returns a new {@link IResource} for the specified URI. The aggregator

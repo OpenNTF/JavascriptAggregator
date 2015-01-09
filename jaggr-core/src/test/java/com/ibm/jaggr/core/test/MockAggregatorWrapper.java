@@ -180,4 +180,9 @@ public class MockAggregatorWrapper implements IAggregator {
 		return mock.getPlatformServices();
 	}
 
+	@Override
+	public String setForceError(String forceError) {
+		return mock.setForceError(forceError);
+	}
+
 }

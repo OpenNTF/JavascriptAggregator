@@ -166,7 +166,7 @@
               !*
             </Import-Package>
             <!-- embed dependencies -->
-            <Embed-Dependency>commons-codec</Embed-Dependency>
+            <Embed-Dependency>commons-codec, commons-lang3</Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
@@ -240,6 +240,10 @@
       <groupId>org.apache.felix</groupId>
       <artifactId>org.apache.felix.gogo.command</artifactId>
       <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

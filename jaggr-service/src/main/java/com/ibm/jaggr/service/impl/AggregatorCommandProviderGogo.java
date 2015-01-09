@@ -16,6 +16,7 @@ help * (C) Copyright 2012, IBM Corporation
 package com.ibm.jaggr.service.impl;
 
 import com.ibm.jaggr.core.util.ConsoleService;
+
 import com.ibm.jaggr.service.util.CSConsoleWriter;
 
 import org.apache.felix.service.command.CommandSession;
@@ -28,6 +29,7 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 
@@ -162,6 +164,14 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 			) throws InvalidSyntaxException {
 		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.getServletDir(new String[]{servlet});
+	}
+
+	@Descriptor("sets forced error options in development mode")
+	public String forceerror(CommandSession cs,
+			@Descriptor("<servlet>")String[] args
+			) throws InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
+		return super.setForceError(args);
 	}
 
 	private String[] makeArgumentArray(Object... args) {
