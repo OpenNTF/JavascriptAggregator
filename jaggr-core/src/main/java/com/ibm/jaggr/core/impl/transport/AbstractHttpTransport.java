@@ -216,13 +216,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		return comboUri;
 	}
 
-	/**
-	 * Returns the name of the aggregator text plugin module name (e.g. combo/text)
-	 *
-	 * @return the name of the plugin
-	 */
-	protected abstract String getAggregatorTextPluginName();
-
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#decorateRequest(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.IAggregator)
 	 */

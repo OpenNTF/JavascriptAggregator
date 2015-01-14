@@ -21,7 +21,6 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.impl.cache.GenericCacheImpl;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
-import com.ibm.jaggr.core.module.ModuleIdentifier;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.RequestUtil;
@@ -51,7 +50,7 @@ public class ModuleCacheImpl extends GenericCacheImpl<IModule> implements IModul
 		@SuppressWarnings("unchecked")
 		Map<String, String> moduleCacheInfo = (Map<String, String>)request.getAttribute(IModuleCache.MODULECACHEINFO_PROPNAME);
 		IResource resource = module.getResource(aggr);
-		String cacheKey = new ModuleIdentifier(module.getModuleId()).getModuleName();
+		String cacheKey = module.getModuleId();
 		// Try to get the module from the module cache first
 		IModule cachedModule = null;
 		if (!resource.exists()) {

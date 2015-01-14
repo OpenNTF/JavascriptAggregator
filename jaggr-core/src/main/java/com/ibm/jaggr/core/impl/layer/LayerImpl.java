@@ -801,6 +801,16 @@ public class LayerImpl implements ILayer {
 						}
 						ModuleDepInfo info = entry.getValue();
 						if (aggr.getTransport().isServerExpandable(request, name)) {
+							int idx = name.indexOf("!");
+							if (idx != -1) {
+								// convert name to a delegate plugin if necessary
+								String plugin = name.substring(0, idx);
+								if (aggr.getConfig().getTextPluginDelegators().contains(plugin)) {
+									name = aggr.getTransport().getAggregatorTextPluginName() + name.substring(idx);
+								} else if (aggr.getConfig().getJsPluginDelegators().contains(plugin)) {
+									name = name.substring(idx+1);
+								}
+							}
 							Collection<String> prefixes = info.getHasPluginPrefixes();
 							if (prefixes == null ||		// condition is TRUE
 									RequestUtil.isIncludeUndefinedFeatureDeps(request) && !prefixes.isEmpty()) {

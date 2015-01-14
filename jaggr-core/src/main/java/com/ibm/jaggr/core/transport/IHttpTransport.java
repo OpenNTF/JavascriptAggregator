@@ -444,4 +444,11 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 */
 	public String getModuleIdRegFunctionName();
 
+	/**
+	 * Returns the plugin name used by the transport for text resources (e.g. combo/text).
+	 *
+	 * @return the plugin name
+	 */
+	public String getAggregatorTextPluginName();
+
 }

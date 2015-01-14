@@ -122,10 +122,10 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.impl.transport.AbstractHttpTransport#getAggregatorTextPluginName()
+	 * @see com.ibm.jaggr.core.transport.HttpTransport#getAggregatorTextPluginName()
 	 */
 	@Override
-	protected String getAggregatorTextPluginName() {
+	public String getAggregatorTextPluginName() {
 		return getResourcePathId() + "/text"; //$NON-NLS-1$
 	}
 
