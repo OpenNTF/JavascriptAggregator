@@ -23,8 +23,10 @@ import static org.junit.Assert.assertTrue;
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.layer.ModuleList.ModuleListEntry;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.module.IModule;
@@ -33,6 +35,7 @@ import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.test.MockRequestedModuleNames;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.DependencyList;
@@ -47,6 +50,7 @@ import org.powermock.api.easymock.PowerMock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
 import java.net.URI;
@@ -193,6 +197,72 @@ public class LayerImpl_getModulesTest {
 		ModuleList modules = layer.getModules(mockRequest);
 		PowerMock.verify(DependencyList.class);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep", "preload/a", "preload/adep");
+		assertEquals(expected, modules.getModules());
+		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
+		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));
+		assertEquals(new HashSet<String>(Arrays.asList("dep/a")), modules.getRequiredModules());
+		assertEquals(new HashSet<String>(Arrays.asList("feature1", "feature2")), modules.getDependentFeatures());
+		assertEquals(ModuleSpecifier.LAYER, modules.get(0).getSource());
+		assertEquals(ModuleSpecifier.LAYER, modules.get(1).getSource());
+		assertEquals(ModuleSpecifier.LAYER, modules.get(2).getSource());
+		assertEquals(ModuleSpecifier.LAYER, modules.get(3).getSource());
+	}
+
+	@Test
+	public void testGetModules_pluginDelegators() throws Exception {
+
+		Ref<IConfig> configRef = new Ref<IConfig>(null);
+		File tmpdir = new File(System.getProperty("user.dir"));
+		mockAggregator = TestUtils.createMockAggregator(configRef, tmpdir);
+		EasyMock.replay(mockAggregator);
+		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{textPluginDelegators:['js/css', 'dojo/text'], jsPluginDelegators:['dojo/i18n']}", true));
+		mockRequest.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
+
+		LayerImpl layer = new TestLayerImpl();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
+		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
+		names.setDeps(Arrays.asList("dep/a"));
+		names.setPreloads(Arrays.asList("preload/a"));
+
+		ModuleDeps depsExplicitDeps = new ModuleDeps();
+		ModuleDeps depsExpandedDeps = new ModuleDeps();
+		depsExplicitDeps.add("dep/a", new ModuleDepInfo());
+		depsExpandedDeps.add("dojo/text!dep/adep", new ModuleDepInfo());
+		depsExpandedDeps.add("foo!dep/bdep", new ModuleDepInfo());
+		ModuleDeps preloadsExplicitDeps = new ModuleDeps();
+		ModuleDeps preloadsExpandedDeps = new ModuleDeps();
+		preloadsExplicitDeps.add("preload/a", new ModuleDepInfo());
+		preloadsExpandedDeps.add("js/css!preload/adep", new ModuleDepInfo());
+		preloadsExpandedDeps.add("dojo/i18n!preload/nls/adep", new ModuleDepInfo());
+		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature1")));
+		DependencyList preloadsDependencies = new DependencyList(preloadsExplicitDeps, preloadsExpandedDeps, new HashSet<String>(Arrays.asList("feature2")));
+
+		PowerMock.expectNew(
+				DependencyList.class,
+				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
+				EasyMock.eq(Arrays.asList("dep/a")),
+				EasyMock.isA(IAggregator.class),
+				EasyMock.eq(features),
+				EasyMock.eq(true),
+				EasyMock.eq(false),
+				EasyMock.eq(false))
+			.andReturn(depsDependencies).once();
+
+		PowerMock.expectNew(
+				DependencyList.class,
+				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
+				EasyMock.eq(Arrays.asList("preload/a")),
+				EasyMock.isA(IAggregator.class),
+				EasyMock.eq(features),
+				EasyMock.eq(true),
+				EasyMock.eq(false),
+				EasyMock.eq(false))
+			.andReturn(preloadsDependencies).once();
+		PowerMock.replay(DependencyList.class);
+
+		ModuleList modules = layer.getModules(mockRequest);
+		PowerMock.verify(DependencyList.class);
+		List<IModule> expected = makeModuleList("dep/a", "combo/text!dep/adep", "preload/a", "combo/text!preload/adep", "preload/nls/adep");
 		assertEquals(expected, modules.getModules());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));

@@ -337,7 +337,7 @@ public class AbstractHttpTransportTest {
 		@Override public List<ICacheKeyGenerator> getCacheKeyGenerators() { return null; }
 		@Override protected String getTransportId() { return null; }
 		@Override protected String getResourcePathId() { return "combo"; }
-		@Override protected String getAggregatorTextPluginName() { return "combo/text"; }
+		@Override public String getAggregatorTextPluginName() { return "combo/text"; }
 		@Override protected IAggregator getAggregator() { return aggregator; }
 	};
 
