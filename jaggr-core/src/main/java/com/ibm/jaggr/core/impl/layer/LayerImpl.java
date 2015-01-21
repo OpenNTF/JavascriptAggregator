@@ -801,7 +801,7 @@ public class LayerImpl implements ILayer {
 						}
 						ModuleDepInfo info = entry.getValue();
 						if (aggr.getTransport().isServerExpandable(request, name)) {
-							int idx = name.indexOf("!");
+							int idx = name.indexOf("!"); //$NON-NLS-1$
 							if (idx != -1) {
 								// convert name to a delegate plugin if necessary
 								String plugin = name.substring(0, idx);

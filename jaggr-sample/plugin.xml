@@ -35,7 +35,7 @@
       <init-param name="resource-id" value="res"/>
       <init-param name="resource-id" value="dojo"/>
       <init-param name="res:alias" value="/app/res"/>
-      <init-param name="res:base-name" value="/WebContent"/> 
+      <init-param name="res:base-name" value="WebContent"/> 
       <init-param name="dojo:alias" value="/app/dojo-1.8.0"/>
       <init-param name="dojo:base-name" value="namedbundleresource://com.ibm.jaggr.sample.dojo/WebContent/source_1.8.0-20120830-IBM_dojo"/>
     </servlet>

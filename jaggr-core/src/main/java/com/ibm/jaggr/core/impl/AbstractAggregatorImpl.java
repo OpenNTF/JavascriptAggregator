@@ -1436,6 +1436,12 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 					break;
 				}
 			}
+
+			// Make sure basename doesn't start with '/'
+			if (baseName.startsWith("/")) { //$NON-NLS-1$
+				throw new IllegalArgumentException("Root relative base-name not allowed: " + baseName); //$NON-NLS-1$
+			}
+
 			if (!isPathComp) {
 				throw new IllegalArgumentException(resourceId + ":alias = " + alias); //$NON-NLS-1$
 			}
