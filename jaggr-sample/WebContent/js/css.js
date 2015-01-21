@@ -149,7 +149,13 @@ define([
 						// LESS compiler fails to locate imports using relative urls when
 						// the document base has been modified (e.g. via a <base> tag),
 						// so make the url absolute.
-						url = resolve(dwindow.doc.baseURI, url);
+						var baseURI = dwindow.doc.baseURI;
+						if (!baseURI) {
+							// IE doesn't support document.baseURI.  See if there's a base tag
+							var baseTags = dwindow.doc.getElementsByTagName("base");
+							baseURI = baseTags.length && baseTags[0].href || dwindow.location && dwindow.location.href;
+						}
+						url = resolve(baseURI, url);
 					}
 				}
 				return addArgs(url, queryArgs);		// add cachebust arg from including file
