@@ -28,12 +28,14 @@ import org.apache.wink.json4j.JSONObject;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -59,16 +61,18 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	protected static final String CONFIGPROP_IDLISTHASHERRMODULE = "idListHashErrorModule"; //$NON-NLS-1$
 
 	private List<String> modules = null;
+	private List<String> baseLayerDeps = null;
 	private List<String> deps = Collections.emptyList();
 	private List<String> preloads = Collections.emptyList();
 	private List<String> scripts = Collections.emptyList();
 	private List<String> excludes = Collections.emptyList();
 	private String strRep = null;
 	private String moduleQueryArg;
-	private String moduleIdsQueryArg;
+	private String baseLayerDepsQueryArg;
 	private final List<String> idList;
 	private final byte[] idListHash;
 	private byte[] base64decodedIdList = null;
+	private byte[] base64decodedBaseLayerDepIdsList = null;
 	private int count = 0;
 	// Instance of this object live only for the duration of a request, so ok to query trace logging flag in constructor
 	private final boolean isTraceLogging = log.isLoggable(Level.FINER);
@@ -90,7 +94,9 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		this.idList = idList;
 		this.idListHash = idListHash;
 		moduleQueryArg = request.getParameter(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM);
-		moduleIdsQueryArg = request.getParameter(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM);
+		String moduleIdsQueryArg = request.getParameter(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM);
+		baseLayerDepsQueryArg = request.getParameter(AbstractHttpTransport.BASELAYERDEPS_REQPARAM);
+		String baseLayerDepIdsQueryArg = request.getParameter(AbstractHttpTransport.BASELAYERDEPIDS_REQPARAM);
 		String countParam = request.getParameter(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM);
 		if (moduleQueryArg == null) moduleQueryArg = ""; //$NON-NLS-1$
 		if (moduleIdsQueryArg == null) moduleIdsQueryArg = ""; //$NON-NLS-1$
@@ -154,8 +160,10 @@ class RequestedModuleNames implements IRequestedModuleNames {
 					throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
 				}
 
-			} else if (moduleQueryArg.length() > 0) {
-				if (moduleIdsQueryArg.length() > 0) {  // allow empty count param for deprecated use of modules
+			}
+
+			if (moduleQueryArg.length() > 0) {
+				if (countParam == null && moduleIdsQueryArg.length() > 0) {  // allow empty count param for deprecated use of modules
 					throw new BadRequestException(request.getQueryString());
 				}
 				try {
@@ -164,10 +172,36 @@ class RequestedModuleNames implements IRequestedModuleNames {
 					throw new BadRequestException(e.getMessage());
 				}
 			}
+
+			if (baseLayerDepIdsQueryArg != null) {
+				if (countParam == null) {
+					throw new BadRequestException(request.getQueryString());
+				}
+				// Decode the id list so we can validate the id list hash
+				base64decodedBaseLayerDepIdsList = Base64.decodeBase64(baseLayerDepIdsQueryArg);
+			}
+
+			if (baseLayerDepsQueryArg != null) {
+				if (countParam == null) {
+					throw new BadRequestException(request.getQueryString());
+				}
+				try {
+					baseLayerDepsQueryArg = URLDecoder.decode(baseLayerDepsQueryArg, "UTF-8"); //$NON-NLS-1$
+				} catch (UnsupportedEncodingException e) {
+					throw new BadRequestException(e.getMessage());
+				}
+			}
+
 			if (count > 0) {
-				// Defer decoding the module list from the request until it is asked for.
+				// Defer decoding the module lists from the request until it is asked for.
 				// For now, just set the value returned by toString().
-				strRep = moduleQueryArg+((moduleQueryArg.length() > 0 && moduleIdsQueryArg.length() > 0) ? ":" : "") + moduleIdsQueryArg; //$NON-NLS-1$ //$NON-NLS-2$
+				StringBuffer sb = new StringBuffer();
+				sb.append(moduleQueryArg != null ? moduleQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+				  .append(moduleIdsQueryArg != null ? moduleIdsQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+				  .append(baseLayerDepsQueryArg != null ? baseLayerDepsQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+				  .append(baseLayerDepIdsQueryArg != null ? baseLayerDepIdsQueryArg : ""); //$NON-NLS-1$
+				strRep = sb.toString();
+
 			} else if (moduleQueryArg.length() > 0){
 				// Hand crafted URL; get module names from one or more module query args (deprecated)
 				scripts = Collections.unmodifiableList(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
@@ -267,7 +301,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{encstr});
 		}
-		if (encstr.length() == 0) {
+		if (encstr == null || encstr.length() == 0) {
 			result = new JSONObject("{}"); //$NON-NLS-1$
 		} else {
 			StringBuffer json = new StringBuffer(encstr.length() * 2);
@@ -327,24 +361,25 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	 * hash of the entire module id list on the server. This hash was provided by the transport in
 	 * the dynamic loader extension javascript.
 	 *
-	 * @param encoded
-	 *            the base64 encoded id list
+	 * @param decoded
+	 *            the base64 decoded id list
 	 * @param resultArray
 	 *            Output - the array to which the decoded module names will be added
+	 * @param hasIdListHash
+	 *            true if decoded is prefixed with the id list hash and 32-bit flag
 	 * @throws IOException
 	 */
-	protected void decodeModuleIds(String encoded, String[] resultArray) throws IOException {
+	protected void decodeModuleIds(byte[] decoded, Map<Integer, String> resultArray, boolean hasIdListHash) throws IOException {
 		final String sourceMethod = "decodeModuleIds"; //$NON-NLS-1$
 		if (isTraceLogging) {
-			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{encoded, resultArray});
+			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{decoded, resultArray});
 		}
-		if (base64decodedIdList != null) {
-			byte[] decoded = base64decodedIdList;
+		if (decoded != null) {
 			// strip off base flag
-			boolean use32BitEncoding = decoded[idListHash.length] == 1;
+			boolean use32BitEncoding = hasIdListHash ? decoded[idListHash.length] == 1 : false;
 
 			// convert to int array
-			int start = idListHash.length+1;
+			int start = hasIdListHash ? idListHash.length+1 : 0;
 			int elemSize = use32BitEncoding ? 4 : 2;
 			int[] intArray = new int[(decoded.length-start)/elemSize];
 			for (int i = 0; i < intArray.length; i ++) {
@@ -384,10 +419,10 @@ class RequestedModuleNames implements IRequestedModuleNames {
 					if (moduleName == null) {
 						throw new BadRequestException();
 					}
-					if (resultArray[position+j] != null) {
+					if (resultArray.get(position+j) != null) {
 						throw new BadRequestException();
 					}
-					resultArray[position+j] = (pluginName != null ? (pluginName + "!") : "") + moduleName; //$NON-NLS-1$ //$NON-NLS-2$
+					resultArray.put(position+j, (pluginName != null ? (pluginName + "!") : "") + moduleName); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 				position = -1;
 			}
@@ -428,7 +463,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	 * @throws IOException
 	 * @throws JSONException
 	 */
-	protected void unfoldModules(JSONObject modules, String[] resultArray) throws IOException, JSONException {
+	protected void unfoldModules(JSONObject modules, Map<Integer, String> resultArray) throws IOException, JSONException {
 		final String sourceMethod = "unfoldModules"; //$NON-NLS-1$
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{modules, Arrays.asList(resultArray)});
@@ -468,7 +503,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	 * @throws IOException
 	 * @throws JSONException
 	 */
-	protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, String[] modules) throws IOException, JSONException {
+	protected void unfoldModulesHelper(Object obj, String path, String[] aPrefixes, Map<Integer, String> modules) throws IOException, JSONException {
 		final String sourceMethod = "unfoldModulesHelper"; //$NON-NLS-1$
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{
@@ -488,14 +523,14 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		else if (obj instanceof String){
 			String[] values = ((String)obj).split("-"); //$NON-NLS-1$
 			int idx = Integer.parseInt(values[0]);
-			if (modules[idx] != null) {
+			if (modules.get(idx) != null) {
 				throw new BadRequestException();
 			}
-			modules[idx] = values.length > 1 ?
+			modules.put(idx, values.length > 1 ?
 					((aPrefixes != null ?
 							aPrefixes[Integer.parseInt(values[1])] : values[1])
 							+ "!" + path) : //$NON-NLS-1$
-								path;
+								path);
 		} else {
 			throw new BadRequestException();
 		}
@@ -527,24 +562,25 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
 		}
 		if (modules == null) {
-			String[] moduleArray = new String[count];
+			Map<Integer, String> moduleArray = new TreeMap<Integer, String>();
 			try {
 				unfoldModules(decodeModules(moduleQueryArg), moduleArray);
-				decodeModuleIds(moduleIdsQueryArg, moduleArray);
-			} catch (ArrayIndexOutOfBoundsException ex) {
-				throw new BadRequestException(ex.getMessage(), ex);
+				decodeModuleIds(base64decodedIdList, moduleArray, true);
 			} catch (JSONException ex) {
 				throw new BadRequestException(ex);
 			} catch (IOException ex) {
 				throw new BadRequestException(ex);
 			}
 			// make sure no empty slots
-			for (String mid : moduleArray) {
-				if (mid == null) {
+			for (int i = 0; i < count; i++) {
+				if (moduleArray.get(i) == null) {
 					throw new BadRequestException();
 				}
 			}
-			modules = Collections.unmodifiableList(Arrays.asList(moduleArray));
+			if (moduleArray.size() != count) {
+				throw new BadRequestException();
+			}
+			modules = Collections.unmodifiableList(new ArrayList<String>(moduleArray.values()));
 		}
 		if (isTraceLogging) {
 			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, modules);
@@ -552,6 +588,35 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		return modules;
 	}
 
+	@Override
+	public List<String> getBaseLayerDeps() throws BadRequestException {
+		final String sourceMethod = "getBaseLayerDeps"; //$NON-NLS-1$
+		if (isTraceLogging) {
+			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
+		}
+		if (baseLayerDeps == null) {
+			Map<Integer, String> moduleArray = new TreeMap<Integer, String>();
+			try {
+				unfoldModules(decodeModules(baseLayerDepsQueryArg), moduleArray);
+				decodeModuleIds(base64decodedBaseLayerDepIdsList, moduleArray, false);
+			} catch (JSONException ex) {
+				throw new BadRequestException(ex);
+			} catch (IOException ex) {
+				throw new BadRequestException(ex);
+			}
+			// make sure no empty slots
+			for (int i = 0; i < moduleArray.size(); i++) {
+				if (moduleArray.get(i) == null) {
+					throw new BadRequestException();
+				}
+			}
+			baseLayerDeps = Collections.unmodifiableList(new ArrayList<String>(moduleArray.values()));
+		}
+		if (isTraceLogging) {
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, baseLayerDeps);
+		}
+		return modules;
+	}
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#getPreloads()
 	 */
@@ -608,6 +673,9 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			StringBuffer sb = new StringBuffer();
 			if (modules != null && !modules.isEmpty()) {
 				sb.append(modules);
+			}
+			if (baseLayerDeps != null && !baseLayerDeps.isEmpty()) {
+				sb.append(sb.length() > 0 ? ";":"").append("baseLayerDeps:").append(baseLayerDeps); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			if (scripts != null && !scripts.isEmpty()) {
 				sb.append(sb.length() > 0 ? ";":"").append("scripts:").append(scripts); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$

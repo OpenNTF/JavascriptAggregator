@@ -93,7 +93,7 @@ public class LayerImpl implements ILayer {
 	// The following request attributes are used by unit tests
 	static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
 	static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
-	static final String BOOTLAYERDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
+	static public final String BOOTLAYERDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
 
 	static final String DEPSOURCE_REQDEPS = " URL - deps"; //$NON-NLS-1$
 	static final String DEPSOURCE_REQPRELOADS = "URL - preloads"; //$NON-NLS-1$
@@ -833,7 +833,7 @@ public class LayerImpl implements ILayer {
 							}
 						}
 					}
-					if ((requiredList != null || preloadList != null) && RequestUtil.isRequireExpLogging(request)) {
+					if ((requiredList != null || preloadList != null)) {
 						ModuleDeps expanded = new ModuleDeps();
 						if (requiredList != null) {
 							expanded.addAll(requiredList.getExpandedDeps());

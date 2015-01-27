@@ -279,7 +279,9 @@ var params = {
 			bytes.push(ids[i] & 0xFF);
 		}
 		// now add the module id list hash and 32-bit flag to the beginning of the data
-		bytes = idListHash.concat(use32BitEncoding ? 1 : 0, bytes);
+		if (idListHash) {
+			bytes = idListHash.concat(use32BitEncoding ? 1 : 0, bytes);
+		}
 		// do the encoding, converting for URL safe characters
 		return encoder(bytes).replace(/[+=\/]/g, function(c) {
 			return (c=='+')?'-':((c=='/')?'_':'');
@@ -325,6 +327,27 @@ var params = {
 		             (sizeofObject(oFolded) ? ("&modules="+encodeURIComponent(encodeModules(oFolded))):"") + 
 		             (ids.length ? ("&moduleIds=" + base64EncodeModuleIds(ids, base64Encoder, hash)):"");
 		
+	},
+	
+	addBootLayerDepModulesToUrl = function(url, opt_deps, moduleIdMap, base64Encoder) {
+		var oFolded = {},
+        oPrefixes = {},
+        ids = [],
+        hash = moduleIdMap["**idListHash**"];
+
+		for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
+			// This list of invalid chars should be the same as the list used
+			// on the server in PathUtil.invalidChars.
+			if (/[{},:|<>*]/.test(dep.name)) {
+				throw new Error("Invalid module name: " + name);
+			}
+			if (!base64Encoder || !hash || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
+				addFoldedModuleName(dep, i, oFolded, oPrefixes);
+			}
+		}
+		return ((sizeofObject(oFolded) ? ("&baseDeps="+encodeURIComponent(encodeModules(oFolded))):"") + 
+		        (ids.length ? ("&baseDepIds=" + base64EncodeModuleIds(ids, base64Encoder)):""));
+			
 	},
 	
 	/**

@@ -89,6 +89,7 @@ public interface IRequestedModuleNames {
 	 */
 	public List<String> getExcludes() throws BadRequestException;
 
+	public List<String> getBaseLayerDeps() throws BadRequestException;
 	/**
 	 * @return a (possibly encoded) string representation of the requested modules.
 	 */

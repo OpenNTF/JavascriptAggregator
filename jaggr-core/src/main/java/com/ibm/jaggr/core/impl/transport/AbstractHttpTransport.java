@@ -96,6 +96,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String REQUESTEDMODULEIDS_REQPARAM = "moduleIds"; //$NON-NLS-1$
 	public static final String REQUESTEDMODULESCOUNT_REQPARAM = "count"; //$NON-NLS-1$
 
+	public static final String BASELAYERDEPS_REQPARAM = "baseDeps"; //$NON-NLS-1$
+	public static final String BASELAYERDEPIDS_REQPARAM = "baseDepIds"; //$NON-NLS-1$
+
 	public static final String CONSOLE_WARNING_MSG_FMT = "window.console && console.warn(\"{0}\");"; //$NON-NLS-1$
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
 
@@ -192,6 +195,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private String transportId = null;
 	private URI comboUri = null;
 
+    private static final ThreadLocal<HttpServletRequest> reqThreadLocal = new ThreadLocal<HttpServletRequest>();
 
 	/** default constructor */
 	public AbstractHttpTransport() {}
@@ -258,6 +262,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		} else if (getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class).toString());
 		}
+
+		reqThreadLocal.set(request);
+
 	}
 
 	/* (non-Javadoc)
@@ -716,12 +723,15 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	}
 
 	/**
-	 * Returns the dynamic portion of the loader extension javascript for this
-	 * transport.  This includes all registered extension contributions.
+	 * Returns the dynamic portion of the loader extension javascript for this transport. This
+	 * includes all registered extension contributions.
+	 *
+	 * @param request
+	 *            The http request object
 	 *
 	 * @return the dynamic portion of the loader extension javascript
 	 */
-	protected String getDynamicLoaderExtensionJavaScript() {
+	protected String getDynamicLoaderExtensionJavaScript(HttpServletRequest request) {
 		final String sourceMethod = "getDynamicLoaderExtensionJavaScript"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
@@ -736,6 +746,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			sb.append("if (!require.combo.cacheBust){require.combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
+		contributeBootLayerDeps(sb, request);
 		if (moduleIdListHash != null) {
 			sb.append("require.combo.reg(null, ["); //$NON-NLS-1$
 			for (int i = 0; i < moduleIdListHash.length; i++) {
@@ -1221,6 +1232,46 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 	}
 
+	protected void putDeps(List<Map<String, String>> depMaps, List<String> depList) {
+		for (String dep : depList) {
+			Map<String, String> map = new HashMap<String, String>();
+			int idx = dep.indexOf("!"); //$NON-NLS-1$
+			if (idx == -1) {
+				map.put("name", dep); //$NON-NLS-1$
+			} else {
+				map.put("prefix", dep.substring(0, idx)); //$NON-NLS-1$
+				map.put("name", dep.substring(idx+1)); //$NON-NLS-1$
+			}
+			depMaps.add(map);
+		}
+	}
+	protected void contributeBootLayerDeps(StringBuffer sb, HttpServletRequest request) {
+		final String methodName = "getBootLayerDeps"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{sb});
+		}
+		if (request != null) {
+			RequestedModuleNames modules = (RequestedModuleNames)request.getAttribute(REQUESTEDMODULENAMES_REQATTRNAME);
+			List<Map<String, String>> deps = new ArrayList<Map<String,String>>();
+			putDeps(deps, modules.getDeps());
+			putDeps(deps, modules.getPreloads());
+			if (!deps.isEmpty()) {
+				try {
+					String json = new JSONArray(deps).toString();
+					sb.append("require.combo.bootLayerDeps=").append(json).append(";\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
+				} catch (JSONException ex) {
+					log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), methodName, ex.getMessage(), ex);
+				}
+			}
+		} else if (isTraceLogging) {
+			log.logp(Level.FINER, AbstractHttpTransport.class.getName(), methodName, "null request object"); //$NON-NLS-1$
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractHttpTransport.class.getName(), methodName, sb);
+		}
+	}
+
 	/**
 	 * Implementation of an {@link IResource} that aggregates the various
 	 * sources (dynamic and static content) of the loader extension
@@ -1228,9 +1279,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 */
 	protected class LoaderExtensionResource implements IResource, IResourceVisitor.Resource {
 		IResource res;
+		HttpServletRequest request;
 
 		public LoaderExtensionResource(IResource res) {
 			this.res = res;
+			this.request = reqThreadLocal.get();
 		}
 
 		/* (non-Javadoc)
@@ -1283,7 +1336,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			return new AggregationReader(
 					"(function(){", //$NON-NLS-1$
 					res.getReader(),
-					getDynamicLoaderExtensionJavaScript(),
+					getDynamicLoaderExtensionJavaScript(request),
 					"})();"); //$NON-NLS-1$
 		}
 
