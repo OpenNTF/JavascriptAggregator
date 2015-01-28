@@ -15,6 +15,7 @@
  */
 package com.ibm.jaggr.core.test;
 
+import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 
 import java.util.Collections;
@@ -27,6 +28,7 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 	private List<String> preloads = Collections.emptyList();
 	private List<String> scripts = Collections.emptyList();
 	private List<String> excludes = Collections.emptyList();
+	private List<String> reqExpExcludes = Collections.emptyList();
 	private String strRep = null;
 
 	public List<String> getModules() {
@@ -84,6 +86,20 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 		this.excludes = excludes;
 	}
 
+	public void setReqExpExcludes(List<String> reqExpExcludes) {
+		if (reqExpExcludes == null) {
+			throw new NullPointerException();
+		}
+		this.reqExpExcludes = reqExpExcludes;
+	}
+
+	@Override
+	public List<String> getRequireExpansionExcludes() throws BadRequestException {
+		return reqExpExcludes;
+	}
+
+
+
 	public void setString(String strRep) {
 		this.strRep = strRep;
 	}
@@ -97,6 +113,9 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 			StringBuffer sb = new StringBuffer();
 			if (modules != null && !modules.isEmpty()) {
 				sb.append(modules);
+			}
+			if (reqExpExcludes != null && !reqExpExcludes.isEmpty()) {
+				sb.append(sb.length() > 0 ? ";":"").append("reqExpExcludes:").append(reqExpExcludes); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			}
 			if (scripts != null && !scripts.isEmpty()) {
 				sb.append(sb.length() > 0 ? ";":"").append("scripts:").append(scripts); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -114,6 +133,4 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 		}
 		return result;
 	}
-
-
 }

@@ -43,6 +43,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -69,7 +70,7 @@ public class RequestedModuleNamesTest {
 		assertEquals(expected, requestedNames.getModules());
 		assertTrue(requestedNames.getDeps().isEmpty());
 		assertTrue(requestedNames.getPreloads().isEmpty());
-		assertEquals(encModules, requestedNames.toString());
+		assertEquals(encModules+":::", requestedNames.toString());
 
 		// Test with invalid count param
 		requestParams.put("count", new String[]{"5"});
@@ -322,21 +323,21 @@ public class RequestedModuleNamesTest {
 		RequestedModuleNames requestedNames = new RequestedModuleNames(request, null, null);
 		// basic folded paths  with no plugin prefixes
 		JSONObject obj = new JSONObject("{foo:{bar:'0', baz:{xxx:'2', yyy:'1'}}, dir:'3'}");
-		String[] paths = new String[4];
+		Map<Integer, String> paths = new TreeMap<Integer, String>();
 		requestedNames.unfoldModules(obj, paths);
-		Assert.assertArrayEquals(new String[] {"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir" }, paths);
+		Assert.assertArrayEquals(new String[] {"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir" }, paths.values().toArray());
 
 		// folded paths with plugin prefixes
 		obj = new JSONObject("{'"+RequestedModuleNames.PLUGIN_PREFIXES_PROP_NAME+"':{'combo/text':'0', abc:'1'},foo:{bar:'0', baz:{xxx.txt:'1-0', yyy.txt:'2-1'}}}");
-		paths = new String[3];
+		paths = new TreeMap<Integer, String>();
 		requestedNames.unfoldModules(obj, paths);
-		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
+		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths.values().toArray());
 
 		// make sure legacy format for specifying plugin prefixes works
 		obj = new JSONObject("{foo:{bar:'0', baz:{xxx.txt:'1-combo/text', yyy.txt:'2-abc'}}}");
-		paths = new String[3];
+		paths = new TreeMap<Integer, String>();
 		requestedNames.unfoldModules(obj, paths);
-		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths);
+		Assert.assertArrayEquals(new String[] {"foo/bar",  "combo/text!foo/baz/xxx.txt", "abc!foo/baz/yyy.txt"}, paths.values().toArray());
 	}
 
 	@Test
@@ -391,9 +392,9 @@ public class RequestedModuleNamesTest {
 			bytes[i*2] = (byte)(ids[i] >> 8);
 			bytes[i*2+1] = (byte)(ids[i] & 0xFF);
 		}
-		String encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{0}), bytes));
+		byte[] encoded = ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{0}), bytes);
 		System.out.println(encoded);
-		String resultArray[] = new String[11];
+		Map<Integer, String> resultArray = new TreeMap<Integer, String>();
 
 		Ref<IConfig> configRef = new Ref<IConfig>(null);
 		File tmpDir = new File(System.getProperty("user.dir"));
@@ -403,11 +404,15 @@ public class RequestedModuleNamesTest {
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, null);
 		EasyMock.replay(mockAggregator, mockRequest);
 		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
-		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encoded});
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{Base64.encodeBase64URLSafeString(encoded)});
 		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM, new String[]{"4"});
 		RequestedModuleNames requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
-		requestedModules.decodeModuleIds(encoded, resultArray);
-		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar"},  resultArray);
+		requestedModules.decodeModuleIds(encoded, resultArray, true);
+		Assert.assertEquals(4, resultArray.size());
+		Assert.assertEquals("module1", resultArray.get(3));
+		Assert.assertEquals("module2", resultArray.get(5));
+		Assert.assertEquals("plugin!foo", resultArray.get(6));
+		Assert.assertEquals("bar", resultArray.get(10));
 
 		// test again with 32-bit encoding
 		ids = ArrayUtils.addAll(ids, new int[]{12, 1, 0x10003});  // slot 12, 1 module, "bigId"
@@ -418,21 +423,26 @@ public class RequestedModuleNamesTest {
 			bytes[i*4+2] = (byte)((ids[i] >> 8) & 0xFF);
 			bytes[i*4+3] = (byte)(ids[i] & 0xFF);
 		}
-		encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{1}), bytes));
+		encoded = ArrayUtils.addAll(ArrayUtils.addAll(hash, new byte[]{1}), bytes);
 		System.out.println(encoded);
-		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encoded});
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{Base64.encodeBase64URLSafeString(encoded)});
 		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM, new String[]{"5"});
 		requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
-		resultArray = new String[13];
-		requestedModules.decodeModuleIds(encoded, resultArray);
-		Assert.assertArrayEquals(new String[]{null,null,null,"module1",null,"module2","plugin!foo",null,null,null,"bar",null,"bigId"},  resultArray);
+		resultArray = new TreeMap<Integer, String>();
+		requestedModules.decodeModuleIds(encoded, resultArray, true);
+		Assert.assertEquals(5, resultArray.size());
+		Assert.assertEquals("module1", resultArray.get(3));
+		Assert.assertEquals("module2", resultArray.get(5));
+		Assert.assertEquals("plugin!foo", resultArray.get(6));
+		Assert.assertEquals("bar", resultArray.get(10));
+		Assert.assertEquals("bigId", resultArray.get(12));
 
 		// Make sure exception is thrown if hash is not correct
 		try {
-			encoded = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(new byte[]{3, 2, 1}, bytes));
-			requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encoded});
+			encoded = ArrayUtils.addAll(new byte[]{3, 2, 1}, bytes);
+			requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{Base64.encodeBase64URLSafeString(encoded)});
 			requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
-			requestedModules.decodeModuleIds(encoded, new String[13]);
+			requestedModules.decodeModuleIds(encoded, new TreeMap<Integer, String>(), true);
 			fail("Expected exception");
 		} catch (BadRequestException ex) {
 

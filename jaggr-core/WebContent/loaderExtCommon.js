@@ -299,6 +299,9 @@ var params = {
 	 * 
 	 * @param url
 	 *             the URL to add the requested modules to
+	 * @param argNames
+	 *             a two-element array specifying the folded module names query arg
+	 *             followed by the id list query arg
 	 * @param opt_deps
 	 *             the list of modules as dep objects (i.e. {name:, prefix:})
 	 * @param moduleIdMap
@@ -307,11 +310,11 @@ var params = {
 	 *             the base64 encoder to use for encoding the encoded module id
 	 *             list.
 	 */
-	addRequestedModulesToUrl = function(url, opt_deps, moduleIdMap, base64Encoder) {
+	addModulesToUrl = function(url, argNames, opt_deps, moduleIdMap, base64Encoder) {
 		var oFolded = {},
-	        oPrefixes = {},
-	        ids = [],
-	        hash = moduleIdMap["**idListHash**"];
+		    oPrefixes = {},
+		    ids = [],
+		    hash = moduleIdMap["**idListHash**"];
 
 		for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
 			// This list of invalid chars should be the same as the list used
@@ -323,33 +326,12 @@ var params = {
 				addFoldedModuleName(dep, i, oFolded, oPrefixes);
 			}
 		}
-		return url + (url.indexOf("?") === -1 ? "?" : "&") + "count=" + i + 
-		             (sizeofObject(oFolded) ? ("&modules="+encodeURIComponent(encodeModules(oFolded))):"") + 
-		             (ids.length ? ("&moduleIds=" + base64EncodeModuleIds(ids, base64Encoder, hash)):"");
+		return url + (argNames[0] === 'modules' ? ((url.indexOf("?") === -1 ? "?" : "&") + "count=" + i) : "" ) + 
+		             (sizeofObject(oFolded) ? ("&"+argNames[0]+"="+encodeURIComponent(encodeModules(oFolded))):"") + 
+		             (ids.length ? ("&"+argNames[1]+"=" + base64EncodeModuleIds(ids, base64Encoder, argNames[0] === 'modules' && hash)):"");
 		
 	},
-	
-	addBootLayerDepModulesToUrl = function(url, opt_deps, moduleIdMap, base64Encoder) {
-		var oFolded = {},
-        oPrefixes = {},
-        ids = [],
-        hash = moduleIdMap["**idListHash**"];
 
-		for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
-			// This list of invalid chars should be the same as the list used
-			// on the server in PathUtil.invalidChars.
-			if (/[{},:|<>*]/.test(dep.name)) {
-				throw new Error("Invalid module name: " + name);
-			}
-			if (!base64Encoder || !hash || !addModuleIdEncoded(dep, i, ids, moduleIdMap)) {
-				addFoldedModuleName(dep, i, oFolded, oPrefixes);
-			}
-		}
-		return ((sizeofObject(oFolded) ? ("&baseDeps="+encodeURIComponent(encodeModules(oFolded))):"") + 
-		        (ids.length ? ("&baseDepIds=" + base64EncodeModuleIds(ids, base64Encoder)):""));
-			
-	},
-	
 	/**
 	 * Builds the has argument to put in a URL.  In the case that we have dojo/cookie and dojox's MD5 module, it
 	 * will place the has-list in a cookie and put the hash of the has-list in the url. 

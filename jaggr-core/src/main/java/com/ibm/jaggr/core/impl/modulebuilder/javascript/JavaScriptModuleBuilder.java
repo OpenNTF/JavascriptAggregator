@@ -28,7 +28,6 @@ import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
-import com.ibm.jaggr.core.impl.layer.LayerImpl;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
@@ -116,7 +115,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 */
 	static final String EXPDEPS_VARNAME = "_$$JAGGR_DEPS$$_"; //$NON-NLS-1$
 
-	static final String DEPSOURCE_CONFIGDEPS = "config deps"; //$NON-NLS-1$
+	static final String DEPSOURCE_REQEXPEXCLUDES = "require expansion excludes"; //$NON-NLS-1$
 	static final String DEPSOURCE_LAYER = "layer"; //$NON-NLS-1$
 
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
@@ -173,9 +172,11 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
 				IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 				List<String> moduleIds = new ArrayList<String>(modules.size());
-				List<String> baseLayerDepIds = Collections.emptyList();
+				List<String> excludeIds = Collections.emptyList();
 				try {
-					baseLayerDepIds = requestedModuleNames.getBaseLayerDeps();
+					excludeIds = requestedModuleNames != null ?
+							requestedModuleNames.getRequireExpansionExcludes() :
+							Collections.<String>emptyList();
 				} catch (IOException ignore) {
 					// Shouldn't happen since we pre-fetched the baseLayerDepIds in build(...),
 					// but the language requires us to handle the exception.
@@ -185,9 +186,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-				DependencyList baseLayerDepList = new DependencyList(
-						DEPSOURCE_CONFIGDEPS,
-						baseLayerDepIds,
+				DependencyList excludeList = new DependencyList(
+						DEPSOURCE_REQEXPEXCLUDES,
+						excludeIds,
 						aggr,
 						features,
 						true,	// resolveAliases
@@ -201,14 +202,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						false,	// Don't resolve aliases for module ids requested by the loader
 						isReqExpLogging);
 
-				ModuleDeps baseLayerDeps = new ModuleDeps();
+				ModuleDeps excludeDeps = new ModuleDeps();
 				ModuleDeps layerDeps = new ModuleDeps();
 				try {
-					baseLayerDeps.addAll(baseLayerDepList.getExplicitDeps());
-					baseLayerDeps.addAll(baseLayerDepList.getExpandedDeps());
+					excludeDeps.addAll(excludeList.getExplicitDeps());
+					excludeDeps.addAll(excludeList.getExpandedDeps());
 					layerDeps.addAll(layerDepList.getExplicitDeps());
 					layerDeps.addAll(layerDepList.getExpandedDeps());
-					dependentFeatures.addAll(baseLayerDepList.getDependentFeatures());
+					dependentFeatures.addAll(excludeList.getDependentFeatures());
 					dependentFeatures.addAll(layerDepList.getDependentFeatures());
 				} catch (IOException e) {
 					throw new RuntimeException(e.getMessage(), e);
@@ -218,7 +219,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_4 + "\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$ //$NON-NLS-2$
 					sb.append("console.log(\"%c" + Messages.JavaScriptModuleBuilder_2 + "\", \"color:blue\");") //$NON-NLS-1$ //$NON-NLS-2$
 					.append("console.log(\"%c"); //$NON-NLS-1$
-					for (Map.Entry<String, String> entry : baseLayerDeps.getModuleIdsWithComments().entrySet()) {
+					for (Map.Entry<String, String> entry : excludeDeps.getModuleIdsWithComments().entrySet()) {
 						sb.append("\t" + entry.getKey() + " (" + entry.getValue() + ")\\r\\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					}
 					sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
@@ -230,7 +231,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					sb.append("\", \"font-size:x-small\");"); //$NON-NLS-1$
 					result = sb.toString();
 				}
-				layerDeps.addAll(baseLayerDeps);
+				layerDeps.addAll(excludeDeps);
 
 				// Now filter out any dependencies that aren't fully resolved (i.e. those that
 				// depend on any undefined features) because those aren't included in the layer.
@@ -359,7 +360,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			// we propagate it here instead of in layerBeginEndNotifier where we can't propagate
 			// the exception.
 			IRequestedModuleNames reqNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-			reqNames.getBaseLayerDeps();
+			if (reqNames != null) {
+				reqNames.getRequireExpansionExcludes();
+			}
 		}
 		if (RequestUtil.isExportModuleName(request)) {
 			compiler_options.customPasses.put(
@@ -536,13 +539,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		ConcurrentListBuilder<String[]> expDepsBuilder = (ConcurrentListBuilder<String[]>)request.getAttribute(MODULE_EXPANDED_DEPS);
 		if (expDepsBuilder != null) {
 			// Add boot layer deps to module id list
-			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.BOOTLAYERDEPS_PROPNAME);
-			if (depList != null) {
+			IRequestedModuleNames requestedModules = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+			if (requestedModules != null) {
 				try {
-					Set<String> keys = depList.getExplicitDeps().keySet();
-					expDepsBuilder.add(keys.toArray(new String[keys.size()]));
+					expDepsBuilder.add(requestedModules.getDeps().toArray(new String[requestedModules.getDeps().size()]));
+					expDepsBuilder.add(requestedModules.getPreloads().toArray(new String[requestedModules.getPreloads().size()]));
 				} catch (IOException ignore) {
-					// Won't happen because the dependency object is already initialized
+					// Won't happen because the requestedModules object is already initialized
 					// but the language requires us to provide an exception handler.
 				}
 			}

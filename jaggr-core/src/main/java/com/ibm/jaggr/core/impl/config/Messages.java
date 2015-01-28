@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.util.NLS;
 
 public class Messages extends NLS {
 	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
+	public static String ConfigImpl_0;
 	public static String ConfigImpl_1;
 	public static String ConfigImpl_2;
 	public static String ConfigImpl_3;

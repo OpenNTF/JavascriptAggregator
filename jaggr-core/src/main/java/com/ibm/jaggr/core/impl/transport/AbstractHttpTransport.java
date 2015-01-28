@@ -96,8 +96,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String REQUESTEDMODULEIDS_REQPARAM = "moduleIds"; //$NON-NLS-1$
 	public static final String REQUESTEDMODULESCOUNT_REQPARAM = "count"; //$NON-NLS-1$
 
-	public static final String BASELAYERDEPS_REQPARAM = "baseDeps"; //$NON-NLS-1$
-	public static final String BASELAYERDEPIDS_REQPARAM = "baseDepIds"; //$NON-NLS-1$
+	public static final String REQEXPEXCLUDES_REQPARAM = "reqExpEx"; //$NON-NLS-1$
+	public static final String REQEXPEXCLUDEIDS_REQPARAM = "reqExpExIds"; //$NON-NLS-1$
 
 	public static final String CONSOLE_WARNING_MSG_FMT = "window.console && console.warn(\"{0}\");"; //$NON-NLS-1$
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
@@ -1246,7 +1246,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 	}
 	protected void contributeBootLayerDeps(StringBuffer sb, HttpServletRequest request) {
-		final String methodName = "getBootLayerDeps"; //$NON-NLS-1$
+		final String methodName = "contributeBootLayerDeps"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{sb});

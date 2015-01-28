@@ -74,7 +74,7 @@ public class ExportModuleNameCompilerPassTest {
 		JSSource source = new JSSource(code, null);
 		pass = new ExportModuleNameCompilerPass(source);
 		String output = runPass("test", code);
-		Assert.assertEquals("define( \"test\",['a', 'b'], function(a, b) {});", source.toString());
+		Assert.assertEquals("define(\"test\", ['a', 'b'], function(a, b) {});", source.toString());
 		Assert.assertEquals("define(\"test\",[\"a\",\"b\"],function(a,b){});", output);
 	}
 

@@ -42,7 +42,7 @@ define([
 	};
 	
 	return {
-		decodeModuleIdList: function(encoded, base64decoder, resultArray) {
+		decodeModuleIdList: function(encoded, base64decoder, resultArray, hasHash) {
 			encoded = encoded.replace(/[-_]/g, function(c) {
 				return (c=='-')?'+':'/';
 			});
@@ -50,15 +50,17 @@ define([
 			    moduleIdMap = require.combo.getIdMap(),
 			    idModuleMap = {},
 			    hashLen = moduleIdMap["**idListHash**"].length,
-			    hash = decoded.slice(0, hashLen),
-			    use32BitEncoding = decoded[hashLen],
+			    hash = hasHash ? decoded.slice(0, hashLen) : 0,
+			    use32BitEncoding = hasHash ? decoded[hashLen] : 0,
 			    idList = [], length, j, i,
 			    elemLen = use32BitEncoding ? 4 : 2;
 			
-			if (hash.join(",") != moduleIdMap["**idListHash**"].join(",")) {
-				throw new Error("Invalid module id list hash!");
+			if (hasHash) {
+				if (hash.join(",") != moduleIdMap["**idListHash**"].join(",")) {
+					throw new Error("Invalid module id list hash!");
+				}
+				decoded = decoded.slice(hashLen+1);
 			}
-			decoded = decoded.slice(hashLen+1);
 			
 			for (i = 0; i < decoded.length/elemLen; i++) {
 				j = i * elemLen;

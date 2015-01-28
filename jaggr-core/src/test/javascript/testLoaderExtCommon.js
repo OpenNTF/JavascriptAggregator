@@ -100,7 +100,7 @@ define(["dojo/_base/array",
 			// Verify 16 bit ids used
 			expect(base64.decode(encoded).length).toBe(moduleIdMap["**idListHash**"].length + 1 + 2*8);
 			var moduleIdDecoded = [];
-			moduleDecoder.decodeModuleIdList(encoded, base64, moduleIdDecoded);
+			moduleDecoder.decodeModuleIdList(encoded, base64, moduleIdDecoded, true);
 			expect(moduleIdDecoded).toEqual(["foo/bar1","xxx/yyy",undefined,undefined,"dir1/dir2/test","foo/bar2"]);
 		});
 		it("32-bit encoding and positioning", function() {
@@ -113,7 +113,7 @@ define(["dojo/_base/array",
 					- 2	// workaround for https://bugs.dojotoolkit.org/ticket/7400
 			);
 			var moduleIdDecoded = [];
-			moduleDecoder.decodeModuleIdList(encoded, base64, moduleIdDecoded);
+			moduleDecoder.decodeModuleIdList(encoded, base64, moduleIdDecoded, true);
 			expect(moduleIdDecoded).toEqual(["foo/bar1","xxx/yyy",undefined,undefined,"dir1/dir2/test","foo/bar2",undefined,"bigId"]);
 			
 		});

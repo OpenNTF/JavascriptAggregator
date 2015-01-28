@@ -44,7 +44,7 @@ define([
 					moduleDecoder.unfoldModuleNames(args.modules, moduleArray);
 				}
 				if ("moduleIds" in args) {
-					moduleDecoder.decodeModuleIdList(args.moduleIds, base64decoder, moduleArray);
+					moduleDecoder.decodeModuleIdList(args.moduleIds, base64decoder, moduleArray, true);
 				}
 				// validate module array.  Make sure array size == count arg and make sure there are
 				// no holes
@@ -58,6 +58,21 @@ define([
 				}
 				if (moduleArray.length) {
 					result.modules = moduleArray;
+				}
+				moduleArray = [];
+				if ("reqExpEx" in args) {
+					moduleDecoder.unfoldModuleNames(args.reqExpEx, moduleArray);
+				}
+				if ("reqExpExIds" in args) {
+					moduleDecoder.decodeModuleIdList(args.reqExpExIds, base64decoder, moduleArray, false);
+				}
+				for (i = 0; i < moduleArray.length; i++) {
+					if (!moduleArray[i]) {
+						throw new Error("Unassigned index in result array");
+					}
+				}
+				if (moduleArray.length) {
+					result.requireExpansionExcludes = moduleArray;
 				}
 			} else {
 				if ("scripts" in args) {
