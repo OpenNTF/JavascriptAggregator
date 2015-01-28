@@ -94,6 +94,10 @@ public class JSSource {
 		}
 	}
 
+	public PositionLocator locate(int lineno, int colno) {
+		return new PositionLocator(lineno, colno);
+	}
+
 	@Override
 	public String toString() {
 		final String sourceMethod = "toString"; //$NON-NLS-1$
@@ -177,7 +181,7 @@ public class JSSource {
 	 * Encapsulates a position in the source file and provides methods to search for elements
 	 * starting from the start position, and to modify the source.
 	 */
-	private class PositionLocator {
+	public class PositionLocator {
 		private int lineno;
 		private int colno;
 
@@ -193,8 +197,8 @@ public class JSSource {
 			}
 		}
 
-		int getLineno() { return lineno; }
-		int getCharno() { return colno; }
+		public int getLineno() { return lineno; }
+		public int getCharno() { return colno; }
 
 		/**
 		 * Inserts the specified string into the source at the current location
@@ -233,7 +237,7 @@ public class JSSource {
 		 *
 		 * @return the next javascript character, or 0 if none found.
 		 */
-		char findNextJSToken() {
+		public char findNextJSToken() {
 			char ch = 0;
 			boolean inBlockComment = false;
 			while (lineno <= lines.size()) {
