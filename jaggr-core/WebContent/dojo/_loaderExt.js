@@ -80,7 +80,6 @@ userConfig.async = true;		// use async loader
 
 //Enable the combo api
 userConfig.has['dojo-combo-api'] = 1;
-userConfig.has['dojo-sync-loader'] = 0;
 
 /**
  * url processor for handling cache bust query arg
