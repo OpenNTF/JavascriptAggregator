@@ -17,6 +17,7 @@
 package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.util.JSSource;
+import com.ibm.jaggr.core.util.JSSource.PositionLocator;
 
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
@@ -57,7 +58,17 @@ public class ExportModuleNameCompilerPass implements CompilerPass {
 					if (param != null && param.getType() != Token.STRING) {
 						String expname = name.getProp(Node.SOURCENAME_PROP).toString();
 						if (source != null) {
-							source.insert("\"" + expname + "\",", param.getLineno(), param.getCharno()); //$NON-NLS-1$ //$NON-NLS-2$
+							PositionLocator locator = source.locate(name.getLineno(), name.getCharno()+6);
+							char tok = locator.findNextJSToken();	// move cursor to the open paren
+							if (tok == '(') {
+								// Try to insert the module name immediately following the open paren for the
+								// define call because the param location will be off if the argument list is parenthesized.
+								source.insert("\"" + expname + "\",", locator.getLineno(), locator.getCharno()+1); //$NON-NLS-1$ //$NON-NLS-2$
+							} else {
+								// First token following 'define' name is not a paren, so fall back to inserting
+								// before the first parameter.
+								source.insert("\"" + expname + "\",", param.getLineno(), param.getCharno()); //$NON-NLS-1$ //$NON-NLS-2$
+							}
 						}
 						param.getParent().addChildBefore(Node.newString(expname), param);
 					}
