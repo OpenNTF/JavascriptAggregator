@@ -38,6 +38,7 @@ import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.TypeUtil;
@@ -1252,17 +1253,17 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{sb});
 		}
 		if (request != null) {
-			RequestedModuleNames modules = (RequestedModuleNames)request.getAttribute(REQUESTEDMODULENAMES_REQATTRNAME);
+			IRequestedModuleNames modules = (IRequestedModuleNames)request.getAttribute(REQUESTEDMODULENAMES_REQATTRNAME);
 			List<Map<String, String>> deps = new ArrayList<Map<String,String>>();
-			putDeps(deps, modules.getDeps());
-			putDeps(deps, modules.getPreloads());
-			if (!deps.isEmpty()) {
-				try {
+			try {
+				putDeps(deps, modules.getDeps());
+				putDeps(deps, modules.getPreloads());
+				if (!deps.isEmpty()) {
 					String json = new JSONArray(deps).toString();
 					sb.append("require.combo.bootLayerDeps=").append(json).append(";\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
-				} catch (JSONException ex) {
-					log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), methodName, ex.getMessage(), ex);
 				}
+			} catch (Exception ex) {
+				log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), methodName, ex.getMessage(), ex);
 			}
 		} else if (isTraceLogging) {
 			log.logp(Level.FINER, AbstractHttpTransport.class.getName(), methodName, "null request object"); //$NON-NLS-1$

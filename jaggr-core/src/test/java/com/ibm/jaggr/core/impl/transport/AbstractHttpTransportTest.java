@@ -24,12 +24,16 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.test.MockRequestedModuleNames;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
+import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.wink.json4j.JSONArray;
+import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
@@ -54,6 +58,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -257,6 +263,46 @@ public class AbstractHttpTransportTest {
 		syntheticModuleNames.add("fooplugin");
 		result = transport.clientRegisterSyntheticModules();
 		Assert.assertEquals("reg([[[\"combo/text\",\"fooplugin\"]],[[100,200]]]);", result);
+	}
+
+	@Test
+	public void testContributeBootLayerDeps() throws Exception {
+		final Pattern pat = Pattern.compile("^require\\.combo\\.bootLayerDeps=([^;]*);\\s");
+		IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
+		TestHttpTransport transport = new TestHttpTransport(mockAggregator);
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
+		EasyMock.replay(mockAggregator, mockRequest);
+		MockRequestedModuleNames reqNames = new MockRequestedModuleNames();
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqNames);
+		reqNames.setDeps(Arrays.asList("dep/a", "prefix!dep/b"));
+		StringBuffer sb = new StringBuffer();
+		transport.contributeBootLayerDeps(sb, mockRequest);
+		Matcher m = pat.matcher(sb.toString());
+		Assert.assertTrue(m.find());
+		JSONArray jsonObj = new JSONArray(m.group(1));
+		Assert.assertEquals(new JSONArray("[{\"name\":\"dep/a\"},{\"name\":\"dep/b\",\"prefix\":\"prefix\"}]"), jsonObj);
+
+		reqNames = new MockRequestedModuleNames();
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqNames);
+		reqNames.setPreloads(Arrays.asList("prefix!preload/a", "preload/b"));
+		sb = new StringBuffer();
+		transport.contributeBootLayerDeps(sb, mockRequest);
+		m = pat.matcher(sb.toString());
+		Assert.assertTrue(m.find());
+		jsonObj = new JSONArray(m.group(1));
+		Assert.assertEquals(new JSONArray("[{\"name\":\"preload/a\",\"prefix\":\"prefix\"},{\"name\":\"preload/b\"}]"), jsonObj);
+
+		reqNames = new MockRequestedModuleNames();
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqNames);
+		reqNames.setPreloads(Arrays.asList("dep/a", "preload/a"));
+		sb = new StringBuffer();
+		transport.contributeBootLayerDeps(sb, mockRequest);
+		m = pat.matcher(sb.toString());
+		Assert.assertTrue(m.find());
+		jsonObj = new JSONArray(m.group(1));
+		Assert.assertEquals(new JSONArray("[{\"name\":\"dep/a\"},{\"name\":\"preload/a\"}]"), jsonObj);
+
+
 	}
 
 	@Test

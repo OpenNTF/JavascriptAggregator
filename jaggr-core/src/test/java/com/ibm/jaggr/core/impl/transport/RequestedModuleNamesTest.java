@@ -72,6 +72,20 @@ public class RequestedModuleNamesTest {
 		assertTrue(requestedNames.getPreloads().isEmpty());
 		assertEquals(encModules+":::", requestedNames.toString());
 
+		// Test with encoded modules and reqExpEx params
+		encModules = "(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!3)";
+		String encReqExpEx = "(foo!(ex!0))";
+		requestParams.put("modules", new String[]{encModules});
+		requestParams.put("reqExpEx", new String[]{encReqExpEx});
+		requestParams.put("count", new String[]{"4"});
+		requestedNames = new RequestedModuleNames(request, null, null);
+		assertEquals(expected, requestedNames.getModules());
+		assertEquals(Arrays.asList("foo/ex"), requestedNames.getRequireExpansionExcludes());
+		assertTrue(requestedNames.getDeps().isEmpty());
+		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertEquals(encModules+"::"+encReqExpEx+":", requestedNames.toString());
+
+
 		// Test with invalid count param
 		requestParams.put("count", new String[]{"5"});
 		try {

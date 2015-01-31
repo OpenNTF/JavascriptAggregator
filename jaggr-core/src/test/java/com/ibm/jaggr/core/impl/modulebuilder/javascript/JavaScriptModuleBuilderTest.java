@@ -79,6 +79,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -747,12 +748,15 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		moduleIdMap[0].put("feature/dep1", 511);
 		moduleIdMap[0].put("feature/dep2", 512);
 		moduleIdMap[0].put("feature1/dep", 513);
+		moduleIdMap[0].put("bootLayerDep", 1000);
+		moduleIdMap[0].put("bootLayerPreload", 1001);
 
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		Assert.assertEquals("", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
 
 		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		MockRequestedModuleNames reqNames = new MockRequestedModuleNames();
 
 		// empty deps list
 		String result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
@@ -779,7 +783,24 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
 				");})();", result);
 
+		// Add boot layer deps
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqNames);
+		reqNames.setDeps(Arrays.asList("bootLayerDep"));
+		reqNames.setPreloads(Arrays.asList("bootLayerPreload"));
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dep2\"],[\"foodep\"],[\"bootLayerDep\"],[\"bootLayerPreload\"]],[[100,102],[500],[1000],[1001]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+		mockRequest.removeAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+
+
 		// including a dep which has no mapping
+		expDeps = new ConcurrentListBuilder<String[]>();
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		expDeps.add(new String[]{"dep1", "dep2"});
+		expDeps.add(new String[]{"foodep"});
 		expDeps.add(new String[]{"nodep"});
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
 		System.out.println(result);
