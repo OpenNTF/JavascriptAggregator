@@ -365,7 +365,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getDynamicLoaderExtensionJavaScript()
 	 */
 	@Override
-	protected String getDynamicLoaderExtensionJavaScript() {
+	protected String getDynamicLoaderExtensionJavaScript(HttpServletRequest request) {
 		StringBuffer sb = new StringBuffer("(function(require){"); //$NON-NLS-1$
 		sb.append("require.combo.plugins[\"") //$NON-NLS-1$
 		.append(getResourcePathId())
@@ -381,7 +381,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		.append("};\r\n"); //$NON-NLS-1$
 
 		// add in the super class's contribution
-		sb.append(super.getDynamicLoaderExtensionJavaScript());
+		sb.append(super.getDynamicLoaderExtensionJavaScript(request));
 		sb.append("})(this.dojoConfig || this.djConfig || this.require);"); //$NON-NLS-1$
 		return sb.toString();
 	}

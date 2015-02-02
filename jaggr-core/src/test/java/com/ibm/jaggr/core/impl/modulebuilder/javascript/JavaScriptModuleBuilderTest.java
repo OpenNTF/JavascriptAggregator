@@ -36,10 +36,12 @@ import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.test.MockRequestedModuleNames;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -77,6 +79,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -531,14 +534,17 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
 		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
 
-		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{deps:['cfgfoo']}"));
+		MockRequestedModuleNames reqnames = new MockRequestedModuleNames();
+		reqnames.setReqExpExcludes(Arrays.asList(new String[]{"exclude"}));
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqnames);
+
 		final DependencyList mockConfigDeps = createMock(DependencyList.class);
 		final DependencyList mockLayerDeps = createMock(DependencyList.class);
 
 		ModuleDeps configExplicitDeps = new ModuleDeps();
 		ModuleDeps configExpandedDeps = new ModuleDeps();
-		configExplicitDeps.add("cfgfoo", new ModuleDepInfo());
-		configExpandedDeps.add("cfgfoodep", new ModuleDepInfo());
+		configExplicitDeps.add("exclude", new ModuleDepInfo());
+		configExpandedDeps.add("excludedep", new ModuleDepInfo());
 
 		expect(mockConfigDeps.getExplicitDeps()).andReturn(configExplicitDeps).anyTimes();
 		expect(mockConfigDeps.getExpandedDeps()).andReturn(configExpandedDeps).anyTimes();
@@ -565,7 +571,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 			@Override public DependencyList answer() throws Throwable {
 				@SuppressWarnings("unchecked")
 				List<String> modules = (List<String>)getCurrentArguments()[1];
-				if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
+				if (Arrays.asList(new String[]{"exclude"}).equals(modules)) {
 					return mockConfigDeps;
 				} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
 					return mockLayerDeps;
@@ -603,7 +609,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(expectedDeps, resultDeps);
 	}
 
-	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	cfgfoo (cfgfoo detail)\\r\\n	cfgfoodep (cfgfoodep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
+	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	exclude (exclude detail)\\r\\n	excludedep (excludedep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
 	@Test
 	public void testLayerBeginEndNotifier_exportModuleNamesWithDetails() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
@@ -618,14 +624,17 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
 		mockRequest.setAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME, true);
 
-		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{deps:['cfgfoo']}"));
+		MockRequestedModuleNames reqnames = new MockRequestedModuleNames();
+		reqnames.setReqExpExcludes(Arrays.asList(new String[]{"exclude"}));
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqnames);
+
 		final DependencyList mockConfigDeps = createMock(DependencyList.class);
 		final DependencyList mockLayerDeps = createMock(DependencyList.class);
 
 		ModuleDeps configExplicitDeps = new ModuleDeps();
 		ModuleDeps configExpandedDeps = new ModuleDeps();
-		configExplicitDeps.add("cfgfoo", new ModuleDepInfo(null, null, "cfgfoo detail"));
-		configExpandedDeps.add("cfgfoodep", new ModuleDepInfo(null, null, "cfgfoodep detail"));
+		configExplicitDeps.add("exclude", new ModuleDepInfo(null, null, "exclude detail"));
+		configExpandedDeps.add("excludedep", new ModuleDepInfo(null, null, "excludedep detail"));
 
 		expect(mockConfigDeps.getExplicitDeps()).andReturn(configExplicitDeps).anyTimes();
 		expect(mockConfigDeps.getExpandedDeps()).andReturn(configExpandedDeps).anyTimes();
@@ -652,7 +661,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 			@Override public DependencyList answer() throws Throwable {
 				@SuppressWarnings("unchecked")
 				List<String> modules = (List<String>)getCurrentArguments()[1];
-				if (Arrays.asList(new String[]{"cfgfoo"}).equals(modules)) {
+				if (Arrays.asList(new String[]{"exclude"}).equals(modules)) {
 					return mockConfigDeps;
 				} else if (Arrays.asList(new String[]{"foo", "bar"}).equals(modules)) {
 					return mockLayerDeps;
@@ -739,12 +748,15 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		moduleIdMap[0].put("feature/dep1", 511);
 		moduleIdMap[0].put("feature/dep2", 512);
 		moduleIdMap[0].put("feature1/dep", 513);
+		moduleIdMap[0].put("bootLayerDep", 1000);
+		moduleIdMap[0].put("bootLayerPreload", 1001);
 
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		Assert.assertEquals("", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
 
 		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		MockRequestedModuleNames reqNames = new MockRequestedModuleNames();
 
 		// empty deps list
 		String result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
@@ -771,7 +783,24 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
 				");})();", result);
 
+		// Add boot layer deps
+		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqNames);
+		reqNames.setDeps(Arrays.asList("bootLayerDep"));
+		reqNames.setPreloads(Arrays.asList("bootLayerPreload"));
+		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
+		System.out.println(result);
+		Assert.assertEquals(JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"=[[[\"dep1\",\"dep2\"],[\"foodep\"],[\"bootLayerDep\"],[\"bootLayerPreload\"]],[[100,102],[500],[1000],[1001]]];require.combo.reg(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				");})();", result);
+		mockRequest.removeAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+
+
 		// including a dep which has no mapping
+		expDeps = new ConcurrentListBuilder<String[]>();
+		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
+		expDeps.add(new String[]{"dep1", "dep2"});
+		expDeps.add(new String[]{"foodep"});
 		expDeps.add(new String[]{"nodep"});
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
 		System.out.println(result);

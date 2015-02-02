@@ -1114,6 +1114,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @return the list of module dependencies
 	 */
 	protected List<String> loadDeps(Scriptable cfg) {
+		final String methodName = "loadDeps"; //$NON-NLS-1$
 		Object depsList = cfg.get(DEPS_CONFIGPARAM, cfg);
 		List<String> deps = new LinkedList<String>();
 		if (depsList instanceof Scriptable) {
@@ -1124,6 +1125,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 					deps.add(toString(entry));
 				}
 			}
+			log.logp(Level.WARNING, ConfigImpl.class.getName(), methodName, Messages.ConfigImpl_0);
 		}
 		return deps;
 	}

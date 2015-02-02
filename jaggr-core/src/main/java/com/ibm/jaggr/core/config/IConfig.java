@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.Features;
 
 import java.net.URI;
@@ -252,10 +253,16 @@ public interface IConfig {
 	 * <p>
 	 * If the deps property is not specified in the config, then this function
 	 * returns an empty list.
+	 * <p>
+	 * This method is deprecated in favor of
+	 * {@link IRequestedModuleNames#getRequireExpansionExcludes()} which is
+	 * specified by Aggregator generated requests based on the modules requested
+	 * in the boot layer for the application.
 	 *
 	 * @return The list of module names specified in the {@code deps} config
 	 *         param
 	 */
+	@Deprecated
 	public List<String> getDeps();
 
 	/**
