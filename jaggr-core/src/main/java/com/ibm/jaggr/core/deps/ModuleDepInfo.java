@@ -168,6 +168,7 @@ public class ModuleDepInfo implements Serializable {
 	 * @return The list of has! plugin prefixes for this module.
 	 */
 	public Collection<String> getHasPluginPrefixes() {
+		formula = formula.simplify();
 		if (formula.isTrue()) {
 			return null;
 		}
@@ -175,7 +176,7 @@ public class ModuleDepInfo implements Serializable {
 			return Collections.emptySet();
 		}
 		Set<String> result = new HashSet<String>();
-		for (BooleanTerm term : formula.simplify()) {
+		for (BooleanTerm term : formula) {
 			StringBuffer sb = new StringBuffer(pluginName).append("!"); //$NON-NLS-1$
 			for (BooleanVar featureVar : new TreeSet<BooleanVar>(term)) {
 				sb.append(featureVar.name).append("?"); //$NON-NLS-1$
@@ -201,6 +202,7 @@ public class ModuleDepInfo implements Serializable {
 	 * @return True if the formula logically includes the specified term
 	 */
 	public boolean containsTerm(BooleanTerm term) {
+		simplifyInvariant();
 		if (term.isFalse() || formula.isTrue()) {
 			// If the term is false, then adding it won't change the formula
 			// Similarly if the formula is true.  No additional term added
@@ -283,7 +285,6 @@ public class ModuleDepInfo implements Serializable {
 				comment = other.comment;
 				commentTermSize = other.commentTermSize;
 			}
-			simplifyInvariant();
 			return modified;
 		}
 		// Add the terms
@@ -300,7 +301,6 @@ public class ModuleDepInfo implements Serializable {
 			comment = other.comment;
 			commentTermSize = other.commentTermSize;
 		}
-		simplifyInvariant();
 		return modified;
 	}
 
@@ -408,9 +408,12 @@ public class ModuleDepInfo implements Serializable {
 		if (otherObj != null && otherObj.getClass().getName().equals(ModuleDepInfo.class.getName())) {
 			ModuleDepInfo other = (ModuleDepInfo)otherObj;
 			return formula.equals(other.formula) &&
+					// If forumla is invariant, then they're equal regardless of the plugin name
+					(formula.isFalse() || formula.isTrue() ||
+					// otherwise, plugin names need to match
 					isPluginNameDeclared == other.isPluginNameDeclared &&
 					(pluginName == null && other.pluginName == null ||
-					pluginName != null && pluginName.equals(other.pluginName));
+					pluginName != null && pluginName.equals(other.pluginName)));
 
 		}
 		return false;
