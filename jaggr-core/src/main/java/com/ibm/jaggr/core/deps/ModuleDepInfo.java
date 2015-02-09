@@ -283,7 +283,6 @@ public class ModuleDepInfo implements Serializable {
 				comment = other.comment;
 				commentTermSize = other.commentTermSize;
 			}
-			simplifyInvariant();
 			return modified;
 		}
 		// Add the terms
@@ -300,7 +299,6 @@ public class ModuleDepInfo implements Serializable {
 			comment = other.comment;
 			commentTermSize = other.commentTermSize;
 		}
-		simplifyInvariant();
 		return modified;
 	}
 
