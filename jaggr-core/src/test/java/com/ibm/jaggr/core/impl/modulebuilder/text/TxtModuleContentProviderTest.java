@@ -44,7 +44,6 @@ import junit.framework.Assert;
 public class TxtModuleContentProviderTest extends EasyMock {
 
 	File tmpdir = null;
-	HttpServletRequest mockRequest = createNiceMock(HttpServletRequest.class);
 
 	@BeforeClass
 	public static void setupBeforeClass() {
@@ -52,7 +51,6 @@ public class TxtModuleContentProviderTest extends EasyMock {
 
 	@Before
 	public void setup() {
-		replay(mockRequest);
 	}
 	/**
 	 * @throws java.lang.Exception
@@ -66,16 +64,19 @@ public class TxtModuleContentProviderTest extends EasyMock {
 	}
 
 	@Test
-	public void testGetCacheKeyGenerator() {
+	public void testGetCacheKeyGenerator() throws Exception {
 		TextModuleBuilder builder = new TextModuleBuilder();
 		List<ICacheKeyGenerator> generators = builder.getCacheKeyGenerators(null);
-		String key = KeyGenUtil.generateKey(mockRequest, generators);
-		Assert.assertEquals("expn:0", key);
-		reset(mockRequest);
-		expect(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)).andReturn(Boolean.TRUE).anyTimes();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		replay(mockRequest);
+		String key = KeyGenUtil.generateKey(mockRequest, generators);
+		Assert.assertEquals("expn:0;txt:0", key);
+		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		key = KeyGenUtil.generateKey(mockRequest, generators);
-		Assert.assertEquals("expn:1", key);
+		Assert.assertEquals("expn:1;txt:0", key);
+		mockRequest.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
+		key = KeyGenUtil.generateKey(mockRequest, generators);
+		Assert.assertEquals("expn:1;txt:1", key);
 	}
 
 	@Test
@@ -85,6 +86,8 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		Writer ow = new FileWriter(test);
 		ow.write("'This is a test'. ''  Test's'");
 		ow.close();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
+		replay(mockRequest);
 		TextModuleBuilder builder = new TextModuleBuilder();
 		String code = builder.build(
 				"test.txt",

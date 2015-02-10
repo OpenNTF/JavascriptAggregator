@@ -157,6 +157,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		,"reqexp"	// backwards compatibility, to be removed. //$NON-NLS-1$
 	};
 
+	public static final String[] EXPORTMODULENAMES_REQPARAMS = {"exportNames", "en"}; //$NON-NLS-1$ //$NON-NLS-2$
+
 	public static final String[] SHOWFILENAMES_REQPARAMS = {"showFilenames", "fn"}; //$NON-NLS-1$ //$NON-NLS-2$
 
 	public static final String[] NOCACHE_REQPARAMS = {"noCache", "nocache", "nc"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -228,7 +230,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 
 		// Get module lists from request
-		setRequestedModuleNames(request);
+		RequestedModuleNames requestedModuleNames = setRequestedModuleNames(request);
 
 		// Get the feature list, if any
 		request.setAttribute(FEATUREMAP_REQATTRNAME, getFeaturesFromRequest(request));
@@ -242,7 +244,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		} else {
 			request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, TypeUtil.asBoolean(value));
 		}
-		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, true);
+
+		boolean exportModuleNamesDefault = requestedModuleNames.getPreloads().isEmpty() &&
+				                           requestedModuleNames.getDeps().isEmpty();
+		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, EXPORTMODULENAMES_REQPARAMS), exportModuleNamesDefault));
 
 		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
 
@@ -297,7 +302,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		return null;
 	}
 
-	protected void setRequestedModuleNames(HttpServletRequest request) throws IOException {
+	protected RequestedModuleNames setRequestedModuleNames(HttpServletRequest request) throws IOException {
 		final String sourceMethod = "setRequestedModuleNames"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
@@ -314,6 +319,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (isTraceLogging) {
 			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
 		}
+		return requestedModuleNames;
 	}
 
 	/**

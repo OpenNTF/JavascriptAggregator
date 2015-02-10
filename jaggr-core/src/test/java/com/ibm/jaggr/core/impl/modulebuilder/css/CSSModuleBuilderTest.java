@@ -523,15 +523,15 @@ public class CSSModuleBuilderTest extends EasyMock {
 	@Test
 	public void testCacheKeyGen() throws Exception {
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
-		Assert.assertEquals("expn:0;css:0:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:0;txt:0;css:0:0:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestParams.put(CSSModuleBuilder.INLINEIMAGES_REQPARAM_NAME, new String[]{"true"});
-		Assert.assertEquals("expn:0;css:0:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:0;txt:0;css:0:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestParams.put(CSSModuleBuilder.INLINEIMPORTS_REQPARAM_NAME, new String[]{"true"});
-		Assert.assertEquals("expn:0;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:0;txt:0;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		Assert.assertEquals("expn:1;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:1;txt:0;css:1:1:0", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
-		Assert.assertEquals("expn:1;css:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Assert.assertEquals("expn:1;txt:0;css:1:1:1", KeyGenUtil.generateKey(mockRequest, keyGens));
 	}
 
 	@Test

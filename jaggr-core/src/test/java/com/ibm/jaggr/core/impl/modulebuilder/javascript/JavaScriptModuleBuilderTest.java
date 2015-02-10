@@ -32,6 +32,8 @@ import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
+import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder.CacheKeyGenerator;
+import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.options.IOptions;
@@ -41,7 +43,6 @@ import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
-import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.CopyUtil;
@@ -467,17 +468,17 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
 		assertEquals("expn:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		Set<String> hasConditionals = new HashSet<String>();
-		keyGens = builder.getCacheKeyGenerators(hasConditionals);
+		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
 		assertEquals("expn:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("foo");
-		keyGens = builder.getCacheKeyGenerators(hasConditionals);
+		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
 		assertEquals("expn:0;js:W:1:0:1;has{foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("bar");
-		keyGens = builder.getCacheKeyGenerators(hasConditionals);
-		assertEquals("expn:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
+		assertEquals("expn:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("undefined");
-		keyGens = builder.getCacheKeyGenerators(hasConditionals);
-		assertEquals("expn:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
+		assertEquals("expn:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 	}
 
 
@@ -850,6 +851,36 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	}
 
+	@Test
+	public void testCacheKeyGeneratorEquals() {
+		Set<String> features = new HashSet<String>();
+		features.add("feature1");
+		features.add("feature2");
+		CacheKeyGenerator keyGen = new CacheKeyGenerator(features, false, false);
+		Set<String> otherFeatures = new HashSet<String>(features);
+		Assert.assertEquals(keyGen, new CacheKeyGenerator(otherFeatures, false, false));
+		Assert.assertFalse(keyGen.equals(new CacheKeyGenerator(otherFeatures, true, false)));
+		Assert.assertFalse(keyGen.equals(new CacheKeyGenerator(otherFeatures, false, true)));
+		Assert.assertFalse(keyGen.equals(new CacheKeyGenerator(otherFeatures, true, true)));
+		otherFeatures.remove("feature2");
+		Assert.assertFalse(keyGen.equals(new CacheKeyGenerator(otherFeatures, false, false)));
+	}
+
+	@Test
+	public void testCacheKeyGeneratorGenerateKey() {
+		// Make sure that key specifies expandRequires only if the option is specified
+		// in the request and the module contains expandable requires
+		Set<String> features = Collections.emptySet();
+		CacheKeyGenerator keyGen = new CacheKeyGenerator(features, false /*hasExpandableRequires*/, false);
+		Assert.assertEquals("js:S:0:0:1;has{}", keyGen.generateKey(mockRequest));
+		mockRequest.setAttribute(AbstractHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
+		Assert.assertEquals("js:S:0:0:1;has{}", keyGen.generateKey(mockRequest));
+		keyGen = new CacheKeyGenerator(features, true /*hasExpandableRequires*/, false);
+		Assert.assertEquals("js:S:1:0:1;has{}", keyGen.generateKey(mockRequest));
+		mockRequest.removeAttribute(AbstractHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME);
+		Assert.assertEquals("js:S:0:0:1;has{}", keyGen.generateKey(mockRequest));
+	}
+
 	/**
 	 * Tester class that extends JavaScriptModuleBuilder to expose protected methods for testing
 	 */
@@ -901,8 +932,8 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	public class TestJavaScriptModuleBuilder extends JavaScriptModuleBuilder {
 		@Override
 		public List<ICacheKeyGenerator> getCacheKeyGenerators(
-				Set<String> dependentFeatures) {
-			return super.getCacheKeyGenerators(dependentFeatures);
+				Set<String> dependentFeatures, boolean hasExpandableRequires) {
+			return super.getCacheKeyGenerators(dependentFeatures, hasExpandableRequires);
 		}
 		@Override
 		public String moduleNameIdEncodingBeginLayer(HttpServletRequest request, List<IModule> modules) {

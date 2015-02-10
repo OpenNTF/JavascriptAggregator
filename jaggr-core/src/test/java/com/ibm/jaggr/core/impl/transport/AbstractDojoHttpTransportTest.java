@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -36,9 +37,12 @@ import org.mozilla.javascript.Scriptable;
 
 import java.io.File;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -50,6 +54,7 @@ public class AbstractDojoHttpTransportTest {
 	File tmpDir = null;
 	IAggregator mockAggregator;
 	HttpServletRequest mockRequest;
+	Map<String, String[]> requestParams;
 	Ref<IConfig> configRef = new Ref<IConfig>(null);
 
 	@BeforeClass
@@ -64,8 +69,10 @@ public class AbstractDojoHttpTransportTest {
 	public void setup() throws Exception {
 		tmpDir = new File(System.getProperty("user.dir"));
 		mockAggregator = TestUtils.createMockAggregator(configRef, tmpDir);
-		mockRequest = TestUtils.createMockRequest(mockAggregator);
+		requestParams = new HashMap<String, String[]>();
+		mockRequest = TestUtils.createMockRequest(mockAggregator, new HashMap<String, Object>(), requestParams, null, null);
 		EasyMock.replay(mockAggregator, mockRequest);
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
 	}
 
 	@After
@@ -196,6 +203,27 @@ public class AbstractDojoHttpTransportTest {
 	}
 
 	@Test
+	public void testDecorateRequest() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		transport.setAggregator(mockAggregator);
+
+
+		transport.decorateRequest(mockRequest);
+		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
+
+		// Make sure noTextAdorn attribute is set if server expanded layer
+		requestParams.put("deps", new String[]{"dep1"});
+		transport.decorateRequest(mockRequest);
+		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
+
+		// but noTextAdorn should not be set if this is a server expanded layer and we're exporting module names
+		mockRequest.removeAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME);
+		requestParams.put("exportNames", new String[]{"1"});
+		transport.decorateRequest(mockRequest);
+		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
+	}
+
+	@Test
 	public void testBeforeLayerModule() throws Exception {
 		TestDojoHttpTransport transport = new TestDojoHttpTransport();
 		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{textPluginDelegators:[\"dojo/text\"],jsPluginDelegators:[\"dojo/i18n\"]}"));
@@ -259,8 +287,11 @@ public class AbstractDojoHttpTransportTest {
 	}
 
 	class TestDojoHttpTransport extends DojoHttpTransport {
+		private IAggregator aggregator = null;
+		public void setAggregator(IAggregator aggregator) { this.aggregator = aggregator; }
 		@Override protected URI getComboUri() { return null; }
 		@Override protected String getTransportId() {return null; }
 		@Override protected String getResourcePathId() { return null; }
+		@Override protected IAggregator getAggregator() { return aggregator; }
 	}
 }

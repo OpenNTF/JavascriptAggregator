@@ -427,6 +427,12 @@ public class TestUtils {
 					return ary != null && ary.length > 0 ? ary[0] : null;
 				}
 			}).anyTimes();
+			EasyMock.expect(mockRequest.getParameterMap()).andAnswer(new IAnswer<Map<String, String[]>>() {
+				@Override
+				public Map<String, String[]> answer() throws Throwable {
+					return requestParameters;
+				}
+			}).anyTimes();
 		}
 		if (cookies != null) {
 			EasyMock.expect(mockRequest.getCookies()).andAnswer(new IAnswer<Cookie[]>() {

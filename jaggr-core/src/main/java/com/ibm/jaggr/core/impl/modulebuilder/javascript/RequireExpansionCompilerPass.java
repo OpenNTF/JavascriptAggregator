@@ -33,6 +33,8 @@ import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
 import com.google.javascript.rhino.Token;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -86,6 +88,16 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	private String configVarName;
 
 	/**
+	 * Output - flag indicating if the module contains expandable require calls
+	 */
+	private final MutableBoolean hasExpandableRequires;
+
+	/**
+	 * True if require list expansion should be performed.
+	 */
+	private final boolean expandRequires;
+
+	/**
 	 * True if console logging is enabled
 	 */
 	private boolean logDebug;
@@ -103,6 +115,10 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 *            Output - the dependent features identified during the expansion
 	 * @param expandedDepsList
 	 *            Output - the list of expanded dependencies
+	 * @param hasExpandableRequires
+	 *            Output - true if the module contains one or more expandable require calls
+	 * @param expandRequires
+	 *            true if require dependencies should be expanded
 	 * @param configVarName
 	 *            the name of the loader config var (e.g. dojoConfig or require, etc.)
 	 * @param logDebug
@@ -115,6 +131,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			Features features,
 			Set<String> dependentFeatures,
 			List<ModuleDeps> expandedDepsList,
+			MutableBoolean hasExpandableRequires,
+			boolean expandRequires,
 			String configVarName,
 			boolean logDebug,
 			JSSource source) {
@@ -124,6 +142,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		this.dependentFeatures = dependentFeatures;
 		this.expandedDepsList = expandedDepsList;
 		this.configVarName = configVarName;
+		this.hasExpandableRequires = hasExpandableRequires;
+		this.expandRequires = expandRequires;
 		this.consoleDebugOutput = logDebug ? new LinkedList<List<String>>() : null;
 		this.logDebug = logDebug;
 		this.source = source;
@@ -286,7 +306,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			}
 			strNode = strNode.getNext();
 		}
-		if (names.size() == 0) {
+		hasExpandableRequires.setValue(hasExpandableRequires.getValue() || names.size() != 0);
+		if (names.size() == 0 || !expandRequires) {
 			return;
 		}
 		List<String> msg = new LinkedList<String>();

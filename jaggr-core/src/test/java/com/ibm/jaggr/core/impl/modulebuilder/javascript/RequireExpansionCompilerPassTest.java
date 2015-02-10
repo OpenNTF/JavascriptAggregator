@@ -32,6 +32,7 @@ import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.Assert;
@@ -94,11 +95,13 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 	@Test
 	public void testRequireExpansion() throws Exception {
 		List<ModuleDeps> expanded = new ArrayList<ModuleDeps>();
+		MutableBoolean hasExpandableRequires = new MutableBoolean(false);
 		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
 				mockAggregator,
 				new Features(),
 				null,
 				expanded,
+				hasExpandableRequires, true,
 				null, false, null);
 
 		String code, output;
@@ -111,8 +114,10 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		Assert.assertEquals(1, expanded.size());
 		Assert.assertEquals(new LinkedHashSet<String>(Arrays.asList(new String[]{"bar", "a/b"})),
 				expanded.get(0).getModuleIds());
+		Assert.assertTrue(hasExpandableRequires.getValue());
 
 		// Ensure require list is modified
+		hasExpandableRequires.setValue(false);
 		code = "require([\"foo\"]);";
 		output = runPass(pass, code);
 		System.out.println(output);
@@ -120,8 +125,46 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		Assert.assertEquals(1, expanded.size());
 		Assert.assertEquals(new LinkedHashSet<String>(Arrays.asList(new String[]{"bar", "a/b"})),
 				expanded.get(0).getModuleIds());
+		Assert.assertTrue(hasExpandableRequires.getValue());
+
+		// Ensure require list is NOT modified
+		hasExpandableRequires.setValue(false);
+		pass = new RequireExpansionCompilerPass(
+				mockAggregator,
+				new Features(),
+				null,
+				expanded,
+				hasExpandableRequires, false,
+				null, false, null);
+		code = "require([\"foo\"]);";
+		output = runPass(pass, code);
+		System.out.println(output);
+		Assert.assertEquals(code, output);
+		Assert.assertEquals(0, expanded.size());
+		Assert.assertTrue(hasExpandableRequires.getValue());
+
+		// Ensure hasExpandableRequires is false
+		hasExpandableRequires.setValue(false);
+		pass = new RequireExpansionCompilerPass(
+				mockAggregator,
+				new Features(),
+				null,
+				expanded,
+				hasExpandableRequires, false,
+				null, false, null);
+		code = "define([\"foo\"], function(foo) {});";
+		Assert.assertFalse(hasExpandableRequires.getValue());
+
+
 
 		// Ensure only array literals are expanded
+		pass = new RequireExpansionCompilerPass(
+				mockAggregator,
+				new Features(),
+				null,
+				expanded,
+				new MutableBoolean(false), true,
+				null, false, null);
 		code = "require(\"foo\");";
 		output = runPass(pass, code);
 		System.out.println(output);
@@ -277,6 +320,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				new Features(),
 				null,
 				expanded,
+				new MutableBoolean(false), true,
 				null, false, null);
 		compiler = new Compiler();
 		compiler_options = new CompilerOptions();
@@ -299,6 +343,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				new Features(),
 				null,
 				expanded,
+				new MutableBoolean(false), true,
 				null, false, null);
 
 		String code, output;
@@ -431,6 +476,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				features,
 				dependentFeatures,
 				expanded,
+				new MutableBoolean(false), true,
 				null, false, null);
 
 		String code, output;
@@ -507,6 +553,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				features,
 				dependentFeatures,
 				expanded,
+				new MutableBoolean(false), true,
 				null, false, null);
 
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, true);
@@ -531,11 +578,13 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 	@Test
 	public void testLogging() throws Exception {
 
+		MutableBoolean hasExpandableRequires = new MutableBoolean(false);
 		RequireExpansionCompilerPass pass = new RequireExpansionCompilerPass(
 				mockAggregator,
 				new Features(),
 				null,
 				new ArrayList<ModuleDeps>(),
+			  hasExpandableRequires, true,
 				null, true, null);
 
 		String code, output;
@@ -549,6 +598,7 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 				output.contains("bar (" + MessageFormat.format(com.ibm.jaggr.core.util.Messages.DependencyList_4, "foo") + ")"));
 		Assert.assertTrue("Output does not contain expected value.",
 				output.contains("a/b (" + MessageFormat.format(com.ibm.jaggr.core.util.Messages.DependencyList_4, "bar") + ")"));
+		Assert.assertTrue(hasExpandableRequires.getValue());
 
 	}
 

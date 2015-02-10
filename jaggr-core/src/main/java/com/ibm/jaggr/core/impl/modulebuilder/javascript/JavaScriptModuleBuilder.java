@@ -58,6 +58,8 @@ import com.google.javascript.jscomp.JSError;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.jscomp.Result;
 
+import org.apache.commons.lang3.mutable.MutableBoolean;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.MessageFormat;
@@ -339,8 +341,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 
 		boolean isReqExpLogging = RequestUtil.isRequireExpLogging(request);
+		boolean isExpandRequires = RequestUtil.isExplodeRequires(request);
 		List<ModuleDeps> expandedDepsList = null;
-		if (RequestUtil.isExplodeRequires(request)) {
+		MutableBoolean hasExpandableRequires = new MutableBoolean(false);
+		if (isExpandRequires || createNewKeyGen) {
 			expandedDepsList = new ArrayList<ModuleDeps>();
 			/*
 			 * Register the RequireExpansionCompilerPass if we're exploding
@@ -352,6 +356,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 							features,
 							discoveredHasConditionals,
 							expandedDepsList,
+							hasExpandableRequires,
+							isExpandRequires,
 							(String)request.getAttribute(IHttpTransport.CONFIGVARNAME_REQATTRNAME),
 							isReqExpLogging,
 							source);
@@ -451,7 +457,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				expandedDepsList == null || expandedDepsList.size() == 0 ?
 						output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging),
 						createNewKeyGen ?
-								getCacheKeyGenerators(discoveredHasConditionals) :
+								getCacheKeyGenerators(discoveredHasConditionals, hasExpandableRequires.getValue()) :
 									keyGens,
 									null);
 	}
@@ -483,7 +489,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
-		return getCacheKeyGenerators((Set<String>)null);
+		return getCacheKeyGenerators((Set<String>)null, true);
 	}
 
 	@Override
@@ -491,10 +497,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return resource.getPath().endsWith(".js"); //$NON-NLS-1$
 	}
 
-	protected List<ICacheKeyGenerator> getCacheKeyGenerators(Set<String> dependentFeatures) {
+	protected List<ICacheKeyGenerator> getCacheKeyGenerators(Set<String> dependentFeatures, boolean hasExpandableRequires) {
 		ArrayList<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
 		keyGens.add(exportNamesCacheKeyGenerator);
-		keyGens.add(new CacheKeyGenerator(dependentFeatures, dependentFeatures == null));
+		keyGens.add(new CacheKeyGenerator(dependentFeatures, hasExpandableRequires, dependentFeatures == null));
 		return keyGens;
 	}
 
@@ -635,12 +641,16 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		private final FeatureSetCacheKeyGenerator featureKeyGen;
 
-		CacheKeyGenerator(Set<String> depFeatures, boolean provisional) {
+		private final boolean hasExpandableRequires;
+
+		CacheKeyGenerator(Set<String> depFeatures, boolean hasExpandableRequires, boolean provisional) {
 			featureKeyGen = new FeatureSetCacheKeyGenerator(depFeatures, provisional);
+			this.hasExpandableRequires = hasExpandableRequires;
 		}
 
-		private CacheKeyGenerator(FeatureSetCacheKeyGenerator featureKeyGen) {
+		private CacheKeyGenerator(FeatureSetCacheKeyGenerator featureKeyGen, boolean hasExpandableRequires) {
 			this.featureKeyGen = featureKeyGen;
+			this.hasExpandableRequires = hasExpandableRequires;
 		}
 
 		/**
@@ -659,6 +669,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		@Override
 		public String generateKey(HttpServletRequest request) {
 			CompilationLevel level = getCompilationLevel(request);
+
 			boolean requireListExpansion = RequestUtil.isExplodeRequires(request);
 			boolean reqExpLogging = RequestUtil.isRequireExpLogging(request);
 			boolean hasFiltering = RequestUtil.isHasFiltering(request);
@@ -666,7 +677,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest("Creating cache key: level=" +  //$NON-NLS-1$
 						(level != null ? level.toString() : "null") + ", " + //$NON-NLS-1$ //$NON-NLS-2$
-						"requireListExpansion=" + Boolean.toString(requireListExpansion) + ", " + //$NON-NLS-1$ //$NON-NLS-2$
+						"requireListExpansion=" + Boolean.toString(requireListExpansion && hasExpandableRequires) + ", " + //$NON-NLS-1$ //$NON-NLS-2$
 						"requireExpLogging=" + Boolean.toString(reqExpLogging) + "," + //$NON-NLS-1$ //$NON-NLS-2$
 						"hasFiltering=" + Boolean.toString(hasFiltering) //$NON-NLS-1$
 						);
@@ -674,7 +685,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			StringBuffer sb = new StringBuffer(eyecatcher).append(":"); //$NON-NLS-1$
 			sb.append((level != null ? level.toString() : "NONE").substring(0,1))  //$NON-NLS-1$
-			.append(requireListExpansion ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(requireListExpansion && hasExpandableRequires ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(reqExpLogging ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(hasFiltering ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 
@@ -706,7 +717,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			} else if (other.featureKeyGen != null) {
 				combined = other.featureKeyGen;
 			}
-			return new CacheKeyGenerator(combined);
+			return new CacheKeyGenerator(combined, hasExpandableRequires || other.hasExpandableRequires);
 		}
 
 		@Override
@@ -726,7 +737,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				return Arrays.asList(new ICacheKeyGenerator[]{this});
 			}
 			List<ICacheKeyGenerator> result = new LinkedList<ICacheKeyGenerator>();
-			result.add(new CacheKeyGenerator(null));
+			result.add(new CacheKeyGenerator(null, hasExpandableRequires));
 			if (RequestUtil.isHasFiltering(request) && getCompilationLevel(request) != null) {
 				List<ICacheKeyGenerator> gens = featureKeyGen.getCacheKeyGenerators(request);
 				if (gens == null) {
@@ -741,12 +752,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		@Override
 		public boolean equals(Object other) {
 			return other != null && getClass().equals(other.getClass()) &&
-					featureKeyGen.equals(((CacheKeyGenerator)other).featureKeyGen);
+					featureKeyGen.equals(((CacheKeyGenerator)other).featureKeyGen) &&
+					hasExpandableRequires == ((CacheKeyGenerator)other).hasExpandableRequires;
 		}
 
 		@Override
 		public int hashCode() {
-			return getClass().hashCode() * 31 + featureKeyGen.hashCode();
+			return getClass().hashCode() * 31 + featureKeyGen.hashCode() + (hasExpandableRequires ? 1 : 0);
 		}
 	}
 }
