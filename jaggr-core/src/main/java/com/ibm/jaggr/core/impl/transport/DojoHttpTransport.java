@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -324,16 +325,15 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 		super.decorateRequest(request);
-		boolean isLayerBuild = false;
+		boolean isServerExpanded = false;
 		IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 		if (requestedModuleNames != null) {
-			isLayerBuild = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
+			isServerExpanded = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
 		}
-		if (isLayerBuild) {
-			// If we're building a pre-boot layer, then don't adorn text strings
-			// and don't export module names
+		if (isServerExpanded && !TypeUtil.asBoolean(request.getAttribute(EXPORTMODULENAMES_REQATTRNAME))) {
+			// If we're building a server-expanded layer, then don't adorn text strings
+			// unless exporting module names by request.
 			request.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
-			request.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.FALSE);
 		}
 	}
 
