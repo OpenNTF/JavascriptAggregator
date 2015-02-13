@@ -31,7 +31,6 @@ import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -212,7 +211,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			String plugin = mid.substring(0, idx);
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			IConfig config = aggr.getConfig();
-			if (config.getTextPluginDelegators().contains(plugin)) {
+			if (getAggregatorTextPluginName().equals(plugin) || config.getTextPluginDelegators().contains(plugin)) {
 				result = "\"url:" + mid.substring(idx+1) + "\":"; //$NON-NLS-1$ //$NON-NLS-2$
 			} else if (config.getJsPluginDelegators().contains(plugin)) {
 				result = "\"" + mid.substring(idx+1) + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
@@ -241,7 +240,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		if (plugin != null) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			IConfig config = aggr.getConfig();
-			if (config.getTextPluginDelegators().contains(plugin)) {
+			if (getAggregatorTextPluginName().equals(plugin) || config.getTextPluginDelegators().contains(plugin)) {
 				result = ""; //$NON-NLS-1$
 			}
 		}
@@ -330,9 +329,8 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		if (requestedModuleNames != null) {
 			isServerExpanded = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
 		}
-		if (isServerExpanded && !TypeUtil.asBoolean(request.getAttribute(EXPORTMODULENAMES_REQATTRNAME))) {
+		if (isServerExpanded) {
 			// If we're building a server-expanded layer, then don't adorn text strings
-			// unless exporting module names by request.
 			request.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
 		}
 	}

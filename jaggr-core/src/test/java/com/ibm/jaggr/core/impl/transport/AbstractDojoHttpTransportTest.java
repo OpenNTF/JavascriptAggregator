@@ -216,11 +216,11 @@ public class AbstractDojoHttpTransportTest {
 		transport.decorateRequest(mockRequest);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
 
-		// but noTextAdorn should not be set if this is a server expanded layer and we're exporting module names
+		// noTextAdorn should be set even if this is a server expanded layer and we're exporting module names
 		mockRequest.removeAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME);
 		requestParams.put("exportNames", new String[]{"1"});
 		transport.decorateRequest(mockRequest);
-		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
+		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
 	}
 
 	@Test
