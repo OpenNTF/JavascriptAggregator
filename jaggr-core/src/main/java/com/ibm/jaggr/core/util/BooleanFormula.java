@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -199,12 +198,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 			return new BooleanFormula(false);
 		}
 		for (Term term : termList) {
-			byte[] varValues = term.getVarValues();
 			Set<BooleanVar> states = new HashSet<BooleanVar>();
 			for (Map.Entry<String, Integer> entry : names.entrySet()) {
-				if (varValues[entry.getValue()] == (byte)1) {
+				if (term.get(entry.getValue()) == (byte)1) {
 					states.add(new BooleanVar(entry.getKey(), true));
-				} else if (varValues[entry.getValue()] == (byte)0) {
+				} else if (term.get(entry.getValue()) == (byte)0) {
 					states.add(new BooleanVar(entry.getKey(), false));
 				}
 			}
@@ -574,12 +572,12 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * @return A new term list with don't cares expanded.
 	 */
 	private static List<Term> expandDontCares(int ord, List<Term> in) {
-		List<Term> result = new LinkedList<Term>();
 		Set<Integer> termInts = new HashSet<Integer>();
 		for (Term term : in) {
 			addExpandTerm(0, ord, 0, term, termInts);
 		}
 		// Now convert the termInts to Terms
+		List<Term> result = new ArrayList<Term>(termInts.size());
 		for (Integer termInt : termInts) {
 			byte[] varVals = new byte[ord];
 			for (int i = 0; i < ord; i++) {
@@ -607,7 +605,7 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	private static void addExpandTerm(int i, int ord, int byteValue, Term termValue, Set<Integer> terms) {
 		if (i < ord) {
 			int mask = 1 << i;
-			byte bitValue = termValue.getVarValues()[i];
+			byte bitValue = termValue.get(i);
 			if (bitValue == 1) {
 				byteValue |= (-1 & mask);
 				addExpandTerm(i+1, ord, byteValue, termValue, terms);

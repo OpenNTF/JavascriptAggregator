@@ -30,13 +30,16 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-class Term {
+public final class Term {
     public static final byte DontCare = 2;
 
     public Term(byte[] varVals) {
         this.varVals = varVals;
+        // Terms are immutable, like Strings, so we can calculate the
+        // hash once and save it.
+        this.hash = Arrays.hashCode(varVals);
     }
-    
+
     public int getNumVars() {
         return varVals.length;
     }
@@ -86,16 +89,17 @@ class Term {
     public boolean equals(Object o) {
         if (o == this) {
             return true;
-        } else if (o == null || !getClass().equals(o.getClass())) {
-            return false;
-        } else {
-            Term rhs = (Term)o;
-            return Arrays.equals(this.varVals, rhs.varVals);
         }
+        if (o == null || !getClass().equals(o.getClass()) || hash != ((Term)o).hash) {
+            return false;
+        }
+        return Arrays.equals(this.varVals, ((Term)o).varVals);
     }
+
     public int hashCode() {
-        return varVals.hashCode();
+        return hash;
     }
+
     boolean implies(Term term) {
         for(int i=0; i<varVals.length; i++) {
             if (this.varVals[i] != DontCare &&
@@ -105,11 +109,11 @@ class Term {
         }
         return true;
     }
-    
-    byte[] getVarValues() {
-    	return varVals;
+
+    byte get(int i) {
+    	return varVals[i];
     }
-    
+
     public static Term read(Reader reader) throws IOException {
         int c = '\0';
         ArrayList<Byte> t = new ArrayList<Byte>();
@@ -132,6 +136,7 @@ class Term {
         }
     }
 
-    private byte[] varVals;
+    private final byte[] varVals;
+    private final int hash;
 }
 
