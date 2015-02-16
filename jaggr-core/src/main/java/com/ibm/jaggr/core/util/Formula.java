@@ -30,7 +30,9 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 
 class Formula {
@@ -63,26 +65,32 @@ class Formula {
 	    table[dontCares][ones].add(termList.get(i));
 	}
         for(int dontKnows=0; dontKnows <= numVars - 1; dontKnows++) {
+            // Use LinkedHashSet for output lists and copy final result to
+            // ArrayList so that we have more efficient operations involving
+            // element identity (contains, removes) while building the list.
+            Set<Term> terms = new LinkedHashSet<Term>(termList);
 	    for(int ones=0; ones <= numVars - 1; ones++) {
 	        ArrayList<Term> left   = table[dontKnows][ones];
 	        ArrayList<Term> right  = table[dontKnows][ones + 1];
-	        ArrayList<Term> out    = table[dontKnows+1][ones];
+	        Set<Term> out    = new LinkedHashSet<Term>();
 	        for(int leftIdx = 0; leftIdx < left.size(); leftIdx++) {
 	            for(int rightIdx = 0; rightIdx < right.size(); rightIdx++) {
 	                Term combined = left.get(leftIdx).combine(right.get(rightIdx));
 	                if (combined != null) {
 	                    if (!out.contains(combined)) {
-	                        out.add(combined); 
+	                        out.add(combined);
 	                    }
-	                    termList.remove(left.get(leftIdx));
-			    termList.remove(right.get(rightIdx));
-			    if (!termList.contains(combined)) {
-			        termList.add(combined);
+	                    terms.remove(left.get(leftIdx));
+			    terms.remove(right.get(rightIdx));
+			    if (!terms.contains(combined)) {
+			        terms.add(combined);
 			    }
 	                }
 	            }
 	        }
+	        table[dontKnows+1][ones] = new ArrayList<Term>(out);
 	    }
+	    termList = new ArrayList<Term>(terms);
 	}
     }
     public void reducePrimeImplicantsToSubset() {
