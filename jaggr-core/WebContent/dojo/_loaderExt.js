@@ -145,7 +145,7 @@ combo.done = function(load, config, opt_deps) {
 			
 			var url = contextPath;
 			url = addModulesToUrl(url, ["modules", "moduleIds"], opt_deps, moduleIdMap, base64 ? base64.encode : null);
-			url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], combo.bootLayerDeps, moduleIdMap,  base64 ? base64.encode : null);
+			url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], combo.bootLayerDeps || [], moduleIdMap,  base64 ? base64.encode : null);
 			url += (hasArg ? '&' + hasArg : "");
 			
 			// Allow any externally provided URL processors to make their contribution
