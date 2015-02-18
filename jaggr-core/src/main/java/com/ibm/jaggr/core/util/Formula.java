@@ -30,6 +30,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -37,45 +38,50 @@ import java.util.Set;
 
 class Formula {
 	public Formula(List<Term> termList) {
-		this.termList = termList;
+		this.termList = termList.toArray(new Term[termList.size()]);
 	}
 
 	public String toString() {
 		String result = ""; //$NON-NLS-1$
-		result += termList.size() + " terms, " +  //$NON-NLS-1$
-				termList.get(0).getNumVars() + " variables\n"; //$NON-NLS-1$
-		for(int i=0; i<termList.size(); i++) {
-			result += termList.get(i) + "\n"; //$NON-NLS-1$
+		result += termList.length + " terms, " +  //$NON-NLS-1$
+				termList[0].getNumVars() + " variables\n"; //$NON-NLS-1$
+		for(int i=0; i<termList.length; i++) {
+			result += termList[i] + "\n"; //$NON-NLS-1$
 		}
 		return result;
 	}
 
 	@SuppressWarnings("unchecked")
 	public void reduceToPrimeImplicants() {
-		originalTermList = new ArrayList<Term>(termList);
-		int numVars = termList.get(0).getNumVars();
-		ArrayList<Term>[][] table = new ArrayList[numVars + 1][numVars + 1];
+		originalTermList = Arrays.copyOf(termList, termList.length);
+		int numVars = termList[0].getNumVars();
+		ArrayList<Term>[][] listTable = new ArrayList[numVars + 1][numVars + 1];
+		for(int i=0; i<termList.length; i++) {
+			int dontCares = termList[i].countValues(Term.DontCare);
+			int ones      = termList[i].countValues((byte)1);
+			if (listTable[dontCares][ones] == null) {
+				listTable[dontCares][ones] = new ArrayList<Term>();
+			}
+			listTable[dontCares][ones].add(termList[i]);
+		}
+		// Copy ArrayLists to arrays for more efficient access to elements while iterating.
+		// Avoids ArrayList.get() function call overhead (hotspot identified by profiling).
+		Term[][][] table = new Term[numVars + 1][numVars + 1][];
 		for(int dontKnows=0; dontKnows <= numVars; dontKnows++) {
 			for(int ones=0; ones <= numVars; ones++) {
-				table[dontKnows][ones] = new ArrayList<Term>();
+				ArrayList<Term> terms = listTable[dontKnows][ones];
+				table[dontKnows][ones] = (terms == null) ? new Term[0] : terms.toArray(new Term[terms.size()]);
 			}
-		}
-		for(int i=0; i<termList.size(); i++) {
-			int dontCares = termList.get(i).countValues(Term.DontCare);
-			int ones      = termList.get(i).countValues((byte)1);
-			table[dontCares][ones].add(termList.get(i));
 		}
 		for(int dontKnows=0; dontKnows <= numVars - 1; dontKnows++) {
 			// Use LinkedHashSet for output lists and copy final result to
 			// ArrayList so that we have more efficient operations involving
 			// element identity (contains, removes) while building the list.
-			Set<Term> terms = new LinkedHashSet<Term>(termList);
+			Set<Term> terms = new LinkedHashSet<Term>(Arrays.asList(termList));
 			for(int ones=0; ones <= numVars - 1; ones++) {
 				Set<Term> out    = new LinkedHashSet<Term>();
-				// Copy ArrayLists to arrays for more efficient access to elements while iterating.
-				// Avoids ArrayList.get() function call overhead (hotspot identified by profiling).
-				Term[] left   = table[dontKnows][ones].toArray(new Term[table[dontKnows][ones].size()]);
-				Term[] right  = table[dontKnows][ones + 1].toArray(new Term[table[dontKnows][ones + 1].size()]);
+				Term[] left   = table[dontKnows][ones];
+				Term[] right  = table[dontKnows][ones + 1];
 				for(int leftIdx = 0; leftIdx < left.length; leftIdx++) {
 					for(int rightIdx = 0; rightIdx < right.length; rightIdx++) {
 						Term combined = left[leftIdx].combine(right[rightIdx]);
@@ -91,19 +97,19 @@ class Formula {
 						}
 					}
 				}
-				table[dontKnows+1][ones] = new ArrayList<Term>(out);
+				table[dontKnows+1][ones] = out.toArray(new Term[out.size()]);
 			}
-			termList = new ArrayList<Term>(terms);
+			termList = terms.toArray(new Term[terms.size()]);
 		}
 	}
 
 	public void reducePrimeImplicantsToSubset() {
-		int numPrimeImplicants = termList.size();
-		int numOriginalTerms   = originalTermList.size();
+		int numPrimeImplicants = termList.length;
+		int numOriginalTerms   = originalTermList.length;
 		boolean[][] table = new boolean[numPrimeImplicants][numOriginalTerms];
 		for (int impl=0; impl < numPrimeImplicants; impl++) {
 			for (int term=0; term < numOriginalTerms; term++) {
-				table[impl][term] = termList.get(impl).implies(originalTermList.get(term));
+				table[impl][term] = termList[impl].implies(originalTermList[term]);
 			}
 		}
 		ArrayList<Term> newTermList = new ArrayList<Term>();
@@ -112,17 +118,17 @@ class Formula {
 		while (!done) {
 			impl = extractEssentialImplicant(table);
 			if (impl != -1) {
-				newTermList.add(termList.get(impl));
+				newTermList.add(termList[impl]);
 			} else {
 				impl = extractLargestImplicant(table);
 				if (impl != -1) {
-					newTermList.add(termList.get(impl));
+					newTermList.add(termList[impl]);
 				} else {
 					done = true;
 				}
 			}
 		}
-		termList = newTermList;
+		termList = newTermList.toArray(new Term[newTermList.size()]);
 		originalTermList = null;
 	}
 
@@ -190,8 +196,8 @@ class Formula {
 	}
 
 
-	private List<Term> termList;
-	private List<Term> originalTermList;
+	private Term[] termList;
+	private Term[] originalTermList;
 
 
 	public static void main(String[] args) throws IOException {
@@ -200,7 +206,7 @@ class Formula {
 		f.reducePrimeImplicantsToSubset();
 	}
 
-	List<Term> getTermList() {
+	Term[] getTermList() {
 		return termList;
 	}
 }
