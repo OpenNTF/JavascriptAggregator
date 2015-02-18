@@ -71,18 +71,20 @@ class Formula {
 			// element identity (contains, removes) while building the list.
 			Set<Term> terms = new LinkedHashSet<Term>(termList);
 			for(int ones=0; ones <= numVars - 1; ones++) {
-				ArrayList<Term> left   = table[dontKnows][ones];
-				ArrayList<Term> right  = table[dontKnows][ones + 1];
 				Set<Term> out    = new LinkedHashSet<Term>();
-				for(int leftIdx = 0; leftIdx < left.size(); leftIdx++) {
-					for(int rightIdx = 0; rightIdx < right.size(); rightIdx++) {
-						Term combined = left.get(leftIdx).combine(right.get(rightIdx));
+				// Copy ArrayLists to arrays for more efficient access to elements while iterating.
+				// Avoids ArrayList.get() function call overhead (hotspot identified by profiling).
+				Term[] left   = table[dontKnows][ones].toArray(new Term[table[dontKnows][ones].size()]);
+				Term[] right  = table[dontKnows][ones + 1].toArray(new Term[table[dontKnows][ones + 1].size()]);
+				for(int leftIdx = 0; leftIdx < left.length; leftIdx++) {
+					for(int rightIdx = 0; rightIdx < right.length; rightIdx++) {
+						Term combined = left[leftIdx].combine(right[rightIdx]);
 						if (combined != null) {
 							if (!out.contains(combined)) {
 								out.add(combined);
 							}
-							terms.remove(left.get(leftIdx));
-							terms.remove(right.get(rightIdx));
+							terms.remove(left[leftIdx]);
+							terms.remove(right[rightIdx]);
 							if (!terms.contains(combined)) {
 								terms.add(combined);
 							}
