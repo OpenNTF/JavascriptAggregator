@@ -193,8 +193,8 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		formula.reducePrimeImplicantsToSubset();
 
 		// now convert back to featureExpression form
-		List<Term> termList = formula.getTermList();
-		if (termList.size() == 0) {
+		Term[] termList = formula.getTermList();
+		if (termList.length == 0) {
 			return new BooleanFormula(false);
 		}
 		for (Term term : termList) {
