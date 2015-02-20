@@ -13,24 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-dojoConfig = {
-	baseUrl: '/',
-	
-	has: {
-		'dojo-combo-api': true,
-		'dojo-undef-api': true
-	},
-	
-	// Assumes the first package is the app package
-	packages: [
-		{name: 'dojo', location: 'target/WebContent/dojo/dojo'},
-	],
-
-	paths: {
-		'js' : '/WebContent/js',
-		'postcss': 'target/WebContent/postcss/postcss',
-		'colorize': 'src/test/resources/postcssPlugins/colorize'
-	},
-
-	async: true
+var colorize = function(color) {
+	// Unit-test test case to turns all color declarations to the specified color.  
+	return function(css) {
+		css.eachDecl("color", function (decl) {
+			decl.value = color;
+		});
+	};
 };

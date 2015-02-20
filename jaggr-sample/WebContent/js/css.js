@@ -23,8 +23,11 @@ define([
 	'dojo/_base/array',
 	'dojo/_base/lang',
 	'dojo/io-query',
-	'dojo/text'
-], function(require, dwindow, dhtml, domConstruct, has, query, arrays, lang, ioQuery){
+	'dojo/_base/Deferred',
+	'dojo/has!dojo-combo-api?:postcss?dojo/promise/all',
+	'dojo/has!dojo-combo-api?:postcss?postcss',
+	'dojo/text',
+], function(require, dwindow, dhtml, domConstruct, has, query, arrays, lang, ioQuery, Deferred, all, postcss){
 	/*
 	 * module:
 	 *    css
@@ -179,8 +182,83 @@ define([
 				});
 			}
 			return content;
+		},
+		
+		postcssProcessor,
+		
+		postcssPromise,
+		
+		/*
+		 * Initialize PostCSS and configured plugins.  Plugins are configured with the postcssPlugins 
+		 * property in dojoConfig or the global require object.
+		 * 
+		 * Plugins are configured using an array of two element arrays as in the following example:
+		 * <code><pre>
+		 * postcssPlugins: [
+		 *    [
+		 *       'autoprefixer',  // Name of the plugin resource
+		 *                        // Can be an AMD module id or an absolute URI to a server resource
+		 *       function() { return autoprefixer({browsers: '> 1%'}).postcss; } // the init function
+		 *    ]
+		 * ],
+		 * </pre></code>
+		 */
+		postcssInitialize = function() {
+			var deferred;
+			if (!has('dojo-combo-api') && has('postcss') && postcss) {
+				var pluginsConfig = window.dojoConfig && window.dojoConfig.postcssPlugins || window.require.postcssPlugins;
+				if (pluginsConfig) {
+					// Load each module using async require.  Each loaded module will get a Promise
+					// that will be resolved when that module loads and the plugin object has been
+					// initialized.
+					var promises = [], plugins = [];
+					arrays.forEach(pluginsConfig, function(pluginConfig) {
+						var deferred = new Deferred();
+						promises.push(deferred.promise);
+						require([pluginConfig[0]], function() {
+							try {
+								plugins.push(pluginConfig[1]());
+								deferred.resolve();
+							} catch (e) {
+								console.error(e);
+								deferred.reject(e);
+							}
+						});
+					});
+					if (promises.length > 0) {
+						// Use dojo/promise/all so we know when all of the plugins have been
+						// loaded and initialized.
+						deferred = new Deferred();
+						postcssPromise = deferred.promise;
+						all(promises).then(function() {
+							try {
+								postcssProcessor = postcss(plugins);
+								deferred.resolve();
+							} catch (e) {
+								console.error(e);
+								deferred.reject(e);
+							}
+						}).otherwise(function(e) {
+							// one or more plugins failed to initialize
+							console.error(e);
+							deferred.reject(e);
+						});
+					}
+				}
+			}
+				
+			if (!postcssPromise) {
+				// Not using PostCSS or there were no plugins configured.  Just create a 
+				// resolved promise.
+				deferred = new Deferred();
+				postcssPromise = deferred.promise;
+				deferred.resolve();
+			}
 		};
-
+		
+		postcssInitialize();
+		
+		
 	return {
 		load: function (/*String*/id, /*Function*/parentRequire, /*Function*/load) {
 			if (has('no-css')) {
@@ -218,20 +296,13 @@ define([
 			 * @param  {String} lessText The LESS text to compile.
 			 */
 			function processLess(lessText) {
+				var pathParts = url.split('?').shift().split('/');
 				require(['lesspp'], function (lesspp) {
-					var pathParts = url.split('?').shift().split('/');
-					var parser = new lesspp.Parser({
-						filename: pathParts.pop(),
-						paths: [pathParts.join('/')]  // the compiler seems to ignore this
-					});
-					parser.parse(fixUrlsInCssFile(url, lessText, true), function (err, tree) {
-						if (err) {
-							console.error('LESS Parser Error!');
-							console.error(err);
-							return load.error(err);
-						}
-						processCss(tree.toCSS());
-					});
+					lesspp.render(fixUrlsInCssFile(url, lessText, true), {
+						filename: pathParts.pop()
+					}).then(function (res) {
+						processCss(res.css);
+					}, load.error);
 				});
 			}
 
@@ -240,19 +311,24 @@ define([
 			 * @param  {String} cssText The CSS to inject.
 			 */
 			function processCss(cssText) {
-				if (cssText && dojo.isString(cssText) && cssText.length) {
-					cssText = fixUrlsInCssFile(url, cssText);
-					if(style.styleSheet){
-						style.styleSheet.cssText = cssText;
-					}else{
-						while (style.firstChild) {
-							style.removeChild(style.firstChild);
+				postcssPromise.always(function() {
+					if (cssText && dojo.isString(cssText) && cssText.length) {
+						cssText = fixUrlsInCssFile(url, cssText);
+						if (postcssProcessor) {
+							cssText = postcssProcessor.process(cssText, {safe: true});
 						}
-						style.appendChild(dwindow.doc.createTextNode(cssText));
+						if(style.styleSheet){
+							style.styleSheet.cssText = cssText;
+						}else{
+							while (style.firstChild) {
+								style.removeChild(style.firstChild);
+							}
+							style.appendChild(dwindow.doc.createTextNode(cssText));
+						}
 					}
-				}
-				dhtml.removeAttr(style, "loading");
-				load(style);
+					dhtml.removeAttr(style, "loading");
+					load(style);
+				});
 			}
 		},
 

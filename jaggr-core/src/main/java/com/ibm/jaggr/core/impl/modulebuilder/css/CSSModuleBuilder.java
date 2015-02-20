@@ -36,8 +36,14 @@ import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -146,7 +152,8 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IShutdownListener, IConfigListener {
 
-	static final Logger log = Logger.getLogger(CSSModuleBuilder.class.getName());
+	static final String sourceClass = CSSModuleBuilder.class.getName();
+	static final Logger log = Logger.getLogger(sourceClass);
 
 	// Custom server-side AMD config param names
 	static public final String INLINEIMPORTS_CONFIGPARAM = "inlineCSSImports"; //$NON-NLS-1$
@@ -164,6 +171,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String INLINEIMPORTS_REQPARAM_NAME = "inlineImports"; //$NON-NLS-1$
 	static public final String INLINEIMAGES_REQPARAM_NAME = "inlineImages"; //$NON-NLS-1$
 
+	static public final String PREAMBLE = "[JAGGR inlined import]: "; //$NON-NLS-1$
+
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
 
@@ -176,6 +185,16 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_inlineableImageTypes.add("image/jpeg"); //$NON-NLS-1$
 		s_inlineableImageTypes.add("image/tiff"); //$NON-NLS-1$
 	};
+
+	public CSSModuleBuilder() {
+		super();
+	}
+
+	// for unit tests
+	protected CSSModuleBuilder(IAggregator aggregator) {
+		super();
+		this.aggregator = aggregator;
+	}
 
 	@SuppressWarnings("serial")
 	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new AbstractCacheKeyGenerator() {
@@ -216,7 +235,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private Map<String, String> inlineableImageTypeMap = new HashMap<String, String>();
 	private Collection<Pattern> inlinedImageIncludeList = Collections.emptyList();
 	public Collection<Pattern> inlinedImageExcludeList = Collections.emptyList();
+	private IAggregator aggregator;
 
+	// Rhino variables for PostCSS
+	private Scriptable sharedScope;
+	private Function postcssRunner;
+
+	/* (non-Javadoc)
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getContentReader(java.lang.String, com.ibm.jaggr.service.resource.IResource, javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.module.ICacheKeyGenerator)
 	 */
@@ -245,8 +270,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @throws IOException
 	 */
 	protected Reader processCss(IResource resource, HttpServletRequest request, String css) throws IOException {
-		// whitespace
-		css = minify(css, resource);
+		// PostCSS
+		css = postcss(css, resource);
 
 		// Inline images
 		css = inlineImageUrls(request, css, resource);
@@ -267,69 +292,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return out.toString();
 	}
 
-	private static final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|" + urlPattern.toString()); //$NON-NLS-1$
-	private static final Pattern whitespacePattern = Pattern.compile("\\s+", Pattern.MULTILINE); //$NON-NLS-1$
-	private static final Pattern endsPattern = Pattern.compile("^\\s|\\s$"); //$NON-NLS-1$
-	private static final Pattern closeBracePattern = Pattern.compile("[;\\s]+\\}"); //$NON-NLS-1$
-	private static final Pattern delimitersPattern = Pattern.compile("(\\s?[;:,{]\\s?)"); //$NON-NLS-1$
 	private static final Pattern forwardSlashPattern = Pattern.compile("\\\\"); //$NON-NLS-1$
-
-	private static final String QUOTED_STRING_MARKER = "__qUoTeDsTrInG"; //$NON-NLS-1$
-	private static final Pattern QUOTED_STRING_MARKER_PAT = Pattern.compile("%%" + QUOTED_STRING_MARKER + "([0-9]*)__%%"); //$NON-NLS-1$ //$NON-NLS-2$
-	/**
-	 * Minifies a CSS string by removing comments and excess white-space, as well as
-	 * some unneeded tokens.
-	 *
-	 * @param css The contents of a CSS file as a String
-	 * @param res The resource for the CSS file
-	 * @return the minified css
-	 */
-	protected String minify(String css, IResource res) {
-		// replace all quoted strings and url(...) patterns with unique ids so that
-		// they won't be affected by whitespace removal.
-		LinkedList<String> quotedStringReplacements = new LinkedList<String>();
-		Matcher m = quotedStringPattern.matcher(css);
-		StringBuffer sb = new StringBuffer();
-		int i = 0;
-		while (m.find()) {
-			String text = (m.group(1) != null) ?
-					("url(" + StringUtils.trim(m.group(1)) + ")") :   //$NON-NLS-1$ //$NON-NLS-2$
-						m.group(0);
-					quotedStringReplacements.add(i, text);
-					String replacement = "%%" + QUOTED_STRING_MARKER + (i++) + "__%%"; //$NON-NLS-1$ //$NON-NLS-2$
-					m.appendReplacement(sb, ""); //$NON-NLS-1$
-					sb.append(replacement);
-		}
-		m.appendTail(sb);
-		css = sb.toString();
-
-		// Get rid of extra whitespace
-		css = whitespacePattern.matcher(css).replaceAll(" "); //$NON-NLS-1$
-		css = endsPattern.matcher(css).replaceAll(""); //$NON-NLS-1$
-		css = closeBracePattern.matcher(css).replaceAll("}"); //$NON-NLS-1$
-		m = delimitersPattern.matcher(css);
-		sb = new StringBuffer();
-		while (m.find()) {
-			String text = m.group(1);
-			m.appendReplacement(sb, ""); //$NON-NLS-1$
-			sb.append(text.length() == 1 ? text : text.replace(" ", "")); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-		m.appendTail(sb);
-		css = sb.toString();
-
-		// restore quoted strings and url(...) patterns
-		m = QUOTED_STRING_MARKER_PAT.matcher(css);
-		sb = new StringBuffer();
-		while (m.find()) {
-			i = Integer.parseInt(m.group(1));
-			m.appendReplacement(sb, ""); //$NON-NLS-1$
-			sb.append(quotedStringReplacements.get(i));
-		}
-		m.appendTail(sb);
-		css = sb.toString();
-
-		return css.toString();
-	}
 
 	static final Pattern importPattern = Pattern.compile("\\@import\\s+(?:\\(less\\))?\\s*(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
 	/**
@@ -369,10 +332,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		 * the beginning of the file.
 		 */
 		boolean includePreamble
-		= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
-		&& (options.isDebugMode() || options.isDevelopmentMode());
+				= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
+					&& (options.isDebugMode() || options.isDevelopmentMode());
 		if (includePreamble && path != null && path.length() > 0) {
-			buf.append("/* @import "  + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			buf.append("\r\n/*" + PREAMBLE + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		Matcher m = importPattern.matcher(css);
 		while (m.find()) {
@@ -434,8 +397,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 									)
 							)
 					);
-			importCss = minify(importCss, importRes);
-			// Inline images
 			importCss = inlineImageUrls(req, importCss, importRes);
 
 			if (inlineImports) {
@@ -636,6 +597,162 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	}
 
 	/**
+	 * Runs given CSS through PostCSS processor for minification and any other processing
+	 * by configured plugins
+	 * .
+	 * @param css
+	 * @param res
+	 * @return The processed CSS.
+	 */
+	protected String postcss(String css, IResource res) {
+		if (sharedScope == null) {
+			return css;
+		}
+		Context cx = Context.enter();
+		String result = null;
+		try {
+			Scriptable threadScope = cx.newObject(sharedScope);
+			threadScope.setPrototype(sharedScope);
+			threadScope.setParentScope(null);
+			Object args[] = { css };
+			result = Context.toString(postcssRunner.call(cx, threadScope, threadScope, args));
+		} finally {
+			Context.exit();
+		}
+		return result;
+	}
+
+	/**
+	 * Initializes Rhino with PostCSS and configured plugins.  The minifier plugin is
+	 * always added.  Additional plugins are added based on configuration.
+	 *
+	 * Plugins are configured using an array of two element arrays as in the following example:
+	 * <code><pre>
+	 * postcssPlugins: [
+	 *    [
+	 *       'autoprefixer',  // Name of the plugin resource
+	 *                        // Can be an AMD module id or an absolute URI to a server resource
+	 *       function() { return autoprefixer({browsers: '> 1%'}).postcss; } // the init function
+	 *    ]
+	 * ],
+	 * </pre></code>
+	 * @param config The config object
+	 *
+	 * @throws IllegalArgumentException if any of the config parameters are not valid
+	 * @throws RuntimeException for any other exception caught within this module
+	 */
+	protected void initPostcss(IConfig config) {
+		final String sourceMethod = "initPostcss"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{config});
+		}
+		String postcssJsRes = "namedbundleresource:///com.ibm.jaggr.core/WebContent/postcss/postcss.js"; //$NON-NLS-1$
+		String minifyJsRes = "minify.js"; //$NON-NLS-1$
+		InputStream postcssJsStream = null;
+		InputStream minifyJsStream = null;
+		Context cx = Context.enter();
+		try {
+			Scriptable configScript = (Scriptable)config.getRawConfig();
+			Scriptable configScope = (Scriptable)config.getConfigScope();
+			Object postcssPluginsObj = configScript.get("postcssPlugins", configScript); //$NON-NLS-1$
+
+			postcssJsStream = aggregator.newResource(URI.create(postcssJsRes)).getInputStream();
+			minifyJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(minifyJsRes);
+			if (minifyJsStream == null) {
+				throw new NotFoundException(minifyJsRes);
+			}
+			String postcssJsString = IOUtils.toString(postcssJsStream);
+			String minifyJsString = IOUtils.toString(minifyJsStream);
+
+			cx.setOptimizationLevel(-1);
+			sharedScope = cx.newObject(configScope);
+			sharedScope.setPrototype(configScope);
+			sharedScope.setParentScope(null);
+
+			sharedScope.put("global", sharedScope, sharedScope); //$NON-NLS-1$
+			cx.evaluateString(sharedScope, postcssJsString, postcssJsRes, 1, null);
+
+			NativeArray plugins = (NativeArray)cx.newArray(sharedScope, 0);
+			Function pushFn = (Function)plugins.getPrototype().get("push", sharedScope); //$NON-NLS-1$
+
+			// Add minifier first
+			cx.evaluateString(sharedScope, minifyJsString,  "", 1, null); //$NON-NLS-1$
+			Function minifier = (Function)sharedScope.get("minifier", sharedScope); //$NON-NLS-1$
+			minifier = (Function)minifier.call(cx, sharedScope, sharedScope, new Object[]{Context.javaToJS(new String[]{PREAMBLE}, sharedScope)});
+			pushFn.call(cx, sharedScope, plugins, new Object[]{minifier});
+
+			/*
+			 */
+			if (postcssPluginsObj != Scriptable.NOT_FOUND) {
+				Scriptable postcssPlugins = (Scriptable)postcssPluginsObj;
+				Object[] ids = postcssPlugins.getIds();
+				for (int i = 0; i < ids.length; i++) {
+					if (!(ids[i] instanceof Number)) {
+						// ignore named properties
+						continue;
+					}
+					Object pluginInfoObj = postcssPlugins.get(i, sharedScope);
+					if (pluginInfoObj instanceof Scriptable) {
+						if (isTraceLogging) {
+							log.logp(Level.FINER, sourceClass, sourceMethod, "Processing plugin config " + Context.toString(pluginInfoObj)); //$NON-NLS-1$
+						}
+						Scriptable pluginInfo = (Scriptable)pluginInfoObj;
+						Object locationObj = pluginInfo.get(0, sharedScope);
+						if (!(locationObj instanceof String)) {
+							throw new IllegalArgumentException(Context.toString(pluginInfo));
+						}
+						String location = (String)locationObj;
+						URI uri = URI.create((String)location);
+						if (uri == null) {
+							throw new IllegalArgumentException(Context.toString(pluginInfo));
+						}
+						Object initializerObj = pluginInfo.get(1, sharedScope);
+						if (!(initializerObj instanceof Function)) {
+							throw new IllegalArgumentException(Context.toString(pluginInfo));
+						}
+						Function initializer = (Function)initializerObj;
+						if (!uri.isAbsolute()) {
+							uri = config.locateModuleResource(location);
+						}
+						InputStream is = aggregator.newResource(uri).getInputStream();
+						String js;
+						try {
+							js = IOUtils.toString(is);
+						} finally {
+							IOUtils.closeQuietly(is);
+						}
+						cx.evaluateString(sharedScope, js, location.toString(), 1, null);
+						Scriptable plugin = (Scriptable)initializer.call(cx, sharedScope, sharedScope, new Object[]{});
+						pushFn.call(cx, sharedScope, plugins, new Object[]{plugin});
+					} else {
+						throw new IllegalArgumentException(Context.toString(pluginInfoObj));
+					}
+				}
+			}
+			sharedScope.put("postcssPlugins", sharedScope, plugins); //$NON-NLS-1$
+			cx.evaluateString(sharedScope, "var postcssInstance = postcss(postcssPlugins);", "",  1, null); //$NON-NLS-1$ //$NON-NLS-2$
+			cx.evaluateString(sharedScope, "postcssRunner = function (css) {return postcssInstance.process(css, {safe: true});};", "", 1, null); //$NON-NLS-1$ //$NON-NLS-2$
+
+			// Set up postcss runner
+			postcssRunner = (Function) sharedScope.get("postcssRunner", sharedScope); //$NON-NLS-1$
+			// Seal the postcss and the shared scope object to prevent changes
+			((ScriptableObject)postcssRunner).sealObject();
+			((ScriptableObject)sharedScope).sealObject();
+
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		} finally {
+			Context.exit();
+			if (postcssJsStream != null) IOUtils.closeQuietly(postcssJsStream);
+			if (minifyJsStream != null) IOUtils.closeQuietly(minifyJsStream);
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod);
+		}
+	}
+
+	/**
 	 * Returns a base64 encoded string representation of the contents of the
 	 * resource associated with the {@link URLConnection}.
 	 *
@@ -703,6 +820,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
+		aggregator = null;
 		for (IServiceRegistration reg : registrations) {
 			reg.unregister();
 		}
@@ -715,6 +833,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
+		this.aggregator = aggregator;
 		Hashtable<String, String> props;
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
@@ -783,6 +902,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 		}
 		inlinedImageExcludeList = list;
+		initPostcss(conf);
 	}
 
 	/**
