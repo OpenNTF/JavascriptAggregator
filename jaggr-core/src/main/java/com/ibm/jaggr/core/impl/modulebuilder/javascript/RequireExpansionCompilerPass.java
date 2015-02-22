@@ -333,6 +333,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				true,	// resolveAliases
 				logDebug);
 		depList.setLabel(detail);
+		depList.setDontExpands(aggregator.getConfig().getLayers().keySet());
 
 		if (logDebug) {
 			msg = new LinkedList<String>();

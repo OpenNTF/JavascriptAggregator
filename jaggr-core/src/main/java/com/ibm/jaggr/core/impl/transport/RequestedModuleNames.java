@@ -66,6 +66,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	private List<String> preloads = Collections.emptyList();
 	private List<String> scripts = Collections.emptyList();
 	private List<String> excludes = Collections.emptyList();
+	private String layer = null;
 	private String strRep = null;
 	private String moduleQueryArg;
 	private String reqExpExcludesQueryArg;
@@ -102,7 +103,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		if (moduleIdsQueryArg == null) moduleIdsQueryArg = ""; //$NON-NLS-1$
 		try {
 			// Validate parameter combination.  Requests must be loader generated, specifying
-			// count and one of modules or moduleIds, or application generated, specifying
+			// count and modules/moduleIds or a single layer name, or application generated, specifying
 			// one or more of scripts, deps and preloads.
 			if (countParam != null) {
 				if (moduleQueryArg.length() == 0 && moduleIdsQueryArg.length() == 0) {
@@ -259,6 +260,15 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			}
 			excludes = Collections.unmodifiableList(names);
 		}
+		String layerParam = request.getParameter(AbstractHttpTransport.LAYER_REQPARAM);
+		if (layer != null) {
+			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null
+				|| scripts != null || deps != null || preloads != null) {
+				throw new BadRequestException(request.getQueryString());
+			}
+			layer = layerParam;
+		}
+
 		if (isTraceLogging) {
 			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, this);
 		}
@@ -656,6 +666,20 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, excludes);
 		}
 		return excludes;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#getLayer()
+	 */
+	@Override
+	public String getLayer() {
+		final String sourceMethod = "getLayer"; //$NON-NLS-1$
+		if (isTraceLogging) {
+			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, layer);
+		}
+		return layer;
+
 	}
 
 

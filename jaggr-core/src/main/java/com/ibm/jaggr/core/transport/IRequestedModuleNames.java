@@ -102,6 +102,8 @@ public interface IRequestedModuleNames {
 	 */
 	public List<String> getRequireExpansionExcludes() throws BadRequestException;
 
+	public String getLayer() throws BadRequestException;
+
 	/**
 	 * @return a (possibly encoded) string representation of the requested modules.
 	 */

@@ -18,11 +18,13 @@ package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.config.IConfig.ILayerDef;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -93,11 +95,12 @@ public class LayerImpl implements ILayer {
 	// The following request attributes are used by unit tests
 	static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
 	static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
-	static final String BOOTLAYERDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
+	static final String EXCLUDEDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
 
 	static final String DEPSOURCE_REQDEPS = " URL - deps"; //$NON-NLS-1$
 	static final String DEPSOURCE_REQPRELOADS = "URL - preloads"; //$NON-NLS-1$
-	static final String DEPSOURCE_EXCLUDES = "URL - excludes";  //$NON-NLS-1$
+	static final String DEPSOURCE_EXCLUDES = "URL and/or Layer - excludes";  //$NON-NLS-1$
+	static final String DEPSOURCE_LAYER = "URL - layer"; //$NON-NLS-1$
 
 	static final Pattern nlsPat = Pattern.compile("^.*(^|\\/)nls(\\/|$)"); //$NON-NLS-1$
 
@@ -740,7 +743,8 @@ public class LayerImpl implements ILayer {
 						}
 					}
 					// See if we need to add required modules.
-					DependencyList requiredList = null, preloadList = null, excludeList = null;
+					DependencyList requiredList = null, preloadList = null, layerList = null, excludeList = null;
+					Set<String> excludes = new HashSet<String>();
 					ModuleDeps combined = new ModuleDeps(), explicit = new ModuleDeps();
 					if (!requestedModuleNames.getDeps().isEmpty()) {
 
@@ -779,7 +783,30 @@ public class LayerImpl implements ILayer {
 						combined.addAll(preloadList.getExplicitDeps());
 						combined.addAll(preloadList.getExpandedDeps());
 					}
-					if (!requestedModuleNames.getExcludes().isEmpty()) {
+					if (requestedModuleNames.getLayer() != null) {
+						String layerName = requestedModuleNames.getLayer();
+						ILayerDef layerDef = aggr.getConfig().getLayers().get(layerName);
+						if (layerDef == null) {
+							throw new NotFoundException(layerName);
+						}
+						layerList = new DependencyList(
+								DEPSOURCE_LAYER,
+								Arrays.asList(layerName),
+								aggr,
+								features,
+								true, 	// resolveAliases
+								RequestUtil.isRequireExpLogging(request),	// include details
+								false
+								);
+						dependentFeatures.addAll(layerList.getDependentFeatures());
+
+						explicit.addAll(layerList.getExplicitDeps());
+						combined.addAll(layerList.getExplicitDeps());
+						combined.addAll(layerList.getExpandedDeps());
+						excludes.addAll(layerDef.getExcludes());
+					}
+					excludes.addAll(requestedModuleNames.getExcludes());
+					if (!excludes.isEmpty()) {
 						excludeList = new DependencyList(
 								DEPSOURCE_EXCLUDES,
 								requestedModuleNames.getExcludes(),
@@ -847,7 +874,7 @@ public class LayerImpl implements ILayer {
 							expanded.subtractAll(excludeList.getExplicitDeps());
 							expanded.subtractAll(excludeList.getExpandedDeps());
 						}
-						request.setAttribute(BOOTLAYERDEPS_PROPNAME, new DependencyList(explicit, expanded, dependentFeatures));
+						request.setAttribute(EXCLUDEDEPS_PROPNAME, new DependencyList(explicit, expanded, dependentFeatures));
 					}
 					result.setDependenentFeatures(dependentFeatures);
 				}

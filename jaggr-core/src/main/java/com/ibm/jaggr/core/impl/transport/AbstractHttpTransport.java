@@ -25,6 +25,7 @@ import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.ProcessingDependenciesException;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig.ILayerDef;
 import com.ibm.jaggr.core.config.IConfigModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
@@ -134,6 +135,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * module dependency.
 	 */
 	public static final String PRELOADS_REQPARAM = "preloads"; //$NON-NLS-1$
+
+	public static final String LAYER_REQPARAM = "layer"; //$NON-NLS-1$
 
 	/**
 	 * Request param specifying the AMD modules to exclude from a server-expanded layer.  The specified
@@ -753,6 +756,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			sb.append("if (!require.combo.cacheBust){require.combo.cacheBust = '") //$NON-NLS-1$
 			.append(cacheBust).append("';}\r\n"); //$NON-NLS-1$
 		}
+		contributeLayerNames(sb, request);
 		contributeBootLayerDeps(sb, request);
 		if (moduleIdListHash != null) {
 			sb.append("require.combo.reg(null, ["); //$NON-NLS-1$
@@ -1252,6 +1256,25 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			depMaps.add(map);
 		}
 	}
+
+	protected void contributeLayerNames(StringBuffer sb, HttpServletRequest request) {
+		final String methodName = "contributeExcludes"; //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{sb});
+		}
+		Map<String, ILayerDef> layers = aggregator.getConfig().getLayers();
+		sb.append("require.combo.layerNames={"); //$NON-NLS-1$
+		int i = 0;
+		for (String name : layers.keySet()) {
+			sb.append(i++ == 0 ? "" : ",").append(name).append(":1"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+		sb.append("};\r\n"); //$NON-NLS-1$
+		if (isTraceLogging) {
+			log.exiting(AbstractHttpTransport.class.getName(), methodName, sb);
+		}
+	}
+
 	protected void contributeBootLayerDeps(StringBuffer sb, HttpServletRequest request) {
 		final String methodName = "contributeBootLayerDeps"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);

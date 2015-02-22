@@ -136,7 +136,7 @@ public class LayerBuilder {
 		request.setAttribute(ILayer.DEPENDENT_FEATURES, dependentFeatures);
 
 		if (RequestUtil.isRequireExpLogging(request)) {
-			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.BOOTLAYERDEPS_PROPNAME);
+			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.EXCLUDEDEPS_PROPNAME);
 			if (depList != null) {
 				// Output require expansion logging
 				sb.append(requireExpansionLogging(depList));

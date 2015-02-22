@@ -29,6 +29,7 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 	private List<String> scripts = Collections.emptyList();
 	private List<String> excludes = Collections.emptyList();
 	private List<String> reqExpExcludes = Collections.emptyList();
+	private String layer = null;
 	private String strRep = null;
 
 	public List<String> getModules() {
@@ -51,6 +52,15 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 			throw new NullPointerException();
 		}
 		this.deps = deps;
+	}
+
+	public void setLayer(String layer) {
+		this.layer = layer;
+	}
+
+	@Override
+	public String getLayer() throws BadRequestException {
+		return layer;
 	}
 
 	public List<String> getPreloads() {
