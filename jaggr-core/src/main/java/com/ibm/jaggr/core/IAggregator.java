@@ -39,9 +39,12 @@ import org.apache.commons.lang3.mutable.Mutable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Interface for the AMD Aggregator. Provides accessors to other aggregator
@@ -349,4 +352,27 @@ public interface IAggregator {
 		 */
 		String transform(String name, String value);
 	};
+
+	/**
+	 * Runs the specified builder on an asynchronous thread and returns a {@link Future} to the
+	 * result. Saves <code>request</code> to a thread local that can be queried by the async thread
+	 * using {@link #getCurrentRequest()}.
+	 *
+	 * @param builder
+	 *            the builder to run
+	 * @param request
+	 *            the request object
+	 * @return the Future to the build result
+	 */
+	public Future<?> buildAsync(Callable<?> builder, HttpServletRequest request);
+
+	/**
+	 * Returns the request object currently being processed.  This method will return
+	 * the request object for the servlet's main processing threads, as well as any
+	 * asynchronous builders invoked using {@link #buildAsync(Callable, HttpServletRequest)}.
+	 * For all other threads, the return value will be null.
+	 *
+	 * @return the current request object, or null
+	 */
+	public HttpServletRequest getCurrentRequest();
 }

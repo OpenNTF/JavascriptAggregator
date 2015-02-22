@@ -99,8 +99,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -176,6 +178,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		start,
 		end
 	};
+
+	private ThreadLocal<HttpServletRequest> currentRequest = new ThreadLocal<HttpServletRequest>();
 
 	/* (non-Javadoc)
 	 * @see javax.servlet.GenericServlet#init(javax.servlet.ServletConfig)
@@ -315,6 +319,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			return;
 		}
 		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
+		currentRequest.set(req);
 		resp.addHeader("Server", "JavaScript Aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		// Check for forced error response in development mode
@@ -367,6 +372,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
 		}
+		currentRequest.set(null);
+
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
@@ -1554,6 +1561,33 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			result = Messages.CommandProvider_29;
 		}
 		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#buildAsync(java.util.concurrent.Callable, javax.servlet.http.HttpServletRequest)
+	 */
+	@Override
+	public Future<?> buildAsync(final Callable<?> builder, final HttpServletRequest req) {
+		return getExecutors().getBuildExecutor().submit(new Callable<Object>() {
+			public Object call() throws Exception {
+				AbstractAggregatorImpl.this.currentRequest.set(req);
+				Object result;
+				try {
+					result = builder.call();
+				} finally {
+					AbstractAggregatorImpl.this.currentRequest.set(null);
+				}
+				return result;
+			}
+		});
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#getCurrentRequest()
+	 */
+	@Override
+	public HttpServletRequest getCurrentRequest() {
+		return currentRequest.get();
 	}
 }
 
