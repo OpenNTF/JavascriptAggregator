@@ -24,7 +24,7 @@
  */
 (function() {
 var depmap = {},
-    deps = [],
+    deps = [],  
     userConfig = (function(){
 		// make sure we're looking at global dojoConfig etc.
 		return this.dojoConfig || this.djConfig || this.require;
@@ -63,6 +63,7 @@ var depmap = {},
     reqExpExcludes = combo.bootLayerDeps || [],
     
     getHasQueryArg = function(config) {
+      var result;
     	if (!combo.serverOptions.skipHasFiltering) {
     		if (typeof includeUndefinedFeatures == 'undefined') {
     			// Test to determine if we can include features that evaluate to undefined.
@@ -73,17 +74,18 @@ var depmap = {},
     			config.has(test_feature);
     			includeUndefinedFeatures = !(test_feature in config.has.cache);
     		}
-    		hasArg = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
+    		result = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
     	}
     		
     	// If sending the feature set in a cookie is enabled, then try to 
     	// set the cookie.
     	var featureMap = null, featureCookie = null;
     	if (!!(featureMap = config.has("combo-feature-map"))) {
-    		hasArg = featureMap.getQueryString(hasArg);
+    		result = featureMap.getQueryString(result);
     	} else if (!!(featureCookie = config.has("combo-feature-cookie"))) {
-    		hasArg = featureCookie.setCookie(hasArg, contextPath);
+    		result = featureCookie.setCookie(result, contextPath);
     	}
+    	return result;
     };
 
 // Copy config params from the combo config property
@@ -204,7 +206,7 @@ combo.done = function(load, config, opt_deps) {
 				// send a request to load the layer and add the layer to
 				// our list of excludes
 				url = contextPath + "?layer=" + dep.name;
-				url += addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], reqExpExcludes || [], moduleIdMap,  base64 ? base64.encode : null);
+				url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], reqExpExcludes || [], moduleIdMap,  base64 ? base64.encode : null);
 				url += (hasArg ? '&' + hasArg : "");
 				// Allow any externally provided URL processors to make their contribution
 				// to the URL
@@ -217,13 +219,16 @@ combo.done = function(load, config, opt_deps) {
 				deps.push(dep);
 			}
 		}
+		if (deps.length === 0) {
+			return;
+		}
 	}
 	
 	// Determine if we need to split the request into i18n/non-i18n parts
 	if (combo.i18nSplit) {
 		var i18nModules = [], nonI18nModules = [];
-		for (i = 0; i < opt_deps.length; i++) {
-			dep = opt_deps[i];
+		for (i = 0; i < deps.length; i++) {
+			dep = deps[i];
 			(combo.isI18nResource(dep) ? i18nModules : nonI18nModules).push(dep);
 		}
 		if (i18nModules.length && nonI18nModules.length) {

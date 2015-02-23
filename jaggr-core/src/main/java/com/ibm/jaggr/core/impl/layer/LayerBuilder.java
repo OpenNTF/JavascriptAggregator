@@ -157,12 +157,18 @@ public class LayerBuilder {
 			dependentFeatures.clear();
 		}
 		// For each source file, add the build output to the string buffer
+		IModule eponymousLayerModule = moduleList.getLayerModule();
+		ModuleBuildFuture eponymousLayerFuture = null;
 		for (ModuleBuildFuture future : futures) {
-			processFuture(future, sb);
+			if (eponymousLayerModule == null || !eponymousLayerModule.getModuleId().equals(future.getModule().getModuleId())) {
+				processFuture(future, sb);
 
-			if (dependentFeatures.size() > 0) {
-				moduleList.getDependentFeatures().addAll(dependentFeatures);
-				dependentFeatures.clear();
+				if (dependentFeatures.size() > 0) {
+					moduleList.getDependentFeatures().addAll(dependentFeatures);
+					dependentFeatures.clear();
+				}
+			} else {
+				eponymousLayerFuture = future;
 			}
 		}
 
@@ -172,9 +178,21 @@ public class LayerBuilder {
 							required ? moduleList.getRequiredModules() : null);
 		}
 
-		String epilogue = notifyLayerListeners(EventType.END_LAYER, request, null);
+		if (eponymousLayerFuture != null) {
+			// Add the named layer module
+			addTransportContribution(request, transport, sb, LayerContributionType.BEFORE_EPONYMOUS_LAYER_MODULE, eponymousLayerModule.getModuleId());
+			processFuture(eponymousLayerFuture, sb, true);
+			addTransportContribution(request, transport, sb, LayerContributionType.AFTER_EPONYMOUS_LAYER_MODULE, eponymousLayerModule.getModuleId());
+		}
+
+ 		String epilogue = notifyLayerListeners(EventType.END_LAYER, request, null);
 		if (epilogue != null) {
 			sb.append(epilogue);
+		}
+
+		// See if we need to add the layer module
+		if (moduleList.getLayerModule() != null) {
+
 		}
 
 		addTransportContribution(request, transport, sb,
@@ -208,6 +226,11 @@ public class LayerBuilder {
 		return !errorMessages.isEmpty();
 	}
 
+	protected void processFuture(ModuleBuildFuture future, StringBuffer sb)
+			throws IOException {
+		processFuture(future, sb, false);
+	}
+
 	/**
 	 * Adds the reader associated with the future, together with any transport
 	 * contributions, to the response aggregation.
@@ -220,9 +243,11 @@ public class LayerBuilder {
 	 *            The module build future
 	 * @param sb
 	 *            Output - the output buffer to write the processed future to
+	 * @param noTransportContribution
+	 *            Transport contribution for this module is handled by caller.
 	 * @throws IOException
 	 */
-	protected void processFuture(ModuleBuildFuture future, StringBuffer sb)
+	protected void processFuture(ModuleBuildFuture future, StringBuffer sb, boolean noTransportContribution)
 			throws IOException {
 
 		ModuleBuildReader reader;
@@ -239,7 +264,7 @@ public class LayerBuilder {
 		}
 		ModuleSpecifier source = future.getModuleSpecifier();
 		if (source == ModuleSpecifier.LAYER) {
-			if (!required && count > 0) {
+			if (!noTransportContribution && !required && count > 0) {
 				addTransportContribution(request, transport, sb,
 						LayerContributionType.END_MODULES, null);
 				count = 0;
@@ -261,7 +286,7 @@ public class LayerBuilder {
 			keyGens.addAll(keyGenList);
 		}
 
-		if (count == 0) {
+		if (count == 0 && !noTransportContribution) {
 			if (required && source == ModuleSpecifier.LAYER || !required && source == ModuleSpecifier.MODULES) {
 				String prologue = notifyLayerListeners(EventType.BEGIN_AMD, request, null);
 				if (prologue != null) {
@@ -277,15 +302,17 @@ public class LayerBuilder {
 			sb.append(str);
 		}
 
-		// Get the layer contribution from the transport
-		// Note that we depend on the behavior that all non-required
-		// modules in the module list appear before all required
-		// modules in the iteration.
-		LayerContributionType type;
-		if (count == 0) {
-			type = required ? LayerContributionType.BEFORE_FIRST_LAYER_MODULE : LayerContributionType.BEFORE_FIRST_MODULE;
-		} else {
-			type = required ? LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
+		LayerContributionType type = null;
+		if (!noTransportContribution) {
+			// Get the layer contribution from the transport
+			// Note that we depend on the behavior that all non-required
+			// modules in the module list appear before all required
+			// modules in the iteration.
+			if (count == 0) {
+				type = required ? LayerContributionType.BEFORE_FIRST_LAYER_MODULE : LayerContributionType.BEFORE_FIRST_MODULE;
+			} else {
+				type = required ? LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
+			}
 		}
 		String mid = future.getModule().getModuleId();
 		// Remove the plugin name from the mid provided to the transport addTransportContribution() if this
@@ -295,7 +322,9 @@ public class LayerBuilder {
 		if (reader.isError()) {
 			mid = future.getModule().getModuleName();
 		}
-		addTransportContribution(request, transport, sb, type, mid);
+		if (!noTransportContribution) {
+			addTransportContribution(request, transport, sb, type, mid);
+		}
 
 		count++;
 		// Add the reader to the result
@@ -306,15 +335,17 @@ public class LayerBuilder {
 			errorMessages.add(reader.getErrorMessage());
 		}
 
-		// Add post-module transport contribution
-		type = (source == ModuleSpecifier.LAYER || source == ModuleSpecifier.BUILD_ADDED && required) ?
-				LayerContributionType.AFTER_LAYER_MODULE : LayerContributionType.AFTER_MODULE;
-		addTransportContribution(request, transport, sb, type, mid);
+		if (!noTransportContribution) {
+			// Add post-module transport contribution
+			type = (source == ModuleSpecifier.LAYER || source == ModuleSpecifier.BUILD_ADDED && required) ?
+					LayerContributionType.AFTER_LAYER_MODULE : LayerContributionType.AFTER_MODULE;
+			addTransportContribution(request, transport, sb, type, mid);
 
-		// Process any after modules by recursively calling this method
-		if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
-			for (ModuleBuildFuture afterFuture : reader.getAfter()) {
-				processFuture(afterFuture, sb);
+			// Process any after modules by recursively calling this method
+			if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
+				for (ModuleBuildFuture afterFuture : reader.getAfter()) {
+					processFuture(afterFuture, sb);
+				}
 			}
 		}
 	}

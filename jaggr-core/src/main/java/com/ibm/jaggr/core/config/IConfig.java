@@ -82,6 +82,18 @@ public interface IConfig {
 	public static final String ALIASES_CONFIGPARAM = "aliases"; //$NON-NLS-1$
 
 	/**
+	 * Static constant specifying the name of the {@code excludes} config param,
+	 * a property of the {@link #ALIASES_CONFIGPARAM} property
+	 */
+	public static final String EXCLUDES_CONFIGPARAM = "excludes";  //$NON-NLS-1$
+
+	/**
+	 * Static constant specifying the name of the {@code includeUndefinedFeatureDeps} config param,
+	 * a property of the {@link #ALIASES_CONFIGPARAM} property
+	 */
+	public static final String INCLUDEUNDEFINEDFEATUREDEPS_CONFIGPARAM = "includeUndefinedFeatureDeps";  //$NON-NLS-1$
+
+	/**
 	 * Static constant specifying the name of the {@code layers} config param
 	 */
 	public static final String LAYERS_CONFIGPARAM = "layers"; //$NON-NLS-1$

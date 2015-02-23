@@ -261,9 +261,9 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			excludes = Collections.unmodifiableList(names);
 		}
 		String layerParam = request.getParameter(AbstractHttpTransport.LAYER_REQPARAM);
-		if (layer != null) {
+		if (layerParam != null) {
 			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null
-				|| scripts != null || deps != null || preloads != null) {
+				|| !scripts.isEmpty() || !deps.isEmpty() || !preloads.isEmpty()) {
 				throw new BadRequestException(request.getQueryString());
 			}
 			layer = layerParam;

@@ -1113,23 +1113,27 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	}
 
 	protected Map<String, ILayerDef> loadLayers(Scriptable cfg) throws IOException {
-		Object layerList = cfg.get(ALIASES_CONFIGPARAM, cfg);
+		Object layerList = cfg.get(LAYERS_CONFIGPARAM, cfg);
 		Map<String, ILayerDef> layers = new HashMap<String,ILayerDef>();
 		if (layerList instanceof Scriptable) {
 			for (Object id : ((Scriptable)layerList).getIds()) {
 				if (id instanceof String) {
 					String layerName = (String)id;
 					Scriptable layerScript = (Scriptable)((Scriptable)layerList).get(layerName, sharedScope);
-					Object excludeList = layerScript.get("excludes", sharedScope); //$NON-NLS-1$
+					Object excludeList = layerScript.get(EXCLUDES_CONFIGPARAM, sharedScope);
 					Set<String> excludes = new HashSet<String>();
 					if (excludeList != Scriptable.NOT_FOUND) {
 						for (Object i : ((Scriptable)excludeList).getIds()) {
 							if (i instanceof Number) {
-								excludes.add((String)((Scriptable)excludeList).get((int)i, sharedScope));
+								excludes.add((String)((Scriptable)excludeList).get(((Number)i).intValue(), sharedScope));
 							}
 						}
 					}
-					boolean includeUndefinedFeatureDeps = Context.toBoolean(layerScript.get("includeUndefinedFeatureDeps", sharedScope)); //$NON-NLS-1$
+					Object obj = layerScript.get(INCLUDEUNDEFINEDFEATUREDEPS_CONFIGPARAM, sharedScope);
+					boolean includeUndefinedFeatureDeps = false;
+					if (obj != Scriptable.NOT_FOUND) {
+						includeUndefinedFeatureDeps = Context.toBoolean(obj);
+					}
 					layers.put(layerName, new LayerDef(excludes, includeUndefinedFeatureDeps));
 				}
 			}

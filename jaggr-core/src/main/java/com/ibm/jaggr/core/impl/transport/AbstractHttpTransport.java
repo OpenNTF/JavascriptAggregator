@@ -864,11 +864,26 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				throw new IllegalStateException();
 			}
 			break;
-		case END_RESPONSE:
-			if (previousType != LayerContributionType.END_MODULES &&
-			previousType != LayerContributionType.END_LAYER_MODULES) {
+		case BEFORE_EPONYMOUS_LAYER_MODULE:
+			if (previousType != LayerContributionType.END_LAYER_MODULES ||
+			!(arg instanceof String)) {
 				throw new IllegalStateException();
 			}
+			break;
+		case AFTER_EPONYMOUS_LAYER_MODULE:
+			if (previousType != LayerContributionType.BEFORE_EPONYMOUS_LAYER_MODULE ||
+			!(arg instanceof String)) {
+				throw new IllegalStateException();
+			}
+			break;
+		case END_RESPONSE:
+			if (previousType != LayerContributionType.END_MODULES &&
+			previousType != LayerContributionType.END_LAYER_MODULES &&
+			previousType != LayerContributionType.AFTER_EPONYMOUS_LAYER_MODULE) {
+				throw new IllegalStateException();
+			}
+			break;
+		default:
 			break;
 		}
 		request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
@@ -1267,7 +1282,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		sb.append("require.combo.layerNames={"); //$NON-NLS-1$
 		int i = 0;
 		for (String name : layers.keySet()) {
-			sb.append(i++ == 0 ? "" : ",").append(name).append(":1"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			sb.append(i++ == 0 ? "" : ",").append("'").append(name).append("':1"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 		}
 		sb.append("};\r\n"); //$NON-NLS-1$
 		if (isTraceLogging) {

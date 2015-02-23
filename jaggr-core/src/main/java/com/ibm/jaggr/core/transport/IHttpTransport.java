@@ -329,6 +329,17 @@ public interface IHttpTransport extends IExtensionInitializer {
 		END_LAYER_MODULES,
 
 		/**
+		 * Before the eponymous module for a named layer is written to the response.
+		 * This contribution type occurs after {@link #END_LAYER_MODULES}
+		 */
+		BEFORE_EPONYMOUS_LAYER_MODULE,
+
+		/**
+		 * After the eponymous module for a named layer is written to the response.
+		 */
+		AFTER_EPONYMOUS_LAYER_MODULE,
+
+		/**
 		 * After all normal and layer modules have been written to the
 		 * response.
 		 */
@@ -352,8 +363,9 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            <li>{@link LayerContributionType#BEFORE_FIRST_MODULE}</li>
 	 *            <li>{@link LayerContributionType#BEFORE_SUBSEQUENT_MODULE}</li>
 	 *            <li>{@link LayerContributionType#AFTER_MODULE}</li>
-	 *            <li>{@link LayerContributionType#BEFORE_FIRST_LAYER_MODULE}
-	 *            </li>
+	 *            <li>{@link LayerContributionType#BEFORE_FIRST_LAYER_MODULE}</li>
+	 *            <li>{@link LayerContributionType#BEFORE_EPONYMOUS_LAYER_MODULE}</li>
+	 *            <li>{@link LayerContributionType#AFTER_EPONYMOUS_LAYER_MODULE}</li>
 	 *            <li>
 	 *            {@link LayerContributionType#BEFORE_SUBSEQUENT_LAYER_MODULE}
 	 *            </li>

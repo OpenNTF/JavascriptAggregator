@@ -746,6 +746,7 @@ public class LayerImpl implements ILayer {
 					DependencyList requiredList = null, preloadList = null, layerList = null, excludeList = null;
 					Set<String> excludes = new HashSet<String>();
 					ModuleDeps combined = new ModuleDeps(), explicit = new ModuleDeps();
+					boolean includeUndefinedFeatureDeps = RequestUtil.isIncludeUndefinedFeatureDeps(request);
 					if (!requestedModuleNames.getDeps().isEmpty()) {
 
 						// If there's a required module, then add it and its dependencies
@@ -766,6 +767,7 @@ public class LayerImpl implements ILayer {
 						explicit.addAll(requiredList.getExplicitDeps());
 						combined.addAll(requiredList.getExplicitDeps());
 						combined.addAll(requiredList.getExpandedDeps());
+						excludes.addAll(requestedModuleNames.getExcludes());
 					}
 					if (!requestedModuleNames.getPreloads().isEmpty()) {
 						preloadList = new DependencyList(
@@ -782,6 +784,7 @@ public class LayerImpl implements ILayer {
 						explicit.addAll(preloadList.getExplicitDeps());
 						combined.addAll(preloadList.getExplicitDeps());
 						combined.addAll(preloadList.getExpandedDeps());
+						excludes.addAll(requestedModuleNames.getExcludes());
 					}
 					if (requestedModuleNames.getLayer() != null) {
 						String layerName = requestedModuleNames.getLayer();
@@ -803,9 +806,10 @@ public class LayerImpl implements ILayer {
 						explicit.addAll(layerList.getExplicitDeps());
 						combined.addAll(layerList.getExplicitDeps());
 						combined.addAll(layerList.getExpandedDeps());
+						result.setLayerModule(newModule(request, layerName));
 						excludes.addAll(layerDef.getExcludes());
+						includeUndefinedFeatureDeps |= layerDef.isIncludeUndefinedFeatureDeps();
 					}
-					excludes.addAll(requestedModuleNames.getExcludes());
 					if (!excludes.isEmpty()) {
 						excludeList = new DependencyList(
 								DEPSOURCE_EXCLUDES,
@@ -840,7 +844,7 @@ public class LayerImpl implements ILayer {
 							}
 							Collection<String> prefixes = info.getHasPluginPrefixes();
 							if (prefixes == null ||		// condition is TRUE
-									RequestUtil.isIncludeUndefinedFeatureDeps(request) && !prefixes.isEmpty()) {
+									includeUndefinedFeatureDeps && !prefixes.isEmpty()) {
 								IModule module = newModule(request, name);
 								if (!explicit.containsKey(name) && aggr.getResourceFactory(new MutableObject<URI>(module.getURI())) == null) {
 									// Module is server-expanded and it's not a server resource type that we

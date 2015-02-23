@@ -327,7 +327,9 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		boolean isServerExpanded = false;
 		IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 		if (requestedModuleNames != null) {
-			isServerExpanded = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
+			isServerExpanded = !requestedModuleNames.getDeps().isEmpty() ||
+					               !requestedModuleNames.getPreloads().isEmpty() ||
+					               requestedModuleNames.getLayer() != null;
 		}
 		if (isServerExpanded) {
 			// If we're building a server-expanded layer, then don't adorn text strings
