@@ -1281,14 +1281,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 */
 	protected class LoaderExtensionResource implements IResource, IResourceVisitor.Resource {
 		IResource res;
-		HttpServletRequest request;
 
 		public LoaderExtensionResource(IResource res) {
 			this.res = res;
-			request = aggregator.getCurrentRequest();
-			if (request == null) {
-				throw new IllegalStateException();
-			}
 		}
 
 		/* (non-Javadoc)
@@ -1336,6 +1331,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		 */
 		@Override
 		public Reader getReader() throws IOException {
+			HttpServletRequest request = aggregator.getCurrentRequest();
 
 			// Return an aggregation reader for the loader extension javascript
 			return new AggregationReader(
