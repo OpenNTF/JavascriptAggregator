@@ -245,7 +245,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
-
+		currentRequest.remove();
 		if (!isShuttingDown) {
 			isShuttingDown = true;
 			IServiceReference[] refs = null;
@@ -319,7 +319,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			return;
 		}
 		req.setAttribute(AGGREGATOR_REQATTRNAME, this);
-		currentRequest.set(req);
 		resp.addHeader("Server", "JavaScript Aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
 
 		// Check for forced error response in development mode
@@ -347,7 +346,12 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
-			processAggregatorRequest(req, resp);
+			currentRequest.set(req);
+			try {
+				processAggregatorRequest(req, resp);
+			} finally {
+				currentRequest.set(null);
+			}
 		} else {
 			boolean processed = false;
 			// search resource paths to see if we should treat as aggregator request or resource request
@@ -372,8 +376,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
 		}
-		currentRequest.set(null);
-
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
