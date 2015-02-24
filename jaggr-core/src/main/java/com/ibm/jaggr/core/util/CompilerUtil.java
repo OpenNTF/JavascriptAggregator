@@ -13,20 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ibm.jaggr.core.util;
 
-package com.ibm.jaggr.core.impl.modulebuilder.css;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 
-import com.ibm.jaggr.core.util.NLS;
+public class CompilerUtil {
 
-public class Messages extends NLS {
-	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
-	public static String CSSModuleBuilder_0;
-	public static String CSSModuleBuilder_1;
-	static {
-		// initialize resource bundle
-		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
-	}
-
-	private Messages() {
+	public static CompilerOptions getDefaultOptions() {
+		CompilerOptions options = new CompilerOptions();
+		options.setLanguageIn(LanguageMode.ECMASCRIPT5);
+		return options;
 	}
 }

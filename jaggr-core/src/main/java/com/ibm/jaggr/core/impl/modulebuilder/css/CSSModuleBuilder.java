@@ -35,12 +35,15 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
+import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
@@ -162,6 +165,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String IMAGETYPES_CONFIGPARAM = "inlineableImageTypes"; //$NON-NLS-1$
 	static public final String SIZETHRESHOLD_CONFIGPARAM = "inlinedImageSizeThreshold";  //$NON-NLS-1$
 	static public final String INCLUDEAMDPATHS_CONFIGPARAM = "cssEnableAMDIncludePaths";  //$NON-NLS-1$
+	static public final String POSTCSSPLUGINS_CONFIGPARAM = "postcssPlugins"; //$NON-NLS-1$
 
 	// Custom server-side AMD config param default values
 	static public final boolean INLINEIMPORTS_DEFAULT_VALUE = true;
@@ -172,6 +176,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String INLINEIMAGES_REQPARAM_NAME = "inlineImages"; //$NON-NLS-1$
 
 	static public final String PREAMBLE = "[JAGGR inlined import]: "; //$NON-NLS-1$
+
+	static public final String POSTCSS_RES_NAME = "WebContent/postcss/postcss.js"; //$NON-NLS-1$
+	static public final String MINIFYER_RES_NAME = "minify.js"; //$NON-NLS-1$
+	static public final String POSTCSS_JS_VARNAME = "postcss"; //$NON-NLS-1$
+	static public final String POSTCSS_PROCESS_PROPNAME = "process";  //$NON-NLS-1$
+	static public final String MINIFIER_JS_VARNAME = "minifier"; //$NON-NLS-1$
+	static public final Map<String, Boolean> POSTCSS_OPTIONS = ImmutableMap.of(
+	        "safe", Boolean.TRUE //$NON-NLS-1$
+	);
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
@@ -239,7 +252,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 	// Rhino variables for PostCSS
 	private Scriptable sharedScope;
-	private Function postcssRunner;
+	private Scriptable postcssInstance;
+	private Function postcssProcessor;
+	private Scriptable postcssOptions;
 
 	/* (non-Javadoc)
 	/* (non-Javadoc)
@@ -270,13 +285,22 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @throws IOException
 	 */
 	protected Reader processCss(IResource resource, HttpServletRequest request, String css) throws IOException {
+		final String sourceMethod = "processCss"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{resource, request, css});
+		}
 		// PostCSS
 		css = postcss(css, resource);
 
 		// Inline images
 		css = inlineImageUrls(request, css, resource);
 
-		return new StringReader(css);
+		Reader result = new StringReader(css);
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod, result);
+		}
+		return result;
 	}
 
 	/**
@@ -603,9 +627,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * @param css
 	 * @param res
 	 * @return The processed CSS.
+	 * @throws IOException
 	 */
-	protected String postcss(String css, IResource res) {
-		if (sharedScope == null) {
+	protected synchronized String postcss(String css, IResource res) throws IOException {
+		if (postcssProcessor == null) {
 			return css;
 		}
 		Context cx = Context.enter();
@@ -614,8 +639,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			Scriptable threadScope = cx.newObject(sharedScope);
 			threadScope.setPrototype(sharedScope);
 			threadScope.setParentScope(null);
-			Object args[] = { css };
-			result = Context.toString(postcssRunner.call(cx, threadScope, threadScope, args));
+			Object processed = postcssProcessor.call(cx, threadScope, postcssInstance, new Object[]{css, postcssOptions});
+			result = Context.toString(processed);
+		} catch (JavaScriptException e) {
+			// Add module info
+			String message = "Error parsing " + res.getURI() + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
+			throw new IOException(message, e);
 		} finally {
 			Context.exit();
 		}
@@ -647,43 +676,49 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		if (isTraceLogging) {
 			log.entering(sourceClass, sourceMethod, new Object[]{config});
 		}
-		String postcssJsRes = "namedbundleresource:///com.ibm.jaggr.core/WebContent/postcss/postcss.js"; //$NON-NLS-1$
-		String minifyJsRes = "minify.js"; //$NON-NLS-1$
 		InputStream postcssJsStream = null;
 		InputStream minifyJsStream = null;
 		Context cx = Context.enter();
 		try {
 			Scriptable configScript = (Scriptable)config.getRawConfig();
 			Scriptable configScope = (Scriptable)config.getConfigScope();
-			Object postcssPluginsObj = configScript.get("postcssPlugins", configScript); //$NON-NLS-1$
 
-			postcssJsStream = aggregator.newResource(URI.create(postcssJsRes)).getInputStream();
-			minifyJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(minifyJsRes);
+			postcssJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(POSTCSS_RES_NAME);
+			if (postcssJsStream == null) {
+				throw new NotFoundException(POSTCSS_RES_NAME);
+			}
+			minifyJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(MINIFYER_RES_NAME);
 			if (minifyJsStream == null) {
-				throw new NotFoundException(minifyJsRes);
+				throw new NotFoundException(MINIFYER_RES_NAME);
 			}
 			String postcssJsString = IOUtils.toString(postcssJsStream);
 			String minifyJsString = IOUtils.toString(minifyJsStream);
 
-			cx.setOptimizationLevel(-1);
+			cx.setOptimizationLevel(-1);	// Needed because size of compiled byte code exceeds 64KB
 			sharedScope = cx.newObject(configScope);
 			sharedScope.setPrototype(configScope);
 			sharedScope.setParentScope(null);
 
+			// Set "global" variable to point to shared scope
 			sharedScope.put("global", sharedScope, sharedScope); //$NON-NLS-1$
-			cx.evaluateString(sharedScope, postcssJsString, postcssJsRes, 1, null);
 
+			cx.evaluateString(sharedScope, postcssJsString, POSTCSS_RES_NAME, 1, null);
+
+			// Initialize the plugins array
 			NativeArray plugins = (NativeArray)cx.newArray(sharedScope, 0);
+			// Get reference to Array.prototype.push() so that we can add elements
 			Function pushFn = (Function)plugins.getPrototype().get("push", sharedScope); //$NON-NLS-1$
 
-			// Add minifier first
+			// Now load our minifier plugin and add it to the plugin array
 			cx.evaluateString(sharedScope, minifyJsString,  "", 1, null); //$NON-NLS-1$
-			Function minifier = (Function)sharedScope.get("minifier", sharedScope); //$NON-NLS-1$
+			Function minifier = (Function)sharedScope.get(MINIFIER_JS_VARNAME, sharedScope);
 			minifier = (Function)minifier.call(cx, sharedScope, sharedScope, new Object[]{Context.javaToJS(new String[]{PREAMBLE}, sharedScope)});
 			pushFn.call(cx, sharedScope, plugins, new Object[]{minifier});
 
 			/*
+			 * Now load and initialize configured plugins and add them to the plugin array
 			 */
+			Object postcssPluginsObj = configScript.get(POSTCSSPLUGINS_CONFIGPARAM, configScript);
 			if (postcssPluginsObj != Scriptable.NOT_FOUND) {
 				Scriptable postcssPlugins = (Scriptable)postcssPluginsObj;
 				Object[] ids = postcssPlugins.getIds();
@@ -722,22 +757,34 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 						} finally {
 							IOUtils.closeQuietly(is);
 						}
-						cx.evaluateString(sharedScope, js, location.toString(), 1, null);
-						Scriptable plugin = (Scriptable)initializer.call(cx, sharedScope, sharedScope, new Object[]{});
+						Scriptable plugin = null;
+						try {
+							cx.evaluateString(sharedScope, js, location.toString(), 1, null);
+							plugin = (Scriptable)initializer.call(cx, sharedScope, sharedScope, new Object[]{});
+						} catch (JavaScriptException e) {
+							// Add module info
+							String message = "Error evaluating or initializing plugin " + location + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
+							throw new RuntimeException(message, e);
+						}
 						pushFn.call(cx, sharedScope, plugins, new Object[]{plugin});
+						if (log.isLoggable(Level.INFO)) {
+							log.logp(Level.INFO, sourceClass, sourceMethod,
+									MessageFormat.format(
+											Messages.CSSModuleBuilder_1,
+											new Object[]{location})
+							);
+						}
 					} else {
 						throw new IllegalArgumentException(Context.toString(pluginInfoObj));
 					}
 				}
 			}
-			sharedScope.put("postcssPlugins", sharedScope, plugins); //$NON-NLS-1$
-			cx.evaluateString(sharedScope, "var postcssInstance = postcss(postcssPlugins);", "",  1, null); //$NON-NLS-1$ //$NON-NLS-2$
-			cx.evaluateString(sharedScope, "postcssRunner = function (css) {return postcssInstance.process(css, {safe: true});};", "", 1, null); //$NON-NLS-1$ //$NON-NLS-2$
+			Function postcss = (Function)sharedScope.get(POSTCSS_JS_VARNAME, sharedScope);
+			postcssInstance = (Scriptable)postcss.call(cx, sharedScope, sharedScope, new Object[]{plugins});
+			postcssProcessor = (Function)postcssInstance.getPrototype().get(POSTCSS_PROCESS_PROPNAME, postcssInstance);
+			postcssOptions = (Scriptable) Context.javaToJS(POSTCSS_OPTIONS, sharedScope);
 
-			// Set up postcss runner
-			postcssRunner = (Function) sharedScope.get("postcssRunner", sharedScope); //$NON-NLS-1$
-			// Seal the postcss and the shared scope object to prevent changes
-			((ScriptableObject)postcssRunner).sealObject();
+			// Seal the shared scope object to prevent changes
 			((ScriptableObject)sharedScope).sealObject();
 
 		} catch (Exception e) {
