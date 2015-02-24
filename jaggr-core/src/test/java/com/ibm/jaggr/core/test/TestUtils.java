@@ -60,6 +60,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -374,6 +376,15 @@ public class TestUtils {
 				return aggInitParams;
 			}
 		}).anyTimes();
+		EasyMock.expect(mockAggregator.buildAsync(EasyMock.isA(Callable.class), EasyMock.isA(HttpServletRequest.class))).andAnswer( (IAnswer) new IAnswer<Future<?>>() {
+			@Override
+			public Future<?> answer() throws Throwable {
+				Callable<?> builder = (Callable<?>)EasyMock.getCurrentArguments()[0];
+				return executorsRef.get().getBuildExecutor().submit(builder);
+			}
+
+		}).anyTimes();
+
 		return mockAggregator;
 	}
 

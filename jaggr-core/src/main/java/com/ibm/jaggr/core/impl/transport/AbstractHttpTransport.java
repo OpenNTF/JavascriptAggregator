@@ -198,8 +198,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private String transportId = null;
 	private URI comboUri = null;
 
-    private static final ThreadLocal<HttpServletRequest> reqThreadLocal = new ThreadLocal<HttpServletRequest>();
-
 	/** default constructor */
 	public AbstractHttpTransport() {}
 
@@ -268,9 +266,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		} else if (getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class).toString());
 		}
-
-		reqThreadLocal.set(request);
-
 	}
 
 	/* (non-Javadoc)
@@ -1290,7 +1285,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		public LoaderExtensionResource(IResource res) {
 			this.res = res;
-			this.request = reqThreadLocal.get();
+			request = aggregator.getCurrentRequest();
+			if (request == null) {
+				throw new IllegalStateException();
+			}
 		}
 
 		/* (non-Javadoc)

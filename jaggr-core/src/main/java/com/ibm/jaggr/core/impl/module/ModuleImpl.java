@@ -209,6 +209,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * @throws UnsupportedOperationException
 	 *            if no resource factory or module builder can be found for this resource.
 	 */
+	@SuppressWarnings("unchecked")
 	protected Future<ModuleBuildReader> getBuild(final HttpServletRequest request,
 			boolean fromCacheOnly) throws IOException {
 
@@ -342,7 +343,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 		// Submit the task to the request executor and return a
 		// Future<ModuleReader> to the caller
-		return aggr.getExecutors().getBuildExecutor().submit(new Callable<ModuleBuildReader>() {
+		return (Future<ModuleBuildReader>) aggr.buildAsync(new Callable<ModuleBuildReader>() {
 			public ModuleBuildReader call() throws Exception {
 				List<ICacheKeyGenerator> newCacheKeyGenerators =
 						KeyGenUtil.isProvisional(cacheKeyGenerators) ? null : cacheKeyGenerators;
@@ -473,7 +474,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				// return a build reader object
 				return mbr;
 			}
-		});
+		}, request);
 	}
 
 	/**

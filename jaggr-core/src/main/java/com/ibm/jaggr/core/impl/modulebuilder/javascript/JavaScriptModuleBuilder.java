@@ -38,6 +38,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.OptimizationLevel;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.BooleanTerm;
+import com.ibm.jaggr.core.util.CompilerUtil;
 import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
@@ -51,7 +52,6 @@ import com.google.javascript.jscomp.CheckLevel;
 import com.google.javascript.jscomp.CompilationLevel;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.DiagnosticGroups;
 import com.google.javascript.jscomp.JSError;
@@ -325,9 +325,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		String output = null;
 
 		Compiler compiler = new Compiler();
-		CompilerOptions compiler_options = new CompilerOptions();
+		CompilerOptions compiler_options = CompilerUtil.getDefaultOptions();
 		compiler_options.customPasses = HashMultimap.create();
-		compiler_options.setLanguageIn(LanguageMode.ECMASCRIPT5);
 		if (isHasFiltering && (level != null || keyGens == null)) {
 			// Run has filtering compiler pass if we are doing has filtering, or if this
 			// is the first build for this module (keyGens == null) so that we can get
