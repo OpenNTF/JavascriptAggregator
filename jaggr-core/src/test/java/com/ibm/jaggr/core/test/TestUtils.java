@@ -478,6 +478,26 @@ public class TestUtils {
 				return null;
 			}
 		}).anyTimes();
+		mockResponse.setStatus(EasyMock.anyInt());
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
+			public Object answer() throws Throwable {
+				if (responseAttributes != null) {
+					responseAttributes.put("Status", ((Integer)EasyMock.getCurrentArguments()[0]).toString());
+				}
+				return null;
+			}
+		}).anyTimes();
+		EasyMock.expect(mockResponse.getStatus()).andAnswer(new IAnswer<Integer>() {
+			@Override
+			public Integer answer() throws Throwable {
+				int result = 0;
+				if (responseAttributes != null) {
+					result = Integer.parseInt(responseAttributes.get("Status"));
+				}
+				return result;
+			}
+		}).anyTimes();
+
 		return mockResponse;
 	}
 

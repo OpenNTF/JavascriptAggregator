@@ -409,7 +409,15 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 					uri =  new URI(uri.getScheme(), uri.getAuthority(),
 							uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
 				}
-				uri = uri.resolve(path);
+				uri = uri.resolve(".");		// normalize the path //$NON-NLS-1$
+				URI resolvedUri = uri.resolve(path);
+				// Guard against attempts to access resources outside of the path specified by
+				// uri using .. path components in 'path'.
+				String resolvedPath = resolvedUri.getPath();
+				if (!resolvedPath.startsWith(uri.getPath()) || resolvedPath.startsWith("/../")) { //$NON-NLS-1$
+					throw new BadRequestException(path);
+				}
+				uri = resolvedUri;
 			}
 			IResource resolved = newResource(uri);
 			if (!resolved.exists()) {
@@ -453,6 +461,11 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				OutputStream os = resp.getOutputStream();
 				CopyUtil.copy(is, os);
 			}
+		} catch (BadRequestException e) {
+			if (log.isLoggable(Level.INFO)) {
+				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
+			}
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		} catch (NotFoundException e) {
 			if (log.isLoggable(Level.INFO)) {
 				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
