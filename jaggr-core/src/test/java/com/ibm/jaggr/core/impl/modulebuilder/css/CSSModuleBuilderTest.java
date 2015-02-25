@@ -192,19 +192,23 @@ public class CSSModuleBuilderTest extends EasyMock {
 			.append("paths: {")
 			.append("  seeRed: '").append(url.toURI()).append("'")
 			.append("},")
-			.append("  postcssPlugins: [")
-			.append("    [")
-			.append("      'seeRed',")
-			.append("      function() {")
-			.append("        return colorize('red');")
-			.append("      }")
+			.append("  postcss: {")
+			.append("    scopePoolSize: 1,")
+			.append("    plugins: [")
+			.append("      [")
+			.append("        'seeRed',")
+			.append("        function(m) {")
+			.append("          return m('red');")
+			.append("        }")
+			.append("      ]")
 			.append("    ]")
-			.append("  ]")
+			.append("  }")
 			.append("}").toString();
 
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJs);
 		configRef.set(cfg);
 		builder.configLoaded(cfg, 2);
+		Assert.assertEquals(1, builder.getThreadScopes().size());
 
 		String css, output;
 		URI resuri = testdir.toURI();

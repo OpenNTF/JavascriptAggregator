@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-var colorize = function(color) {
-	// Unit-test test case to turns all color declarations to the specified color.  
-	return function(css) {
-		css.eachDecl("color", function (decl) {
-			decl.value = color;
-		});
+define([], function() {
+	return function(color) {
+		// Unit-test test case to turns all color declarations to the specified color.  
+		return function(css) {
+			css.eachDecl("color", function (decl) {
+				decl.value = color;
+			});
+		};
 	};
-};
+});

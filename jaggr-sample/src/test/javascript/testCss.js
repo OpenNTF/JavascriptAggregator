@@ -126,12 +126,14 @@ define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require,
 			has.add('postcss', true, true, true);
 			has.add('dojo-combo-api', false, true, true);
 			require.undef('js/css');
-			dojoConfig.postcssPlugins = [
-			    [
-			        'colorize',
-			        function() { return colorize('red');}
+			dojoConfig.postcss = {
+				plugins: [
+				    [
+				        'colorize',
+				        function(colorize) { return colorize('red');}
+				    ]
 			    ]
-			];
+			};
 		});
 		
 		afterEach(function() {

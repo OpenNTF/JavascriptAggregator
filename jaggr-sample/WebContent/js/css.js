@@ -194,55 +194,62 @@ define([
 		 * 
 		 * Plugins are configured using an array of two element arrays as in the following example:
 		 * <code><pre>
-		 * postcssPlugins: [
-		 *    [
-		 *       'autoprefixer',  // Name of the plugin resource
-		 *                        // Can be an AMD module id or an absolute URI to a server resource
-		 *       function() { return autoprefixer({browsers: '> 1%'}).postcss; } // the init function
+		 * postcss: {
+		 *    plugins: [
+		 *       [
+		 *          'autoprefixer',  // Name of the plugin resource
+		 *                           // Can be an AMD module id or an absolute URI to a server resource
+		 *          function(autoprefixer) { 
+		 *             return autoprefixer({browsers: '> 1%'}).postcss; // the init function
+		 *          }
+		 *       ]
 		 *    ]
-		 * ],
+		 * },
 		 * </pre></code>
 		 */
 		postcssInitialize = function() {
 			var deferred;
 			if (!has('dojo-combo-api') && has('postcss') && postcss) {
-				var pluginsConfig = window.dojoConfig && window.dojoConfig.postcssPlugins || window.require.postcssPlugins;
-				if (pluginsConfig) {
-					// Load each module using async require.  Each loaded module will get a Promise
-					// that will be resolved when that module loads and the plugin object has been
-					// initialized.
-					var promises = [], plugins = [];
-					arrays.forEach(pluginsConfig, function(pluginConfig) {
-						var deferred = new Deferred();
-						promises.push(deferred.promise);
-						require([pluginConfig[0]], function() {
-							try {
-								plugins.push(pluginConfig[1]());
-								deferred.resolve();
-							} catch (e) {
+				var postcssConfig = window.require.postcss || window.dojoConfig && window.dojoConfig.postcss;
+				if (postcssConfig) {
+					var pluginsConfig = postcssConfig.plugins;
+					if (pluginsConfig) {
+						// Load each module using async require.  Each loaded module will get a Promise
+						// that will be resolved when that module loads and the plugin object has been
+						// initialized.
+						var promises = [], plugins = [];
+						arrays.forEach(pluginsConfig, function(pluginConfig) {
+							var deferred = new Deferred();
+							promises.push(deferred.promise);
+							require([pluginConfig[0]], function(p) {
+								try {
+									plugins.push(pluginConfig[1](p));
+									deferred.resolve();
+								} catch (e) {
+									console.error(e);
+									deferred.reject(e);
+								}
+							});
+						});
+						if (promises.length > 0) {
+							// Use dojo/promise/all so we know when all of the plugins have been
+							// loaded and initialized.
+							deferred = new Deferred();
+							postcssPromise = deferred.promise;
+							all(promises).then(function() {
+								try {
+									postcssProcessor = postcss(plugins);
+									deferred.resolve();
+								} catch (e) {
+									console.error(e);
+									deferred.reject(e);
+								}
+							}).otherwise(function(e) {
+								// one or more plugins failed to initialize
 								console.error(e);
 								deferred.reject(e);
-							}
-						});
-					});
-					if (promises.length > 0) {
-						// Use dojo/promise/all so we know when all of the plugins have been
-						// loaded and initialized.
-						deferred = new Deferred();
-						postcssPromise = deferred.promise;
-						all(promises).then(function() {
-							try {
-								postcssProcessor = postcss(plugins);
-								deferred.resolve();
-							} catch (e) {
-								console.error(e);
-								deferred.reject(e);
-							}
-						}).otherwise(function(e) {
-							// one or more plugins failed to initialize
-							console.error(e);
-							deferred.reject(e);
-						});
+							});
+						}
 					}
 				}
 			}
