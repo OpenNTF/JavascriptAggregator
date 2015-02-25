@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.executors.IExecutors;
+import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
@@ -25,6 +26,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 
 import com.google.common.io.Files;
 
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.Assert;
@@ -35,6 +37,9 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class AbstractAggregatorImplTest {
 
@@ -309,6 +314,57 @@ public class AbstractAggregatorImplTest {
 		);
 		aggregator.getPathsAndAliases(initParams);
 		Assert.fail("Expected exception");
+	}
+
+	@Test
+	public void testProcessResourceRequest_invalidAccess() throws Exception {
+		final MutableObject<URI> newResource = new MutableObject<URI>();
+		AbstractAggregatorImpl testAggregator = new TestAggregatorImpl() {
+			@Override
+			public IResource newResource(URI uri) {
+				newResource.setValue(uri);
+				return new NotFoundResource(uri);
+			}
+		};
+		Map<String, String> responseParams = new HashMap<String, String>();
+		HttpServletRequest req = TestUtils.createMockRequest(testAggregator);
+		HttpServletResponse resp = TestUtils.createMockResponse(responseParams);
+		EasyMock.replay(req, resp);
+
+		URI uri = new URI("/folder/");
+		testAggregator.processResourceRequest(req, resp, uri, "sub/../../file.res");
+		Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+
+		testAggregator.processResourceRequest(req, resp, uri, "/file.res");
+		Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+
+		uri = new URI("/folder");
+		testAggregator.processResourceRequest(req, resp, uri, "/folder.js");
+		Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+
+		newResource.setValue(null);
+		testAggregator.processResourceRequest(req, resp, uri, "./file.js");
+		Assert.assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
+		Assert.assertEquals(new URI("/folder/file.js"), newResource.getValue());
+
+		newResource.setValue(null);
+		testAggregator.processResourceRequest(req, resp, uri, "file.js");
+		Assert.assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
+		Assert.assertEquals(new URI("/folder/file.js"), newResource.getValue());
+
+		uri = new URI("/");
+		newResource.setValue(null);
+		testAggregator.processResourceRequest(req, resp, uri, "/file.js");
+		Assert.assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
+		Assert.assertEquals(new URI("/file.js"), newResource.getValue());
+
+		newResource.setValue(null);
+		testAggregator.processResourceRequest(req, resp, uri, "./file.js");
+		Assert.assertEquals(HttpServletResponse.SC_NOT_FOUND, resp.getStatus());
+		Assert.assertEquals(new URI("/file.js"), newResource.getValue());
+
+		testAggregator.processResourceRequest(req, resp, uri, "../file.js");
+		Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
 	}
 
 
