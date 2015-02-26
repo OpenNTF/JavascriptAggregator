@@ -121,7 +121,7 @@ define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require,
 		});
 	});
 	
-	describe("PortCSS extension tests", function() {
+	describe("PostCSS extension tests", function() {
 		beforeEach(function() {
 			has.add('postcss', true, true, true);
 			has.add('dojo-combo-api', false, true, true);
