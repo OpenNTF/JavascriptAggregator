@@ -305,11 +305,18 @@ define([
 			function processLess(lessText) {
 				var pathParts = url.split('?').shift().split('/');
 				require(['lesspp'], function (lesspp) {
-					lesspp.render(fixUrlsInCssFile(url, lessText, true), {
-						filename: pathParts.pop()
-					}).then(function (res) {
-						processCss(res.css);
-					}, load.error);
+					var parser = new lesspp.Parser({
+						filename: pathParts.pop(),
+						paths: [pathParts.join('/')]  // the compiler seems to ignore this
+					});
+					parser.parse(fixUrlsInCssFile(url, lessText, true), function (err, tree) {
+						if (err) {
+							console.error('LESS Parser Error!');
+							console.error(err);
+							return load.error(err);
+						}
+						processCss(tree.toCSS());
+					});
 				});
 			}
 
