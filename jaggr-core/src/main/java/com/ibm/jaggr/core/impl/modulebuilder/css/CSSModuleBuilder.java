@@ -68,6 +68,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
@@ -162,7 +164,6 @@ import javax.servlet.http.HttpServletRequest;
  * of two element arrays as in the following example:
  * <code><pre>
  * postcss: {
- *    scopePoolSize: 10,     // Number of threads that can run PostCSS concurrently
  *    plugins: [
  *       [
  *          'autoprefixer',  // Name of the plugin resource
@@ -188,6 +189,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String SIZETHRESHOLD_CONFIGPARAM = "inlinedImageSizeThreshold";  //$NON-NLS-1$
 	static public final String INCLUDEAMDPATHS_CONFIGPARAM = "cssEnableAMDIncludePaths";  //$NON-NLS-1$
 	static public final String POSTCSSPLUGINS_CONFIGPARAM = "postcssPlugins"; //$NON-NLS-1$
+	static public final String SCOPEPOOLSIZE_CONFIGPARAM = "cssScopePoolSize"; //$NON-NLS-1$
+	static public final String POSTCSS_CONFIGPARAM = "postcss"; //$NON-NLS-1$
 
 	// Custom server-side AMD config param default values
 	static public final boolean INLINEIMPORTS_DEFAULT_VALUE = true;
@@ -208,7 +211,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String POSTCSS_INSTANCE = "postcssInstance"; //$NON-NLS-1$
 	static public final String MODULE = "module"; //$NON-NLS-1$
 	static public final String EXPORTS = "exports"; //$NON-NLS-1$
-	static public final String SCOPE_POOL_SIZE = "scopePoolSize";  //$NON-NLS-1$
 	static public final String AMD_DEFINE_SHIM_JS = "var module={exports:0},define=function(deps, f){if(deps&&deps.length)throw new Error('define dependencies not supported.');module.exports=f();};define.amd=true;"; //$NON-NLS-1$
 	static public final String MINIFIER_INITIALIZATION_VAR = "minifierInitializer"; //$NON-NLS-1$
 	static public final String MINIFIER_INITIALIZATION_JS = "var " + MINIFIER_INITIALIZATION_VAR + " = function(m) { return m('" + PREAMBLE + "');}"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
@@ -216,6 +218,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	        "safe", Boolean.TRUE //$NON-NLS-1$
 	);
 	static public final int DEFAULT_SCOPE_POOL_SIZE = 5;
+	static public final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
@@ -683,7 +686,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		Scriptable threadScope = null;
 		String result = null;
 		try {
-			threadScope = threadScopes.take();
+			threadScope = threadScopes.poll(SCOPE_POOL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+			if (threadScope == null) {
+				throw new TimeoutException("Timeout waiting for thread scope"); //$NON-NLS-1$
+			}
 			Scriptable scope = cx.newObject(threadScope);
 			scope.setParentScope(threadScope);
 			Scriptable postcssInstance = (Scriptable)threadScope.get(POSTCSS_INSTANCE, scope);
@@ -696,7 +702,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			throw new IOException(message, e);
 		} catch (InterruptedException e) {
 			throw new RuntimeException(e);
-		} finally {
+		} catch (TimeoutException e) {
+			throw new RuntimeException(e);
+		}
+		finally {
 			if (threadScope != null) {
 				// put the thread scope back in the queue now that we're done with it
 				threadScopes.add(threadScope);
@@ -732,6 +741,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			Scriptable configScript = (Scriptable)config.getRawConfig();
 			Scriptable configScope = (Scriptable)config.getConfigScope();
 
+			int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
+			// Read the scope pool size if specified
+			Object scopePoolSizeConfig = configScript.get(SCOPEPOOLSIZE_CONFIGPARAM, configScript);
+			if (scopePoolSizeConfig != Scriptable.NOT_FOUND) {
+				scopePoolSize = ((Double)scopePoolSizeConfig).intValue();
+			}
+
 			postcssJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(POSTCSS_RES_NAME);
 			if (postcssJsStream == null) {
 				throw new NotFoundException(POSTCSS_RES_NAME);
@@ -753,20 +769,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			);
 
 			cx.setOptimizationLevel(-1);	// Needed because size of compiled byte code exceeds 64KB
-			int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
 
 			/*
 			 * Now load and initialize configured plugins and add them to the plugin array
 			 */
-			Object postcssConfigObj = configScript.get(POSTCSS, configScript);
+			Object postcssConfigObj = configScript.get(POSTCSS_CONFIGPARAM, configScript);
 			if (postcssConfigObj != Scriptable.NOT_FOUND) {
 				Scriptable postcssConfig = (Scriptable)postcssConfigObj;
-				// Read the scope pool size if specified
-				Object scopePoolSizeConfig = postcssConfig.get(SCOPE_POOL_SIZE, postcssConfig);
-				if (scopePoolSizeConfig != Scriptable.NOT_FOUND) {
-					scopePoolSize = ((Double)scopePoolSizeConfig).intValue();
-
-				}
 				// Process any specified plugin configs
 				Object pluginsConfigObj = postcssConfig.get(PLUGINS, postcssConfig);
 				if (pluginsConfigObj != Scriptable.NOT_FOUND) {
@@ -823,6 +832,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			for (int i = 0; i < scopePoolSize; i++) {
 				threadScopes.add(createThreadScope(cx, configScope, postcssJsString, pluginList));
 			}
+
+			// Seal the scopes to prevent changes
+			for (Scriptable threadScope : threadScopes) {
+				((ScriptableObject)threadScope).sealObject();
+			}
+
 
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
@@ -892,8 +907,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		Scriptable postcssInstance = (Scriptable)postcss.call(cx, scope, scope, new Object[]{plugins});
 		scope.put(POSTCSS_INSTANCE, scope, postcssInstance);
 
-		// Seal the scope to prevent changes
-		((ScriptableObject)scope).sealObject();
 		return scope;
 	}
 
