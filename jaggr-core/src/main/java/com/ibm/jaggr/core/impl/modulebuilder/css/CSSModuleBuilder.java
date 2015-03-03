@@ -217,7 +217,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final Map<String, Boolean> POSTCSS_OPTIONS = ImmutableMap.of(
 	        "safe", Boolean.TRUE //$NON-NLS-1$
 	);
-	static public final int DEFAULT_SCOPE_POOL_SIZE = 5;
+	static public final int DEFAULT_SCOPE_POOL_SIZE = 10;
 	static public final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
@@ -235,12 +235,36 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 	public CSSModuleBuilder() {
 		super();
+		init();
 	}
 
 	// for unit tests
 	protected CSSModuleBuilder(IAggregator aggregator) {
 		super();
 		this.aggregator = aggregator;
+		init();
+	}
+
+	private void init() {
+		InputStream postcssJsStream = null;
+		InputStream minifyJsStream = null;
+		try {
+			postcssJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(POSTCSS_RES_NAME);
+			if (postcssJsStream == null) {
+				throw new NotFoundException(POSTCSS_RES_NAME);
+			}
+			minifyJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(MINIFYER_RES_NAME);
+			if (minifyJsStream == null) {
+				throw new NotFoundException(MINIFYER_RES_NAME);
+			}
+			postcssJsString = IOUtils.toString(postcssJsStream);
+			minifyJsString = IOUtils.toString(minifyJsStream);
+		} catch(IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			if (postcssJsStream != null) IOUtils.closeQuietly(postcssJsStream);
+			if (minifyJsStream != null) IOUtils.closeQuietly(minifyJsStream);
+		}
 	}
 
 	@SuppressWarnings("serial")
@@ -296,6 +320,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private IAggregator aggregator;
 
 	// Rhino variables for PostCSS
+	private String postcssJsString;
+	private String minifyJsString;
+	private List<PluginInfo> pluginInfoList;
 	private Scriptable postcssOptions;
 	private BlockingQueue<Scriptable> threadScopes;
 
@@ -312,6 +339,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			HttpServletRequest request,
 			List<ICacheKeyGenerator> keyGens)
 			throws IOException {
+		final String sourceMethod = "getContentReader"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGens});
+		}
+		Reader result = null;
 		configUpdatingRWL.readLock().lock();	// If a config update is in progress, wait
 		try {
 			String css = readToString(new CommentStrippingReader(resource.getReader()));
@@ -319,33 +352,17 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			if (inlineImports) {
 				css = inlineImports(request, css, resource, BLANK);
 			}
-			return processCss(resource, request, css);
+			// PostCSS
+			css = postcss(css, resource);
+
+			// Inline images
+			css = inlineImageUrls(request, css, resource);
+
+			result = new StringReader(css);
+
 		} finally {
 			configUpdatingRWL.readLock().unlock();
 		}
-	}
-
-	/**
-	 * Runs CSS through minification and image inlining.
-	 * @param resource The resource representing the CSS file.
-	 * @param request The request for the CSS file.
-	 * @param css The actual CSS {@link java.lang.String} to process.
-	 * @return A {@link java.io.StringReader} for the resulting CSS.
-	 * @throws IOException
-	 */
-	protected Reader processCss(IResource resource, HttpServletRequest request, String css) throws IOException {
-		final String sourceMethod = "processCss"; //$NON-NLS-1$
-		final boolean isTraceLogging = log.isLoggable(Level.FINER);
-		if (isTraceLogging) {
-			log.entering(sourceClass, sourceMethod, new Object[]{resource, request, css});
-		}
-		// PostCSS
-		css = postcss(css, resource);
-
-		// Inline images
-		css = inlineImageUrls(request, css, resource);
-
-		Reader result = new StringReader(css);
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod, result);
 		}
@@ -733,9 +750,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			log.entering(sourceClass, sourceMethod, new Object[]{config});
 		}
 
-		InputStream postcssJsStream = null;
-		InputStream minifyJsStream = null;
-		List<PluginInfo> pluginList = new ArrayList<PluginInfo>();
+		pluginInfoList = new ArrayList<PluginInfo>();
 		Context cx = Context.enter();
 		try {
 			Scriptable configScript = (Scriptable)config.getRawConfig();
@@ -748,21 +763,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				scopePoolSize = ((Double)scopePoolSizeConfig).intValue();
 			}
 
-			postcssJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(POSTCSS_RES_NAME);
-			if (postcssJsStream == null) {
-				throw new NotFoundException(POSTCSS_RES_NAME);
-			}
-			minifyJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(MINIFYER_RES_NAME);
-			if (minifyJsStream == null) {
-				throw new NotFoundException(MINIFYER_RES_NAME);
-			}
-			String postcssJsString = IOUtils.toString(postcssJsStream);
-			String minifyJsString = IOUtils.toString(minifyJsStream);
 			// Create a new scope to evaluate the minifier initialization code because configScope is sealed.
 			Scriptable scope = cx.newObject(configScope);
 			scope.setParentScope(configScope);
 			cx.evaluateString(scope, MINIFIER_INITIALIZATION_JS, BLANK, 1, null);
-			pluginList.add(new PluginInfo(
+			pluginInfoList.add(new PluginInfo(
 					(Function)scope.get(MINIFIER_INITIALIZATION_VAR, scope),
 					minifyJsString,
 					MINIFYER_RES_NAME)
@@ -821,7 +826,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 							} finally {
 								IOUtils.closeQuietly(is);
 							}
-							pluginList.add(new PluginInfo(initializer, js, uri.toString()));
+							pluginInfoList.add(new PluginInfo(initializer, js, uri.toString()));
 						}
 					}
 				}
@@ -830,7 +835,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// Create the thread scope pool
 			threadScopes = new ArrayBlockingQueue<Scriptable>(scopePoolSize);
 			for (int i = 0; i < scopePoolSize; i++) {
-				threadScopes.add(createThreadScope(cx, configScope, postcssJsString, pluginList));
+				threadScopes.add(createThreadScope(cx, configScope));
 			}
 
 			// Seal the scopes to prevent changes
@@ -843,8 +848,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			throw new RuntimeException(e.getMessage(), e);
 		} finally {
 			Context.exit();
-			if (postcssJsStream != null) IOUtils.closeQuietly(postcssJsStream);
-			if (minifyJsStream != null) IOUtils.closeQuietly(minifyJsStream);
 		}
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod);
@@ -860,13 +863,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 *            the Rhino Context
 	 * @param protoScope
 	 *            the parent scope object
-	 * @param postcssJsString
-	 *            the PostCSS JavaScript code
-	 * @param pluginInfoList
-	 *            the plugin info list
 	 * @return the thread scope
 	 */
-	Scriptable createThreadScope(Context cx, Scriptable protoScope, String postcssJsString, List<PluginInfo> pluginInfoList) {
+	protected Scriptable createThreadScope(Context cx, Scriptable protoScope) {
 
 		// Create the scope object
 		Scriptable scope = cx.newObject(protoScope);
