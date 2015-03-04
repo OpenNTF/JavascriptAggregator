@@ -173,7 +173,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	private ForcedErrorResponse forcedErrorResponse = null;
 
 	protected Map<String, URI> resourcePaths;
-	protected URI webContentUri = null;
 
 	enum RequestNotifierAction {
 		start,
@@ -209,12 +208,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 
 		// Set servlet context attributes for access though the request
 		context.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, this);
-		try {
-			webContentUri = AbstractAggregatorImpl.class.getClassLoader().getResource("WebContent").toURI(); //$NON-NLS-1$
-		} catch (URISyntaxException e) {
-			throw new ServletException(e);
-		}
-
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
@@ -364,16 +357,10 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			// search resource paths to see if we should treat as aggregator request or resource request
 			for (Map.Entry<String, URI> entry : resourcePaths.entrySet()) {
 				String path = entry.getKey();
-				if (entry.getValue() == null) {
-					if (path.equals(pathInfo)) {
-						processAggregatorRequest(req, resp);
-						processed = true;
-						break;
-					} else if (pathInfo.startsWith(path) && pathInfo.charAt(path.length()) == '/') {
-						// Request for a resource in this bundle
-						String resPath = pathInfo.substring(path.length()+1);
-						processResourceRequest(req, resp, webContentUri, resPath);
-					}
+				if (path.equals(pathInfo) && entry.getValue() == null) {
+					processAggregatorRequest(req, resp);
+					processed = true;
+					break;
 				}
 				if (pathInfo.startsWith(path)) {
 					if ((path.length() == pathInfo.length() || pathInfo.charAt(path.length()) == '/') && entry.getValue() != null) {
@@ -386,9 +373,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				}
 			}
 			if (!processed) {
-				// No mapping found.  Try to locate the resource in this bundle.
-				String resPath = pathInfo.substring(1);
-				processResourceRequest(req, resp, webContentUri, resPath);
+				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 			}
 		}
 		if (isTraceLogging) {

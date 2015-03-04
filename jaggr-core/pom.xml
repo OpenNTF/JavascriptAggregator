@@ -86,13 +86,6 @@
         </includes>
       </resource>
       <resource>
-        <directory>${basedir}/src/main/resources</directory>
-        <filtering>false</filtering>
-        <includes>
-          <include>**/*</include>
-        </includes>
-      </resource>
-      <resource>
         <directory>${basedir}</directory>
         <filtering>false</filtering>
         <includes>
@@ -247,7 +240,6 @@
             <exclude>src/main/java/com/ibm/jaggr/core/util/Term.java</exclude>
             <exclude>src/main/java/com/ibm/jaggr/core/util/Formula.java</exclude>
             <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
-            <exclude>WebContent/postcss/postcss.js</exclude>
             <exclude>src/test/resources/specRunner.htmltemplate</exclude>
           </excludes>
         </configuration>

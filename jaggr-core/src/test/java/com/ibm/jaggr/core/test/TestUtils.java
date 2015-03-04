@@ -178,15 +178,10 @@ public class TestUtils {
 	}
 
 	private static IResource mockAggregatorNewResource(URI uri, File workDir) throws Throwable {
-		final String aggrResPath = "/com.ibm.jaggr.core/"; // path for bundle resource in the aggregator
 		String scheme = uri.getScheme();
 		if ("file".equals(scheme)) {
 			return new FileResource(uri);
 		} else if ("namedbundleresource".equals(scheme)) {
-			if (uri.getPath().startsWith(aggrResPath)) {
-				String path = uri.getPath().substring(aggrResPath.length());
-				return new FileResource(IAggregator.class.getClassLoader().getResource(path).toURI());
-			}
 			return new FileResource(new File(workDir, uri.getPath()).toURI());
 		}
 		throw new UnsupportedOperationException();
