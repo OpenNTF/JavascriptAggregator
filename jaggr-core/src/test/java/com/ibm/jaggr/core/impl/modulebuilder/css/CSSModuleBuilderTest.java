@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
@@ -46,12 +47,10 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.net.URI;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,14 +71,11 @@ public class CSSModuleBuilderTest extends EasyMock {
 	IAggregator mockAggregator;
 	Ref<IConfig> configRef;
 	HttpServletRequest mockRequest;
-	CSSModuleBuilderTester builder;
-	List<ICacheKeyGenerator> keyGens;
+	CSSModuleBuilderTester builder = new CSSModuleBuilderTester();
+	List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 	long seq = 1;
 
 	class CSSModuleBuilderTester extends CSSModuleBuilder {
-		public CSSModuleBuilderTester(IAggregator aggr) {
-			super(aggr);
-		}
 		@Override
 		protected Reader getContentReader(
 				String mid,
@@ -94,6 +90,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = new File(System.getProperty("java.io.tmpdir"));
 		testdir = new File(tmpdir, "CSSModuleBuilderTest");
+		testdir.mkdir();
 	}
 
 	@AfterClass
@@ -111,9 +108,6 @@ public class CSSModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		builder = new CSSModuleBuilderTester(mockAggregator);
-		builder.configLoaded(cfg, 1);
-		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 	}
 
 	@After
@@ -123,11 +117,6 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	@Test
 	public void testMinify() throws Exception {
-
-		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{inlineCSSImports: false}");
-		configRef.set(config);
-		builder.configLoaded(config, seq++);
-
 		// test comment and white space removal
 		String css, output;
 		// Get a URI to the test resources.  Note that we can't use the class loader
@@ -135,7 +124,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		URI resuri = testdir.toURI();
 		css = "/* comments */\r\n.foo\t  {  \tcolor:black; \r\nfont-weight : bold;\r\n/* inline comment */ }\r\n/* trailing comment */\n\t.bar { font-size:small } \r\n";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals(".foo{color:black;font-weight:bold}.bar{font-size:small}", output);
+		Assert.assertEquals(".foo{color:black;font-weight:bold} .bar{font-size:small}", output);
 
 		// create file to import
 		css = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
@@ -152,69 +141,39 @@ public class CSSModuleBuilderTest extends EasyMock {
 		 * Make sure that quoted strings and url(...) patterns are not
 		 * minified
 		 */
-		css = "/* importing file */\n\r@import  \"name  with   spaces.css\"   ;\r\n@import url( name_with_no_spaces.css );\r\n@import url(  \" name  with   spaces.css\"  );\r\n";
+		css = "/* importing file */\n\r@import \"name  with   spaces.css\"\r\n@import url(name  with   spaces.css)\r\n@import url(  \" name  with   spaces.css\"  )\r\n";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("@import \"name  with   spaces.css\";@import url(name_with_no_spaces.css);@import url(\" name  with   spaces.css\");", output);
+		Assert.assertEquals("@import \"name  with   spaces.css\" @import url(name  with   spaces.css) @import url(\" name  with   spaces.css\")", output);
 
-		css = "/* importing file */\n\r@import 'name  with   spaces.css';\r\n  @import url(  ' name  with   spaces.css'  )\r\n";
+		css = "/* importing file */\n\r@import 'name  with   spaces.css'\r\n@import url(  ' name  with   spaces.css'  )\r\n";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("@import 'name  with   spaces.css';@import url(' name  with   spaces.css')", output);
+		Assert.assertEquals("@import 'name  with   spaces.css' @import url(' name  with   spaces.css')", output);
 		/*
 		 *  test odd-ball use cases that might break us
 		 */
-		css = "@import \"funny name  with  url(...) inside.css\";  .foo { color : black }";
+		css = "@import \"funny name  with  url(...) inside.css\"  .foo { color : black }";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("@import \"funny name  with  url(...) inside.css\";.foo{color:black}", output);
+		Assert.assertEquals("@import \"funny name  with  url(...) inside.css\" .foo{color:black}", output);
 
-		css = "@import \"funny 'name'  with  url(\\\"...\\\") and escaped   quotes inside.css\";   .foo { color : black }";
+		css = "@import url(  funny name ' with  \"embedded  \"  quotes.css  )  .foo { color : black }";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("@import \"funny 'name'  with  url(\\\"...\\\") and escaped   quotes inside.css\";.foo{color:black}", output);
+		Assert.assertEquals("@import url(funny name ' with  \"embedded  \"  quotes.css) .foo{color:black}", output);
 
-		css = "@import url(  'funny name  with  \" single double  quote.css' );   .foo { color : black }";
+		css = "@import \"funny 'name'  with  url(\"...\") and embedded   quotes inside.css\"   .foo { color : black }";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("@import url('funny name  with  \" single double  quote.css');.foo{color:black}", output);
+		Assert.assertEquals("@import \"funny 'name'  with  url(\"...\") and embedded   quotes inside.css\" .foo{color:black}", output);
 
-		css = "@import  'funny name  \"with double\"  quote.css';   .foo { color : black }";
+		css = "@import url(  'funny name  with  \" single double  quote.css' )   .foo { color : black }";
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("@import 'funny name  \"with double\"  quote.css';.foo{color:black}", output);
+		Assert.assertEquals("@import url('funny name  with  \" single double  quote.css') .foo{color:black}", output);
+
+		css = "@import  'funny name  \"with double\"  quote.css'   .foo { color : black }";
+		output = buildCss(new StringResource(css, resuri));
+		Assert.assertEquals("@import 'funny name  \"with double\"  quote.css' .foo{color:black}", output);
 
 		css = ".foo:after{content:\"\\a\";white-space:pre}";
 		output = buildCss(new StringResource(css, resuri));
 		Assert.assertEquals(css, output);
-	}
-
-	@Test
-	public void testConfiguredPlugin() throws Exception {
-		URL url = CSSModuleBuilder.class.getClassLoader().getResource("postcssPlugins/colorize.js");
-
-		String configJs = new StringBuffer()
-			.append("{")
-			.append("  paths: {")
-			.append("    seeRed: '").append(url.toURI()).append("'")
-			.append("  },")
-			.append("  cssScopePoolSize: 1,")
-			.append("  postcss: {")
-			.append("    plugins: [")
-			.append("      [")
-			.append("        'seeRed',")
-			.append("        function(m) {")
-			.append("          return m('red');")
-			.append("        }")
-			.append("      ]")
-			.append("    ]")
-			.append("  }")
-			.append("}").toString();
-
-		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), configJs);
-		configRef.set(cfg);
-		builder.configLoaded(cfg, 2);
-		Assert.assertEquals(1, builder.getThreadScopes().size());
-
-		String css, output;
-		URI resuri = testdir.toURI();
-		css = "div { color: black; }";
-		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("div{color:red}", output);
 	}
 
 	@Test
@@ -346,7 +305,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 		mockAggregator.getOptions().setOption(IOptions.DEVELOPMENT_MODE, "true");
 		output = buildCss(new StringResource(css, resuri));
-		Assert.assertEquals("/*"+CSSModuleBuilder.PREAMBLE+"subdir/imported.css */.background-image:url('#images/img.jpg');", output);
+		Assert.assertEquals("/* @import subdir/imported.css */ .background-image:url('#images/img.jpg');", output);
 
 		requestAttributes.remove(IHttpTransport.SHOWFILENAMES_REQATTRNAME);
 		output = buildCss(new StringResource(css, resuri));

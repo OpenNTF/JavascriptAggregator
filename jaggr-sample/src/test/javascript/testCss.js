@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require, has, win, css) {
+define([ 'dojo/_base/window', 'js/css'], function(win, css) {
 
 	describe('CSS plugin tests', function() {
 
@@ -120,42 +120,4 @@ define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require,
 				.toBe("@import 'foo/bar/themes/images/smile.png?arg1=val1&arg2=val2';");
 		});
 	});
-	
-	describe("PostCSS extension tests", function() {
-		beforeEach(function() {
-			has.add('postcss', true, true, true);
-			has.add('dojo-combo-api', false, true, true);
-			require.undef('js/css');
-			dojoConfig.postcss = {
-				plugins: [
-				    [
-				        'colorize',
-				        function(colorize) { return colorize('red');}
-				    ]
-			    ]
-			};
-		});
-		
-		afterEach(function() {
-			require.undef('js/css');
-			has.add('postcss', false, true, true);
-			has.add('dojo-combo-api', true, true, true);
-			delete dojoConfig.postcssPlugins;
-		});
-		it("test color change", function() {
-			var style;
-			runs(function() {
-				require(['js/css!./styles/test.css'], function(test) {
-					style = test;
-				});
-			});
-			waitsFor(function() {
-				return style;
-			});
-			runs(function() {
-				expect(style.innerHTML).toBe('.html {color: red;}');
-			});
-		});
-	});
-	
 });
