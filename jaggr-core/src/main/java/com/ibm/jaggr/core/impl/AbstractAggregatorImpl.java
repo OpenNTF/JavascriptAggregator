@@ -396,6 +396,20 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		}
 	}
 
+	protected void setResourceResponseCacheHeaders(HttpServletRequest req, HttpServletResponse resp, IResource resolved, boolean isNoCache) {
+		if (isNoCache) {
+			resp.addHeader("Cache-Control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+		} else {
+			resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
+			int expires = getConfig().getExpires();
+			boolean hasCacheBust = req.getAttribute(IHttpTransport.CACHEBUST_REQATTRNAME) != null;
+			resp.addHeader(
+					"Cache-Control", //$NON-NLS-1$
+					"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			);
+		}
+	}
+
 	protected void processResourceRequest(HttpServletRequest req, HttpServletResponse resp, URI uri, String path) {
 		final String sourceMethod = "processRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
@@ -434,17 +448,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				}
 				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
 			} else {
-				if (isNoCache) {
-					resp.addHeader("Cache-Control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-				} else {
-					resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
-					int expires = getConfig().getExpires();
-					boolean hasCacheBust = req.getAttribute(IHttpTransport.CACHEBUST_REQATTRNAME) != null;
-					resp.addHeader(
-							"Cache-Control", //$NON-NLS-1$
-							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					);
-				}
+				setResourceResponseCacheHeaders(req, resp, resolved, isNoCache);
 				String contentType = getContentType(resolved.getPath());
 				resp.setHeader("Content-Type", contentType); //$NON-NLS-1$
 
