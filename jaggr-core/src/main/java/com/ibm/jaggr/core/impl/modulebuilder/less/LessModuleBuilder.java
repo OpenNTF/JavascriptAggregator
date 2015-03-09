@@ -16,13 +16,16 @@
 
 package com.ibm.jaggr.core.impl.modulebuilder.less;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
+
 import org.lesscss.LessCompiler;
 import org.lesscss.LessException;
 
 import javax.servlet.http.HttpServletRequest;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.util.List;
@@ -32,6 +35,16 @@ import java.util.List;
  */
 public class LessModuleBuilder extends CSSModuleBuilder {
 	private static final LessCompiler LESS_COMPILER = new LessCompiler();
+
+	public LessModuleBuilder() {
+		super();
+	}
+
+	// for unit tests
+	protected LessModuleBuilder(IAggregator aggregator) {
+		super(aggregator);
+	}
+
 	/*
 	 * (non-Javadoc)
 	 *
@@ -48,7 +61,7 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 		try {
 			css = LESS_COMPILER.compile(css, resource.getPath());
 		} catch (LessException e) {
-			throw new RuntimeException(e);
+			throw new RuntimeException(mid, e);
 		}
 		// Continue processing CSS with CSSModuleBuilder
 		return processCss(resource, request, css);
