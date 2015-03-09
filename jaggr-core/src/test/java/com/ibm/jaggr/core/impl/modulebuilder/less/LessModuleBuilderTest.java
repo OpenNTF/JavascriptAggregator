@@ -110,13 +110,13 @@ public class LessModuleBuilderTest extends EasyMock {
 	@Test
 	public void testLessCompilationWithImport() throws Exception {
 		String output;
-		URI resUri = testdir.toURI();
+		URI resUri = new File(testdir, "colors.less").toURI();
 		output = buildLess(new StringResource(LESS, resUri));
 		Assert.assertEquals("body{background:#ff0000}", output);
 	}
 
 	private String buildLess(StringResource less) throws IOException {
-		Reader reader = builder.getContentReader("test", less, mockRequest,
+		Reader reader = builder.getContentReader("colors.less", less, mockRequest,
 				keyGens);
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
