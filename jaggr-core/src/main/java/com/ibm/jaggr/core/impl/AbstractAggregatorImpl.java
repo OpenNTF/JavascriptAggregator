@@ -373,6 +373,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 						// Request for a resource in this bundle
 						String resPath = pathInfo.substring(path.length()+1);
 						processResourceRequest(req, resp, webContentUri, resPath);
+						processed = true;
+						break;
 					}
 				}
 				if (pathInfo.startsWith(path)) {
