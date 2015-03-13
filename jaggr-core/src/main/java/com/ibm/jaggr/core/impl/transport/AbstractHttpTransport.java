@@ -324,7 +324,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 							log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), sourceMethod,
 									MessageFormat.format(
 											Messages.AbstractHttpTransport_4,
-											new Object[]{waitSeconds}
+											new Object[]{Thread.currentThread().getId(), waitSeconds}
 									)
 							);
 						}
