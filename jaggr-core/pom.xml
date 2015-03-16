@@ -240,6 +240,7 @@
             <exclude>src/main/java/com/ibm/jaggr/core/util/Term.java</exclude>
             <exclude>src/main/java/com/ibm/jaggr/core/util/Formula.java</exclude>
             <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
+            <exclude>src/main/resources/less-rhino-1.7.0.js</exclude>
             <exclude>src/test/resources/specRunner.htmltemplate</exclude>
           </excludes>
         </configuration>
