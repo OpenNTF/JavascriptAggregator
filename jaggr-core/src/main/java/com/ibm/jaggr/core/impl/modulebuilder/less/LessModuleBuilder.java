@@ -25,6 +25,7 @@ import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
+import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 
 import java.io.IOException;
@@ -59,7 +60,8 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 		.append("}") //$NON-NLS-1$
 		.toString();
 
-	String lessJsSource = null;
+	Script lessJsScript = null;
+	Script compilerScript = null;
 
 	public LessModuleBuilder() {
 		super();
@@ -78,12 +80,16 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 		if (isTraceLogging) {
 			log.entering(sourceClass, sourceMethod);
 		}
+		Context cx = Context.enter();
 		try {
+			cx.setOptimizationLevel(9);
 			InputStream in = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(LESS_JS_RES);
 			if (in == null) {
 				throw new NotFoundException(LESS_JS_RES);
 			}
-			lessJsSource = IOUtils.toString(in);
+			String lessJsSource = IOUtils.toString(in);
+			lessJsScript = cx.compileString(lessJsSource,  LESS_JS_RES, 1, null);
+			compilerScript = cx.compileString(compilerString, BLANK, 1, null);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -103,8 +109,8 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 			log.entering(sourceClass, sourceMethod, new Object[]{cx, protoScope});
 		}
 		Scriptable threadScope = super.createThreadScope(cx, protoScope);
-		cx.evaluateString(threadScope, lessJsSource, LESS_JS_RES, 1, null);
-		cx.evaluateString(threadScope, compilerString,  BLANK, 1, null);
+		lessJsScript.exec(cx, threadScope);
+		compilerScript.exec(cx, threadScope);
 
 		if (isTraceLogging) {
 			log.exiting(sourceMethod, sourceMethod, threadScope);

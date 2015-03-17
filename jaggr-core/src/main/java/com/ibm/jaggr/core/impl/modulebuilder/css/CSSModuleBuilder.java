@@ -42,9 +42,11 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
 
@@ -248,7 +250,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private void init() {
 		InputStream postcssJsStream = null;
 		InputStream minifyJsStream = null;
+		Context cx = Context.enter();
 		try {
+			cx.setOptimizationLevel(9);
 			postcssJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(POSTCSS_RES_NAME);
 			if (postcssJsStream == null) {
 				throw new NotFoundException(POSTCSS_RES_NAME);
@@ -257,11 +261,17 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			if (minifyJsStream == null) {
 				throw new NotFoundException(MINIFYER_RES_NAME);
 			}
-			postcssJsString = IOUtils.toString(postcssJsStream);
-			minifyJsString = IOUtils.toString(minifyJsStream);
+			String postcssJsString = IOUtils.toString(postcssJsStream);
+			postcssJsScript = cx.compileString(postcssJsString, POSTCSS_RES_NAME, 1, null);
+			String minifyJsString = IOUtils.toString(minifyJsStream);
+			minifyJsScript = cx.compileString(minifyJsString, BLANK, 1, null);
+			amdDefineShimScript = cx.compileString(AMD_DEFINE_SHIM_JS, BLANK, 1, null);
+			minifierInitScript = cx.compileString(MINIFIER_INITIALIZATION_JS, BLANK, 1, null);
+
 		} catch(IOException e) {
 			throw new RuntimeException(e);
 		} finally {
+			Context.exit();
 			if (postcssJsStream != null) IOUtils.closeQuietly(postcssJsStream);
 			if (minifyJsStream != null) IOUtils.closeQuietly(minifyJsStream);
 		}
@@ -299,12 +309,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 	private static class PluginInfo {
 		final Function initializer;
-		final String moduleJs;
-		final String location;
-		PluginInfo(Function initializer, String moduleJs, String location) {
+		final Script moduleScript;
+		PluginInfo(Function initializer, Script moduleScript) {
 			this.initializer = initializer;
-			this.moduleJs = moduleJs;
-			this.location = location;
+			this.moduleScript = moduleScript;
 		}
 	}
 
@@ -320,8 +328,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private IAggregator aggregator;
 
 	// Rhino variables for PostCSS
-	private String postcssJsString;
-	private String minifyJsString;
+	private Script postcssJsScript;
+	private Script minifyJsScript;
+	private Script amdDefineShimScript;
+	private Script minifierInitScript;
 	private List<PluginInfo> pluginInfoList;
 	private Scriptable postcssOptions;
 	private BlockingQueue<Scriptable> threadScopes;
@@ -760,20 +770,18 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// Read the scope pool size if specified
 			Object scopePoolSizeConfig = configScript.get(SCOPEPOOLSIZE_CONFIGPARAM, configScript);
 			if (scopePoolSizeConfig != Scriptable.NOT_FOUND) {
-				scopePoolSize = ((Double)scopePoolSizeConfig).intValue();
+				scopePoolSize = ((Number)scopePoolSizeConfig).intValue();
 			}
 
 			// Create a new scope to evaluate the minifier initialization code because configScope is sealed.
 			Scriptable scope = cx.newObject(configScope);
 			scope.setParentScope(configScope);
-			cx.evaluateString(scope, MINIFIER_INITIALIZATION_JS, BLANK, 1, null);
+			minifierInitScript.exec(cx, scope);
 			pluginInfoList.add(new PluginInfo(
 					(Function)scope.get(MINIFIER_INITIALIZATION_VAR, scope),
-					minifyJsString,
-					MINIFYER_RES_NAME)
+					minifyJsScript)
 			);
 
-			cx.setOptimizationLevel(-1);	// Needed because size of compiled byte code exceeds 64KB
 
 			/*
 			 * Now load and initialize configured plugins and add them to the plugin array
@@ -826,7 +834,16 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 							} finally {
 								IOUtils.closeQuietly(is);
 							}
-							pluginInfoList.add(new PluginInfo(initializer, js, uri.toString()));
+							Script script = null;
+							cx.setOptimizationLevel(9);
+							try {
+								script = cx.compileString(js, uri.toString(), 1, null);
+							} catch (EvaluatorException e) {
+								// Try with optimization disabled
+								cx.setOptimizationLevel(-1);
+								script = cx.compileString(js, uri.toString(), 1, null);
+							}
+							pluginInfoList.add(new PluginInfo(initializer, script));
 						}
 					}
 				}
@@ -876,7 +893,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		scope.put("global", scope, scope); //$NON-NLS-1$
 
 		// Evaluate PostCSS javascript
-		cx.evaluateString(scope, postcssJsString, POSTCSS_RES_NAME, 1, null);
+		postcssJsScript.exec(cx, scope);
 
 		// Initialize the plugins array that we pass to PostCSS
 		NativeArray plugins = (NativeArray)cx.newArray(scope, 0);
@@ -890,10 +907,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			Scriptable defineScope = cx.newObject(scope);
 			defineScope.setParentScope(scope);
 
-			// Load and evaluate the define shim  and module javascript in the new scope
-			cx.evaluateString(defineScope, AMD_DEFINE_SHIM_JS, BLANK, 1, null);
+			amdDefineShimScript.exec(cx, defineScope);
 			Scriptable moduleVar = (Scriptable)defineScope.get(MODULE, defineScope);
-			cx.evaluateString(defineScope, info.moduleJs, info.location, 1, null);
+			info.moduleScript.exec(cx, defineScope);
 			// Retrieve the module reference and initialize the plugin
 			Function module = (Function)moduleVar.get(EXPORTS, moduleVar);
 			Scriptable plugin = (Scriptable)info.initializer.call(cx, scope, scope, new Object[]{module});
