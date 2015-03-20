@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.impl.cache;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.cache.CacheControl;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.config.IConfig;
@@ -44,7 +45,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Reader;
-import java.io.Serializable;
 import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
@@ -85,14 +85,6 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	private long updateSequenceNumber = 0;
 
 	private Object cacheSerializerSyncObj = new Object();
-
-	private static class CacheControl implements Serializable {
-		private static final long serialVersionUID = 1276701428723406198L;
-		volatile String rawConfig = null;
-		volatile Map<String, String> optionsMap = null;
-		volatile long depsLastMod = -1;
-		long initStamp = -1;
-	}
 
 	/**
 	 * Starts up the cache. Attempts to de-serialize a previously serialized
@@ -147,8 +139,8 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (_control != null) {
 			// stamp == 0 means no overrides.  Need to check for this explicitly
 			// in case the overrides directory has been removed.
-			if (stamp == 0 && _control.initStamp == 0 ||
-					stamp != 0 && stamp <= _control.initStamp) {
+			if (stamp == 0 && _control.getInitStamp() == 0 ||
+					stamp != 0 && stamp <= _control.getInitStamp()) {
 				// Use AggregatorProxy so that getCacheManager will return non-null
 				// if called from within setAggregator.  Need to do this because
 				// IAggregator.getCacheManager() is unable to return this object
@@ -158,7 +150,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			}
 		} else {
 			_control = new CacheControl();
-			_control.initStamp = stamp;
+			_control.setInitStamp(stamp);
 		}
 
 		// Start up the periodic serializer task.  Serializes the cache every 10 minutes.
@@ -288,14 +280,22 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	 * that are serialized require synchronization and we don't want to cause service
 	 * threads to block while we are doing file I/O.
 	 */
-	protected void serializeCache() {
+	@Override
+	public void serializeCache() {
 		try {
-			File file = new File(_directory, CACHE_META_FILENAME);
+			File cacheFile = new File(_directory, CACHE_META_FILENAME);
+			File controlFile = new File(new File(_directory, ".."), CacheControl.CONTROL_SERIALIZATION_FILENAME); //$NON-NLS-1$
 			// Synchronize on the cache object to keep the scheduled cache sync thread and
 			// the thread processing servlet destroy from colliding.
 			synchronized(cacheSerializerSyncObj) {
-				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(file));
+				// Serialize the cache
+				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(cacheFile));
 				os.writeObject(_cache.get());
+				os.close();
+				// Serialize the control object to the parent directory so the
+				// aggregator can manage the cache primer
+				os = new ObjectOutputStream(new FileOutputStream(controlFile));
+				os.writeObject(_cache.get().getControlObj());
 				os.close();
 			}
 		} catch(Exception e) {
@@ -462,9 +462,9 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (options == null) {
 			return;
 		}
-		if (_cache.get() == null || !options.getOptionsMap().equals(_control.optionsMap)) {
-			Map<String, String> previousOptions = _control.optionsMap;
-			_control.optionsMap = options.getOptionsMap();
+		if (_cache.get() == null || !options.getOptionsMap().equals(_control.getOptionsMap())) {
+			Map<String, String> previousOptions = _control.getOptionsMap();
+			_control.setOptionsMap(options.getOptionsMap());
 			if (_cache.get() == null || previousOptions != null) {
 				if (sequence > updateSequenceNumber) {
 					if (_cache.get() != null) {
@@ -490,9 +490,9 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			return;
 		}
 		long lastMod = deps.getLastModified();
-		if (_cache.get() == null || lastMod > _control.depsLastMod) {
-			long previousLastMod = _control.depsLastMod;
-			_control.depsLastMod = lastMod;
+		if (_cache.get() == null || lastMod > _control.getDepsLastMod()) {
+			long previousLastMod = _control.getDepsLastMod();
+			_control.setDepsLastMod(lastMod);
 			if (previousLastMod != -1 || _cache.get() == null) {
 				if (sequence > updateSequenceNumber) {
 					if (_cache.get() != null) {
@@ -518,9 +518,9 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			return;
 		}
 		String rawConfig = config.toString();
-		if (_cache.get() == null || !StringUtils.equals(rawConfig, _control.rawConfig)) {
-			Object previousConfig = _control.rawConfig;
-			_control.rawConfig = rawConfig;
+		if (_cache.get() == null || !StringUtils.equals(rawConfig, _control.getRawConfig())) {
+			Object previousConfig = _control.getRawConfig();
+			_control.setRawConfig(rawConfig);
 			if (_cache.get() == null || previousConfig != null) {
 				if (sequence > updateSequenceNumber) {
 					if (_cache.get() != null) {
