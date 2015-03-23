@@ -76,6 +76,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
 	static final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
 	static final String CMD_PROCESSREQUEST = "processrequesturl"; //$NON-NLS-1$
+	static final String CMD_CREATECACHEBUNDLE = "createCacheBundle"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
 
 	static final String[] COMMANDS = new String[] {
@@ -92,7 +93,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_GETSERVLETDIR,
 		CMD_GETDEPSWITHHASBRANCHING,
 		CMD_FORCEERROR,
-		CMD_PROCESSREQUEST
+		CMD_PROCESSREQUEST,
+		CMD_CREATECACHEBUNDLE
 	};
 
 	static final String DEPSOURCE_CONSOLE = "console"; //$NON-NLS-1$
@@ -155,6 +157,9 @@ public class AggregatorCommandProvider implements CommandProvider {
 						Messages.CommandProvider_21,
 						new Object[]{EYECATCHER, scopeSep, CMD_FORCEERROR})).append(newline)
 				.append(MessageFormat.format(
+						Messages.CommandProvider_24,
+						new Object[]{EYECATCHER, scopeSep, CMD_CREATECACHEBUNDLE})).append(newline)
+				.append(MessageFormat.format(
 						Messages.CommandProvider_25,
 						new Object[]{EYECATCHER, scopeSep, CMD_PROCESSREQUEST})).append(newline);
 
@@ -201,6 +206,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 				ci.println(getServletDir(args));
 			} else if (command.equals(CMD_FORCEERROR)) {
 				ci.println(setForceError(args));
+			} else if (command.equals(CMD_CREATECACHEBUNDLE)) {
+				ci.println(createCacheBundle(args));
 			} else if (command.equals(CMD_PROCESSREQUEST)) {
 				ci.println(processRequestUrl(args));
 			} else {
@@ -507,6 +514,23 @@ public class AggregatorCommandProvider implements CommandProvider {
 				AggregatorImpl aggregator = (AggregatorImpl)getBundleContext().getService(ref);
 				String url = args.length > 1 ? args[1] : null;
 				sb.append(aggregator.processRequestUrl(url));
+			} finally {
+				getBundleContext().ungetService(ref);
+			}
+		}
+		return sb.toString();
+	}
+
+	protected String createCacheBundle(String[] args) throws InvalidSyntaxException, IOException {
+		StringBuffer sb = new StringBuffer();
+		ServiceReference ref = getServiceRef(new String[]{(String)args[0]}, sb);
+		if (ref != null) {
+			AggregatorImpl aggregator = (AggregatorImpl)getBundleContext().getService(ref);
+			String bundleSymbolicName = args.length > 1 ? args[1] : null;
+			String bundleFileName = args.length > 2 ? args[2] : null;
+			try {
+				// Let aggregator process the args
+				sb.append(aggregator.createCacheBundle(bundleSymbolicName, bundleFileName));
 			} finally {
 				getBundleContext().ungetService(ref);
 			}

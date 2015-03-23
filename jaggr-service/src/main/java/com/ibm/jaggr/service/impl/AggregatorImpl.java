@@ -22,24 +22,30 @@ import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.NotFoundException;
+import com.ibm.jaggr.core.cache.CacheControl;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.AbstractAggregatorImpl;
 import com.ibm.jaggr.core.impl.AggregatorExtension;
-import com.ibm.jaggr.core.impl.Messages;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
+import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.ZipUtil;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.ServiceRegistrationOSGi;
+import com.ibm.jaggr.service.util.BundleResolverFactory;
+import com.ibm.jaggr.service.util.BundleUtil;
 import com.ibm.jaggr.service.util.ConsoleHttpServletRequest;
 import com.ibm.jaggr.service.util.ConsoleHttpServletResponse;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExecutableExtension;
@@ -54,9 +60,13 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URL;
@@ -64,6 +74,7 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -71,6 +82,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -89,10 +102,16 @@ import javax.servlet.ServletException;
  */
 @SuppressWarnings("serial")
 public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutableExtension {
-
-	private static final Logger log = Logger.getLogger(AggregatorImpl.class.getName());
+	private static final String sourceClass = AggregatorImpl.class.getName();
+	private static final Logger log = Logger.getLogger(sourceClass);
 
 	public static final String DISABLEBUNDLEIDDIRSCOPING_PROPNAME = "disableBundleIdDirScoping"; //$NON-NLS-1$
+	public static final String CACHEPRIMERBUNDLENAME_CONFIGPARAM = "cachePrimerBundleName"; //$NON-NLS-1$
+	public static final String CACHEBUST_HEADER = "cacheBust"; //$NON-NLS-1$
+	public static final String TRASHDIRNAME = "trash";  //$NON-NLS-1$
+	public static final String TEMPDIRFORMAT = "tmp{0}"; //$NON-NLS-1$
+	public static final String MANIFEST_TEMPLATE = "manifest.template"; //$NON-NLS-1$
+	public static final String JAGGR_CACHE_DIRECTORY = "JAGGR-Cache/"; //$NON-NLS-1$
 
 	protected Bundle contributingBundle;
 	private ServiceTracker executorsServiceTracker = null;
@@ -192,7 +211,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		final String sourceMethod = "setInitializationData"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configElem, propertyName, data});
+			log.entering(sourceClass, sourceMethod, new Object[]{configElem, propertyName, data});
 		}
 		contributingBundle = Platform.getBundle(configElem.getNamespaceIdentifier());
 		if (contributingBundle.getState() != Bundle.ACTIVE) {
@@ -229,6 +248,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			initOptions(initParams);
 			IConfig config = newConfig();
 			initWorkingDirectory(configMap, config); // this must be after initOptions
+			primeCache(config);
 			super.initialize(config);
 
 		} catch (Exception e) {
@@ -243,7 +263,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
 				IAggregator.class.getName(), this, dict)));
 		if (isTraceLogging) {
-			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 	}
 
@@ -252,7 +272,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		final String sourceMethod = "shutdown"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorImpl.class.getName(), sourceMethod);
+			log.entering(sourceClass, sourceMethod);
 		}
 		// Because HttpServlet.destroy() isn't guaranteed to be called when our bundle is stopped,
 		// shutdown is also called from our Activator.stop() method.  This check makes sure we don't
@@ -264,7 +284,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			variableResolverServiceTracker.close();
 		}
 		if (isTraceLogging) {
-			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 	}
 
@@ -307,7 +327,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		final String sourceMethod = "initWorkingDirectory"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configMap});
+			log.entering(sourceClass, sourceMethod, new Object[]{configMap});
 		}
 		String versionString = Long.toString(contributingBundle.getBundleId());
 		if (TypeUtil.asBoolean(config.getProperty(DISABLEBUNDLEIDDIRSCOPING_PROPNAME, null)) ||
@@ -327,7 +347,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		workdir = super.initWorkingDirectory(baseDir, configMap, versionString, versionsToRetain);
 
 		if (isTraceLogging) {
-			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 	}
 
@@ -341,7 +361,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			};
 			if (log.isLoggable(Level.INFO)) {
 				log.info(
-						MessageFormat.format(Messages.CustomOptionsFile,new Object[] {file.toString()})
+						MessageFormat.format(Messages.AggregatorImpl_1,new Object[] {file.toString()})
 						);
 			}
 		} else {
@@ -410,7 +430,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		final String sourceMethod = "initExtensions"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{configElem});
+			log.entering(sourceClass, sourceMethod, new Object[]{configElem});
 		}
 		/*
 		 *  Init the resource factory extensions
@@ -497,7 +517,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		reg.closeRegistration();
 
 		if (isTraceLogging) {
-			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 	}
 
@@ -512,7 +532,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		final String sourceMethod = "initExtension"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AggregatorImpl.class.getName(), sourceMethod, new Object[]{extensions});
+			log.entering(sourceClass, sourceMethod, new Object[]{extensions});
 		}
 		for (IExtension extension : extensions) {
 			for (IConfigurationElement member : extension.getConfigurationElements()) {
@@ -546,8 +566,223 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 			}
 		}
 		if (isTraceLogging) {
-			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
+	}
+
+	/**
+	 * Determines if the current cache data is valid and if not, then attempts to prime the
+	 * cache using a config specified bundle.
+	 *
+	 * @param config the config object
+	 * @throws IOException
+	 */
+	void primeCache(IConfig config) throws IOException {
+		final String sourceMethod = "primeCache"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{config});
+		}
+
+		String cachePrimerBundleName = null;
+
+		// Get config param.  If not specified, then return
+		Object cachePrimerBundleNameObj = config.getProperty(CACHEPRIMERBUNDLENAME_CONFIGPARAM, String.class);
+		if (cachePrimerBundleNameObj instanceof String) {
+			cachePrimerBundleName = (String)cachePrimerBundleNameObj;
+		}
+		if (cachePrimerBundleName == null) {
+			if (isTraceLogging) {
+				log.exiting(sourceClass, sourceMethod, CACHEPRIMERBUNDLENAME_CONFIGPARAM + " not specified."); //$NON-NLS-1$
+			}
+			return;
+		}
+
+		// De-serialize the cache control object and validate the cache against the current deployment
+		boolean cacheValid = true;
+		File controlFile = new File(getWorkingDirectory(), CacheControl.CONTROL_SERIALIZATION_FILENAME);
+		ObjectInputStream is = null;
+		if (!controlFile.exists()) {
+			cacheValid = false;
+		} else {
+			CacheControl control = null;
+			try {
+				is = new ObjectInputStream(new FileInputStream(controlFile));
+				control = (CacheControl)is.readObject();
+				if (!control.getOptionsMap().equals(getOptions().getOptionsMap()) ||
+					!control.getRawConfig().equals(config.toString())) {
+					cacheValid = false;
+				}
+				if (control.getInitStamp() != 0) {
+					if (isTraceLogging) {
+						log.exiting(sourceClass, sourceMethod, "Deployment contains customizations"); //$NON-NLS-1$
+					}
+					return;
+				}
+			} catch (Exception ex) {
+				if (log.isLoggable(Level.WARNING)) {
+					log.logp(Level.WARNING, sourceClass, sourceMethod, ex.getMessage(), ex);
+				}
+			} finally {
+				if (is != null) IOUtils.closeQuietly(is);
+			}
+		}
+		if (cacheValid) {
+			if (isTraceLogging) {
+				log.exiting(sourceClass, sourceMethod, "Cache is valid"); //$NON-NLS-1$
+			}
+			return;
+		}
+
+		// Try to load the cache primer bundle
+		Bundle bundle = BundleResolverFactory.getResolver(contributingBundle).getBundle(cachePrimerBundleName);
+		if (bundle == null) {
+			if (isTraceLogging) {
+				log.exiting(sourceClass, sourceMethod, "Bundle " + cachePrimerBundleName + " not loaded"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			return;
+		}
+		// Verify that the cache bust header in the bundle matches the current cache bust value
+		String cacheBust = (String)bundle.getHeaders().get(CACHEBUST_HEADER);
+		if (!AggregatorUtil.getCacheBust(config, options).equals(cacheBust)) {
+			if (isTraceLogging) {
+				log.exiting(sourceClass, sourceMethod, "Stale cache primer bundle"); //$NON-NLS-1$
+			}
+			return;
+		}
+		// Get the bundle file location
+		String loc = bundle.getLocation();
+		if (isTraceLogging) {
+			log.logp(Level.FINER, sourceClass, sourceMethod, "Cache primer bundle location = " + loc); //$NON-NLS-1$
+		}
+
+		final File sourceDir = getWorkingDirectory();
+		File[] files = sourceDir.listFiles();
+		// If the cache directory has content, then remove it
+		if (files.length > 0) {
+			// Move content to be deleted to the trash directory so it can be deleted asynchronously
+			// We don't want file deletions to delay server startup.
+			File trashDir = new File(sourceDir, TRASHDIRNAME);
+
+			// create the trash directory if it doesn't already exist
+			if (!trashDir.exists()) {
+				trashDir.mkdir();
+			}
+
+			// Find a name for the target directory in the trash directory.  We need to avoid
+			// name collisions when moving files in the event that the trash directory already
+			// has content.
+			Set<String> names = new HashSet<String>(Arrays.asList(trashDir.list()));
+			String targetDirName = MessageFormat.format(TEMPDIRFORMAT, new Object[]{0});
+			for (int i = 0; i < names.size()+1; i++) {
+				String testName = MessageFormat.format(TEMPDIRFORMAT, new Object[]{i});
+				if (!names.contains(testName)) {
+					targetDirName = testName;
+					break;
+				}
+			}
+			// Create the target directory
+			File targetDir = new File(trashDir, targetDirName);
+			targetDir.mkdir();
+			// Move files from the cache directory to the target directory
+			for (File file : files) {
+				File targetFile = new File(targetDir, file.getName());
+				if (TRASHDIRNAME.equals(targetFile.getName())) {
+					continue;
+				}
+				if (!file.renameTo(targetFile)) {
+					throw new IOException("Move failed: " + file.getAbsolutePath() + " => " + targetFile.getAbsolutePath()); //$NON-NLS-1$ //$NON-NLS-2$
+				}
+			}
+			// Delete the trash directory asynchronously
+			getExecutors().getFileDeleteExecutor().schedule(new Runnable() {
+				@Override
+				public void run() {
+					try {
+						FileUtils.deleteDirectory(new File(sourceDir, TRASHDIRNAME));
+					} catch (IOException ex) {
+						if (log.isLoggable(Level.WARNING)) {
+							log.logp(Level.WARNING, sourceClass, sourceMethod, ex.getMessage(), ex);
+						}
+					}
+				}
+			}, 30, TimeUnit.SECONDS);
+		}
+		// Now unzip the cache primer to the cache directory
+		BundleUtil.extract(bundle, getWorkingDirectory(), JAGGR_CACHE_DIRECTORY);
+
+		if (log.isLoggable(Level.INFO)) {
+			log.logp(Level.INFO, sourceClass, sourceMethod,
+					MessageFormat.format(Messages.AggregatorImpl_2, new Object[]{cachePrimerBundleName})
+			);
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod);
+		}
+	}
+
+	/**
+	 * Command handler to create a cache primer bundle containing the contents of the cache
+	 * directory.
+	 *
+	 * @param bundleSymbolicName
+	 *            the symbolic name of the bundle to be created
+	 * @param bundleFileName
+	 *            the filename of the bundle to be created
+	 * @return the string to be displayed in the console (the fully qualified filename of the
+	 *         bundle if successful or an error message otherwise)
+	 * @throws IOException
+	 */
+	public String createCacheBundle(String bundleSymbolicName, String bundleFileName) throws IOException {
+		final String sourceMethod = "createCacheBundle"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{bundleSymbolicName, bundleFileName});
+		}
+		// Serialize the cache
+		getCacheManager().serializeCache();
+
+		// De-serialize the control file to obtain the cache control data
+		File controlFile = new File(getWorkingDirectory(), CacheControl.CONTROL_SERIALIZATION_FILENAME);
+		CacheControl control = null;
+		ObjectInputStream ois = new ObjectInputStream(new FileInputStream(controlFile));;
+		try {
+			control = (CacheControl)ois.readObject();
+		} catch (Exception ex) {
+			throw new IOException(ex);
+		} finally {
+			IOUtils.closeQuietly(ois);
+		}
+		if (control.getInitStamp() != 0) {
+			return Messages.AggregatorImpl_3;
+		}
+		// create the bundle manifest
+		InputStream is = AggregatorImpl.class.getClassLoader().getResourceAsStream(MANIFEST_TEMPLATE);
+		StringWriter writer = new StringWriter();
+		CopyUtil.copy(is, writer);
+		String template = writer.toString();
+		String manifest = MessageFormat.format(template, new Object[]{
+				Long.toString(new Date().getTime()),
+				getContributingBundle().getHeaders().get("Bundle-Version"), //$NON-NLS-1$
+				bundleSymbolicName,
+				AggregatorUtil.getCacheBust(this)
+		});
+		// create the jar
+		File bundleFile = new File(bundleFileName);
+		ZipUtil.Packer packer = new ZipUtil.Packer();
+		packer.open(bundleFile);
+		try {
+			packer.packDirectory(getWorkingDirectory(), JAGGR_CACHE_DIRECTORY);
+			packer.packEntryFromStream("META-INF/MANIFEST.MF", new ByteArrayInputStream(manifest.getBytes("UTF-8")), new Date().getTime()); //$NON-NLS-1$ //$NON-NLS-2$
+		} finally {
+			packer.close();
+		}
+		String result = bundleFile.getCanonicalPath();
+
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod, result);
+		}
+		return result;
 	}
 
 	/**
@@ -569,5 +804,6 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		doGet(req, resp);
 		return Integer.toString(resp.getStatus());
 	}
+
 }
 

@@ -153,6 +153,12 @@ public interface ICacheManager {
 	 * {@link ICacheManager#createCacheFileAsync(String, Reader, CreateCompletionCallback)}
 	 * .
 	 */
+
+	/**
+	 * Synchronously serializes the cache object to dish.
+	 */
+	public void serializeCache();
+
 	public interface CreateCompletionCallback {
 		/**
 		 * This method is called when a cache file has been created or an

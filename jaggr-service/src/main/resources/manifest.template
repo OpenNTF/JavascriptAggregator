@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bnd-LastModified: {0}
+Bundle-Version: {1}
+Bundle-ActivationPolicy: lazy
+Bundle-ClassPath: .
+Bundle-Description: Javascript Aggregator cache primer bundle
+Bundle-ManifestVersion: 2
+Bundle-SymbolicName: {2}
+Bundle-Vendor: IBM
+cacheBust: {3}

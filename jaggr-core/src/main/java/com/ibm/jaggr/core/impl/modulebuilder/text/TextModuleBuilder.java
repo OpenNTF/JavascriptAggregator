@@ -44,8 +44,8 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class TextModuleBuilder implements IModuleBuilder {
 
-	@SuppressWarnings("serial")
 	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new AbstractCacheKeyGenerator() {
+		private static final long serialVersionUID = 3835177199729110434L;
 		// This is a singleton, so default equals() is sufficient
 		private final String eyecatcher = "txt"; //$NON-NLS-1$
 		@Override

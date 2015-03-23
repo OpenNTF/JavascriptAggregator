@@ -278,8 +278,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 	}
 
-	@SuppressWarnings("serial")
 	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new AbstractCacheKeyGenerator() {
+		private static final long serialVersionUID = 4300533249863413980L;
 		// This is a singleton, so default equals() is sufficient
 		private final String eyecatcher = "css"; //$NON-NLS-1$
 		@Override
