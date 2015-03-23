@@ -205,6 +205,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String PREAMBLE = "[JAGGR inlined import]: "; //$NON-NLS-1$
 
 	static public final String BLANK = ""; //$NON-NLS-1$
+	static public final String UTF8_CHARSET = "UTF-8"; //$NON-NLS-1$
 	static public final String POSTCSS_RES_NAME = "WebContent/postcss/postcss.js"; //$NON-NLS-1$
 	static public final String MINIFYER_RES_NAME = "minify.js"; //$NON-NLS-1$
 	static public final String POSTCSS = "postcss"; //$NON-NLS-1$
@@ -826,7 +827,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 							String js;
 							try {
-								js = IOUtils.toString(is);
+								js = IOUtils.toString(is, UTF8_CHARSET);
 							} catch (JavaScriptException e) {
 								// Add module info
 								String message = "Error evaluating or initializing plugin " + location + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
