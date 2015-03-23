@@ -37,6 +37,8 @@ import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.ServiceRegistrationOSGi;
+import com.ibm.jaggr.service.util.ConsoleHttpServletRequest;
+import com.ibm.jaggr.service.util.ConsoleHttpServletResponse;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -55,6 +57,7 @@ import org.osgi.util.tracker.ServiceTracker;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.text.MessageFormat;
@@ -545,6 +548,26 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (isTraceLogging) {
 			log.exiting(AggregatorImpl.class.getName(), sourceMethod);
 		}
+	}
+
+	/**
+	 * Implementation of eponymous console command. Provided to allow cache priming requests to be
+	 * issued via the server console by automation scripts.
+	 *
+	 * @param requestUrl
+	 *            the URL to process
+	 * @return the status code as a string
+	 * @throws IOException
+	 * @throws ServletException
+	 */
+	public String processRequestUrl(String requestUrl) throws IOException, ServletException {
+		ConsoleHttpServletRequest req = new ConsoleHttpServletRequest(getServletConfig().getServletContext(), requestUrl);
+		OutputStream nulOutputStream = new OutputStream() {
+			@Override public void write(int b) throws IOException {}
+		};
+		ConsoleHttpServletResponse resp = new ConsoleHttpServletResponse(nulOutputStream);
+		doGet(req, resp);
+		return Integer.toString(resp.getStatus());
 	}
 }
 

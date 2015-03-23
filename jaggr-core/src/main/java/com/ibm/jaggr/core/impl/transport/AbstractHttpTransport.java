@@ -394,7 +394,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			features = new Features(defaultFeatures);
 			String has  = getHasConditionsFromRequest(request);
 			if (has != null) {
-				for (String s : has.split("[;*]")) { //$NON-NLS-1$
+				for (String s : has.split("[;,*]")) { //$NON-NLS-1$
 					boolean value = true;
 					if (s.startsWith("!")) { //$NON-NLS-1$
 						s = s.substring(1);

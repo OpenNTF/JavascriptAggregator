@@ -51,6 +51,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
 
+import javax.servlet.ServletException;
+
 public class AggregatorCommandProvider implements CommandProvider {
 
 	static final String LOG_DIR = "log"; //$NON-NLS-1$
@@ -73,6 +75,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
 	static final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
 	static final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
+	static final String CMD_PROCESSREQUEST = "processrequesturl"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
 
 	static final String[] COMMANDS = new String[] {
@@ -88,7 +91,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_SHOWCONFIG,
 		CMD_GETSERVLETDIR,
 		CMD_GETDEPSWITHHASBRANCHING,
-		CMD_FORCEERROR
+		CMD_FORCEERROR,
+		CMD_PROCESSREQUEST
 	};
 
 	static final String DEPSOURCE_CONSOLE = "console"; //$NON-NLS-1$
@@ -149,7 +153,10 @@ public class AggregatorCommandProvider implements CommandProvider {
 						new Object[]{EYECATCHER, scopeSep, CMD_GETSERVLETDIR})).append(newline)
 				.append(MessageFormat.format(
 						Messages.CommandProvider_21,
-						new Object[]{EYECATCHER, scopeSep, CMD_FORCEERROR})).append(newline);
+						new Object[]{EYECATCHER, scopeSep, CMD_FORCEERROR})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_25,
+						new Object[]{EYECATCHER, scopeSep, CMD_PROCESSREQUEST})).append(newline);
 
 
 		return sb.toString();
@@ -194,11 +201,14 @@ public class AggregatorCommandProvider implements CommandProvider {
 				ci.println(getServletDir(args));
 			} else if (command.equals(CMD_FORCEERROR)) {
 				ci.println(setForceError(args));
+			} else if (command.equals(CMD_PROCESSREQUEST)) {
+				ci.println(processRequestUrl(args));
 			} else {
 				ci.print(getHelp());
 			}
 		} catch (Exception e) {
 			ci.println(e.getMessage());
+			ci.printStackTrace(e);
 		} finally {
 			cs.close();
 		}
@@ -482,6 +492,21 @@ public class AggregatorCommandProvider implements CommandProvider {
 			try {
 				// Let aggregator process the args
 				sb.append(aggregator.setForceError(StringUtils.join(Arrays.copyOfRange(args, 1, args.length)," "))); //$NON-NLS-1$
+			} finally {
+				getBundleContext().ungetService(ref);
+			}
+		}
+		return sb.toString();
+	}
+
+	protected String processRequestUrl(String[] args) throws InvalidSyntaxException, IOException, ServletException {
+		StringBuffer sb = new StringBuffer();
+		ServiceReference ref = getServiceRef(args, sb);
+		if (ref != null) {
+			try {
+				AggregatorImpl aggregator = (AggregatorImpl)getBundleContext().getService(ref);
+				String url = args.length > 1 ? args[1] : null;
+				sb.append(aggregator.processRequestUrl(url));
 			} finally {
 				getBundleContext().ungetService(ref);
 			}

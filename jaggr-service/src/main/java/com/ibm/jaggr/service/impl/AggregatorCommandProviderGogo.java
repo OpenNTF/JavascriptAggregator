@@ -30,6 +30,8 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import javax.servlet.ServletException;
+
 public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 
 	public AggregatorCommandProviderGogo(BundleContext context) {
@@ -171,6 +173,15 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 			) throws InvalidSyntaxException {
 		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.setForceError(args);
+	}
+
+	@Descriptor("processes the specified request url (useful for cache priming)")
+	public String processconsolerequest(CommandSession cs,
+			@Descriptor("<servlet>")String servlet,
+			@Descriptor("<request-url")String requestUrl
+			) throws InvalidSyntaxException, IOException, ServletException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
+		return super.processRequestUrl(new String[]{servlet, requestUrl});
 	}
 
 	private String[] makeArgumentArray(Object... args) {
