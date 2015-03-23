@@ -27,8 +27,8 @@ import javax.servlet.http.HttpServletRequest;
  * Implements default cache key generator behavior for module builders that d
  * don't need provisional cache key generators and don't need combine logic.
  */
-@SuppressWarnings("serial")
 public abstract class AbstractCacheKeyGenerator implements ICacheKeyGenerator {
+	private static final long serialVersionUID = -6441190651813085913L;
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)

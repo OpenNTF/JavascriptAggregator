@@ -33,8 +33,8 @@ import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServletRequest;
 
-@SuppressWarnings("serial")
 public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneable, Serializable {
+	private static final long serialVersionUID = -16528764295631156L;
 
 	private final URI uri;
 

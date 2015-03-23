@@ -173,6 +173,16 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 		return super.setForceError(args);
 	}
 
+	@Descriptor("creates a cache primer bundle")
+	public String createCacheBundle(CommandSession cs,
+			@Descriptor("<servlet>")String servlet,
+			@Descriptor("<symbolic-bunle-name>")String symbolicBundleName,
+			@Descriptor("<bundle-filename>")String bundleFilename
+			) throws IOException, InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
+		return super.createCacheBundle(new String[]{servlet, symbolicBundleName, bundleFilename});
+	}
+
 	private String[] makeArgumentArray(Object... args) {
 		ArrayList<String> result = new ArrayList<String>();
 		for (Object arg : args) {

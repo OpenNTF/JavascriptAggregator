@@ -22,8 +22,8 @@ import java.io.IOException;
 import java.io.NotSerializableException;
 import java.io.ObjectOutputStream;
 
-@SuppressWarnings("serial")
 public class DepTreeRoot extends DepTreeNode {
+	private static final long serialVersionUID = 2972168203995203238L;
 
 	private IConfig config;
 

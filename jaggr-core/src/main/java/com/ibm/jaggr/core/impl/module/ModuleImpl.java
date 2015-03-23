@@ -84,9 +84,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			.getName());
 
 
-	@SuppressWarnings("serial")
 	private static final List<ICacheKeyGenerator> defaultCacheKeyGenerators = Collections.unmodifiableList(
 		Arrays.asList(new ICacheKeyGenerator[] {new AbstractCacheKeyGenerator() {
+			private static final long serialVersionUID = 335627929845918395L;
 			// This is a singleton, so default equals() will suffice
 			private static final String eyecatcher = "nokey"; //$NON-NLS-1$
 			@Override
