@@ -76,7 +76,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
 	static final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
 	static final String CMD_PROCESSREQUEST = "processrequesturl"; //$NON-NLS-1$
-	static final String CMD_CREATECACHEBUNDLE = "createCacheBundle"; //$NON-NLS-1$
+	static final String CMD_CREATECACHEBUNDLE = "createcachebundle"; //$NON-NLS-1$
 	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
 
 	static final String[] COMMANDS = new String[] {
