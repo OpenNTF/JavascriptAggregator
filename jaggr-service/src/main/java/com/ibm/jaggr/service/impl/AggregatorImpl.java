@@ -170,6 +170,11 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 				}
 			}
 		}
+		Properties dict = new Properties();
+		dict.put("name", getName()); //$NON-NLS-1$
+		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
+				IAggregator.class.getName(), this, dict)));
+
 	}
 
 	public InitParams getConfigInitParams(IConfigurationElement configElem) {
@@ -258,10 +263,6 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					);
 		}
 
-		Properties dict = new Properties();
-		dict.put("name", getName()); //$NON-NLS-1$
-		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
-				IAggregator.class.getName(), this, dict)));
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod);
 		}
