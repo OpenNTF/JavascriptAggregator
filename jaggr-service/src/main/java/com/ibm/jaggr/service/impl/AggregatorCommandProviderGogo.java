@@ -176,7 +176,7 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	}
 
 	@Descriptor("creates a cache primer bundle")
-	public String createCacheBundle(CommandSession cs,
+	public String createcachebundle(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("<symbolic-bunle-name>")String symbolicBundleName,
 			@Descriptor("<bundle-filename>")String bundleFilename
@@ -186,7 +186,7 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 	}
 
 	@Descriptor("processes the specified request url (useful for cache priming)")
-	public String processconsolerequest(CommandSession cs,
+	public String processrequesturl(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,
 			@Descriptor("<request-url")String requestUrl
 			) throws InvalidSyntaxException, IOException, ServletException {
