@@ -18,11 +18,14 @@ package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
+import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.ConcurrentListBuilder;
+import com.ibm.jaggr.core.util.Features;
 
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -151,7 +154,11 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 			log.finer("Rendering expanded dependencies for " + mid); //$NON-NLS-1$
 		}
 		String result = null;
+		Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
 		ModuleDeps enclosingDeps = (ModuleDeps)request.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES);
+		if (enclosingDeps != null && features != null) {
+			enclosingDeps.resolveWith(features);
+		}
 		if (contentFragments.size() < 2) {
 			result = contentFragments.get(0);
 		} else {
@@ -161,14 +168,18 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 
 			@SuppressWarnings("unchecked")
 			ConcurrentListBuilder<String[]> expDeps = (ConcurrentListBuilder<String[]>)request.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
+			Map<?,?> formulaCache = (Map<?,?>)request.getAttribute(JavaScriptModuleBuilder.FORMULA_CACHE_REQATTR);
 			StringBuffer sb = new StringBuffer();
 			int i;
 			for (i = 0; i < expandedDeps.size(); i++) {
 				ModuleDeps expanded = new ModuleDeps(expandedDeps.get(i));
+				if (features != null) {
+					expanded.resolveWith(features);
+				}
 				if (enclosingDeps != null) {
 					expanded.subtractAll(enclosingDeps);
 				}
-				Set<String> moduleIds = expanded.getModuleIds();
+				Set<String> moduleIds = expanded.getModuleIds(formulaCache);
 				if (isTraceLogging) {
 					log.finest("contentFragment = " + contentFragments.get(i)); //$NON-NLS-1$
 					log.finest("moduleIds = " + moduleIds); //$NON-NLS-1$

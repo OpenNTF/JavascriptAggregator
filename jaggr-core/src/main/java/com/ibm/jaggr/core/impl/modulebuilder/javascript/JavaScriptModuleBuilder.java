@@ -74,6 +74,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -111,6 +112,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * The value is of type {@link List}&lt;{@link String}{@code []}&gt;
 	 */
 	static final String MODULE_EXPANDED_DEPS = JavaScriptModuleBuilder.class.getName() + ".moduleExpandedDeps"; //$NON-NLS-1$
+
+	static final String FORMULA_CACHE_REQATTR = JavaScriptModuleBuilder.class.getName() + ".formulaCache"; //$NON-NLS-1$
 
 	/**
 	 * The name of the scoped JavaScript variable used to specify the expanded dependency
@@ -239,7 +242,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				// Now filter out any dependencies that aren't fully resolved (i.e. those that
 				// depend on any undefined features) because those aren't included in the layer.
 				ModuleDeps resolvedDeps = new ModuleDeps();
-				for (Map.Entry<String, ModuleDepInfo> entry : layerDeps.entrySet()) {
+				layerDeps.simplify((Map<?,?>)request.getAttribute(JavaScriptModuleBuilder.FORMULA_CACHE_REQATTR));
+				for (Map.Entry<String, ModuleDepInfo> entry : layerDeps.resolveWith(Features.emptyFeatures).entrySet()) {
 					if (entry.getValue().containsTerm(BooleanTerm.TRUE)) {
 						resolvedDeps.add(entry.getKey(), entry.getValue());
 					}
@@ -253,10 +257,15 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				// Emit module id encoding code
 				result = moduleNameIdEncodingBeginLayer(request, modules);
 			}
+			request.setAttribute(FORMULA_CACHE_REQATTR, new ConcurrentHashMap<Object, Object>());
 		} else if (type == EventType.END_LAYER) {
 			if (RequestUtil.isExplodeRequires(request)) {
 				// Emit module id encoding code
 				result = moduleNameIdEncodingEndLayer(request, modules);
+			}
+			Map<?, ?> formulaCache = (Map<?, ?>)request.getAttribute(FORMULA_CACHE_REQATTR);
+			if (formulaCache != null) {
+				formulaCache.clear();
 			}
 		}
 		return result;
@@ -630,6 +639,14 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			result = sb.toString();
 		}
 		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.modulebuilder.IModuleBuilder#isScript(javax.servlet.http.HttpServletRequest)
+	 */
+	@Override
+	public boolean isScript(HttpServletRequest request) {
+		return true;
 	}
 
 	static final class CacheKeyGenerator implements ICacheKeyGenerator {

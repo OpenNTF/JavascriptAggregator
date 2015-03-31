@@ -110,17 +110,28 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	}
 
 	/**
-	 * Returns an instance of this class which is the simplified representation
-	 * of the formula represented by this object. May return this object if the
-	 * formula is already simplified.
+	 * Provided for backwards compatibility
+	 *
+	 * @return The simplified representation of this formula, or this object, if already simplified.
+	 */
+	public BooleanFormula simplify() {
+		return simplify(null);
+	}
+
+	/**
+	 * Returns an instance of this class which is the simplified representation of the formula
+	 * represented by this object. May return this object if the formula is already simplified.
 	 * <p>
 	 * This method uses the Quine-McCluskey algorithm and code described at
 	 * http://en.literateprograms.org/Quine-McCluskey_algorithm_%28Java%29
 	 *
-	 * @return The simplified representation of this formula, or this object, if
-	 *         already simplified.
+	 * @param fCache
+	 *          the formula cache
+	 *
+	 * @return The simplified representation of this formula, or this object, if already simplified.
 	 */
-	public BooleanFormula simplify() {
+	public BooleanFormula simplify(Map<?, ?> fCache) {
+
 		if (isSimplified) {
 			return this;
 		}
@@ -143,6 +154,17 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 				trimmed.add(term);
 			}
 		}
+		// if a formula cache was provided.  See if we already evaluated this formula
+		@SuppressWarnings("unchecked")
+		Map<BooleanFormula, BooleanFormula> formulaCache = (Map<BooleanFormula, BooleanFormula>)fCache;
+		if (formulaCache != null) {
+			BooleanFormula f = (BooleanFormula)formulaCache.get(this);
+			if (f != null) {
+				return f;
+			}
+		}
+
+
 		if (trimmed.size() != booleanTerms.size()) {
 			booleanTerms = trimmed;
 		}
@@ -183,7 +205,12 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		}
 		Set<BooleanTerm> result = new HashSet<BooleanTerm>();
 		if (terms.size() == 0) {
-			return new BooleanFormula(false);
+			BooleanFormula f = new BooleanFormula(false);
+			// Add the result to the cache if one was provided
+			if (formulaCache != null) {
+				formulaCache.put(this, f);
+			}
+			return f;
 		}
 
 		terms = expandDontCares(count, terms);
@@ -195,7 +222,11 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 		// now convert back to featureExpression form
 		Term[] termList = formula.getTermList();
 		if (termList.length == 0) {
-			return new BooleanFormula(false);
+			BooleanFormula f = new BooleanFormula(false);
+			if (formulaCache != null) {
+				formulaCache.put(this, f);
+			}
+			return f;
 		}
 		for (Term term : termList) {
 			Set<BooleanVar> states = new HashSet<BooleanVar>();
@@ -210,12 +241,17 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 				result.add(new BooleanTerm(states));
 			}
 		}
+		BooleanFormula newFormula;
 		if (result.size() == 0) {
-			return new BooleanFormula(true);
+			newFormula = new BooleanFormula(true);
+		} else {
+			newFormula = new BooleanFormula();
+			newFormula.booleanTerms = result;
+			newFormula.isSimplified = true;
 		}
-		BooleanFormula newFormula = new BooleanFormula();
-		newFormula.booleanTerms = result;
-		newFormula.isSimplified = true;
+		if (formulaCache != null) {
+			formulaCache.put(this, newFormula);
+		}
 		return newFormula;
 	}
 

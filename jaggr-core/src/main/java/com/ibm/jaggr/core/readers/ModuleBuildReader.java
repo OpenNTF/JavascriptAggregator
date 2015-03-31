@@ -41,18 +41,21 @@ public class ModuleBuildReader extends Reader {
 	private List<ModuleBuildFuture> before;
 	private List<ModuleBuildFuture> after;
 	private List<ICacheKeyGenerator> keyGenerators;
-	private String error;
+	private final boolean isScript;
+	private final String error;
 
 	/**
 	 * Constructor for a Build object specifying a reader, key generator
 	 * and error flag.
 	 *
 	 * @param reader A {@link Reader} to the build content
+	 * @param isScript true if the reader content is executable script code
 	 * @param keyGens The {@link ICacheKeyGenerator} list for this IModule
 	 * @param error If not null, then an message describing the error
 	 */
-	public ModuleBuildReader(Reader reader, List<ICacheKeyGenerator> keyGens, String error) {
+	public ModuleBuildReader(Reader reader, boolean isScript, List<ICacheKeyGenerator> keyGens, String error) {
 		this.reader = reader;
+		this.isScript = isScript;
 		this.keyGenerators = keyGens;
 		this.error = error;
 		before = after = null;
@@ -65,18 +68,20 @@ public class ModuleBuildReader extends Reader {
 	 * Consturctor for a reader with no cache key generator and no error
 	 *
 	 * @param reader A {@link Reader} to the build content
+	 * @param isScript true if the reader content is executable script code
 	 */
-	public ModuleBuildReader(Reader reader) {
-		this(reader, null, null);
+	public ModuleBuildReader(Reader reader, boolean isScript) {
+		this(reader, isScript, null, null);
 	}
 
 	/**
 	 * Constructor for a build reader from a string
 	 *
 	 * @param str the string
+	 * @param isScript true if the string contains executable script code
 	 */
-	public ModuleBuildReader(String str) {
-		this(new StringReader(str));
+	public ModuleBuildReader(String str, boolean isScript) {
+		this(new StringReader(str), isScript);
 	}
 
 	/**
@@ -103,6 +108,13 @@ public class ModuleBuildReader extends Reader {
 
 	public String getErrorMessage() {
 		return error;
+	}
+
+	/**
+	 * @return true if the content is scirpt code
+	 */
+	public boolean isScript() {
+		return isScript;
 	}
 
 	/* (non-Javadoc)

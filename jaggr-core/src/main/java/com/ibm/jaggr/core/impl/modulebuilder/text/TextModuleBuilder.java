@@ -18,7 +18,6 @@ package com.ibm.jaggr.core.impl.modulebuilder.text;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
-import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
@@ -28,12 +27,11 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
+import com.google.common.collect.ImmutableList;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 
 import javax.servlet.http.HttpServletRequest;
@@ -50,9 +48,11 @@ public class TextModuleBuilder implements IModuleBuilder {
 		private final String eyecatcher = "txt"; //$NON-NLS-1$
 		@Override
 		public String generateKey(HttpServletRequest request) {
-			Boolean noTextAdorn = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
+			boolean noTextAdorn = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
+			boolean exportNames = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
 			StringBuffer sb = new StringBuffer(eyecatcher)
-			.append(noTextAdorn ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			.append(noTextAdorn ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
+			.append(noTextAdorn ? ":0" : (exportNames ? ":1" : ":0")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			return sb.toString();
 		}
 		@Override
@@ -60,14 +60,8 @@ public class TextModuleBuilder implements IModuleBuilder {
 			return eyecatcher;
 		}
 	};
+	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators = ImmutableList.<ICacheKeyGenerator>of(s_cacheKeyGenerator);
 
-	static protected final List<ICacheKeyGenerator> s_cacheKeyGenerators;
-	static {
-		List<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>(2);
-		keyGens.addAll(Arrays.asList(new ICacheKeyGenerator[]{new ExportNamesCacheKeyGenerator()}));
-		keyGens.add(s_cacheKeyGenerator);
-		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
-	}
 
 	/**
 	 * Returns the compiler input source for the text module as the text stream
@@ -112,5 +106,10 @@ public class TextModuleBuilder implements IModuleBuilder {
 	@Override
 	public boolean handles(String mid, IResource resource) {
 		return true;
+	}
+
+	@Override
+	public boolean isScript(HttpServletRequest request) {
+		return  !TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
 	}
 }

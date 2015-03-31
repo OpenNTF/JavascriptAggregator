@@ -90,5 +90,6 @@ public class DepTreeTest {
 		@Override public ModuleBuild build(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {	return null; }
 		@Override public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) { return null; }
 		@Override public boolean handles(String mid, IResource resource) { return false; }
+		@Override public boolean isScript(HttpServletRequest request) { return true; }
 	}
 }

@@ -174,7 +174,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/en/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/en/strings", build.getBefore().get(0));
 
 		// Test with an unavailable locale
 		requestAttributes.put(
@@ -229,8 +229,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		System.out.println(output);
 		Assert.assertEquals("define(\"nls/strings\",{locale_label:\"root\"});", output);
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/eb/strings", build.getBefore().get(0).getModuleId());
-		Assert.assertEquals(file.toURI(), build.getBefore().get(0).getURI());
+		Assert.assertEquals("nls/eb/strings", build.getBefore().get(0));
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
@@ -263,7 +262,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(s.contains("i18n{en-us-var"));
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/en-us-var/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/en-us-var/strings", build.getBefore().get(0));
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
 				Arrays.asList(new String[]{"en-ca-var"}));
@@ -273,7 +272,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/en-ca/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/en-ca/strings", build.getBefore().get(0));
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
@@ -284,7 +283,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/es/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/es/strings", build.getBefore().get(0));
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
@@ -305,7 +304,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/en-ca/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/en-ca/strings", build.getBefore().get(0));
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
@@ -316,7 +315,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/en/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/en/strings", build.getBefore().get(0));
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
@@ -327,7 +326,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(1, build.getBefore().size());
-		Assert.assertEquals("nls/en/strings", build.getBefore().get(0).getModuleId());
+		Assert.assertEquals("nls/en/strings", build.getBefore().get(0));
 
 		requestAttributes.put(
 				IHttpTransport.REQUESTEDLOCALES_REQATTRNAME,
@@ -350,8 +349,8 @@ public class I18nModuleBuilderTest extends EasyMock {
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(3, build.getBefore().size());
 		Set<String> mids = new HashSet<String>();
-		for (IModule module : build.getBefore()) {
-			mids.add(module.getModuleId());
+		for (String mid : build.getBefore()) {
+			mids.add(mid);
 		}
 		Assert.assertEquals(
 				new HashSet<String>(Arrays.asList(new String[]{"nls/es/strings", "nls/en-us/strings", "nls/en-ca/strings"})),

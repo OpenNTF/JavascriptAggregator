@@ -73,8 +73,8 @@ public interface ILayerListener {
 	 * @param modules
 	 *            The list of modules in the layer.  Note that modules added to
 	 *            the layer by module builders using the
-	 *            {@link ModuleBuild#addBefore(IModule)} and
-	 *            {@link ModuleBuild#addAfter(IModule)} methods are not included
+	 *            {@link ModuleBuild#addBefore(String)} and
+	 *            {@link ModuleBuild#addAfter(String)} methods are not included
 	 *            in the list.  For the BEGIN_MODULE event, the list contains
 	 *            only the single module that is being added to the layer.
 	 * @param dependentFeatures

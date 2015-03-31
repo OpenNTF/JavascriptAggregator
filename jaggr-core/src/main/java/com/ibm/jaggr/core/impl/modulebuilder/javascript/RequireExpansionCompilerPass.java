@@ -45,6 +45,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.http.HttpServletRequest;
+
 /**
  * Custom Compiler pass for Google Closure compiler to do require list explosion.
  * Scans the AST for require calls and explodes any require lists it finds to
@@ -413,7 +415,9 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		expandedDeps.subtractAll(filter);
 
 		expandedDepsList.add(expandedDeps);
-		if (expandedDeps.getModuleIds().size() > 0) {
+		HttpServletRequest request = aggregator.getCurrentRequest();
+		Map<?,?> formulaCache = request != null ? (Map<?,?>)request.getAttribute(JavaScriptModuleBuilder.FORMULA_CACHE_REQATTR) : null;
+		if (expandedDeps.getModuleIds(formulaCache).size() > 0) {
 			int listIndex = expandedDepsList.size()-1;
 			if (logDebug) {
 				msg = new LinkedList<String>();

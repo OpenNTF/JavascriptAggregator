@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
+import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.easymock.EasyMock;
@@ -207,18 +208,6 @@ public class AbstractDojoHttpTransportTest {
 		TestDojoHttpTransport transport = new TestDojoHttpTransport();
 		transport.setAggregator(mockAggregator);
 
-
-		transport.decorateRequest(mockRequest);
-		Assert.assertFalse(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
-
-		// Make sure noTextAdorn attribute is set if server expanded layer
-		requestParams.put("deps", new String[]{"dep1"});
-		transport.decorateRequest(mockRequest);
-		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
-
-		// noTextAdorn should be set even if this is a server expanded layer and we're exporting module names
-		mockRequest.removeAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME);
-		requestParams.put("exportNames", new String[]{"1"});
 		transport.decorateRequest(mockRequest);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
 	}
@@ -227,15 +216,13 @@ public class AbstractDojoHttpTransportTest {
 	public void testBeforeLayerModule() throws Exception {
 		TestDojoHttpTransport transport = new TestDojoHttpTransport();
 		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{textPluginDelegators:[\"dojo/text\"],jsPluginDelegators:[\"dojo/i18n\"]}"));
-		String result = transport.beforeLayerModule(mockRequest, "module");
+		String result = transport.beforeLayerModule(mockRequest, new ModuleInfo("module", true));
 		Assert.assertEquals("\"module\":function(){", result);
-		result = transport.beforeLayerModule(mockRequest, "plugin!module");
-		Assert.assertEquals("\"plugin!module\":function(){", result);
 		// Test output modified by text plugin delegators
-		result = transport.beforeLayerModule(mockRequest, "dojo/text!module");
+		result = transport.beforeLayerModule(mockRequest, new ModuleInfo("dojo/text!module", false));
 		Assert.assertEquals("\"url:module\":", result);
 		// Test output modified by js plugin delegators
-		result = transport.beforeLayerModule(mockRequest, "dojo/i18n!module");
+		result = transport.beforeLayerModule(mockRequest, new ModuleInfo("dojo/i18n!module", true));
 		Assert.assertEquals("\"module\":function(){", result);
 	}
 
@@ -243,12 +230,12 @@ public class AbstractDojoHttpTransportTest {
 	public void testAfterLayerModule() throws Exception {
 		TestDojoHttpTransport transport = new TestDojoHttpTransport();
 		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{textPluginDelegators:[\"dojo/text\"]}"));
-		String result = transport.afterLayerModule(mockRequest, "module");
+		String result = transport.afterLayerModule(mockRequest, new ModuleInfo("module", true));
 		Assert.assertEquals("}", result);
-		result = transport.afterLayerModule(mockRequest, "plugin!module");
+		result = transport.afterLayerModule(mockRequest, new ModuleInfo("plugin!module", true));
 		Assert.assertEquals("}", result);
 		// Test output modified by text plugin delegators
-		result = transport.afterLayerModule(mockRequest, "dojo/text!module");
+		result = transport.afterLayerModule(mockRequest, new ModuleInfo("dojo/text!module", false));
 		Assert.assertEquals("", result);
 	}
 
