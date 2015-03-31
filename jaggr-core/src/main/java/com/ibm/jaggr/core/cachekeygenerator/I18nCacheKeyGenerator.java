@@ -60,30 +60,34 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 		@SuppressWarnings("unchecked")
 		Collection<String> requestedLocales = (Collection<String>)request.getAttribute(IHttpTransport.REQUESTEDLOCALES_REQATTRNAME);
 		if (requestedLocales != null && requestedLocales.size() > 0) {
-			int i = 0;
-			for (String locale : requestedLocales) {
-				if (availableLocales == null) {
-					sb.append(i++ > 0 ? "," : "").append(locale); //$NON-NLS-1$ //$NON-NLS-2$
-				} else {
-					String[] a = locale.split("-"); //$NON-NLS-1$
-					String language = a[0].toLowerCase();
-					String country = (a.length > 1) ? a[1].toLowerCase() : ""; //$NON-NLS-1$
-					String varient = (a.length > 2) ? a[2].toLowerCase() : ""; //$NON-NLS-1$
-					if (
-							language.length() > 0 &&
-							country.length() > 0 &&
-							varient.length() > 0 &&
-							availableLocales.contains(language+"-"+country+"-"+varient)) { //$NON-NLS-1$ //$NON-NLS-2$
-						sb.append(i++ > 0 ? "," : "").append(language+"-"+country+"-"+varient); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-					} else if (
-							language.length() > 0 &&
-							country.length() > 0 &&
-							availableLocales.contains(language+"-"+country)) { //$NON-NLS-1$
-						sb.append(i++ > 0 ? "," : "").append(language+"-"+country); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					} else if (
-							language.length() > 0 &&
-							availableLocales.contains(language)) {
-						sb.append(i++ > 0 ? "," : "").append(language); //$NON-NLS-1$ //$NON-NLS-2$
+			if (requestedLocales.contains("*")) { //$NON-NLS-1$
+				sb.append("*"); //$NON-NLS-1$
+			} else {
+				int i = 0;
+				for (String locale : requestedLocales) {
+					if (availableLocales == null) {
+						sb.append(i++ > 0 ? "," : "").append(locale); //$NON-NLS-1$ //$NON-NLS-2$
+					} else {
+						String[] a = locale.split("-"); //$NON-NLS-1$
+						String language = a[0].toLowerCase();
+						String country = (a.length > 1) ? a[1].toLowerCase() : ""; //$NON-NLS-1$
+						String varient = (a.length > 2) ? a[2].toLowerCase() : ""; //$NON-NLS-1$
+						if (
+								language.length() > 0 &&
+								country.length() > 0 &&
+								varient.length() > 0 &&
+								availableLocales.contains(language+"-"+country+"-"+varient)) { //$NON-NLS-1$ //$NON-NLS-2$
+							sb.append(i++ > 0 ? "," : "").append(language+"-"+country+"-"+varient); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+						} else if (
+								language.length() > 0 &&
+								country.length() > 0 &&
+								availableLocales.contains(language+"-"+country)) { //$NON-NLS-1$
+							sb.append(i++ > 0 ? "," : "").append(language+"-"+country); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+						} else if (
+								language.length() > 0 &&
+								availableLocales.contains(language)) {
+							sb.append(i++ > 0 ? "," : "").append(language); //$NON-NLS-1$ //$NON-NLS-2$
+						}
 					}
 				}
 			}

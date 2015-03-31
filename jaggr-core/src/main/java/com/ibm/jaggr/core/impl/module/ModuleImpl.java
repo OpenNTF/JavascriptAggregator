@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.layer.CompletedFuture;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.module.IModule;
@@ -76,9 +77,7 @@ import java.util.logging.Logger;
 
 import javax.servlet.http.HttpServletRequest;
 
-public class ModuleImpl extends ModuleIdentifier implements IModule, Serializable {
-
-	private static final long serialVersionUID = -970059455315515031L;
+public class ModuleImpl extends ModuleIdentifier implements IModule {
 
 	private static final Logger log = Logger.getLogger(ModuleImpl.class
 			.getName());
@@ -103,7 +102,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 
 	private final URI uri;
 
-	private transient IResource resource = null;
+	private IResource resource = null;
 
 	private volatile List<ICacheKeyGenerator> _cacheKeyGenerators;
 
@@ -230,26 +229,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 			}
 
 		}
-		// If the source doesn't exist, throw an exception.
 		final IResource resource = getResource(aggr);
-		if (!resource.exists()) {
-			if (log.isLoggable(Level.WARNING))
-				log.warning(
-						MessageFormat.format(
-								Messages.ModuleImpl_1,
-								new Object[]{resource.getURI().toString()}
-								)
-						);
-			throw new NotFoundException(resource.getURI()
-					.toString());
-		}
-
 		final IModuleBuilder builder = aggr.getModuleBuilder(getModuleId(), resource);
 		if (builder == null) {
 			throw new UnsupportedOperationException("No module builder for " + resource.getURI()); //$NON-NLS-1$
 		}
-		// Get the last modified date of the source file.
-		long modified = resource.lastModified();
 
 		// make local copies of instance variables so we can access them in a
 		// thread-safe way
@@ -258,18 +242,22 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		final ConcurrentMap<String, CacheEntry> moduleBuilds;
 		ConcurrentMap<String, CacheEntry> oldModuleBuilds = null;
 		synchronized (this) {
-			if (modified != _lastModified) {
-				if (isLogLevelFiner) {
-					log.finer("Resetting cached modules builds for module " //$NON-NLS-1$
-							+ getModuleName() + "\nOld last modified=" //$NON-NLS-1$
-							+ _lastModified + ", new last modified=" + modified); //$NON-NLS-1$
-				}
-				oldModuleBuilds = _moduleBuilds;
-				_moduleBuilds = null;
-				_lastModified = modified;
-				_cacheKeyGenerators = Collections.unmodifiableList(builder.getCacheKeyGenerators(aggr));
-				if (_cacheKeyGenerators == null) {
-					_cacheKeyGenerators = defaultCacheKeyGenerators;
+			if (_lastModified == 0 || options.isDevelopmentMode()) {
+				// Get the last modified date of the source file.
+				long modified = resource.lastModified();
+				if (modified != _lastModified) {
+					if (isLogLevelFiner) {
+						log.finer("Resetting cached modules builds for module " //$NON-NLS-1$
+								+ getModuleName() + "\nOld last modified=" //$NON-NLS-1$
+								+ _lastModified + ", new last modified=" + modified); //$NON-NLS-1$
+					}
+					oldModuleBuilds = _moduleBuilds;
+					_moduleBuilds = null;
+					_lastModified = modified;
+					_cacheKeyGenerators = Collections.unmodifiableList(builder.getCacheKeyGenerators(aggr));
+					if (_cacheKeyGenerators == null) {
+						_cacheKeyGenerators = defaultCacheKeyGenerators;
+					}
 				}
 			}
 			cacheKeyGenerators = _cacheKeyGenerators;
@@ -302,11 +290,24 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
-				ModuleBuildReader mbr = new ModuleBuildReader(reader,
+				ModuleBuildReader mbr = new ModuleBuildReader(reader, builder.isScript(request),
 						cacheKeyGenerators, null);
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
+		}
+
+		// If the source doesn't exist, throw an exception.
+		if (!resource.exists()) {
+			if (log.isLoggable(Level.WARNING))
+				log.warning(
+						MessageFormat.format(
+								Messages.ModuleImpl_1,
+								new Object[]{resource.getURI().toString()}
+								)
+						);
+			throw new NotFoundException(resource.getURI()
+					.toString());
 		}
 
 		CacheEntry newEntry = new CacheEntry();
@@ -324,7 +325,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
-				ModuleBuildReader mbr = new ModuleBuildReader(reader,
+				ModuleBuildReader mbr = new ModuleBuildReader(reader, builder.isScript(request),
 						cacheKeyGenerators, null);
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
@@ -371,7 +372,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 								log.finer("returning built module with cache key: " //$NON-NLS-1$
 										+ key);
 							}
-							ModuleBuildReader mbr = new ModuleBuildReader(reader,
+							ModuleBuildReader mbr = new ModuleBuildReader(reader, builder.isScript(request),
 									_cacheKeyGenerators, null);
 							processExtraModules(mbr, request, cacheEntry);
 							return mbr;
@@ -385,7 +386,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						if (build.isError()) {
 							// Don't cache error results
 							return new ModuleBuildReader(new StringReader(build
-									.getBuildOutput().toString()), null, build.getErrorMessage());
+									.getBuildOutput().toString()), builder.isScript(request), null, build.getErrorMessage());
 						}
 						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
 
@@ -459,7 +460,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 											errorMsg,
 											getModuleName(),
 											request
-									), null, errorMsg
+									), true, null, errorMsg
 								);
 
 						} else {
@@ -469,6 +470,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(
 						cacheEntry.getReader(mgr.getCacheDir(), request),
+						builder.isScript(request),
 						newCacheKeyGenerators, null);
 				processExtraModules(mbr, request, cacheEntry);
 				// return a build reader object
@@ -493,10 +495,13 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	public void processExtraModules(ModuleBuildReader reader, HttpServletRequest request, CacheEntry cacheEntry)
 			throws IOException {
 
-		List<IModule> before = cacheEntry.getBefore(), after = cacheEntry.getAfter();
+		List<String> before = cacheEntry.getBefore(), after = cacheEntry.getAfter();
 		if (!before.isEmpty() || !after.isEmpty()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			for (IModule module : cacheEntry.getBefore()) {
+			IConfig config = aggr.getConfig();
+			for (String mid : cacheEntry.getBefore()) {
+				URI uri = config.locateModuleResource(mid);
+				IModule module = aggr.newModule(mid, uri);
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(
 						module,
@@ -504,7 +509,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 						ModuleSpecifier.BUILD_ADDED);
 				reader.addBefore(mbf);
 			}
-			for (IModule module : cacheEntry.getAfter()) {
+			for (String mid : cacheEntry.getAfter()) {
+				URI uri = config.locateModuleResource(mid);
+				IModule module = aggr.newModule(mid, uri);
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(
 						module,
@@ -687,13 +694,13 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 	 * I/O if the live cache objects were serialized.
 	 */
 	static final private class CacheEntry implements Cloneable, Serializable {
-		private static final long serialVersionUID = -8079746606394403358L;
+		private static final long serialVersionUID = -3260824057647663760L;
 
 		private volatile transient Object content = null;
 		private volatile String filename = null;
 		private volatile boolean isString = false;
-		private volatile List<IModule> beforeModules = Collections.emptyList();
-		private volatile List<IModule> afterModules = Collections.emptyList();
+		private volatile List<String> beforeModules = Collections.emptyList();
+		private volatile List<String> afterModules = Collections.emptyList();
 
 		/**
 		 * @return The filename of the cached module build
@@ -765,7 +772,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 * @param after
 		 *            The list of after modules for this module build
 		 */
-		public void setData(Object content, List<IModule> before, List<IModule> after) {
+		public void setData(Object content, List<String> before, List<String> after) {
 			this.beforeModules = before;
 			this.afterModules = after;
 			this.content = content;
@@ -778,8 +785,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 *
 		 * @return The list of before modules
 		 */
-		public List<IModule> getBefore()  {
-			return beforeModules == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(beforeModules);
+		public List<String> getBefore()  {
+			return beforeModules == null ? Collections.<String>emptyList() : Collections.unmodifiableList(beforeModules);
 		}
 
 		/**
@@ -788,8 +795,8 @@ public class ModuleImpl extends ModuleIdentifier implements IModule, Serializabl
 		 *
 		 * @return The list of after modules
 		 */
-		public List<IModule> getAfter()  {
-			return afterModules == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(afterModules);
+		public List<String> getAfter()  {
+			return afterModules == null ? Collections.<String>emptyList() : Collections.unmodifiableList(afterModules);
 		}
 
 		/**

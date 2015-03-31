@@ -19,7 +19,6 @@ package com.ibm.jaggr.core.modulebuilder;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.resource.IResource;
 
 import java.util.Collections;
@@ -35,8 +34,8 @@ import javax.servlet.http.HttpServletRequest;
  */
 public final class ModuleBuild {
 	private Object buildOutput;
-	private List<IModule> before;
-	private List<IModule> after;
+	private List<String> before;
+	private List<String> after;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private String error;
 
@@ -118,13 +117,13 @@ public final class ModuleBuild {
 	 * Before modules are included in the layer build that contains this
 	 * module build ahead of this module build.
 	 *
-	 * @param module The module to add to the before list
+	 * @param moduleId The module id to add to the before list
 	 */
-	public void addBefore(IModule module) {
+	public void addBefore(String moduleId) {
 		if (before == null) {
-			before = new LinkedList<IModule>();
+			before = new LinkedList<String>();
 		}
-		before.add(module);
+		before.add(moduleId);
 	}
 
 	/**
@@ -133,13 +132,13 @@ public final class ModuleBuild {
 	 * After modules are included in the layer build that contains this
 	 * module build following this module build.
 	 *
-	 * @param module The module to add to the after list
+	 * @param moduleId The module id to add to the after list
 	 */
-	public void addAfter(IModule module) {
+	public void addAfter(String moduleId) {
 		if (after == null) {
-			after = new LinkedList<IModule>();
+			after = new LinkedList<String>();
 		}
-		after.add(module);
+		after.add(moduleId);
 	}
 
 	/**
@@ -148,8 +147,8 @@ public final class ModuleBuild {
 	 *
 	 * @return The list of before modules.
 	 */
-	public List<IModule> getBefore() {
-		return before == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(before);
+	public List<String> getBefore() {
+		return before == null ? Collections.<String>emptyList() : Collections.unmodifiableList(before);
 	}
 
 	/**
@@ -158,7 +157,7 @@ public final class ModuleBuild {
 	 *
 	 * @return The list of after modules.
 	 */
-	public List<IModule> getAfter() {
-		return after == null ? Collections.<IModule>emptyList() : Collections.unmodifiableList(after);
+	public List<String> getAfter() {
+		return after == null ? Collections.<String>emptyList() : Collections.unmodifiableList(after);
 	}
 }

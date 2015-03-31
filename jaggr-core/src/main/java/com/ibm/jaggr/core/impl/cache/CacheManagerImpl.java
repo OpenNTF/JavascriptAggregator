@@ -52,6 +52,8 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
@@ -282,25 +284,40 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	 */
 	@Override
 	public void serializeCache() {
-		try {
-			File cacheFile = new File(_directory, CACHE_META_FILENAME);
-			File controlFile = new File(new File(_directory, ".."), CacheControl.CONTROL_SERIALIZATION_FILENAME); //$NON-NLS-1$
-			// Synchronize on the cache object to keep the scheduled cache sync thread and
-			// the thread processing servlet destroy from colliding.
-			synchronized(cacheSerializerSyncObj) {
-				// Serialize the cache
-				ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(cacheFile));
-				os.writeObject(_cache.get());
-				os.close();
-				// Serialize the control object to the parent directory so the
-				// aggregator can manage the cache primer
-				os = new ObjectOutputStream(new FileOutputStream(controlFile));
-				os.writeObject(_cache.get().getControlObj());
-				os.close();
+
+		// Queue up the serialization behind any pending cache file creations.
+		Future<Void> future = _aggregator.getExecutors().getFileCreateExecutor().submit(new Callable<Void>() {
+			public Void call() {
+				// Synchronize on the cache object to keep the scheduled cache sync thread and
+				// the thread processing servlet destroy from colliding.
+				synchronized(cacheSerializerSyncObj) {
+					File cacheFile = new File(_directory, CACHE_META_FILENAME);
+					File controlFile = new File(new File(_directory, ".."), CacheControl.CONTROL_SERIALIZATION_FILENAME); //$NON-NLS-1$
+					try {
+						// Serialize the cache
+						ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(cacheFile));
+						os.writeObject(_cache.get());
+						os.close();
+						// Serialize the control object to the parent directory so the
+						// aggregator can manage the cache primer
+						os = new ObjectOutputStream(new FileOutputStream(controlFile));
+						os.writeObject(_cache.get().getControlObj());
+						os.close();
+					} catch(Exception e) {
+						throw new RuntimeException(e);
+					}
+				}
+				return null;
 			}
-		} catch(Exception e) {
+		});
+
+		// Wait for the serialization to complete before returning.
+		try {
+			future.get(5, TimeUnit.MINUTES);	// time-out after 5 minutes
+		} catch (Exception e) {
 			if (log.isLoggable(Level.SEVERE))
 				log.log(Level.SEVERE, e.getMessage(), e);
+			throw new RuntimeException(e);
 		}
 	}
 

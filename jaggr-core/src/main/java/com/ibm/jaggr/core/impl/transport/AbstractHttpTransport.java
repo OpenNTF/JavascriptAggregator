@@ -826,20 +826,20 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			break;
 		case BEFORE_FIRST_MODULE:
 			if (previousType != LayerContributionType.BEGIN_MODULES ||
-			!(arg instanceof String)) {
+			!(arg instanceof ModuleInfo)) {
 				throw new IllegalStateException();
 			}
 			break;
 		case BEFORE_SUBSEQUENT_MODULE:
 			if (previousType != LayerContributionType.AFTER_MODULE ||
-			!(arg instanceof String)) {
+			!(arg instanceof ModuleInfo)) {
 				throw new IllegalStateException();
 			}
 			break;
 		case AFTER_MODULE:
 			if (previousType != LayerContributionType.BEFORE_FIRST_MODULE &&
 			previousType != LayerContributionType.BEFORE_SUBSEQUENT_MODULE ||
-			!(arg instanceof String)) {
+			!(arg instanceof ModuleInfo)) {
 				throw new IllegalStateException();
 			}
 			break;
@@ -857,20 +857,20 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			break;
 		case BEFORE_FIRST_LAYER_MODULE:
 			if (previousType != LayerContributionType.BEGIN_LAYER_MODULES ||
-			!(arg instanceof String)) {
+			!(arg instanceof ModuleInfo)) {
 				throw new IllegalStateException();
 			}
 			break;
 		case BEFORE_SUBSEQUENT_LAYER_MODULE:
 			if (previousType != LayerContributionType.AFTER_LAYER_MODULE ||
-			!(arg instanceof String)) {
+			!(arg instanceof ModuleInfo)) {
 				throw new IllegalStateException();
 			}
 			break;
 		case AFTER_LAYER_MODULE:
 			if (previousType != LayerContributionType.BEFORE_FIRST_LAYER_MODULE &&
 			previousType != LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE ||
-			!(arg instanceof String)) {
+			!(arg instanceof ModuleInfo)) {
 				throw new IllegalStateException();
 			}
 			break;

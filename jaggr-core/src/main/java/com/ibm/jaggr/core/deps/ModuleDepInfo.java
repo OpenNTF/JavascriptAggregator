@@ -25,6 +25,7 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -95,7 +96,6 @@ public class ModuleDepInfo implements Serializable {
 		isPluginNameDeclared = other.isPluginNameDeclared;
 		this.comment = (comment != null) ? comment : other.comment;
 		commentTermSize = other.commentTermSize;
-		simplifyInvariant();
 	}
 
 	/**
@@ -150,25 +150,36 @@ public class ModuleDepInfo implements Serializable {
 			this.comment = comment;
 			commentTermSize = term != null ? term.size() : 0;
 		}
-		simplifyInvariant();
 	}
 
 	/**
-	 * A return value of null means that the associated module should be
-	 * included in the expanded dependency list unconditionally. A return value
-	 * consisting of an empty list means that it should not be included at all.
-	 * <p>
-	 * If the list is not empty, then the list elements are the has! plugin
-	 * prefixes that should be used with this module. One module id per list
-	 * entry specifying the same module name should be used.
-	 * <p>
-	 * {@link TreeSet} is used to obtain predictable ordering of terms in
-	 * compound has conditionals, mostly for unit tests.
+	 * Provided for backwards compatibility
 	 *
 	 * @return The list of has! plugin prefixes for this module.
 	 */
 	public Collection<String> getHasPluginPrefixes() {
-		formula = formula.simplify();
+		return getHasPluginPrefixes(null);
+	}
+
+	/**
+	 * A return value of null means that the associated module should be included in the expanded
+	 * dependency list unconditionally. A return value consisting of an empty list means that it
+	 * should not be included at all.
+	 * <p>
+	 * If the list is not empty, then the list elements are the has! plugin prefixes that should be
+	 * used with this module. One module id per list entry specifying the same module name should be
+	 * used.
+	 * <p>
+	 * {@link TreeSet} is used to obtain predictable ordering of terms in compound has conditionals,
+	 * mostly for unit tests.
+	 *
+	 * @param formulaCache
+	 *          the formula cache
+	 *
+	 * @return The list of has! plugin prefixes for this module.
+	 */
+	public Collection<String> getHasPluginPrefixes(Map<?, ?> formulaCache) {
+		formula = formula.simplify(formulaCache);
 		if (formula.isTrue()) {
 			return null;
 		}
@@ -202,7 +213,6 @@ public class ModuleDepInfo implements Serializable {
 	 * @return True if the formula logically includes the specified term
 	 */
 	public boolean containsTerm(BooleanTerm term) {
-		simplifyInvariant();
 		if (term.isFalse() || formula.isTrue()) {
 			// If the term is false, then adding it won't change the formula
 			// Similarly if the formula is true.  No additional term added
@@ -250,7 +260,6 @@ public class ModuleDepInfo implements Serializable {
 			pluginName = other.pluginName;
 			isPluginNameDeclared = other.isPluginNameDeclared;
 		}
-		simplifyInvariant();
 		return this;
 	}
 
@@ -351,7 +360,6 @@ public class ModuleDepInfo implements Serializable {
 			comment = null;
 			commentTermSize = 0;
 		}
-		simplifyInvariant();
 		return modified;
 	}
 
@@ -363,7 +371,18 @@ public class ModuleDepInfo implements Serializable {
 	 */
 	public void resolveWith(Features features) {
 		formula.resolveWith(features);
-		simplifyInvariant();
+	}
+
+	/**
+	 * Simplifies the boolean formula
+	 *
+	 * @param formulaCache
+	 *          the formula cache
+	 * @return this object
+	 */
+	public ModuleDepInfo simplify(Map<?, ?> formulaCache) {
+		formula = formula.simplify(formulaCache);
+		return this;
 	}
 
 	/* (non-Javadoc)
@@ -372,25 +391,6 @@ public class ModuleDepInfo implements Serializable {
 	@Override
 	public String toString() {
 		return formula != null ? formula.toString() : "TRUE"; //$NON-NLS-1$
-	}
-
-	/**
-	 * Simplify the formula and replace the existing formula with the simplified
-	 * equivalent only if it is invariant (evaluates to true of false).
-	 * <p>
-	 * Note that we don't replace non-invariants with the simplified version
-	 * of the expression because keeping the terms in their original form
-	 * makes it easier to match terms when subtracting.
-	 */
-	private void simplifyInvariant() {
-		BooleanFormula simplified = formula.simplify();
-		if  (simplified.isTrue() || simplified.isFalse() || simplified.equals(formula)) {
-			formula = simplified;
-		}
-		if (formula.isTrue() || formula.isFalse()) {
-			pluginName = null;
-			isPluginNameDeclared = false;
-		}
 	}
 
 	/* (non-Javadoc)

@@ -60,7 +60,7 @@ public class NotFoundModule extends ModuleIdentifier implements IModule, Cloneab
 						errorMessage,
 						getModuleName(),
 						request
-					),
+					), true,
 					null,
 					errorMessage
 				)

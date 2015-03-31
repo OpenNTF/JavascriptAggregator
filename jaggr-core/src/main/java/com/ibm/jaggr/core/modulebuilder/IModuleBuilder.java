@@ -217,5 +217,22 @@ public interface IModuleBuilder {
 	 */
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator);
 
+	/**
+	 * Returns true if this module builder handles the specified resource
+	 *
+	 * @param mid
+	 *            the module id
+	 * @param resource
+	 *            the resource for the module id
+	 * @return true if this builder can build the module
+	 */
 	public boolean handles(String mid, IResource resource);
+
+	/**
+	 * @param request
+	 *            the request object
+	 * @return true if the output of this builder for the specified request is executable script
+	 *         code
+	 */
+	public boolean isScript(HttpServletRequest request);
 }

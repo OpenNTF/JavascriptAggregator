@@ -21,6 +21,7 @@ import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
+import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfig.Location;
@@ -30,7 +31,9 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.transport.IRequestedModuleNames;
+import com.ibm.jaggr.core.util.RequestUtil;
+
+import com.google.common.collect.ImmutableList;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
@@ -153,11 +156,16 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		case BEGIN_LAYER_MODULES:
 			return beginLayerModules(request, arg);
 		case BEFORE_FIRST_LAYER_MODULE:
-			return beforeLayerModule(request, arg.toString());
+			return beforeLayerModule(request, (ModuleInfo)arg);
 		case BEFORE_SUBSEQUENT_LAYER_MODULE:
-			return "," + beforeLayerModule(request, arg.toString()); //$NON-NLS-1$
+			return "," + beforeLayerModule(request, (ModuleInfo)arg); //$NON-NLS-1$
+		case BEFORE_FIRST_MODULE:
+		case BEFORE_SUBSEQUENT_MODULE:
+			return beforeModule(request, (ModuleInfo)arg);
+		case AFTER_MODULE:
+			return afterModule(request, (ModuleInfo)arg);
 		case AFTER_LAYER_MODULE:
-			return afterLayerModule(request, arg.toString());
+			return afterLayerModule(request, (ModuleInfo)arg);
 		case END_LAYER_MODULES:
 			return endLayerModules(request, arg);
 		case END_RESPONSE:
@@ -189,6 +197,48 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		return true;
 	}
 
+
+	/**
+	 * Handles
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_FIRST_MODULE}
+	 * and
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_SUBSEQUENT_MODULE}
+	 * layer listener events.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param info
+	 *            the {@link com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo} object for the module
+	 * @return the layer contribution
+	 */
+	protected String beforeModule(HttpServletRequest request, ModuleInfo info) {
+		String result = ""; //$NON-NLS-1$
+		if (!info.isScript()) {
+			StringBuffer sb = new StringBuffer(""); //$NON-NLS-1$
+			sb.append("define("); //$NON-NLS-1$
+			if (RequestUtil.isExportModuleName(request)) {
+				sb.append("'").append(info.getModuleId()).append("',"); //$NON-NLS-1$ //$NON-NLS-2$
+			}
+			result = sb.toString();
+		}
+		return result;
+	}
+
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#AFTER_MODULE}
+	 * layer listener event.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param info
+	 *            the {@link com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo} object for the module
+	 * @return the layer contribution
+	 */
+	protected String afterModule(HttpServletRequest request, ModuleInfo info) {
+		return info.isScript() ? "" : ");"; //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
 	/**
 	 * Handles
 	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_FIRST_LAYER_MODULE}
@@ -198,26 +248,18 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 *
 	 * @param request
 	 *            the http request object
-	 * @param mid
-	 *            the module identifier
+	 * @param info
+	 *            the {@link com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo} object for the module
 	 * @return the layer contribution
 	 */
-	protected String beforeLayerModule(HttpServletRequest request, String mid) {
+	protected String beforeLayerModule(HttpServletRequest request, ModuleInfo info) {
 		String result;
+		String mid = info.getModuleId();
 		int idx = mid.indexOf("!"); //$NON-NLS-1$
-		if (idx == -1) {
-			result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
+		if (info.isScript()) {
+			result = "\"" + (idx == -1 ? mid : mid.substring(idx+1)) + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
 		} else {
-			String plugin = mid.substring(0, idx);
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			IConfig config = aggr.getConfig();
-			if (getAggregatorTextPluginName().equals(plugin) || config.getTextPluginDelegators().contains(plugin)) {
-				result = "\"url:" + mid.substring(idx+1) + "\":"; //$NON-NLS-1$ //$NON-NLS-2$
-			} else if (config.getJsPluginDelegators().contains(plugin)) {
-				result = "\"" + mid.substring(idx+1) + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
-			} else {
-				result = "\"" + mid + "\":function(){"; //$NON-NLS-1$ //$NON-NLS-2$
-			}
+			result = "\"url:" + (idx == -1 ? mid : mid.substring(idx+1)) + "\":"; //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		return result;
 	}
@@ -229,22 +271,12 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 *
 	 * @param request
 	 *            the http request object
-	 * @param mid
-	 *            the module id
+	 * @param info
+	 *            the {@link com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo} object for the module
 	 * @return the layer contribution
 	 */
-	protected String afterLayerModule(HttpServletRequest request, String mid) {
-		int idx = mid.indexOf("!"); //$NON-NLS-1$
-		String plugin = idx == -1 ? null : mid.substring(0, idx);
-		String result = "}";//$NON-NLS-1$
-		if (plugin != null) {
-			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-			IConfig config = aggr.getConfig();
-			if (getAggregatorTextPluginName().equals(plugin) || config.getTextPluginDelegators().contains(plugin)) {
-				result = ""; //$NON-NLS-1$
-			}
-		}
-		return result;
+	protected String afterLayerModule(HttpServletRequest request, ModuleInfo info) {
+		return info.isScript() ? "}" : ""; //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	/**
@@ -308,31 +340,20 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		return result;
 	}
 
+	static List<ICacheKeyGenerator> s_cacheKeyGenerators = ImmutableList.<ICacheKeyGenerator>of(new ExportNamesCacheKeyGenerator());
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.AbstractHttpTransport#getCacheKeyGenerators()
 	 */
 	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators() {
-		/*
-		 * The content generated by this transport is invariant with regard
-		 * to request parameters (for a given set of modules) so we don't
-		 * need to provide a cache key generator.
-		 */
-		return null;
+		return s_cacheKeyGenerators;
 	}
 
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 		super.decorateRequest(request);
-		boolean isServerExpanded = false;
-		IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
-		if (requestedModuleNames != null) {
-			isServerExpanded = !requestedModuleNames.getDeps().isEmpty() || !requestedModuleNames.getPreloads().isEmpty();
-		}
-		if (isServerExpanded) {
-			// If we're building a server-expanded layer, then don't adorn text strings
-			request.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
-		}
+		request.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
 	}
 
 	/* (non-Javadoc)

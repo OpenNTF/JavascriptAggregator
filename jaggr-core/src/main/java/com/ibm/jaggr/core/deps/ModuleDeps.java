@@ -169,18 +169,29 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	}
 
 	/**
-	 * Returns a set of module ids for the keys in this map. If the module dep
-	 * info objects associated with a key specifies has plugin prefixes, then
-	 * the entries will include the prefixes. Note that one map entry may result
-	 * in multiple (or zero) result entries depending on the evaluation of the
-	 * boolean formula which represents the has conditionals.
+	 * Provided for backwards compatibility
 	 *
 	 * @return The set of module ids
 	 */
 	public Set<String> getModuleIds() {
+		return getModuleIds(null);
+	}
+
+	/**
+	 * Returns a set of module ids for the keys in this map. If the module dep info objects associated
+	 * with a key specifies has plugin prefixes, then the entries will include the prefixes. Note that
+	 * one map entry may result in multiple (or zero) result entries depending on the evaluation of
+	 * the boolean formula which represents the has conditionals.
+	 *
+	 * @param formulaCache
+	 *          the formula cache or null
+	 *
+	 * @return The set of module ids
+	 */
+	public Set<String> getModuleIds(Map<?, ?> formulaCache) {
 		Set<String> result = new LinkedHashSet<String>();
 		for (Map.Entry<String, ModuleDepInfo> entry : entrySet()) {
-			Collection<String> prefixes = entry.getValue().getHasPluginPrefixes();
+			Collection<String> prefixes = entry.getValue().getHasPluginPrefixes(formulaCache);
 			if (prefixes == null) {
 				result.add(entry.getKey());
 			} else {
@@ -228,6 +239,20 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	public ModuleDeps resolveWith(Features features) {
 		for (ModuleDepInfo info : values()) {
 			info.resolveWith(features);
+		}
+		return this;
+	}
+
+	/**
+	 * Simplifies the boolean formulas for each contained {@link ModuleDepInfo}
+	 *
+	 * @param formulaCache
+	 *          the formula cache
+	 * @return this object
+	 */
+	public ModuleDeps simplify(Map<?, ?> formulaCache) {
+		for (ModuleDepInfo info : values()) {
+			info.simplify(formulaCache);
 		}
 		return this;
 	}

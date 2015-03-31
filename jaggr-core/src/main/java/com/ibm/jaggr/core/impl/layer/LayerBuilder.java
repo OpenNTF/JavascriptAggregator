@@ -295,7 +295,7 @@ public class LayerBuilder {
 		if (reader.isError()) {
 			mid = future.getModule().getModuleName();
 		}
-		addTransportContribution(request, transport, sb, type, mid);
+		addTransportContribution(request, transport, sb, type, new IHttpTransport.ModuleInfo(mid, reader.isScript()));
 
 		count++;
 		// Add the reader to the result
@@ -309,7 +309,7 @@ public class LayerBuilder {
 		// Add post-module transport contribution
 		type = (source == ModuleSpecifier.LAYER || source == ModuleSpecifier.BUILD_ADDED && required) ?
 				LayerContributionType.AFTER_LAYER_MODULE : LayerContributionType.AFTER_MODULE;
-		addTransportContribution(request, transport, sb, type, mid);
+		addTransportContribution(request, transport, sb, type, new IHttpTransport.ModuleInfo(mid, reader.isScript()));
 
 		// Process any after modules by recursively calling this method
 		if (!TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOADDMODULES_REQATTRNAME))) {
