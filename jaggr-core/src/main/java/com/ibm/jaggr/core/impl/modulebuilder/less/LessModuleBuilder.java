@@ -92,6 +92,8 @@ public class LessModuleBuilder extends CSSModuleBuilder {
 			compilerScript = cx.compileString(compilerString, BLANK, 1, null);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
+		} finally {
+			Context.exit();
 		}
 		if (isTraceLogging) {
 			log.exiting(sourceMethod, sourceMethod);
