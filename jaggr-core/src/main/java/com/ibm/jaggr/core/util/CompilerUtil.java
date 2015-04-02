@@ -15,23 +15,14 @@
  */
 package com.ibm.jaggr.core.util;
 
-import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.config.IConfig;
-import com.ibm.jaggr.core.options.IOptions;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 
-public class AggregatorUtil {
+public class CompilerUtil {
 
-	static public String getCacheBust(IAggregator aggregator) {
-		return getCacheBust(aggregator.getConfig(), aggregator.getOptions());
-	}
-
-	static public String getCacheBust(IConfig config, IOptions options) {
-		String result = config.getCacheBust();
-		String optionsCb = options.getCacheBust();
-		if (optionsCb != null && optionsCb.length() > 0) {
-			result = (result != null && result.length() > 0) ?
-					(result + "-" + optionsCb) : optionsCb; //$NON-NLS-1$
-		}
-		return result;
+	public static CompilerOptions getDefaultOptions() {
+		CompilerOptions options = new CompilerOptions();
+		options.setLanguageIn(LanguageMode.ECMASCRIPT5);
+		return options;
 	}
 }

@@ -29,7 +29,6 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 
@@ -172,6 +171,16 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 			) throws InvalidSyntaxException {
 		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
 		return super.setForceError(args);
+	}
+
+	@Descriptor("creates a cache primer bundle")
+	public String createCacheBundle(CommandSession cs,
+			@Descriptor("<servlet>")String servlet,
+			@Descriptor("<symbolic-bunle-name>")String symbolicBundleName,
+			@Descriptor("<bundle-filename>")String bundleFilename
+			) throws IOException, InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
+		return super.createCacheBundle(new String[]{servlet, symbolicBundleName, bundleFilename});
 	}
 
 	private String[] makeArgumentArray(Object... args) {

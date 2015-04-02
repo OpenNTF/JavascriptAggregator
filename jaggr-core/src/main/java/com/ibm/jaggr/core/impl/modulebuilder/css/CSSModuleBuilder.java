@@ -35,9 +35,20 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.mozilla.javascript.Context;
+import org.mozilla.javascript.EvaluatorException;
+import org.mozilla.javascript.Function;
+import org.mozilla.javascript.JavaScriptException;
+import org.mozilla.javascript.NativeArray;
+import org.mozilla.javascript.Script;
+import org.mozilla.javascript.Scriptable;
+import org.mozilla.javascript.ScriptableObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -57,6 +68,12 @@ import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -72,6 +89,7 @@ import javax.servlet.http.HttpServletRequest;
  * <li>Unnecessary white-space and token removal
  * <li>In-lining of &#064;imports
  * <li>In-lining of image URLs using the Data URI scheme
+ * <li>Runs configured PostCSS plugins (e.g. autoprefixer)
  * </ul>
  * This module works by extending TextModuleBuilder and processing the text stream
  * associated with the Reader that is returned by the overridden method
@@ -106,7 +124,7 @@ import javax.servlet.http.HttpServletRequest;
  * <dt>
  * <dd>If true, then &#064;import statements will be inlined. The default value
  * is true.</dd>
- * </edl> </blockquote>
+ * </dl> </blockquote>
  * <h2>In-lining of image URLs using the Data URI scheme</h2>
  * <p>
  * <a name="foo">Foo</a> Image URLs in CSS can optionally be in-lined, replacing
@@ -143,10 +161,27 @@ import javax.servlet.http.HttpServletRequest;
  * inlinedImageExcludeList.</dd>
  * </dl>
  * </blockquote>
+ * <h2>Running configured PostCSS plugins</h2>
+ * <p>Plugins are configured in the Server-side AMD JavaScript config using an array
+ * of two element arrays as in the following example:
+ * <code><pre>
+ * postcss: {
+ *    plugins: [
+ *       [
+ *          'autoprefixer',  // Name of the plugin resource
+ *                           // Can be an AMD module id or an absolute URI to a server resource
+ *          function(autoprefixer) {
+ *              return autoprefixer({browsers: '> 1%'}).postcss; } // the init function
+ *           }
+ *       ]
+ *    }
+ * ],
+ * </pre></code>
  */
 public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IShutdownListener, IConfigListener {
 
-	static final Logger log = Logger.getLogger(CSSModuleBuilder.class.getName());
+	static final String sourceClass = CSSModuleBuilder.class.getName();
+	static final Logger log = Logger.getLogger(sourceClass);
 
 	// Custom server-side AMD config param names
 	static public final String INLINEIMPORTS_CONFIGPARAM = "inlineCSSImports"; //$NON-NLS-1$
@@ -155,6 +190,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final String IMAGETYPES_CONFIGPARAM = "inlineableImageTypes"; //$NON-NLS-1$
 	static public final String SIZETHRESHOLD_CONFIGPARAM = "inlinedImageSizeThreshold";  //$NON-NLS-1$
 	static public final String INCLUDEAMDPATHS_CONFIGPARAM = "cssEnableAMDIncludePaths";  //$NON-NLS-1$
+	static public final String POSTCSSPLUGINS_CONFIGPARAM = "postcssPlugins"; //$NON-NLS-1$
+	static public final String SCOPEPOOLSIZE_CONFIGPARAM = "cssScopePoolSize"; //$NON-NLS-1$
+	static public final String POSTCSS_CONFIGPARAM = "postcss"; //$NON-NLS-1$
 
 	// Custom server-side AMD config param default values
 	static public final boolean INLINEIMPORTS_DEFAULT_VALUE = true;
@@ -163,6 +201,27 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 	static public final String INLINEIMPORTS_REQPARAM_NAME = "inlineImports"; //$NON-NLS-1$
 	static public final String INLINEIMAGES_REQPARAM_NAME = "inlineImages"; //$NON-NLS-1$
+
+	static public final String PREAMBLE = "[JAGGR inlined import]: "; //$NON-NLS-1$
+
+	static public final String BLANK = ""; //$NON-NLS-1$
+	static public final String UTF8_CHARSET = "UTF-8"; //$NON-NLS-1$
+	static public final String POSTCSS_RES_NAME = "WebContent/postcss/postcss.js"; //$NON-NLS-1$
+	static public final String MINIFYER_RES_NAME = "minify.js"; //$NON-NLS-1$
+	static public final String POSTCSS = "postcss"; //$NON-NLS-1$
+	static public final String PROCESS = "process";  //$NON-NLS-1$
+	static public final String PLUGINS = "plugins"; //$NON-NLS-1$
+	static public final String POSTCSS_INSTANCE = "postcssInstance"; //$NON-NLS-1$
+	static public final String MODULE = "module"; //$NON-NLS-1$
+	static public final String EXPORTS = "exports"; //$NON-NLS-1$
+	static public final String AMD_DEFINE_SHIM_JS = "var module={exports:0},define=function(deps, f){if(deps&&deps.length)throw new Error('define dependencies not supported.');module.exports=f();};define.amd=true;"; //$NON-NLS-1$
+	static public final String MINIFIER_INITIALIZATION_VAR = "minifierInitializer"; //$NON-NLS-1$
+	static public final String MINIFIER_INITIALIZATION_JS = "var " + MINIFIER_INITIALIZATION_VAR + " = function(m) { return m('" + PREAMBLE + "');}"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+	static public final Map<String, Boolean> POSTCSS_OPTIONS = ImmutableMap.of(
+	        "safe", Boolean.TRUE //$NON-NLS-1$
+	);
+	static public final int DEFAULT_SCOPE_POOL_SIZE = 10;
+	static public final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
@@ -177,8 +236,50 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_inlineableImageTypes.add("image/tiff"); //$NON-NLS-1$
 	};
 
-	@SuppressWarnings("serial")
+	public CSSModuleBuilder() {
+		super();
+		init();
+	}
+
+	// for unit tests
+	protected CSSModuleBuilder(IAggregator aggregator) {
+		super();
+		this.aggregator = aggregator;
+		init();
+	}
+
+	private void init() {
+		InputStream postcssJsStream = null;
+		InputStream minifyJsStream = null;
+		Context cx = Context.enter();
+		try {
+			cx.setOptimizationLevel(9);
+			postcssJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(POSTCSS_RES_NAME);
+			if (postcssJsStream == null) {
+				throw new NotFoundException(POSTCSS_RES_NAME);
+			}
+			minifyJsStream = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(MINIFYER_RES_NAME);
+			if (minifyJsStream == null) {
+				throw new NotFoundException(MINIFYER_RES_NAME);
+			}
+			String postcssJsString = IOUtils.toString(postcssJsStream);
+			postcssJsScript = cx.compileString(postcssJsString, POSTCSS_RES_NAME, 1, null);
+			String minifyJsString = IOUtils.toString(minifyJsStream);
+			minifyJsScript = cx.compileString(minifyJsString, BLANK, 1, null);
+			amdDefineShimScript = cx.compileString(AMD_DEFINE_SHIM_JS, BLANK, 1, null);
+			minifierInitScript = cx.compileString(MINIFIER_INITIALIZATION_JS, BLANK, 1, null);
+
+		} catch(IOException e) {
+			throw new RuntimeException(e);
+		} finally {
+			Context.exit();
+			if (postcssJsStream != null) IOUtils.closeQuietly(postcssJsStream);
+			if (minifyJsStream != null) IOUtils.closeQuietly(minifyJsStream);
+		}
+	}
+
 	static private final AbstractCacheKeyGenerator s_cacheKeyGenerator = new AbstractCacheKeyGenerator() {
+		private static final long serialVersionUID = 4300533249863413980L;
 		// This is a singleton, so default equals() is sufficient
 		private final String eyecatcher = "css"; //$NON-NLS-1$
 		@Override
@@ -207,6 +308,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_cacheKeyGenerators = Collections.unmodifiableList(keyGens);
 	}
 
+	private static class PluginInfo {
+		final Function initializer;
+		final Script moduleScript;
+		PluginInfo(Function initializer, Script moduleScript) {
+			this.initializer = initializer;
+			this.moduleScript = moduleScript;
+		}
+	}
+
 	//private List<ServiceRegistration> registrations = new LinkedList<ServiceRegistration>();
 	private List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 	public int imageSizeThreshold = 0;
@@ -216,7 +326,20 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private Map<String, String> inlineableImageTypeMap = new HashMap<String, String>();
 	private Collection<Pattern> inlinedImageIncludeList = Collections.emptyList();
 	public Collection<Pattern> inlinedImageExcludeList = Collections.emptyList();
+	private IAggregator aggregator;
 
+	// Rhino variables for PostCSS
+	private Script postcssJsScript;
+	private Script minifyJsScript;
+	private Script amdDefineShimScript;
+	private Script minifierInitScript;
+	private List<PluginInfo> pluginInfoList;
+	private Scriptable postcssOptions;
+	private BlockingQueue<Scriptable> threadScopes;
+
+	private ReadWriteLock configUpdatingRWL = new ReentrantReadWriteLock();
+
+	/* (non-Javadoc)
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.impl.text.TextModuleBuilder#getContentReader(java.lang.String, com.ibm.jaggr.service.resource.IResource, javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.module.ICacheKeyGenerator)
 	 */
@@ -227,31 +350,34 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			HttpServletRequest request,
 			List<ICacheKeyGenerator> keyGens)
 			throws IOException {
-
-		String css = readToString(new CommentStrippingReader(resource.getReader()));
-		// in-line @imports
-		if (inlineImports) {
-			css = inlineImports(request, css, resource, ""); //$NON-NLS-1$
+		final String sourceMethod = "getContentReader"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGens});
 		}
-		return processCss(resource, request, css);
-	}
+		Reader result = null;
+		configUpdatingRWL.readLock().lock();	// If a config update is in progress, wait
+		try {
+			String css = readToString(new CommentStrippingReader(resource.getReader()));
+			// in-line @imports
+			if (inlineImports) {
+				css = inlineImports(request, css, resource, BLANK);
+			}
+			// PostCSS
+			css = postcss(css, resource);
 
-	/**
-	 * Runs CSS through minification and image inlining.
-	 * @param resource The resource representing the CSS file.
-	 * @param request The request for the CSS file.
-	 * @param css The actual CSS {@link java.lang.String} to process.
-	 * @return A {@link java.io.StringReader} for the resulting CSS.
-	 * @throws IOException
-	 */
-	protected Reader processCss(IResource resource, HttpServletRequest request, String css) throws IOException {
-		// whitespace
-		css = minify(css, resource);
+			// Inline images
+			css = inlineImageUrls(request, css, resource);
 
-		// Inline images
-		css = inlineImageUrls(request, css, resource);
+			result = new StringReader(css);
 
-		return new StringReader(css);
+		} finally {
+			configUpdatingRWL.readLock().unlock();
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod, result);
+		}
+		return result;
 	}
 
 	/**
@@ -267,69 +393,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return out.toString();
 	}
 
-	private static final Pattern quotedStringPattern = Pattern.compile("\\\"[^\\\"]*\\\"|'[^']*'|" + urlPattern.toString()); //$NON-NLS-1$
-	private static final Pattern whitespacePattern = Pattern.compile("\\s+", Pattern.MULTILINE); //$NON-NLS-1$
-	private static final Pattern endsPattern = Pattern.compile("^\\s|\\s$"); //$NON-NLS-1$
-	private static final Pattern closeBracePattern = Pattern.compile("[;\\s]+\\}"); //$NON-NLS-1$
-	private static final Pattern delimitersPattern = Pattern.compile("(\\s?[;:,{]\\s?)"); //$NON-NLS-1$
 	private static final Pattern forwardSlashPattern = Pattern.compile("\\\\"); //$NON-NLS-1$
-
-	private static final String QUOTED_STRING_MARKER = "__qUoTeDsTrInG"; //$NON-NLS-1$
-	private static final Pattern QUOTED_STRING_MARKER_PAT = Pattern.compile("%%" + QUOTED_STRING_MARKER + "([0-9]*)__%%"); //$NON-NLS-1$ //$NON-NLS-2$
-	/**
-	 * Minifies a CSS string by removing comments and excess white-space, as well as
-	 * some unneeded tokens.
-	 *
-	 * @param css The contents of a CSS file as a String
-	 * @param res The resource for the CSS file
-	 * @return the minified css
-	 */
-	protected String minify(String css, IResource res) {
-		// replace all quoted strings and url(...) patterns with unique ids so that
-		// they won't be affected by whitespace removal.
-		LinkedList<String> quotedStringReplacements = new LinkedList<String>();
-		Matcher m = quotedStringPattern.matcher(css);
-		StringBuffer sb = new StringBuffer();
-		int i = 0;
-		while (m.find()) {
-			String text = (m.group(1) != null) ?
-					("url(" + StringUtils.trim(m.group(1)) + ")") :   //$NON-NLS-1$ //$NON-NLS-2$
-						m.group(0);
-					quotedStringReplacements.add(i, text);
-					String replacement = "%%" + QUOTED_STRING_MARKER + (i++) + "__%%"; //$NON-NLS-1$ //$NON-NLS-2$
-					m.appendReplacement(sb, ""); //$NON-NLS-1$
-					sb.append(replacement);
-		}
-		m.appendTail(sb);
-		css = sb.toString();
-
-		// Get rid of extra whitespace
-		css = whitespacePattern.matcher(css).replaceAll(" "); //$NON-NLS-1$
-		css = endsPattern.matcher(css).replaceAll(""); //$NON-NLS-1$
-		css = closeBracePattern.matcher(css).replaceAll("}"); //$NON-NLS-1$
-		m = delimitersPattern.matcher(css);
-		sb = new StringBuffer();
-		while (m.find()) {
-			String text = m.group(1);
-			m.appendReplacement(sb, ""); //$NON-NLS-1$
-			sb.append(text.length() == 1 ? text : text.replace(" ", "")); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-		m.appendTail(sb);
-		css = sb.toString();
-
-		// restore quoted strings and url(...) patterns
-		m = QUOTED_STRING_MARKER_PAT.matcher(css);
-		sb = new StringBuffer();
-		while (m.find()) {
-			i = Integer.parseInt(m.group(1));
-			m.appendReplacement(sb, ""); //$NON-NLS-1$
-			sb.append(quotedStringReplacements.get(i));
-		}
-		m.appendTail(sb);
-		css = sb.toString();
-
-		return css.toString();
-	}
 
 	static final Pattern importPattern = Pattern.compile("\\@import\\s+(?:\\(less\\))?\\s*(url\\()?\\s*([^);]+)\\s*(\\))?([\\w, ]*)(;)?", Pattern.MULTILINE); //$NON-NLS-1$
 	/**
@@ -369,10 +433,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		 * the beginning of the file.
 		 */
 		boolean includePreamble
-		= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
-		&& (options.isDebugMode() || options.isDevelopmentMode());
+				= TypeUtil.asBoolean(req.getAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME))
+					&& (options.isDebugMode() || options.isDevelopmentMode());
 		if (includePreamble && path != null && path.length() > 0) {
-			buf.append("/* @import "  + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
+			buf.append("\r\n/*" + PREAMBLE + path + " */\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 		Matcher m = importPattern.matcher(css);
 		while (m.find()) {
@@ -394,7 +458,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			//Only process media type "all" or empty media type rules.
 			if(mediaTypes.length() > 0 && !"all".equals(StringUtils.trim(mediaTypes))){ //$NON-NLS-1$
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
 				continue;
 			}
@@ -403,7 +467,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			importNameMatch = forwardSlashPattern.matcher(importNameMatch).replaceAll("/"); //$NON-NLS-1$
 
 			if (importNameMatch.startsWith("/") || protocolPattern.matcher(importNameMatch).find()) { //$NON-NLS-1$
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
 				continue;
 			}
@@ -434,14 +498,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 									)
 							)
 					);
-			importCss = minify(importCss, importRes);
-			// Inline images
 			importCss = inlineImageUrls(req, importCss, importRes);
 
 			if (inlineImports) {
 				importCss = inlineImports(req, importCss, importRes, importNameMatch);
 			}
-			m.appendReplacement(buf, ""); //$NON-NLS-1$
+			m.appendReplacement(buf, BLANK);
 			buf.append(importCss);
 		}
 		m.appendTail(buf);
@@ -455,7 +517,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 			//Make a file path based on the last slash.
 			//If no slash, so must be just a file name. Use empty string then.
-			path = (idx != -1) ? path.substring(0, idx + 1) : ""; //$NON-NLS-1$
+			path = (idx != -1) ? path.substring(0, idx + 1) : BLANK;
 			buf = new StringBuffer();
 			m = urlPattern.matcher(css);
 			while (m.find()) {
@@ -463,7 +525,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				String urlMatch = m.group(1);
 
 				urlMatch = StringUtils.trim(urlMatch.replace("\\", "/")); //$NON-NLS-1$ //$NON-NLS-2$
-				String quoted = ""; //$NON-NLS-1$
+				String quoted = BLANK;
 				if (urlMatch.charAt(0) == '"' && urlMatch.charAt(urlMatch.length()-1) == '"') {
 					quoted = "\""; //$NON-NLS-1$
 					urlMatch = urlMatch.substring(1, urlMatch.length()-1);
@@ -474,12 +536,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 				// Don't modify non-relative URLs
 				if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
-					m.appendReplacement(buf, ""); //$NON-NLS-1$
+					m.appendReplacement(buf, BLANK);
 					buf.append(fullMatch);
 					continue;
 				}
 
-				String fixedUrl = path + ((path.endsWith("/") || path.length() == 0) ? "" : "/") + urlMatch; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				String fixedUrl = path + ((path.endsWith("/") || path.length() == 0) ? BLANK : "/") + urlMatch; //$NON-NLS-1$ //$NON-NLS-2$
 				//Collapse '..' and '.'
 				String[] parts = fixedUrl.split("/"); //$NON-NLS-1$
 				for(int i = parts.length - 1; i > 0; i--){
@@ -492,7 +554,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 						}
 					}
 				}
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append("url(") //$NON-NLS-1$
 				.append(quoted)
 				.append(StringUtils.join(parts, "/")) //$NON-NLS-1$
@@ -544,7 +606,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			// Don't do anything with non-relative URLs
 			if (urlMatch.startsWith("/") || urlMatch.startsWith("#") || protocolPattern.matcher(urlMatch).find()) { //$NON-NLS-1$ //$NON-NLS-2$
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
 				continue;
 			}
@@ -555,7 +617,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			try {
 				imageUri = res.resolve(urlMatch).getURI();
 			} catch (IllegalArgumentException ignore) {
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
 				continue;
 			}
@@ -580,7 +642,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// If there's an include list, then only the files in the include list
 			// will be inlined
 			if (inlinedImageIncludeList.size() > 0 && !include || exclude) {
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
 				continue;
 			}
@@ -603,7 +665,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 					if (include || connection.getContentLength() <= imageSizeThreshold) {
 						in = connection.getInputStream();
 						String base64 = getBase64(connection);
-						m.appendReplacement(buf, ""); //$NON-NLS-1$
+						m.appendReplacement(buf, BLANK);
 						buf.append("url('data:" + type + //$NON-NLS-1$
 								";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
 						imageInlined = true;
@@ -627,7 +689,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 			if (!imageInlined) {
 				// Image not in-lined.  Write the original URL
-				m.appendReplacement(buf, ""); //$NON-NLS-1$
+				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
 			}
 		}
@@ -635,6 +697,243 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		return buf.toString();
 	}
 
+	/**
+	 * Runs given CSS through PostCSS processor for minification and any other processing
+	 * by configured plugins
+	 * .
+	 * @param css
+	 * @param res
+	 * @return The processed CSS.
+	 * @throws IOException
+	 */
+	protected String postcss(String css, IResource res) throws IOException {
+		if (threadScopes == null) {
+			return css;
+		}
+		Context cx = Context.enter();
+		Scriptable threadScope = null;
+		String result = null;
+		try {
+			threadScope = threadScopes.poll(SCOPE_POOL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+			if (threadScope == null) {
+				throw new TimeoutException("Timeout waiting for thread scope"); //$NON-NLS-1$
+			}
+			Scriptable scope = cx.newObject(threadScope);
+			scope.setParentScope(threadScope);
+			Scriptable postcssInstance = (Scriptable)threadScope.get(POSTCSS_INSTANCE, scope);
+			Function postcssProcessor = (Function)postcssInstance.getPrototype().get(PROCESS, postcssInstance);
+			Object processed = postcssProcessor.call(cx, scope, postcssInstance, new Object[]{css, postcssOptions});
+			result = Context.toString(processed);
+		} catch (JavaScriptException e) {
+			// Add module info
+			String message = "Error parsing " + res.getURI() + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
+			throw new IOException(message, e);
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (TimeoutException e) {
+			throw new RuntimeException(e);
+		}
+		finally {
+			if (threadScope != null) {
+				// put the thread scope back in the queue now that we're done with it
+				threadScopes.add(threadScope);
+			}
+			Context.exit();
+		}
+		return result;
+	}
+
+	/**
+	 * Initializes Rhino with PostCSS and configured plugins.  The minifier plugin is
+	 * always added.  Additional plugins are added based on configuration.
+	 *
+	 * See {@link CSSModuleBuilder} for a description of the plugin config JavaScript
+	 *
+	 * @param config The config object
+	 *
+	 * @throws IllegalArgumentException if any of the config parameters are not valid
+	 * @throws RuntimeException for any other exception caught within this module
+	 */
+	protected void initPostcss(IConfig config) {
+		final String sourceMethod = "initPostcss"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{config});
+		}
+
+		pluginInfoList = new ArrayList<PluginInfo>();
+		Context cx = Context.enter();
+		try {
+			Scriptable configScript = (Scriptable)config.getRawConfig();
+			Scriptable configScope = (Scriptable)config.getConfigScope();
+
+			int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
+			// Read the scope pool size if specified
+			Object scopePoolSizeConfig = configScript.get(SCOPEPOOLSIZE_CONFIGPARAM, configScript);
+			if (scopePoolSizeConfig != Scriptable.NOT_FOUND) {
+				scopePoolSize = ((Number)scopePoolSizeConfig).intValue();
+			}
+
+			// Create a new scope to evaluate the minifier initialization code because configScope is sealed.
+			Scriptable scope = cx.newObject(configScope);
+			scope.setParentScope(configScope);
+			minifierInitScript.exec(cx, scope);
+			pluginInfoList.add(new PluginInfo(
+					(Function)scope.get(MINIFIER_INITIALIZATION_VAR, scope),
+					minifyJsScript)
+			);
+
+
+			/*
+			 * Now load and initialize configured plugins and add them to the plugin array
+			 */
+			Object postcssConfigObj = configScript.get(POSTCSS_CONFIGPARAM, configScript);
+			if (postcssConfigObj != Scriptable.NOT_FOUND) {
+				Scriptable postcssConfig = (Scriptable)postcssConfigObj;
+				// Process any specified plugin configs
+				Object pluginsConfigObj = postcssConfig.get(PLUGINS, postcssConfig);
+				if (pluginsConfigObj != Scriptable.NOT_FOUND) {
+					Scriptable pluginsConfig = (Scriptable)pluginsConfigObj;
+					Object[] ids = pluginsConfig.getIds();
+					for (int i = 0; i < ids.length; i++) {
+						if (!(ids[i] instanceof Number)) {
+							// ignore named properties
+							continue;
+						}
+						Object pluginInfoObj = pluginsConfig.get(i, configScope);
+						if (pluginInfoObj instanceof Scriptable) {
+							if (isTraceLogging) {
+								log.logp(Level.FINER, sourceClass, sourceMethod, "Processing plugin config " + Context.toString(pluginInfoObj)); //$NON-NLS-1$
+							}
+							Scriptable pluginInfo = (Scriptable)pluginInfoObj;
+							Object locationObj = pluginInfo.get(0, configScope);
+							if (!(locationObj instanceof String)) {
+								throw new IllegalArgumentException(Context.toString(pluginInfo));
+							}
+							String location = (String)locationObj;
+							URI uri = URI.create((String)location);
+							if (uri == null) {
+								throw new IllegalArgumentException(Context.toString(pluginInfo));
+							}
+							Object initializerObj = pluginInfo.get(1, configScope);
+							if (!(initializerObj instanceof Function)) {
+								throw new IllegalArgumentException(Context.toString(pluginInfo));
+							}
+							Function initializer = (Function)initializerObj;
+							if (!uri.isAbsolute()) {
+								uri = config.locateModuleResource(location);
+							}
+							InputStream is = aggregator.newResource(uri).getInputStream();
+
+							String js;
+							try {
+								js = IOUtils.toString(is, UTF8_CHARSET);
+							} catch (JavaScriptException e) {
+								// Add module info
+								String message = "Error evaluating or initializing plugin " + location + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
+								throw new RuntimeException(message, e);
+							} finally {
+								IOUtils.closeQuietly(is);
+							}
+							Script script = null;
+							cx.setOptimizationLevel(9);
+							try {
+								script = cx.compileString(js, uri.toString(), 1, null);
+							} catch (EvaluatorException e) {
+								// Try with optimization disabled
+								cx.setOptimizationLevel(-1);
+								script = cx.compileString(js, uri.toString(), 1, null);
+							}
+							pluginInfoList.add(new PluginInfo(initializer, script));
+						}
+					}
+				}
+			}
+
+			// Create the thread scope pool
+			threadScopes = new ArrayBlockingQueue<Scriptable>(scopePoolSize);
+			for (int i = 0; i < scopePoolSize; i++) {
+				threadScopes.add(createThreadScope(cx, configScope));
+			}
+
+			// Seal the scopes to prevent changes
+			for (Scriptable threadScope : threadScopes) {
+				((ScriptableObject)threadScope).sealObject();
+			}
+
+
+		} catch (Exception e) {
+			throw new RuntimeException(e.getMessage(), e);
+		} finally {
+			Context.exit();
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceClass, sourceMethod);
+		}
+	}
+
+	/**
+	 * Creates a thread scope for the PostCSS processor and it's plugins. Thread scopes allow
+	 * PostCSS to process multiple CSS modules concurrently, each executing in a separate thread,
+	 * without interfering with each other.
+	 *
+	 * @param cx
+	 *            the Rhino Context
+	 * @param protoScope
+	 *            the parent scope object
+	 * @return the thread scope
+	 */
+	protected Scriptable createThreadScope(Context cx, Scriptable protoScope) {
+
+		// Create the scope object
+		Scriptable scope = cx.newObject(protoScope);
+		scope.setPrototype(protoScope);
+		scope.setParentScope(null);
+
+		// Set "global" variable to point to global scope
+		scope.put("global", scope, scope); //$NON-NLS-1$
+
+		// Evaluate PostCSS javascript
+		postcssJsScript.exec(cx, scope);
+
+		// Initialize the plugins array that we pass to PostCSS
+		NativeArray plugins = (NativeArray)cx.newArray(scope, 0);
+		// Get reference to Array.prototype.push() so that we can add elements
+		Function pushFn = (Function)plugins.getPrototype().get("push", scope); //$NON-NLS-1$
+		/*
+		 * Now load and initialize plugins
+		 */
+		for (PluginInfo info : pluginInfoList) {
+			// Set up new scope for defining the module so that module.exports is not shared between plugins
+			Scriptable defineScope = cx.newObject(scope);
+			defineScope.setParentScope(scope);
+
+			amdDefineShimScript.exec(cx, defineScope);
+			Scriptable moduleVar = (Scriptable)defineScope.get(MODULE, defineScope);
+			info.moduleScript.exec(cx, defineScope);
+			// Retrieve the module reference and initialize the plugin
+			Function module = (Function)moduleVar.get(EXPORTS, moduleVar);
+			Scriptable plugin = (Scriptable)info.initializer.call(cx, scope, scope, new Object[]{module});
+			// Add the plugin to the array
+			pushFn.call(cx, scope, plugins, new Object[]{plugin});
+		}
+		// Create an instance of the PostCSS processor and save to a variable in thread scope
+		Function postcss = (Function)scope.get(POSTCSS, scope);
+		postcssOptions = (Scriptable)Context.javaToJS(POSTCSS_OPTIONS, scope);
+		Scriptable postcssInstance = (Scriptable)postcss.call(cx, scope, scope, new Object[]{plugins});
+		scope.put(POSTCSS_INSTANCE, scope, postcssInstance);
+
+		return scope;
+	}
+
+	/**
+	 * Returns the thread scope queue
+	 *
+	 * @return the thread scope queue
+	 */
+	protected BlockingQueue<Scriptable> getThreadScopes() {
+		return threadScopes;
+	}
 	/**
 	 * Returns a base64 encoded string representation of the contents of the
 	 * resource associated with the {@link URLConnection}.
@@ -679,7 +978,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		}
 		m.appendTail(sb);
 		String patStr = sb.toString();
-		return Pattern.compile((patStr.startsWith("/") ? "" : "(^|/)") + //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		return Pattern.compile((patStr.startsWith("/") ? BLANK : "(^|/)") + //$NON-NLS-1$ //$NON-NLS-2$
 				patStr + "$", Pattern.CASE_INSENSITIVE); //$NON-NLS-1$
 	}
 
@@ -703,6 +1002,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void shutdown(IAggregator aggregator) {
+		aggregator = null;
 		for (IServiceRegistration reg : registrations) {
 			reg.unregister();
 		}
@@ -715,6 +1015,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
+		this.aggregator = aggregator;
 		Hashtable<String, String> props;
 		props = new Hashtable<String, String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
@@ -733,56 +1034,62 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void configLoaded(IConfig conf, long sequence) {
-		/** Maximum size of image that can be in-lined */
-		Object obj = conf.getProperty(SIZETHRESHOLD_CONFIGPARAM, null);
-		imageSizeThreshold = TypeUtil.asInt(obj, SIZETHRESHOLD_DEFAULT_VALUE);
+		configUpdatingRWL.writeLock().lock();	// Block builder threads while we're updating
+		try {
+			/** Maximum size of image that can be in-lined */
+			Object obj = conf.getProperty(SIZETHRESHOLD_CONFIGPARAM, null);
+			imageSizeThreshold = TypeUtil.asInt(obj, SIZETHRESHOLD_DEFAULT_VALUE);
 
-		/** True if &#064;import statements should be inlined */
-		obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
-		inlineImports = TypeUtil.asBoolean(obj, INLINEIMPORTS_DEFAULT_VALUE);
+			/** True if &#064;import statements should be inlined */
+			obj = conf.getProperty(INLINEIMPORTS_CONFIGPARAM, null);
+			inlineImports = TypeUtil.asBoolean(obj, INLINEIMPORTS_DEFAULT_VALUE);
 
-		/** True if cross package css/less imports should be supported */
-		obj = conf.getProperty(INCLUDEAMDPATHS_CONFIGPARAM, null);
-		includeAMDPaths = TypeUtil.asBoolean(obj, INCLUDEAMDPATHS_DEFAULT_VALUE);
+			/** True if cross package css/less imports should be supported */
+			obj = conf.getProperty(INCLUDEAMDPATHS_CONFIGPARAM, null);
+			includeAMDPaths = TypeUtil.asBoolean(obj, INCLUDEAMDPATHS_DEFAULT_VALUE);
 
-		Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
-		Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
-		if (oImageTypes != IConfig.NOT_FOUND && oImageTypes != null) {
-			// property can be either a comma delimited string, or a property map
-			if (oImageTypes instanceof String) {
-				String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
-				for (String type : aTypes) {
-					types.add(type);
+			Collection<String> types = new ArrayList<String>(s_inlineableImageTypes);
+			Object oImageTypes = conf.getProperty(IMAGETYPES_CONFIGPARAM, null);
+			if (oImageTypes != IConfig.NOT_FOUND && oImageTypes != null) {
+				// property can be either a comma delimited string, or a property map
+				if (oImageTypes instanceof String) {
+					String[] aTypes = oImageTypes.toString().split(","); //$NON-NLS-1$
+					for (String type : aTypes) {
+						types.add(type);
+					}
+				} else {
+					@SuppressWarnings("unchecked")
+					Map<String, String> map = (Map<String, String>)conf.getProperty(IMAGETYPES_CONFIGPARAM, Map.class);
+					inlineableImageTypeMap.putAll(map);
 				}
-			} else {
-				@SuppressWarnings("unchecked")
-				Map<String, String> map = (Map<String, String>)conf.getProperty(IMAGETYPES_CONFIGPARAM, Map.class);
-				inlineableImageTypeMap.putAll(map);
 			}
-		}
-		inlineableImageTypes = types;
+			inlineableImageTypes = types;
 
-		/** List of files that should be in-lined */
-		Collection<Pattern> list = Collections.emptyList();
-		Object oIncludeList = conf.getProperty(INCLUDELIST_CONFIGPARAM, null);
-		if (oIncludeList != IConfig.NOT_FOUND && oIncludeList != null) {
-			list = new ArrayList<Pattern>();
-			for (String s : oIncludeList.toString().split(",")) { //$NON-NLS-1$
-				list.add(toRegexp(s));
+			/** List of files that should be in-lined */
+			Collection<Pattern> list = Collections.emptyList();
+			Object oIncludeList = conf.getProperty(INCLUDELIST_CONFIGPARAM, null);
+			if (oIncludeList != IConfig.NOT_FOUND && oIncludeList != null) {
+				list = new ArrayList<Pattern>();
+				for (String s : oIncludeList.toString().split(",")) { //$NON-NLS-1$
+					list.add(toRegexp(s));
+				}
 			}
-		}
-		inlinedImageIncludeList = list;
+			inlinedImageIncludeList = list;
 
-		/** List of files that should NOT be in-lined */
-		list = Collections.emptyList();
-		Object oExcludeList = conf.getProperty(EXCLUDELIST_CONFIGPARAM, null);
-		if (oExcludeList != IConfig.NOT_FOUND && oExcludeList != null) {
-			list = new ArrayList<Pattern>();
-			for (String s : oExcludeList.toString().split(",")) { //$NON-NLS-1$
-				list.add(toRegexp(s));
+			/** List of files that should NOT be in-lined */
+			list = Collections.emptyList();
+			Object oExcludeList = conf.getProperty(EXCLUDELIST_CONFIGPARAM, null);
+			if (oExcludeList != IConfig.NOT_FOUND && oExcludeList != null) {
+				list = new ArrayList<Pattern>();
+				for (String s : oExcludeList.toString().split(",")) { //$NON-NLS-1$
+					list.add(toRegexp(s));
+				}
 			}
+			inlinedImageExcludeList = list;
+			initPostcss(conf);
+		} finally {
+			configUpdatingRWL.writeLock().unlock();
 		}
-		inlinedImageExcludeList = list;
 	}
 
 	/**

@@ -13,20 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.ibm.jaggr.service.impl;
 
-package com.ibm.jaggr.core.impl.modulebuilder.css;
-
-import com.ibm.jaggr.core.util.NLS;
+import org.eclipse.osgi.util.NLS;
 
 public class Messages extends NLS {
-	private static final String BUNDLE_NAME = Messages.class.getPackage().getName() + ".messages"; //$NON-NLS-1$
-	public static String CSSModuleBuilder_0;
-	public static String CSSModuleBuilder_1;
+	private static final String BUNDLE_NAME = "com.ibm.jaggr.service.impl.messages"; //$NON-NLS-1$
+	public static String AggregatorImpl_1;
+	public static String AggregatorImpl_2;
+	public static String AggregatorImpl_3;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);
 	}
 
-	private Messages() {
-	}
+	private Messages() {}
 }

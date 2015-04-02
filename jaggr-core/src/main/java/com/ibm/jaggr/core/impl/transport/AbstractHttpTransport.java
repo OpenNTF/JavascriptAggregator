@@ -78,6 +78,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -201,8 +202,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	private String transportId = null;
 	private URI comboUri = null;
 
-    private static final ThreadLocal<HttpServletRequest> reqThreadLocal = new ThreadLocal<HttpServletRequest>();
-
 	/** default constructor */
 	public AbstractHttpTransport() {}
 
@@ -271,9 +270,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		} else if (getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class).toString());
 		}
-
-		reqThreadLocal.set(request);
-
 	}
 
 	/* (non-Javadoc)
@@ -313,9 +309,33 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 
 		RequestedModuleNames requestedModuleNames = null;
-		if (moduleIdList == null){
+		if (depsInitialized == null && moduleIdList == null){
 			requestedModuleNames = new RequestedModuleNames(request, null, null);
 		}else{
+			// Wait for dependenciesLoaded to have completed before we try to access moduleIdList
+			try {
+				if (getAggregator().getOptions().isDevelopmentMode()) {
+					if (!depsInitialized.await(1, TimeUnit.SECONDS)) {
+						throw new ProcessingDependenciesException();
+					}
+				} else {
+					long start = System.currentTimeMillis();
+					while (!depsInitialized.await(60, TimeUnit.SECONDS)) {
+						if (log.isLoggable(Level.WARNING)) {
+							long current = System.currentTimeMillis();
+							long waitSeconds = (current - start) / 1000;
+							log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), sourceMethod,
+									MessageFormat.format(
+											Messages.AbstractHttpTransport_4,
+											new Object[]{Thread.currentThread().getId(), waitSeconds}
+									)
+							);
+						}
+					}
+				}
+			} catch (InterruptedException e) {
+				throw new IOException(e);
+			}
 			requestedModuleNames = new RequestedModuleNames(request, moduleIdList, Arrays.copyOf(moduleIdListHash, moduleIdListHash.length));
 		}
 		request.setAttribute(REQUESTEDMODULENAMES_REQATTRNAME, requestedModuleNames);
@@ -935,12 +955,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (traceLogging) {
 			log.finer(ENCODED_FEATURE_MAP_REQPARAM + " param = " + encoded); //$NON-NLS-1$
 		}
-		try {
-			depsInitialized.await();
-		} catch (InterruptedException e) {
-			throw new IOException(e);
-		}
-
 		byte[] decoded = Base64.decodeBase64(encoded);
 		int len = dependentFeatures.size();
 		ByteArrayOutputStream bos = new ByteArrayOutputStream(len);
@@ -1047,12 +1061,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 					!StringUtils.equals(uri.getHost(),  resourceUri.getHost())) {
 				return new ExceptionResource(uri, 0, new IOException(new UnsupportedOperationException()));
 			}
-			// wait for dependencies to be initialized
-			try {
-				depsInitialized.await();
-			} catch (InterruptedException e) {
-				return new ExceptionResource(uri, 0L, new IOException(e));
-			}
 			IResource result = depFeatureListResource;
 			if (traceLogging) {
 				log.exiting(AbstractHttpTransport.FeatureListResourceFactory.class.getName(), methodName, depFeatureListResource);
@@ -1102,8 +1110,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 			dependentFeatures = Collections.unmodifiableList(Arrays.asList(features.toArray(new String[features.size()])));
 			depFeatureListResource = createFeatureListResource(dependentFeatures, getFeatureListResourceUri(), deps.getLastModified());
-			depsInitialized.countDown();
 			generateModuleIdMap(deps);
+			depsInitialized.countDown();
 		} catch (ProcessingDependenciesException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
@@ -1324,11 +1332,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 */
 	protected class LoaderExtensionResource implements IResource, IResourceVisitor.Resource {
 		IResource res;
-		HttpServletRequest request;
 
 		public LoaderExtensionResource(IResource res) {
 			this.res = res;
-			this.request = reqThreadLocal.get();
 		}
 
 		/* (non-Javadoc)
@@ -1376,6 +1382,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		 */
 		@Override
 		public Reader getReader() throws IOException {
+			HttpServletRequest request = aggregator.getCurrentRequest();
 
 			// Return an aggregation reader for the loader extension javascript
 			return new AggregationReader(

@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.deps;
 
 import com.ibm.jaggr.core.impl.deps.DepUtils.ParseResult;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.util.CompilerUtil;
 
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
@@ -72,6 +73,7 @@ final class DepParser implements Callable<URI> {
 		long lastModified = resource.lastModified();
 		// Parse the javascript code
 		Compiler compiler = new Compiler();
+		compiler.initOptions(CompilerUtil.getDefaultOptions());
 		InputStream in = resource.getInputStream();
 		Node node = null;
 		try {

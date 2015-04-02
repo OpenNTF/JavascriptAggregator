@@ -60,6 +60,8 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -176,10 +178,15 @@ public class TestUtils {
 	}
 
 	private static IResource mockAggregatorNewResource(URI uri, File workDir) throws Throwable {
+		final String aggrResPath = "/com.ibm.jaggr.core/"; // path for bundle resource in the aggregator
 		String scheme = uri.getScheme();
 		if ("file".equals(scheme)) {
 			return new FileResource(uri);
 		} else if ("namedbundleresource".equals(scheme)) {
+			if (uri.getPath().startsWith(aggrResPath)) {
+				String path = uri.getPath().substring(aggrResPath.length());
+				return new FileResource(IAggregator.class.getClassLoader().getResource(path).toURI());
+			}
 			return new FileResource(new File(workDir, uri.getPath()).toURI());
 		}
 		throw new UnsupportedOperationException();
@@ -374,6 +381,15 @@ public class TestUtils {
 				return aggInitParams;
 			}
 		}).anyTimes();
+		EasyMock.expect(mockAggregator.buildAsync(EasyMock.isA(Callable.class), EasyMock.isA(HttpServletRequest.class))).andAnswer( (IAnswer) new IAnswer<Future<?>>() {
+			@Override
+			public Future<?> answer() throws Throwable {
+				Callable<?> builder = (Callable<?>)EasyMock.getCurrentArguments()[0];
+				return executorsRef.get().getBuildExecutor().submit(builder);
+			}
+
+		}).anyTimes();
+
 		return mockAggregator;
 	}
 
@@ -462,6 +478,26 @@ public class TestUtils {
 				return null;
 			}
 		}).anyTimes();
+		mockResponse.setStatus(EasyMock.anyInt());
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
+			public Object answer() throws Throwable {
+				if (responseAttributes != null) {
+					responseAttributes.put("Status", ((Integer)EasyMock.getCurrentArguments()[0]).toString());
+				}
+				return null;
+			}
+		}).anyTimes();
+		EasyMock.expect(mockResponse.getStatus()).andAnswer(new IAnswer<Integer>() {
+			@Override
+			public Integer answer() throws Throwable {
+				int result = 0;
+				if (responseAttributes != null) {
+					result = Integer.parseInt(responseAttributes.get("Status"));
+				}
+				return result;
+			}
+		}).anyTimes();
+
 		return mockResponse;
 	}
 

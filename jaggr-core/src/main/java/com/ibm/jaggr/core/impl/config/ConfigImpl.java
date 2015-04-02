@@ -128,14 +128,30 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			callConfigModifiers(rawConfig);
 
 			// Seal the config object and the shared scope to prevent changes
-			((ScriptableObject)rawConfig).sealObject();
-			((ScriptableObject)sharedScope).sealObject();
+			sealObject((ScriptableObject)rawConfig);
+			sealObject((ScriptableObject)sharedScope);
 
 			init();
 		} catch (URISyntaxException e) {
 			throw new IOException(e);
 		} finally {
 			Context.exit();
+		}
+	}
+
+	/**
+	 * Recursively seals the specified object and all the objects it contains.
+	 *
+	 * @param obj the object to seal
+	 */
+	private void sealObject(ScriptableObject obj) {
+		obj.sealObject();
+		Object[] ids = obj.getIds();
+		for (Object id : ids) {
+			Object child = obj.get(id);
+			if (child instanceof ScriptableObject) {
+				sealObject((ScriptableObject)child);
+			}
 		}
 	}
 
@@ -175,6 +191,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			this.configUri = configUri;
 			this.aggregator = aggregator;
 			this.rawConfig = rawConfig;
+			this.sharedScope = rawConfig.getParentScope();
 			init();
 		} finally {
 			Context.exit();
@@ -417,6 +434,11 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public Scriptable getRawConfig() {
 		return rawConfig;
+	}
+
+	@Override
+	public Scriptable getConfigScope() {
+		return sharedScope;
 	}
 
 	protected void setRawConfig(Scriptable rawConfig) {
@@ -946,7 +968,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		Context cx = Context.enter();
 		Scriptable config;
 		try {
-			sharedScope = cx.initStandardObjects();
+			sharedScope = cx.initStandardObjects(null, true);
 
 			// set up options object
 			IOptions options = aggregator.getOptions();

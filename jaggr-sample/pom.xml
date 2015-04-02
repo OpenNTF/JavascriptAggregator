@@ -20,7 +20,7 @@
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.2.3-SNAPSHOT</version>
   </parent>
   
   <artifactId>jaggr-sample</artifactId>
@@ -116,6 +116,13 @@
                   <overWrite>true</overWrite>
                   <outputDirectory>${project.build.directory}</outputDirectory>
                 </artifactItem>
+                <artifactItem>
+                  <groupId>com.ibm.jaggr</groupId>
+                  <artifactId>jaggr-core</artifactId>
+                  <includes>WebContent/postcss/postcss.js</includes>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${project.build.directory}</outputDirectory>
+                </artifactItem>
               </artifactItems>
             </configuration>
           </execution>
@@ -177,6 +184,7 @@
         <configuration>
           <excludes>
             <exclude>src/test/resources/specRunner.htmltemplate</exclude>
+            <exclude>src/test/javascript/styles/test.css</exclude>
           </excludes>
         </configuration>
       </plugin>

@@ -99,8 +99,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -171,11 +173,14 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	private ForcedErrorResponse forcedErrorResponse = null;
 
 	protected Map<String, URI> resourcePaths;
+	protected URI webContentUri = null;
 
 	enum RequestNotifierAction {
 		start,
 		end
 	};
+
+	private ThreadLocal<HttpServletRequest> currentRequest = new ThreadLocal<HttpServletRequest>();
 
 	/* (non-Javadoc)
 	 * @see javax.servlet.GenericServlet#init(javax.servlet.ServletConfig)
@@ -204,6 +209,12 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 
 		// Set servlet context attributes for access though the request
 		context.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, this);
+		try {
+			webContentUri = AbstractAggregatorImpl.class.getClassLoader().getResource("WebContent").toURI(); //$NON-NLS-1$
+		} catch (URISyntaxException e) {
+			throw new ServletException(e);
+		}
+
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
@@ -241,7 +252,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		if (isTraceLogging) {
 			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod);
 		}
-
+		currentRequest.remove();
 		if (!isShuttingDown) {
 			isShuttingDown = true;
 			IServiceReference[] refs = null;
@@ -342,16 +353,29 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 
 		String pathInfo = req.getPathInfo();
 		if (pathInfo == null) {
-			processAggregatorRequest(req, resp);
+			currentRequest.set(req);
+			try {
+				processAggregatorRequest(req, resp);
+			} finally {
+				currentRequest.set(null);
+			}
 		} else {
 			boolean processed = false;
 			// search resource paths to see if we should treat as aggregator request or resource request
 			for (Map.Entry<String, URI> entry : resourcePaths.entrySet()) {
 				String path = entry.getKey();
-				if (path.equals(pathInfo) && entry.getValue() == null) {
-					processAggregatorRequest(req, resp);
-					processed = true;
-					break;
+				if (entry.getValue() == null) {
+					if (path.equals(pathInfo)) {
+						processAggregatorRequest(req, resp);
+						processed = true;
+						break;
+					} else if (pathInfo.startsWith(path) && pathInfo.charAt(path.length()) == '/') {
+						// Request for a resource in this bundle
+						String resPath = pathInfo.substring(path.length()+1);
+						processResourceRequest(req, resp, webContentUri, resPath);
+						processed = true;
+						break;
+					}
 				}
 				if (pathInfo.startsWith(path)) {
 					if ((path.length() == pathInfo.length() || pathInfo.charAt(path.length()) == '/') && entry.getValue() != null) {
@@ -364,11 +388,27 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				}
 			}
 			if (!processed) {
-				resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
+				// No mapping found.  Try to locate the resource in this bundle.
+				String resPath = pathInfo.substring(1);
+				processResourceRequest(req, resp, webContentUri, resPath);
 			}
 		}
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod);
+		}
+	}
+
+	protected void setResourceResponseCacheHeaders(HttpServletRequest req, HttpServletResponse resp, IResource resolved, boolean isNoCache) {
+		if (isNoCache) {
+			resp.addHeader("Cache-Control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
+		} else {
+			resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
+			int expires = getConfig().getExpires();
+			boolean hasCacheBust = req.getAttribute(IHttpTransport.CACHEBUST_REQATTRNAME) != null;
+			resp.addHeader(
+					"Cache-Control", //$NON-NLS-1$
+					"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			);
 		}
 	}
 
@@ -385,7 +425,15 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 					uri =  new URI(uri.getScheme(), uri.getAuthority(),
 							uri.getPath() + "/", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
 				}
-				uri = uri.resolve(path);
+				uri = uri.resolve(".");		// normalize the path //$NON-NLS-1$
+				URI resolvedUri = uri.resolve(path);
+				// Guard against attempts to access resources outside of the path specified by
+				// uri using .. path components in 'path'.
+				String resolvedPath = resolvedUri.getPath();
+				if (!resolvedPath.startsWith(uri.getPath()) || resolvedPath.startsWith("/../")) { //$NON-NLS-1$
+					throw new BadRequestException(path);
+				}
+				uri = resolvedUri;
 			}
 			IResource resolved = newResource(uri);
 			if (!resolved.exists()) {
@@ -402,17 +450,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				}
 				resp.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
 			} else {
-				if (isNoCache) {
-					resp.addHeader("Cache-Control", "no-cache, no-store"); //$NON-NLS-1$ //$NON-NLS-2$
-				} else {
-					resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
-					int expires = getConfig().getExpires();
-					boolean hasCacheBust = req.getAttribute(IHttpTransport.CACHEBUST_REQATTRNAME) != null;
-					resp.addHeader(
-							"Cache-Control", //$NON-NLS-1$
-							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-					);
-				}
+				setResourceResponseCacheHeaders(req, resp, resolved, isNoCache);
 				String contentType = getContentType(resolved.getPath());
 				resp.setHeader("Content-Type", contentType); //$NON-NLS-1$
 
@@ -429,6 +467,11 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				OutputStream os = resp.getOutputStream();
 				CopyUtil.copy(is, os);
 			}
+		} catch (BadRequestException e) {
+			if (log.isLoggable(Level.INFO)) {
+				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
+			}
+			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		} catch (NotFoundException e) {
 			if (log.isLoggable(Level.INFO)) {
 				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
@@ -1554,6 +1597,33 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			result = Messages.CommandProvider_29;
 		}
 		return result;
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#buildAsync(java.util.concurrent.Callable, javax.servlet.http.HttpServletRequest)
+	 */
+	@Override
+	public Future<?> buildAsync(final Callable<?> builder, final HttpServletRequest req) {
+		return getExecutors().getBuildExecutor().submit(new Callable<Object>() {
+			public Object call() throws Exception {
+				AbstractAggregatorImpl.this.currentRequest.set(req);
+				Object result;
+				try {
+					result = builder.call();
+				} finally {
+					AbstractAggregatorImpl.this.currentRequest.set(null);
+				}
+				return result;
+			}
+		});
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#getCurrentRequest()
+	 */
+	@Override
+	public HttpServletRequest getCurrentRequest() {
+		return currentRequest.get();
 	}
 }
 

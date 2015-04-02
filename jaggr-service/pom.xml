@@ -20,7 +20,7 @@
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.2.3-SNAPSHOT</version>
   </parent>
   
   <artifactId>jaggr-service</artifactId>
@@ -55,6 +55,13 @@
         <filtering>false</filtering>
         <includes>
           <include>**/*.properties</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*</include>
         </includes>
       </resource>
     </resources>
@@ -166,7 +173,12 @@
               !*
             </Import-Package>
             <!-- embed dependencies -->
-            <Embed-Dependency>commons-codec, commons-lang3</Embed-Dependency>
+            <Embed-Dependency>
+            	commons-codec, 
+            	commons-lang3, 
+            	commons-io, 
+            	guava
+            </Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
             <Embed-StripGroup>true</Embed-StripGroup>
           </instructions>
@@ -202,6 +214,7 @@
           <configuration>
             <excludes>
               <exclude>src/test/resources/specRunner.htmltemplate</exclude>
+              <exclude>src/main/resources/manifest.template</exclude>
             </excludes>
           </configuration>
         </plugin>
@@ -259,6 +272,10 @@
       <artifactId>commons-codec</artifactId>
     </dependency>
     <dependency>
+      <groupId>commons-io</groupId>
+      <artifactId>commons-io</artifactId>
+    </dependency>
+    <dependency>
       <groupId>org.eclipse.core.runtime</groupId>
       <artifactId>compatibility</artifactId>
       <scope>provided</scope>
@@ -281,8 +298,7 @@
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
-        <artifactId>guava</artifactId>
-      <scope>test</scope>
+      <artifactId>guava</artifactId>
     </dependency>
     <dependency>
       <groupId>org.powermock</groupId>

@@ -43,8 +43,11 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
 
 /**
  * Wrapper class for mock aggregator to make it easy to override
@@ -190,6 +193,16 @@ public class MockAggregatorWrapper implements IAggregator {
 	@Override
 	public String setForceError(String forceError) {
 		return mock.setForceError(forceError);
+	}
+
+	@Override
+	public Future<?> buildAsync(Callable<?> builder, HttpServletRequest request) {
+		return mock.buildAsync(builder, request);
+	}
+
+	@Override
+	public HttpServletRequest getCurrentRequest() {
+		return mock.getCurrentRequest();
 	}
 
 }

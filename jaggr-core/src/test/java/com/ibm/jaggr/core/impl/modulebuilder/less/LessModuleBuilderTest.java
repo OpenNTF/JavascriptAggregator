@@ -20,11 +20,15 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
+import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.util.CopyUtil;
+
 import junit.framework.Assert;
+
 import org.easymock.EasyMock;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -33,6 +37,7 @@ import org.junit.Test;
 import org.mozilla.javascript.Scriptable;
 
 import javax.servlet.http.HttpServletRequest;
+
 import java.io.*;
 import java.net.URI;
 import java.util.HashMap;
@@ -49,13 +54,16 @@ public class LessModuleBuilderTest extends EasyMock {
 	Map<String, Object> requestAttributes = new HashMap<String, Object>();
 	Scriptable configScript;
 	IAggregator mockAggregator;
+	Ref<IConfig> configRef;
 	HttpServletRequest mockRequest;
-	LessModuleBuilderTester builder = new LessModuleBuilderTester();
-	List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
-			(mockAggregator);
+	LessModuleBuilderTester builder;
+	List<ICacheKeyGenerator> keyGens;
 	long seq = 1;
 
 	class LessModuleBuilderTester extends LessModuleBuilder {
+		public LessModuleBuilderTester(IAggregator aggr) {
+			super(aggr);
+		}
 		@Override
 		protected Reader getContentReader(
 				String mid,
@@ -84,25 +92,31 @@ public class LessModuleBuilderTest extends EasyMock {
 
 	@Before
 	public void setUp() throws Exception {
-		mockAggregator = TestUtils.createMockAggregator();
+		configRef = new Ref<IConfig>(null);
+		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator,
 				requestAttributes, requestParams, null, null);
 		replay(mockRequest);
 		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
+		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
+		builder = new LessModuleBuilderTester(mockAggregator);
+		builder.configLoaded(cfg, seq++);
+		keyGens = builder.getCacheKeyGenerators
+				(mockAggregator);
 	}
 
 	@Test
 	public void testLessCompilationWithImport() throws Exception {
 		String output;
-		URI resUri = testdir.toURI();
+		URI resUri = new File(testdir, "colors.less").toURI();
 		output = buildLess(new StringResource(LESS, resUri));
 		Assert.assertEquals("body{background:#ff0000}", output);
 	}
 
 	private String buildLess(StringResource less) throws IOException {
-		Reader reader = builder.getContentReader("test", less, mockRequest,
+		Reader reader = builder.getContentReader("colors.less", less, mockRequest,
 				keyGens);
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);

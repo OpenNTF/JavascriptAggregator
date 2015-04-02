@@ -406,6 +406,14 @@ public interface IConfig {
 	public Object getRawConfig();
 
 	/**
+	 * Returns the scope object used to evaluate the config JavaScript.  The runtime  type of this
+	 * object is depenedent upon the config processor implementation.
+	 *
+	 * @return The config scope object.
+	 */
+	public Object getConfigScope();
+
+	/**
 	 * Returns the value of the named config property.  If the value is not a
 	 * primitive type (String, Number, Boolean), then this function will attempt
 	 * to convert the property value to the class specified by <code>hint</code>.

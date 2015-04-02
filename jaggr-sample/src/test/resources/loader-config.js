@@ -17,7 +17,8 @@ dojoConfig = {
 	baseUrl: '/',
 	
 	has: {
-		'dojo-combo-api': true
+		'dojo-combo-api': true,
+		'dojo-undef-api': true
 	},
 	
 	// Assumes the first package is the app package
@@ -26,7 +27,9 @@ dojoConfig = {
 	],
 
 	paths: {
-		'js' : '/WebContent/js'
+		'js' : '/WebContent/js',
+		'postcss': 'target/WebContent/postcss/postcss',
+		'colorize': 'src/test/resources/postcssPlugins/colorize'
 	},
 
 	async: true

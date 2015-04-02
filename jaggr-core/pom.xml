@@ -20,7 +20,7 @@
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>1.2.2-SNAPSHOT</version>
+    <version>1.2.3-SNAPSHOT</version>
   </parent>
   
   <artifactId>jaggr-core</artifactId>
@@ -83,6 +83,13 @@
         <filtering>false</filtering>
         <includes>
           <include>**/*.properties</include>
+        </includes>
+      </resource>
+      <resource>
+        <directory>${basedir}/src/main/resources</directory>
+        <filtering>false</filtering>
+        <includes>
+          <include>**/*</include>
         </includes>
       </resource>
       <resource>
@@ -177,7 +184,6 @@
               guava,
               rhino,
               wink-json4j,
-              lesscss,
               commons-logging
             </Embed-Dependency>
             <Embed-Directory>lib</Embed-Directory>
@@ -212,6 +218,21 @@
               <outputDirectory>lib</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>copy less css parser</id>
+            <phase>generate-sources</phase>
+            <goals><goal>unpack</goal></goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>org.lesscss</groupId>
+                  <artifactId>lesscss</artifactId>
+                  <includes>**/less-rhino*.js</includes>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${project.build.directory}/lesscss</outputDirectory>
+            </configuration>
+          </execution>
           <execution><!-- For testing has feature encoding. -->
             <id>unpack-dojo</id>
             <phase>generate-test-resources</phase>
@@ -240,6 +261,8 @@
             <exclude>src/main/java/com/ibm/jaggr/core/util/Term.java</exclude>
             <exclude>src/main/java/com/ibm/jaggr/core/util/Formula.java</exclude>
             <exclude>src/main/java/com/ibm/jaggr/core/util/NLS.java</exclude>
+            <exclude>WebContent/postcss/postcss.js</exclude>
+            <exclude>src/main/resources/less-rhino-1.7.0.js</exclude>
             <exclude>src/test/resources/specRunner.htmltemplate</exclude>
           </excludes>
         </configuration>
@@ -262,6 +285,7 @@
               <directory>.</directory>
               <includes>
                 <include>lib/**</include>
+                <include>src/main/resources/less*.js</include>
               </includes>
               <followSymlinks>false</followSymlinks>
             </fileset>
@@ -302,6 +326,22 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
           <executions>
+            <execution>
+              <id>copy less parser</id>
+              <phase>generate-resources</phase>
+              <goals>
+                <goal>run</goal>
+              </goals>
+              <configuration>
+                <target>
+                  <move tofile="${basedir}/src/main/resources/less-rhino-1.7.0.js">
+                    <fileset dir="${project.build.directory}/lesscss">
+                      <include name="**/less-rhino*.js" />
+                    </fileset>
+                  </move>
+                </target>  
+              </configuration>
+            </execution>
             <execution>
               <id>rename-dojo-test-dir</id>
               <phase>generate-test-resources</phase>
