@@ -70,13 +70,13 @@ public class TxtModuleContentProviderTest extends EasyMock {
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(TestUtils.createMockAggregator());
 		replay(mockRequest);
 		String key = KeyGenUtil.generateKey(mockRequest, generators);
-		Assert.assertEquals("expn:0;txt:0", key);
+		Assert.assertEquals("txt:0:0", key);
 		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		key = KeyGenUtil.generateKey(mockRequest, generators);
-		Assert.assertEquals("expn:1;txt:0", key);
+		Assert.assertEquals("txt:0:1", key);
 		mockRequest.setAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME, Boolean.TRUE);
 		key = KeyGenUtil.generateKey(mockRequest, generators);
-		Assert.assertEquals("expn:1;txt:1", key);
+		Assert.assertEquals("txt:1:0", key);
 	}
 
 	@Test

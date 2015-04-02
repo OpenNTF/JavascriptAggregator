@@ -303,6 +303,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		// Now touch the source file and assert that the cached results are cleared
 		new File(tmpdir, "p1/p1.js").setLastModified(new Date().getTime());
 		requestAttributes.remove(IHttpTransport.FEATUREMAP_REQATTRNAME);
+		mockAggregator.getOptions().setOption("developmentMode", "true");
 		p1.getBuild(mockRequest).get().close();
 		cacheKeys = p1.getKeys();
 		System.out.println(cacheKeys);
@@ -312,6 +313,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		TestUtils.createTestFile(new File(tmpdir, "p1"), "err", TestUtils.err);
 		p1 = new JsModuleTester("p1/err", new File(tmpdir, "p1/err.js").toURI());
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
+		mockAggregator.getOptions().setOption("developmentMode", "false");
 		future = p1.getBuild(mockRequest);
 		boolean exceptionCaught = false;
 		try {

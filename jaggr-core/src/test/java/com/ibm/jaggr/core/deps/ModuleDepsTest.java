@@ -96,7 +96,7 @@ public class ModuleDepsTest {
 		Assert.assertTrue(deps.containsDep("module4", BooleanTerm.FALSE));
 
 		Assert.assertTrue(deps.add("module1", new ModuleDepInfo("has", new BooleanTerm("!A"), null)));
-		Assert.assertTrue(deps.containsDep("module1", BooleanTerm.TRUE));
+		Assert.assertTrue(deps.simplify(null).containsDep("module1", BooleanTerm.TRUE));
 	}
 
 	@Test

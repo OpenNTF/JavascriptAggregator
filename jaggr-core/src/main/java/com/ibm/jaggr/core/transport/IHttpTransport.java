@@ -357,7 +357,7 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * @param type
 	 *            The layer contribution type
 	 * @param arg
-	 *            This parameter specifies the module id as a string for the following
+	 *            This parameter specifies a {@link ModuleInfo} object for the following
 	 *            {@code type} values:
 	 *            <ul>
 	 *            <li>{@link LayerContributionType#BEFORE_FIRST_MODULE}</li>
@@ -462,5 +462,24 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 * @return the plugin name
 	 */
 	public String getAggregatorTextPluginName();
+
+	public class ModuleInfo {
+		private final String mid;
+		private final boolean isScript;
+		public ModuleInfo(String mid, boolean isScript) {
+			this.mid = mid;
+			this.isScript = isScript;
+		}
+
+		/**
+		 * @return the module id
+		 */
+		public String getModuleId() { return mid; }
+
+		/**
+		 * @return true if the module is a script module
+		 */
+		public boolean isScript() { return isScript; }
+	}
 
 }

@@ -47,6 +47,7 @@ import com.ibm.jaggr.core.test.TestCacheManager;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
+import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
 import com.ibm.jaggr.core.util.CopyUtil;
 
 import org.easymock.EasyMock;
@@ -124,21 +125,21 @@ public class LayerBuilderTest {
 							Assert.assertNull(arg);
 							return ")";
 						case BEFORE_FIRST_MODULE:
-							return "\"<"+arg+">";
+							return "\"<"+((ModuleInfo)arg).getModuleId()+">";
 						case BEFORE_SUBSEQUENT_MODULE:
-							return ",\"<"+arg+">";
+							return ",\"<"+((ModuleInfo)arg).getModuleId()+">";
 						case AFTER_MODULE:
-							return "<"+arg+">\"";
+							return "<"+((ModuleInfo)arg).getModuleId()+">\"";
 						case BEGIN_LAYER_MODULES:
 							return arg.toString()+"{";
 						case END_LAYER_MODULES:
 							return "}"+arg;
 						case BEFORE_FIRST_LAYER_MODULE:
-							return "'<"+arg+">";
+							return "'<"+((ModuleInfo)arg).getModuleId()+">";
 						case BEFORE_SUBSEQUENT_LAYER_MODULE:
-							return ",'<"+arg+">";
+							return ",'<"+((ModuleInfo)arg).getModuleId()+">";
 						case AFTER_LAYER_MODULE:
-							return "<"+arg+">'";
+							return "<"+((ModuleInfo)arg).getModuleId()+">'";
 						}
 						throw new IllegalArgumentException();
 					}
@@ -286,7 +287,7 @@ public class LayerBuilderTest {
 					mbr.addBefore(
 							new ModuleBuildFuture(
 									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"),true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -313,7 +314,7 @@ public class LayerBuilderTest {
 					mbr.addBefore(
 							new ModuleBuildFuture(
 									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -341,7 +342,7 @@ public class LayerBuilderTest {
 					mbr.addAfter(
 							new ModuleBuildFuture(
 									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -368,7 +369,7 @@ public class LayerBuilderTest {
 					mbr.addAfter(
 							new ModuleBuildFuture(
 									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -409,14 +410,14 @@ public class LayerBuilderTest {
 					mbr.addAfter(
 							new ModuleBuildFuture(
 									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("after"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("after"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 					mbr = futures.get(1).get();
 					mbr.addBefore(
 							new ModuleBuildFuture(
 									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("before"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("before"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -446,14 +447,14 @@ public class LayerBuilderTest {
 					mbr.addAfter(
 							new ModuleBuildFuture(
 									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("after"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("after"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 					mbr = futures.get(1).get();
 					mbr.addBefore(
 							new ModuleBuildFuture(
 									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("before"))),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("before"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -526,7 +527,7 @@ public class LayerBuilderTest {
 					throw new NotFoundException(module.getModuleName());
 				}
 				return new CompletedFuture<ModuleBuildReader>(
-						new ModuleBuildReader(new StringReader(module.getModuleId() + " build"))
+						new ModuleBuildReader(new StringReader(module.getModuleId() + " build"), true)
 						);
 			}
 		}).anyTimes();
@@ -739,7 +740,7 @@ public class LayerBuilderTest {
 				if (mbrKeygens != null) {
 					mbrKeygen = mbrKeygens.get(mid);
 				}
-				ModuleBuildReader mbr = new ModuleBuildReader(new StringReader(content.get(mid)), mbrKeygen, null);
+				ModuleBuildReader mbr = new ModuleBuildReader(new StringReader(content.get(mid)), true, mbrKeygen, null);
 				ModuleBuildFuture future = new ModuleBuildFuture(
 						new ModuleImpl(mid, entry.getModule().getURI()),
 						new CompletedFuture<ModuleBuildReader>(mbr),

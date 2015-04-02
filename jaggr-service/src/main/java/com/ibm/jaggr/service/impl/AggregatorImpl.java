@@ -41,6 +41,8 @@ import com.ibm.jaggr.service.PlatformServicesImpl;
 import com.ibm.jaggr.service.ServiceRegistrationOSGi;
 import com.ibm.jaggr.service.util.BundleResolverFactory;
 import com.ibm.jaggr.service.util.BundleUtil;
+import com.ibm.jaggr.service.util.ConsoleHttpServletRequest;
+import com.ibm.jaggr.service.util.ConsoleHttpServletResponse;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
@@ -65,6 +67,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
+import java.io.OutputStream;
 import java.io.StringWriter;
 import java.net.URL;
 import java.text.MessageFormat;
@@ -167,6 +170,11 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 				}
 			}
 		}
+		Properties dict = new Properties();
+		dict.put("name", getName()); //$NON-NLS-1$
+		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
+				IAggregator.class.getName(), this, dict)));
+
 	}
 
 	public InitParams getConfigInitParams(IConfigurationElement configElem) {
@@ -255,10 +263,6 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					);
 		}
 
-		Properties dict = new Properties();
-		dict.put("name", getName()); //$NON-NLS-1$
-		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
-				IAggregator.class.getName(), this, dict)));
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod);
 		}
@@ -781,5 +785,26 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 		return result;
 	}
+
+	/**
+	 * Implementation of eponymous console command. Provided to allow cache priming requests to be
+	 * issued via the server console by automation scripts.
+	 *
+	 * @param requestUrl
+	 *            the URL to process
+	 * @return the status code as a string
+	 * @throws IOException
+	 * @throws ServletException
+	 */
+	public String processRequestUrl(String requestUrl) throws IOException, ServletException {
+		ConsoleHttpServletRequest req = new ConsoleHttpServletRequest(getServletConfig().getServletContext(), requestUrl);
+		OutputStream nulOutputStream = new OutputStream() {
+			@Override public void write(int b) throws IOException {}
+		};
+		ConsoleHttpServletResponse resp = new ConsoleHttpServletResponse(nulOutputStream);
+		doGet(req, resp);
+		return Integer.toString(resp.getStatus());
+	}
+
 }
 

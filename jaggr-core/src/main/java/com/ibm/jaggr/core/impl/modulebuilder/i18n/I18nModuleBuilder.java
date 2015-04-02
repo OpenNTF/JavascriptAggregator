@@ -78,7 +78,7 @@ extends JavaScriptModuleBuilder {
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {
 
 		ModuleBuild result = super.build(mid, resource, request, keyGens);
-		List<IModule> additionalModules = getExpandedModules(mid, resource, request, keyGens);
+		List<String> additionalModules = getExpandedModules(mid, resource, request, keyGens);
 		if (keyGens != result.getCacheKeyGenerators()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			List<ICacheKeyGenerator> newKeyGens = new ArrayList<ICacheKeyGenerator>();
@@ -98,22 +98,22 @@ extends JavaScriptModuleBuilder {
 		}
 		ModuleBuild mb = new ModuleBuild(result.getBuildOutput(), keyGens, result.getErrorMessage());
 		if (!result.isError()) {
-			for (IModule module : additionalModules) {
+			for (String module : additionalModules) {
 				mb.addBefore(module);
 			}
 		}
 		return mb;
 	}
 
-	protected List<IModule> getExpandedModules(String mid, IResource resource,
+	protected List<String> getExpandedModules(String mid, IResource resource,
 			HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException {
 
-		List<IModule> result = Collections.emptyList();
+		List<String> result = Collections.emptyList();
 		if (isExpandLocaleResources(request)) {
 			Matcher m = re.matcher(mid);
 			m.matches();
 			Collection<String> availableLocales = Arrays.asList(getAvailableLocales(request, mid, resource, keyGens));
-			result = new LinkedList<IModule>();
+			result = new LinkedList<String>();
 			Set<String> added = new HashSet<String>();
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 
@@ -152,7 +152,7 @@ extends JavaScriptModuleBuilder {
 		return null;
 	}
 
-	private void processLocale(IResource resource, List<IModule> result,
+	private void processLocale(IResource resource, List<String> result,
 			Matcher m, Collection<String> availableLocales, Set<String> added,
 			IAggregator aggr, String bundleName, String locale)
 					throws IOException {
@@ -231,18 +231,15 @@ extends JavaScriptModuleBuilder {
 		// Get the available locales from disk
 		final Collection<String> result = new HashSet<String>();
 
-		final URI baseUri = (res.resolve("")).getURI(); //$NON-NLS-1$
-		final IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		String path = res.getPath();
 		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 		final String resourceName = idx == 0 ? path : path.substring(idx+1);
-		IResource baseRes = aggr.newResource(baseUri);
+		final IResource baseRes = res.resolve(""); //$NON-NLS-1$
 		baseRes.walkTree(new IResourceVisitor() {
 			@Override
 			public boolean visitResource(Resource resource, String pathName) throws IOException {
 				if (resource.isFolder() && !pathName.startsWith(".")) { //$NON-NLS-1$
-					URI uri = baseUri.resolve(pathName + "/" + resourceName); //$NON-NLS-1$
-					IResource localeRes = aggr.newResource(uri);
+					IResource localeRes = baseRes.resolve(pathName + "/" + resourceName); //$NON-NLS-1$
 					if (localeRes.exists()) {
 						result.add(pathName);
 					}
@@ -273,7 +270,7 @@ extends JavaScriptModuleBuilder {
 	 */
 	private boolean tryAddModule(
 			IAggregator aggregator,
-			List<IModule> list,
+			List<String> list,
 			String bundleRoot,
 			IResource bundleRootRes,
 			String locale,
@@ -289,8 +286,7 @@ extends JavaScriptModuleBuilder {
 		IResource testResource = aggregator.newResource(testUri);
 		if (availableLocales != null || testResource.exists()) {
 			String mid = bundleRoot+"/"+locale+"/"+resource; //$NON-NLS-1$ //$NON-NLS-2$
-			IModule module = aggregator.newModule(mid, testUri);
-			list.add(module);
+			list.add(mid);
 			result = true;
 		}
 		return result;
