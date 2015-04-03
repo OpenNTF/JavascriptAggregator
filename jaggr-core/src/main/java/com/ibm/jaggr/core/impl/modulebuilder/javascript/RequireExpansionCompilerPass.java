@@ -411,9 +411,9 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		 * that modules are required relative to one another.
 		 */
 		expandedDeps.subtractAll(filter);
+		expandedDepsList.add(expandedDeps);
 
 		if (!isEmpty(expandedDeps)) {
-			expandedDepsList.add(expandedDeps);
 			int listIndex = expandedDepsList.size()-1;
 			if (logDebug) {
 				msg = new LinkedList<String>();
