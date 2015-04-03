@@ -45,8 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Custom Compiler pass for Google Closure compiler to do require list explosion.
  * Scans the AST for require calls and explodes any require lists it finds to
@@ -414,10 +412,8 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		 */
 		expandedDeps.subtractAll(filter);
 
-		expandedDepsList.add(expandedDeps);
-		HttpServletRequest request = aggregator.getCurrentRequest();
-		Map<?,?> formulaCache = request != null ? (Map<?,?>)request.getAttribute(JavaScriptModuleBuilder.FORMULA_CACHE_REQATTR) : null;
-		if (expandedDeps.getModuleIds(formulaCache).size() > 0) {
+		if (!isEmpty(expandedDeps)) {
+			expandedDepsList.add(expandedDeps);
 			int listIndex = expandedDepsList.size()-1;
 			if (logDebug) {
 				msg = new LinkedList<String>();
@@ -442,6 +438,28 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		// Add the expanded dependencies we found in this require call
 		// to the set of enclosing dependencies for all the child node
 		enclosingDependencies.add(depList);
+	}
+
+	static final ModuleDepInfo FALSE = new ModuleDepInfo(null, BooleanTerm.FALSE, null);
+
+	/**
+	 * Returns true if all of the {@link ModuleDepInfo} objects in {@code deps} are FALSE. Note: does
+	 * not simplify the formulas so some formulas that might evaluate to FALSE when simplified won't
+	 * be considered FALSE by this method.
+	 *
+	 * @param deps
+	 *          the {@link ModuleDeps} object to be searched
+	 * @return true if {@code deps} contains only info objects with an identity value of FALSE
+	 */
+	boolean isEmpty(ModuleDeps deps) {
+		boolean result = true;
+		for (ModuleDepInfo info : deps.values()) {
+			if (!FALSE.equals(info)) {
+				result = false;
+				break;
+			}
+		}
+		return result;
 	}
 
 }
