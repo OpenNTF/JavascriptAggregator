@@ -29,12 +29,11 @@ public enum ModuleSpecifier {
 	SCRIPTS,
 
 	/**
-	 * The module was requested explicitly
+	 * The module was requested explicitly by the loader
 	 */
 	MODULES,
 	/**
-	 * The module is a layer entry,
-	 * or is a dependency of such a module
+	 * The module is a layer cache entry
 	 */
 	LAYER,
 	/**

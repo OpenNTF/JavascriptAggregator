@@ -495,11 +495,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 	public void processExtraModules(ModuleBuildReader reader, HttpServletRequest request, CacheEntry cacheEntry)
 			throws IOException {
 
-		List<String> before = cacheEntry.getBefore(), after = cacheEntry.getAfter();
-		if (!before.isEmpty() || !after.isEmpty()) {
+		List<String> extraModules = cacheEntry.getExtraModules();
+		if (!!extraModules.isEmpty()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			IConfig config = aggr.getConfig();
-			for (String mid : cacheEntry.getBefore()) {
+			for (String mid : cacheEntry.getExtraModules()) {
 				URI uri = config.locateModuleResource(mid);
 				IModule module = aggr.newModule(mid, uri);
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
@@ -507,17 +507,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 						module,
 						future,
 						ModuleSpecifier.BUILD_ADDED);
-				reader.addBefore(mbf);
-			}
-			for (String mid : cacheEntry.getAfter()) {
-				URI uri = config.locateModuleResource(mid);
-				IModule module = aggr.newModule(mid, uri);
-				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
-				ModuleBuildFuture mbf = new ModuleBuildFuture(
-						module,
-						future,
-						ModuleSpecifier.BUILD_ADDED);
-				reader.addAfter(mbf);
+				reader.addExtraBuild(mbf);
 			}
 		}
 	}
@@ -699,8 +689,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		private volatile transient Object content = null;
 		private volatile String filename = null;
 		private volatile boolean isString = false;
-		private volatile List<String> beforeModules = Collections.emptyList();
-		private volatile List<String> afterModules = Collections.emptyList();
+		private volatile List<String> extraModules = Collections.emptyList();
 
 		/**
 		 * @return The filename of the cached module build
@@ -773,30 +762,19 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		 *            The list of after modules for this module build
 		 */
 		public void setData(Object content, List<String> before, List<String> after) {
-			this.beforeModules = before;
-			this.afterModules = after;
+			this.extraModules = after;
 			this.content = content;
 			this.isString = content instanceof String;
 		}
 
 		/**
-		 * Returns the list of module IDs to include in a layer build before
+		 * Returns the list of module IDs to include in a layer build along with
 		 * this module
 		 *
-		 * @return The list of before modules
+		 * @return The list of extra modules
 		 */
-		public List<String> getBefore()  {
-			return beforeModules == null ? Collections.<String>emptyList() : Collections.unmodifiableList(beforeModules);
-		}
-
-		/**
-		 * Returns the list of module IDs to include in a layer build after
-		 * this module
-		 *
-		 * @return The list of after modules
-		 */
-		public List<String> getAfter()  {
-			return afterModules == null ? Collections.<String>emptyList() : Collections.unmodifiableList(afterModules);
+		public List<String> getExtraModules()  {
+			return extraModules == null ? Collections.<String>emptyList() : Collections.unmodifiableList(extraModules);
 		}
 
 		/**

@@ -24,7 +24,7 @@
  */
 (function() {
 var depmap = {},
-    deps = [],  
+    deps = [],
     userConfig = (function(){
 		// make sure we're looking at global dojoConfig etc.
 		return this.dojoConfig || this.djConfig || this.require;
@@ -52,41 +52,14 @@ var depmap = {},
 
     // Map of module name to number id pairs
     moduleIdMap = {},
+    
+    excludes = combo.bootLayerDeps || [];
 
     // Query arg from window.location
-    windowArgs = parseQueryArgs(window.location.href) || {},
+    windowArgs = parseQueryArgs(window.location.href) || {};
     
     // Query arg from script tag used to load this code
-    scriptArgs = combo.scriptId && parseQueryArgs((document.getElementById(combo.scriptId)||{}).src) || {},
-    
-    // modules to exclude from require list expansion
-    reqExpExcludes = combo.bootLayerDeps || [],
-    
-    getHasQueryArg = function(config) {
-      var result;
-    	if (!combo.serverOptions.skipHasFiltering) {
-    		if (typeof includeUndefinedFeatures == 'undefined') {
-    			// Test to determine if we can include features that evaluate to undefined.
-    			// If simply querying a feature puts the feature in the cache, then we
-    			// can't send features that evaluate to undefined to the server.
-    			// (Note: this behavior exists in early versions of dojo 1.7)
-    			var test_feature = 'combo-test-for-undefined';
-    			config.has(test_feature);
-    			includeUndefinedFeatures = !(test_feature in config.has.cache);
-    		}
-    		result = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
-    	}
-    		
-    	// If sending the feature set in a cookie is enabled, then try to 
-    	// set the cookie.
-    	var featureMap = null, featureCookie = null;
-    	if (!!(featureMap = config.has("combo-feature-map"))) {
-    		result = featureMap.getQueryString(result);
-    	} else if (!!(featureCookie = config.has("combo-feature-cookie"))) {
-    		result = featureCookie.setCookie(result, contextPath);
-    	}
-    	return result;
-    };
+    scriptArgs = combo.scriptId && parseQueryArgs((document.getElementById(combo.scriptId)||{}).src) || {};
 
 // Copy config params from the combo config property
 for (var s in params) {
@@ -146,19 +119,35 @@ urlProcessors.push(function(url, deps){
 
 // require.combo needs to be defined before this code is loaded
 combo.done = function(load, config, opt_deps) {
-	var hasArg = getHasQueryArg(config), base64,
+	var hasArg = "", base64,
 	    sendRequest = function(load, config, opt_deps) {
-			var mids = [], i, dep, url;
+			var mids = [], i, dep;
 			opt_deps = opt_deps || deps;
 			
+			// Determine if we need to split the request into i18n/non-i18n parts
+			if (combo.i18nSplit) {
+				var i18nModules = [], nonI18nModules = [];
+				for (i = 0; i < opt_deps.length; i++) {
+					dep = opt_deps[i];
+					(combo.isI18nResource(dep) ? i18nModules : nonI18nModules).push(dep);
+				}
+				if (i18nModules.length && nonI18nModules.length) {
+					// Mixed request.  Separate into i18n and non-i18n requests
+					deps = [];
+					depmap = {};
+					sendRequest(load, config, nonI18nModules);
+					sendRequest(load, config, i18nModules);
+					return;
+				}
+			}
 			
 			for (i = 0, dep; !!(dep = opt_deps[i]); i++) {
 				mids[i] = dep.prefix ? (dep.prefix + "!" + dep.name) : dep.name;
 			}
 			
-			url = contextPath;
+			var url = contextPath;
 			url = addModulesToUrl(url, ["modules", "moduleIds"], opt_deps, moduleIdMap, base64 ? base64.encode : null);
-			url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], reqExpExcludes || [], moduleIdMap,  base64 ? base64.encode : null);
+			url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], excludes || [], moduleIdMap,  base64 ? base64.encode : null);
 			url += (hasArg ? '&' + hasArg : "");
 			
 			// Allow any externally provided URL processors to make their contribution
@@ -189,56 +178,41 @@ combo.done = function(load, config, opt_deps) {
 	    };
 	
 	// Get base64 decoder
-	if (window.btoa) {
-		base64 = {encode: function(data) { return btoa(String.fromCharCode.apply(null,data));}};
-	} else {
-		try {
-			base64 = require('dojox/encoding/base64');
-		} catch (ignore) {}
-	}
-	// Look for any defined layers and request them separately
-	if (combo.layerNames) {
-		var temp = deps;
-		deps = [];
-		for (i = 0; i < temp.length; i++) {
-			dep = temp[i];
-			if (!dep.prefix && dep.name in combo.layerNames) {
-				// send a request to load the layer and add the layer to
-				// our list of excludes
-				url = contextPath + "?layer=" + dep.name;
-				url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], reqExpExcludes || [], moduleIdMap,  base64 ? base64.encode : null);
-				url += (hasArg ? '&' + hasArg : "");
-				// Allow any externally provided URL processors to make their contribution
-				// to the URL
-				for (i = 0; i < urlProcessors.length; i++) {
-					url = urlProcessors[i](url, [dep]);
-				}
-				load([dep.name], url);			
-				reqExpExcludes.push(dep);
-			} else {
-				deps.push(dep);
-			}
+	try {
+		base64 = require('dojox/encoding/base64');
+	} catch (ignore) {}
+
+	if (!combo.serverOptions.skipHasFiltering) {
+		if (typeof includeUndefinedFeatures == 'undefined') {
+			// Test to determine if we can include features that evaluate to undefined.
+			// If simply querying a feature puts the feature in the cache, then we
+			// can't send features that evaluate to undefined to the server.
+			// (Note: this behavior exists in early versions of dojo 1.7)
+			var test_feature = 'combo-test-for-undefined';
+			config.has(test_feature);
+			includeUndefinedFeatures = !(test_feature in config.has.cache);
 		}
-		if (deps.length === 0) {
-			return;
-		}
+		hasArg = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
 	}
 	
-	// Determine if we need to split the request into i18n/non-i18n parts
-	if (combo.i18nSplit) {
-		var i18nModules = [], nonI18nModules = [];
-		for (i = 0; i < deps.length; i++) {
-			dep = deps[i];
-			(combo.isI18nResource(dep) ? i18nModules : nonI18nModules).push(dep);
-		}
-		if (i18nModules.length && nonI18nModules.length) {
-			// Mixed request.  Separate into i18n and non-i18n requests
-			sendRequest(load, config, nonI18nModules);
-			sendRequest(load, config, i18nModules);
-			return;
+	// If sending the feature set in a cookie is enabled, then try to 
+	// set the cookie.
+	var featureMap = null, featureCookie = null;
+	if (!!(featureMap = config.has("combo-feature-map"))) {
+		hasArg = featureMap.getQueryString(hasArg);
+	} else if (!!(featureCookie = config.has("combo-feature-cookie"))) {
+		hasArg = featureCookie.setCookie(hasArg, contextPath);
+	}
+
+	sendRequest(load, config, opt_deps);
+
+	if (combo.serverOptions.isServerExpandedLayers) {
+		// layers are being expanded on the server (as opposed to require lists)
+		// so we need to add requested modules to the exclude list.
+		for (i = 0; i < opt_deps.length; i++) {
+			excludes.push(opt_deps[i].name);
 		}
 	}
-	sendRequest(load, config, opt_deps);
 };
 
 combo.add = function (prefix, name, url, config) {
