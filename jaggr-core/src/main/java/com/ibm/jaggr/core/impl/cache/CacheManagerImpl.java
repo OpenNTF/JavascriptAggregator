@@ -49,6 +49,7 @@ import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
@@ -476,10 +477,27 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	@Override
 	public synchronized void optionsUpdated(IOptions options, long sequence) {
+		final String sourceMethod = "optionsUpdated"; //$NON-NLS-1$
 		if (options == null) {
 			return;
 		}
-		if (_cache.get() == null || !options.getOptionsMap().equals(_control.getOptionsMap())) {
+		if (_cache.get() == null ||
+				// Create new map objects for comparison to avoid issues with serialization/de-serialization on different JVM versions
+				// (can happen when using cache primer bundle).
+				!(new HashMap<String, String>(options.getOptionsMap()).equals(
+						_control.getOptionsMap() != null ? new HashMap<String, String>(_control.getOptionsMap()) : null)
+				)
+		) {
+			if (log.isLoggable(Level.FINER)) {
+				String msg;
+				if (_cache.get() == null) {
+					msg = "No local cache"; //$NON-NLS-1$
+				} else {
+					msg = "options = " + options.getOptionsMap().toString() + " -- options from cache = " + //$NON-NLS-1$ //$NON-NLS-2$
+						(_control.getOptionsMap() != null ? _control.getOptionsMap().toString() : "null"); //$NON-NLS-1$
+				}
+				log.logp(Level.FINER, CacheManagerImpl.class.getName(), sourceMethod, msg);
+			}
 			Map<String, String> previousOptions = _control.getOptionsMap();
 			_control.setOptionsMap(options.getOptionsMap());
 			if (_cache.get() == null || previousOptions != null) {
