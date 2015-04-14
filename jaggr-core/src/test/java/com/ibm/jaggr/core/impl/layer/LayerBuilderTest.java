@@ -159,15 +159,26 @@ public class LayerBuilderTest {
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
 		ModuleList moduleList;
 		Map<String, String> content = new HashMap<String, String>();
+		content.put("s1", "script1");
+		content.put("s2", "script2");
 		content.put("m1", "foo");
 		content.put("m2", "bar");
+
+		// Single script file
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/a1.js")), ModuleSpecifier.SCRIPTS)
+		}));
+		TestLayerBuilder builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		String output = builder.build();
+		System.out.println(output);
+		Assert.assertEquals("[script1]", output);
 
 		// Single module specified with 'modules' query arg
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES)
 		}));
-		TestLayerBuilder builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		String output = builder.build();
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		output = builder.build();
 		System.out.println(output);
 		Assert.assertEquals("[(\"<m1>foo<m1>\")]", output);
 
@@ -182,6 +193,17 @@ public class LayerBuilderTest {
 		System.out.println(output);
 		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
 
+		// two scripts and two modules
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/s1.js")), ModuleSpecifier.SCRIPTS),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("s2", new URI("file:/c:/s2.js")), ModuleSpecifier.SCRIPTS),
+		}));
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		output = builder.build();
+		System.out.println(output);
+		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
 
 		// Test developmentMode and showFilenames
 		IOptions options = mockAggregator.getOptions();
@@ -257,7 +279,7 @@ public class LayerBuilderTest {
 		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 
-		// one required module followed by one module (throws exception)
+		// one required module followed by one module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
 				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
@@ -267,6 +289,20 @@ public class LayerBuilderTest {
 		output = builder.build();
 		Assert.assertEquals("[[m1]{'<m1>foo<m1>'}[m1](\"<m2>bar<m2>\")]", output);
 		System.out.println(output);
+
+		// one script, one module and one layer module
+		// one required module followed by one module
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/s1.js")), ModuleSpecifier.SCRIPTS)
+		}));
+		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		output = builder.build();
+		Assert.assertEquals("[script1[m1]{'<m1>foo<m1>'}[m1](\"<m2>bar<m2>\")]", output);
+		System.out.println(output);
+
 
 		// test addExtraBuild with required module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {

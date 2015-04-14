@@ -34,6 +34,7 @@ import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
+import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.RequestUtil;
@@ -127,11 +128,11 @@ public class LayerBuilder {
 			request.setAttribute(IModuleCache.MODULECACHEINFO_PROPNAME, moduleCacheInfo);
 		}
 
-		if (RequestUtil.isRequireExpLogging(request)) {
-			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.EXCLUDEDEPS_PROPNAME);
+		if (RequestUtil.isDependencyExpansionLogging(request)) {
+			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.EXPANDEDDEPS_PROPNAME);
 			if (depList != null) {
-				// Output require expansion logging
-				sb.append(requireExpansionLogging(depList));
+				// Output dependency expansion logging
+				sb.append(dependencyExpansionLogging(depList));
 			}
 		}
 
@@ -150,37 +151,38 @@ public class LayerBuilder {
 		for (ModuleBuildReader reader : sorted.getScripts().values()) {
 			processReader(reader, sb);
 		}
+		if (sorted.getCacheEntries().size() > 0 || sorted.getModules().size() > 0) {
+			sb.append(notifyLayerListeners(EventType.BEGIN_AMD, request, null));
 
-		sb.append(notifyLayerListeners(EventType.BEGIN_AMD, request, null));
-
-		// Now add the loader cache entries.
-		if (sorted.getCacheEntries().size() > 0) {
-			addTransportContribution(sb, LayerContributionType.BEGIN_LAYER_MODULES, moduleList.getRequiredModules());
-			int i = 0;
-			for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getCacheEntries().entrySet()) {
-				sb.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
-				ModuleInfo info = new ModuleInfo(entry.getKey().getModuleId(), entry.getValue().isScript());
-				LayerContributionType type = (i++ == 0) ? LayerContributionType.BEFORE_FIRST_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE;
-				addTransportContribution(sb, type, info);
-				processReader(entry.getValue(), sb);
-				addTransportContribution(sb, LayerContributionType.AFTER_LAYER_MODULE, info);
+			// Now add the loader cache entries.
+			if (sorted.getCacheEntries().size() > 0) {
+				addTransportContribution(sb, LayerContributionType.BEGIN_LAYER_MODULES, moduleList.getRequiredModules());
+				int i = 0;
+				for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getCacheEntries().entrySet()) {
+					sb.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
+					ModuleInfo info = new ModuleInfo(entry.getKey().getModuleId(), entry.getValue().isScript());
+					LayerContributionType type = (i++ == 0) ? LayerContributionType.BEFORE_FIRST_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE;
+					addTransportContribution(sb, type, info);
+					processReader(entry.getValue(), sb);
+					addTransportContribution(sb, LayerContributionType.AFTER_LAYER_MODULE, info);
+				}
+				addTransportContribution(sb, LayerContributionType.END_LAYER_MODULES, moduleList.getRequiredModules());
 			}
-			addTransportContribution(sb, LayerContributionType.END_LAYER_MODULES, moduleList.getRequiredModules());
-		}
 
-		// Now add the loader requested modules
-		if (sorted.getModules().size() > 0) {
-			addTransportContribution(sb, LayerContributionType.BEGIN_MODULES, null);
-			int i = 0;
-			for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getModules().entrySet()) {
-				sb.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
-				ModuleInfo info = new ModuleInfo(entry.getKey().getModuleId(), entry.getValue().isScript());
-				LayerContributionType type = (i++ == 0) ? LayerContributionType.BEFORE_FIRST_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
-				addTransportContribution(sb, type, info);
-				processReader(entry.getValue(), sb);
-				addTransportContribution(sb, LayerContributionType.AFTER_MODULE, info);
+			// Now add the loader requested modules
+			if (sorted.getModules().size() > 0) {
+				addTransportContribution(sb, LayerContributionType.BEGIN_MODULES, null);
+				int i = 0;
+				for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getModules().entrySet()) {
+					sb.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
+					ModuleInfo info = new ModuleInfo(entry.getKey().getModuleId(), entry.getValue().isScript());
+					LayerContributionType type = (i++ == 0) ? LayerContributionType.BEFORE_FIRST_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
+					addTransportContribution(sb, type, info);
+					processReader(entry.getValue(), sb);
+					addTransportContribution(sb, LayerContributionType.AFTER_MODULE, info);
+				}
+				addTransportContribution(sb, LayerContributionType.END_MODULES, null);
 			}
-			addTransportContribution(sb, LayerContributionType.END_MODULES, null);
 		}
  		sb.append(notifyLayerListeners(EventType.END_LAYER, request, null));
 		addTransportContribution(sb, LayerContributionType.END_RESPONSE, null);
@@ -403,11 +405,18 @@ public class LayerBuilder {
 		return sb.toString();
 	}
 
-	protected String requireExpansionLogging(DependencyList depList) throws IOException {
+	protected String dependencyExpansionLogging(DependencyList depList) throws IOException {
+
 		StringBuffer sb = new StringBuffer();
 		sb.append("console.log(\"%c") //$NON-NLS-1$
 		.append(MessageFormat.format(Messages.LayerImpl_6, new Object[]{request.getRequestURI()+"?"+request.getQueryString()})) //$NON-NLS-1$
 		.append("\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$
+		IRequestedModuleNames reqNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
+		if (reqNames != null) {
+			sb.append("console.log(\"%c") //$NON-NLS-1$
+			.append(reqNames.toString(true))
+			.append("\", \"color:blue;background-color:yellow\");"); //$NON-NLS-1$
+		}
 		sb.append("console.log(\"%c") //$NON-NLS-1$
 		.append(Messages.LayerImpl_4)
 		.append("\", \"color:blue\");") //$NON-NLS-1$

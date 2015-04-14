@@ -34,8 +34,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 public final class ModuleBuild {
 	private Object buildOutput;
-	private List<String> before;
-	private List<String> after;
+	private List<String> extraModules;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private String error;
 
@@ -68,7 +67,7 @@ public final class ModuleBuild {
 	public ModuleBuild(Object buildOutput, List<ICacheKeyGenerator> keyGens, String error) {
 		this.buildOutput = buildOutput;
 		this.keyGenerators = keyGens;
-		this.before = this.after = null;
+		this.extraModules = null;
 		this.error = error;
 		if (keyGens != null && KeyGenUtil.isProvisional(keyGens)) {
 			throw new IllegalStateException();
@@ -112,33 +111,18 @@ public final class ModuleBuild {
 	}
 
 	/**
-	 * Adds the specified module to the list of before modules.
+	 * Adds the specified module to the list of extra modules.
 	 * <p>
-	 * Before modules are included in the layer build that contains this
-	 * module build ahead of this module build.
+	 * Extra modules are included in the layer build that contains this
+	 * module build.
 	 *
 	 * @param moduleId The module id to add to the before list
 	 */
-	public void addBefore(String moduleId) {
-		if (before == null) {
-			before = new LinkedList<String>();
+	public void addExtraModule(String moduleId) {
+		if (extraModules == null) {
+			extraModules = new LinkedList<String>();
 		}
-		before.add(moduleId);
-	}
-
-	/**
-	 * Adds the specified module to the list of after modules.
-	 * <p>
-	 * After modules are included in the layer build that contains this
-	 * module build following this module build.
-	 *
-	 * @param moduleId The module id to add to the after list
-	 */
-	public void addAfter(String moduleId) {
-		if (after == null) {
-			after = new LinkedList<String>();
-		}
-		after.add(moduleId);
+		extraModules.add(moduleId);
 	}
 
 	/**
@@ -147,17 +131,8 @@ public final class ModuleBuild {
 	 *
 	 * @return The list of before modules.
 	 */
-	public List<String> getBefore() {
-		return before == null ? Collections.<String>emptyList() : Collections.unmodifiableList(before);
+	public List<String> getExtraModules() {
+		return extraModules == null ? Collections.<String>emptyList() : Collections.unmodifiableList(extraModules);
 	}
 
-	/**
-	 * Returns the list of additional modules that should be included following
-	 * this module build in the layer
-	 *
-	 * @return The list of after modules.
-	 */
-	public List<String> getAfter() {
-		return after == null ? Collections.<String>emptyList() : Collections.unmodifiableList(after);
-	}
 }

@@ -90,24 +90,13 @@ public interface IRequestedModuleNames {
 	public List<String> getExcludes() throws BadRequestException;
 
 	/**
-	 * Returns the list of modules specified by the <code>reqExpEx</code> and/or the
-	 * <code>reqExpExIds</code> request parameter.  Require expansion excludes are
-	 * specified in Aggregator generated requests initiated by application generated
-	 * require() calls.  The specified modules and their dependencies will be
-	 * excluded from any expanded require lists.
-	 * <p>
+	 * Returns a string representation of this object.  Note that {@link Object#toString()}
+	 * calls this method with {@code decode} equal to false.
 	 *
-	 * @return the list of modules to be excluded from require list expansion
-	 * @throws BadRequestException
+	 * @param decode
+	 *            if true and the request was encoded, then the decoded names will be returned.
+	 * @return a string representation of the requested modules.
 	 */
-	public List<String> getRequireExpansionExcludes() throws BadRequestException;
-
-	public String getLayer() throws BadRequestException;
-
-	/**
-	 * @return a (possibly encoded) string representation of the requested modules.
-	 */
-	@Override
-	public String toString();
+	public String toString(boolean decode);
 
 }

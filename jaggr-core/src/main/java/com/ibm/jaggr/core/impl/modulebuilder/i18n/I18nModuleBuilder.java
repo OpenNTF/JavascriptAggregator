@@ -99,7 +99,7 @@ extends JavaScriptModuleBuilder {
 		ModuleBuild mb = new ModuleBuild(result.getBuildOutput(), keyGens, result.getErrorMessage());
 		if (!result.isError()) {
 			for (String module : additionalModules) {
-				mb.addBefore(module);
+				mb.addExtraModule(module);
 			}
 		}
 		return mb;

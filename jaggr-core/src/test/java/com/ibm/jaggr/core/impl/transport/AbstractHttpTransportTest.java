@@ -267,7 +267,7 @@ public class AbstractHttpTransportTest {
 
 	@Test
 	public void testContributeBootLayerDeps() throws Exception {
-		final Pattern pat = Pattern.compile("^require\\.combo\\.bootLayerDeps=([^;]*);\\s");
+		final Pattern pat = Pattern.compile("^require\\.combo\\.addBootLayerDeps\\(([^;]*)\\);\\s");
 		IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
 		TestHttpTransport transport = new TestHttpTransport(mockAggregator);
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
@@ -277,6 +277,7 @@ public class AbstractHttpTransportTest {
 		reqNames.setDeps(Arrays.asList("dep/a", "prefix!dep/b"));
 		StringBuffer sb = new StringBuffer();
 		transport.contributeBootLayerDeps(sb, mockRequest);
+		System.out.println(sb.toString());
 		Matcher m = pat.matcher(sb.toString());
 		Assert.assertTrue(m.find());
 		JSONArray jsonObj = new JSONArray(m.group(1));

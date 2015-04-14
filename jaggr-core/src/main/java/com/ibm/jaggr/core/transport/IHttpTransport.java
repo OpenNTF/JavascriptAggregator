@@ -93,13 +93,23 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 */
 	public static final String REQUESTEDLOCALES_REQATTRNAME = IHttpTransport.class
 			.getName() + ".RequestedLocales"; //$NON-NLS-1$
+
 	/**
-	 * Name of the request attribute specifying the Boolean flag indicating if
-	 * debug logging output about require list expansion should be displayed in
-	 * the browser console
+	 * Name of the request attribute specifying the Boolean flag indicating if debug logging output
+	 * about require list expansion should be displayed in the browser console
+	 *
+	 * @deprecated this constant is deprecated in favor of the
+	 *             {@link #DEPENDENCYEXPANSIONLOGGING_REQATTRNAME} constant
 	 */
 	public static final String EXPANDREQLOGGING_REQATTRNAME = IHttpTransport.class
 			.getName() + ".ExpandReqLogging"; //$NON-NLS-1$
+
+	/**
+	 * Name of the request attribute specifying the Boolean flag indicating if debug logging output
+	 * about dependency expansion should be displayed in the browser console
+	 */
+	public static final String DEPENDENCYEXPANSIONLOGGING_REQATTRNAME = IHttpTransport.class
+			.getName() + ".DependencyExpansionLogging"; //$NON-NLS-1$
 
 	/**
 	 * Name of the request attribute specifying the Boolean flag indicating if
@@ -210,6 +220,20 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 */
 	public static final String ASSERTNONLS_REQATTRNAME = IHttpTransport.class
 			.getName() + "AssertNoNLS"; //$NON-NLS-1$
+
+	/**
+	 * Name of the request attribute specifying if server expansion of dependencies for
+	 * requested modules should be performed.  If true, then the expanded dependencies
+	 * of the modules specified in the request (the modules returned by
+	 * {@link IRequestedModuleNames#getModules()}) will be included in the response, excluding
+	 * the modules specified by {@link IRequestedModuleNames#getExcludes()}
+	 * and their dependencies.
+	 * <p>
+	 * This options take precedence over {@link IHttpTransport#EXPANDREQUIRELISTS_REQATTRNAME}
+	 * in the event that both are specified.
+	 */
+	public static final String SERVEREXPANDLAYERS_REQATTRNAME = IHttpTransport.class
+			.getName() + "ServerExpandLayers";  //$NON-NLS-1$
 
 	/**
 	 * Supported optimization levels. Module builders are not required to
@@ -329,17 +353,6 @@ public interface IHttpTransport extends IExtensionInitializer {
 		END_LAYER_MODULES,
 
 		/**
-		 * Before the eponymous module for a named layer is written to the response.
-		 * This contribution type occurs after {@link #END_LAYER_MODULES}
-		 */
-		BEFORE_EPONYMOUS_LAYER_MODULE,
-
-		/**
-		 * After the eponymous module for a named layer is written to the response.
-		 */
-		AFTER_EPONYMOUS_LAYER_MODULE,
-
-		/**
 		 * After all normal and layer modules have been written to the
 		 * response.
 		 */
@@ -363,9 +376,8 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            <li>{@link LayerContributionType#BEFORE_FIRST_MODULE}</li>
 	 *            <li>{@link LayerContributionType#BEFORE_SUBSEQUENT_MODULE}</li>
 	 *            <li>{@link LayerContributionType#AFTER_MODULE}</li>
-	 *            <li>{@link LayerContributionType#BEFORE_FIRST_LAYER_MODULE}</li>
-	 *            <li>{@link LayerContributionType#BEFORE_EPONYMOUS_LAYER_MODULE}</li>
-	 *            <li>{@link LayerContributionType#AFTER_EPONYMOUS_LAYER_MODULE}</li>
+	 *            <li>{@link LayerContributionType#BEFORE_FIRST_LAYER_MODULE}
+	 *            </li>
 	 *            <li>
 	 *            {@link LayerContributionType#BEFORE_SUBSEQUENT_LAYER_MODULE}
 	 *            </li>

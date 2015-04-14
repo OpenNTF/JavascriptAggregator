@@ -18,13 +18,12 @@ package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
-import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
-import com.ibm.jaggr.core.config.IConfig.ILayerDef;
+import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -95,12 +94,12 @@ public class LayerImpl implements ILayer {
 	// The following request attributes are used by unit tests
 	static final String LAYERCACHEINFO_PROPNAME = LayerImpl.class.getName() + ".LAYER_CACHEIFNO"; //$NON-NLS-1$
 	static final String LAYERBUILDCACHEKEY_PROPNAME = LayerImpl.class.getName() + ".LAYERBUILD_CACHEKEY"; //$NON-NLS-1$
-	static final String EXCLUDEDEPS_PROPNAME = LayerImpl.class.getName() + ".BOOT_LAYER_DEPS"; //$NON-NLS-1$
+	static final String EXPANDEDDEPS_PROPNAME = LayerImpl.class.getName() + ".EXCLUDE_DEPS"; //$NON-NLS-1$
 
-	static final String DEPSOURCE_REQDEPS = " URL - deps"; //$NON-NLS-1$
+	static final String DEPSOURCE_MODULEDEPS = "URL - modules"; //$NON-NLS-1$
+	static final String DEPSOURCE_REQDEPS = "URL - deps"; //$NON-NLS-1$
 	static final String DEPSOURCE_REQPRELOADS = "URL - preloads"; //$NON-NLS-1$
-	static final String DEPSOURCE_EXCLUDES = "URL and/or Layer - excludes";  //$NON-NLS-1$
-	static final String DEPSOURCE_LAYER = "URL - layer"; //$NON-NLS-1$
+	static final String DEPSOURCE_EXCLUDES = "URL - excludes";  //$NON-NLS-1$
 
 	static final Pattern nlsPat = Pattern.compile("^.*(^|\\/)nls(\\/|$)"); //$NON-NLS-1$
 
@@ -123,7 +122,8 @@ public class LayerImpl implements ILayer {
 				public String toString() {
 					return eyeCatcher;
 				}
-			}
+			},
+			new ServerExpandLayersCacheKeyGenerator()
 	}));
 
 	public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):"); //$NON-NLS-1$
@@ -298,6 +298,8 @@ public class LayerImpl implements ILayer {
 			// data from
 			List<ICacheKeyGenerator> moduleKeyGens = null;
 
+			ModuleList moduleList = null;
+
 			// Synchronize on the LayerBuild object for the build.  This will prevent multiple
 			// threads from building the same output.  If more than one thread requests the same
 			// output (same cache key), then the first one to grab the sync object will win and
@@ -374,7 +376,7 @@ public class LayerImpl implements ILayer {
 				} else {
 					moduleKeyGens = new LinkedList<ICacheKeyGenerator>();
 
-					ModuleList moduleList = getModules(request);
+					moduleList = getModules(request);
 
 					// Remove the module list from the request to safe-guard it now that we don't
 					// need it there anymore
@@ -421,7 +423,7 @@ public class LayerImpl implements ILayer {
 				if (!ignoreCached) {
 					// See if we need to create or update the cache key generators
 					Map<String, ICacheKeyGenerator> newKeyGens = new HashMap<String, ICacheKeyGenerator>();
-					Set<String> requiredModuleListDeps = getModules(request).getDependentFeatures();
+					Set<String> requiredModuleListDeps = moduleList.getDependentFeatures();
 					addCacheKeyGenerators(newKeyGens, s_layerCacheKeyGenerators);
 					addCacheKeyGenerators(newKeyGens, aggr.getTransport().getCacheKeyGenerators());
 					addCacheKeyGenerators(newKeyGens, Arrays.asList(new ICacheKeyGenerator[]{new FeatureSetCacheKeyGenerator(requiredModuleListDeps, false)}));
@@ -715,7 +717,11 @@ public class LayerImpl implements ILayer {
 			if (requestedModuleNames != null) {
 				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
 				Set<String> dependentFeatures = new HashSet<String>();
+				DependencyList requiredList = null, preloadList = null, excludeList = null, moduleList = null;
+				ModuleDeps combined = new ModuleDeps(), explicit = new ModuleDeps();
+				Set<String> resultNames = new HashSet<String>();
 				List<String> names = requestedModuleNames.getModules();
+				boolean isDepExpLogging = RequestUtil.isDependencyExpansionLogging(request);
 				if (!names.isEmpty()) {
 					for (String name : names) {
 						if (name != null) {
@@ -725,163 +731,158 @@ public class LayerImpl implements ILayer {
 									//  we can't rename a requested module.
 									false	// Loader doesn't request modules with has! plugin
 									);
+							resultNames.add(name);
 							result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.MODULES));
 						}
 					}
-				} else {
-					boolean includeRequireDeps = RequestUtil.isIncludeRequireDeps(request);
-					names = requestedModuleNames.getScripts();
-					for (String name : names) {
-						if (name != null) {
-							name = aggr.getConfig().resolve(name, features, dependentFeatures, null,
-									false,	// Don't resolve aliases when locating modules requested by the loader
-									//  because the loader should have already done alias resolution and
-									//  we can't rename a requested module.
-									true	// Resolve has! loader plugin
-									);
-							result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.SCRIPTS));
-						}
-					}
-					// See if we need to add required modules.
-					DependencyList requiredList = null, preloadList = null, layerList = null, excludeList = null;
-					Set<String> excludes = new HashSet<String>();
-					ModuleDeps combined = new ModuleDeps(), explicit = new ModuleDeps();
-					boolean includeUndefinedFeatureDeps = RequestUtil.isIncludeUndefinedFeatureDeps(request);
-					if (!requestedModuleNames.getDeps().isEmpty()) {
-
-						// If there's a required module, then add it and its dependencies
-						// to the module list.
-						requiredList = new DependencyList(
-								DEPSOURCE_REQDEPS,
-								requestedModuleNames.getDeps(),
+					if (RequestUtil.isServerExpandedLayers(request)) {
+						moduleList = new DependencyList(
+								DEPSOURCE_MODULEDEPS,
+								requestedModuleNames.getModules(),
 								aggr,
 								features,
 								true, 	// resolveAliases
-								RequestUtil.isRequireExpLogging(request),	// include details
-								includeRequireDeps
+								isDepExpLogging,	// include details
+								false  // include require deps
 								);
-						dependentFeatures.addAll(requiredList.getDependentFeatures());
+						dependentFeatures.addAll(moduleList.getDependentFeatures());
 
-						result.setRequiredModules(requiredList.getExplicitDeps().getModuleIds());
-
-						explicit.addAll(requiredList.getExplicitDeps());
-						combined.addAll(requiredList.getExplicitDeps());
-						combined.addAll(requiredList.getExpandedDeps());
-						excludes.addAll(requestedModuleNames.getExcludes());
+						explicit.addAll(moduleList.getExplicitDeps());
+						combined.addAll(moduleList.getExpandedDeps());
 					}
-					if (!requestedModuleNames.getPreloads().isEmpty()) {
-						preloadList = new DependencyList(
-								DEPSOURCE_REQPRELOADS,
-								requestedModuleNames.getPreloads(),
-								aggr,
-								features,
-								true, 	// resolveAliases
-								RequestUtil.isRequireExpLogging(request),	// include details
-								includeRequireDeps
+				}
+
+				boolean includeRequireDeps = RequestUtil.isIncludeRequireDeps(request);
+				names = requestedModuleNames.getScripts();
+				for (String name : names) {
+					if (name != null) {
+						name = aggr.getConfig().resolve(name, features, dependentFeatures, null,
+								false,	// Don't resolve aliases when locating modules requested by the loader
+								//  because the loader should have already done alias resolution and
+								//  we can't rename a requested module.
+								true	// Resolve has! loader plugin
 								);
-						dependentFeatures.addAll(preloadList.getDependentFeatures());
+						result.add(new ModuleList.ModuleListEntry(newModule(request, name), ModuleSpecifier.SCRIPTS));
+					}
+				}
+				// See if we need to add required modules.
+				if (!requestedModuleNames.getDeps().isEmpty()) {
 
-						explicit.addAll(preloadList.getExplicitDeps());
-						combined.addAll(preloadList.getExplicitDeps());
-						combined.addAll(preloadList.getExpandedDeps());
-						excludes.addAll(requestedModuleNames.getExcludes());
-					}
-					if (requestedModuleNames.getLayer() != null) {
-						String layerName = requestedModuleNames.getLayer();
-						ILayerDef layerDef = aggr.getConfig().getLayers().get(layerName);
-						if (layerDef == null) {
-							throw new NotFoundException(layerName);
-						}
-						layerList = new DependencyList(
-								DEPSOURCE_LAYER,
-								Arrays.asList(layerName),
-								aggr,
-								features,
-								true, 	// resolveAliases
-								RequestUtil.isRequireExpLogging(request),	// include details
-								false
-								);
-						dependentFeatures.addAll(layerList.getDependentFeatures());
+					// If there's a required module, then add it and its dependencies
+					// to the module list.
+					requiredList = new DependencyList(
+							DEPSOURCE_REQDEPS,
+							requestedModuleNames.getDeps(),
+							aggr,
+							features,
+							true, 	// resolveAliases
+							isDepExpLogging,	// include details
+							includeRequireDeps
+							);
+					dependentFeatures.addAll(requiredList.getDependentFeatures());
 
-						explicit.addAll(layerList.getExplicitDeps());
-						combined.addAll(layerList.getExplicitDeps());
-						combined.addAll(layerList.getExpandedDeps());
-						result.setLayerModule(newModule(request, layerName));
-						excludes.addAll(layerDef.getExcludes());
-						includeUndefinedFeatureDeps |= layerDef.isIncludeUndefinedFeatureDeps();
+					result.setRequiredModules(requiredList.getExplicitDeps().getModuleIds());
+
+					explicit.addAll(requiredList.getExplicitDeps());
+					combined.addAll(requiredList.getExplicitDeps());
+					combined.addAll(requiredList.getExpandedDeps());
+				}
+				if (!requestedModuleNames.getPreloads().isEmpty()) {
+					preloadList = new DependencyList(
+							DEPSOURCE_REQPRELOADS,
+							requestedModuleNames.getPreloads(),
+							aggr,
+							features,
+							true, 	// resolveAliases
+							isDepExpLogging,	// include details
+							includeRequireDeps
+							);
+					dependentFeatures.addAll(preloadList.getDependentFeatures());
+
+					explicit.addAll(preloadList.getExplicitDeps());
+					combined.addAll(preloadList.getExplicitDeps());
+					combined.addAll(preloadList.getExpandedDeps());
+				}
+				if (!requestedModuleNames.getExcludes().isEmpty()) {
+					excludeList = new DependencyList(
+							DEPSOURCE_EXCLUDES,
+							requestedModuleNames.getExcludes(),
+							aggr,
+							features,
+							true, 	// resolveAliases
+							isDepExpLogging,	// include details
+							false
+							);
+					dependentFeatures.addAll(excludeList.getDependentFeatures());
+					combined.subtractAll(excludeList.getExplicitDeps());
+					combined.subtractAll(excludeList.getExpandedDeps());
+				}
+				if (RequestUtil.isServerExpandedLayers(request)) {
+					// Expanding requests on the server, so treat undefined features as false
+					// for the purpose of dependency expansion
+					combined.resolveWith(features, true /* coerceUndefinedToFalse */);
+				}
+				boolean isAssertNoNLS = RequestUtil.isAssertNoNLS(request);
+				for (Map.Entry<String, ModuleDepInfo> entry : combined.entrySet()) {
+					String name = entry.getKey();
+					if (isAssertNoNLS && nlsPat.matcher(name).find()) {
+						throw new BadRequestException("AssertNoNLS: " + name); //$NON-NLS-1$
 					}
-					if (!excludes.isEmpty()) {
-						excludeList = new DependencyList(
-								DEPSOURCE_EXCLUDES,
-								requestedModuleNames.getExcludes(),
-								aggr,
-								features,
-								true, 	// resolveAliases
-								RequestUtil.isRequireExpLogging(request),	// include details
-								false
-								);
-						dependentFeatures.addAll(excludeList.getDependentFeatures());
-						combined.subtractAll(excludeList.getExplicitDeps());
-						combined.subtractAll(excludeList.getExpandedDeps());
-					}
-					boolean isAssertNoNLS = RequestUtil.isAssertNoNLS(request);
-					for (Map.Entry<String, ModuleDepInfo> entry : combined.entrySet()) {
-						String name = entry.getKey();
-						if (isAssertNoNLS && nlsPat.matcher(name).find()) {
-							throw new BadRequestException("AssertNoNLS: " + name); //$NON-NLS-1$
-						}
-						ModuleDepInfo info = entry.getValue();
-						if (aggr.getTransport().isServerExpandable(request, name)) {
-							int idx = name.indexOf("!"); //$NON-NLS-1$
-							if (idx != -1) {
-								// convert name to a delegate plugin if necessary
-								String plugin = name.substring(0, idx);
-								if (aggr.getConfig().getTextPluginDelegators().contains(plugin)) {
-									name = aggr.getTransport().getAggregatorTextPluginName() + name.substring(idx);
-								} else if (aggr.getConfig().getJsPluginDelegators().contains(plugin)) {
-									name = name.substring(idx+1);
-								}
+					ModuleDepInfo info = entry.getValue();
+					if (aggr.getTransport().isServerExpandable(request, name)) {
+						int idx = name.indexOf("!"); //$NON-NLS-1$
+						if (idx != -1) {
+							// convert name to a delegate plugin if necessary
+							String plugin = name.substring(0, idx);
+							if (aggr.getConfig().getTextPluginDelegators().contains(plugin)) {
+								name = aggr.getTransport().getAggregatorTextPluginName() + name.substring(idx);
+							} else if (aggr.getConfig().getJsPluginDelegators().contains(plugin)) {
+								name = name.substring(idx+1);
 							}
-							Collection<String> prefixes = info.getHasPluginPrefixes();
-							if (prefixes == null ||		// condition is TRUE
-									includeUndefinedFeatureDeps && !prefixes.isEmpty()) {
-								IModule module = newModule(request, name);
-								if (!explicit.containsKey(name) && aggr.getResourceFactory(new MutableObject<URI>(module.getURI())) == null) {
-									// Module is server-expanded and it's not a server resource type that we
-									// know how handle, so just ignore it.
-									if (isTraceLogging) {
-										log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring module " + name + " due to no resource factory found."); //$NON-NLS-1$ //$NON-NLS-2$
-									}
-									continue;
+						}
+						Collection<String> prefixes = info.getHasPluginPrefixes();
+						if (prefixes == null ||		// condition is TRUE
+								RequestUtil.isIncludeUndefinedFeatureDeps(request) && !prefixes.isEmpty()) {
+							IModule module = newModule(request, name);
+							if (!explicit.containsKey(name) && aggr.getResourceFactory(new MutableObject<URI>(module.getURI())) == null) {
+								// Module is server-expanded and it's not a server resource type that we
+								// know how handle, so just ignore it.
+								if (isTraceLogging) {
+									log.logp(Level.FINER, sourceClass, sourceMethod, "Ignoring module " + name + " due to no resource factory found."); //$NON-NLS-1$ //$NON-NLS-2$
 								}
+								continue;
+							}
+							if (resultNames.add(module.getModuleId())) {
 								result.add(
 										new ModuleList.ModuleListEntry(
 												module,
 												ModuleSpecifier.LAYER,
 												!explicit.containsKey(name)
-												)
-										);
+										)
+								);
 							}
 						}
 					}
-					if ((requiredList != null || preloadList != null) && RequestUtil.isRequireExpLogging(request)) {
-						ModuleDeps expanded = new ModuleDeps();
-						if (requiredList != null) {
-							expanded.addAll(requiredList.getExpandedDeps());
-						}
-						if (preloadList != null) {
-							expanded.addAll(preloadList.getExpandedDeps());
-						}
-						if (excludeList != null) {
-							explicit.subtractAll(excludeList.getExplicitDeps());
-							explicit.subtractAll(excludeList.getExpandedDeps());
-							expanded.subtractAll(excludeList.getExplicitDeps());
-							expanded.subtractAll(excludeList.getExpandedDeps());
-						}
-						request.setAttribute(EXCLUDEDEPS_PROPNAME, new DependencyList(explicit, expanded, dependentFeatures));
-					}
-					result.setDependenentFeatures(dependentFeatures);
 				}
+				if ((moduleList != null || requiredList != null || preloadList != null) && isDepExpLogging) {
+					ModuleDeps expanded = new ModuleDeps();
+					if (requiredList != null) {
+						expanded.addAll(requiredList.getExpandedDeps());
+					}
+					if (preloadList != null) {
+						expanded.addAll(preloadList.getExpandedDeps());
+					}
+					if (moduleList != null) {
+						expanded.addAll(moduleList.getExpandedDeps());
+					}
+					if (excludeList != null) {
+						expanded.subtractAll(excludeList.getExplicitDeps());
+						expanded.subtractAll(excludeList.getExpandedDeps());
+					}
+					request.setAttribute(EXPANDEDDEPS_PROPNAME, new DependencyList(explicit, expanded, dependentFeatures));
+				}
+				resultNames.clear();
+				result.setDependenentFeatures(dependentFeatures);
 			}
 			if (result.isEmpty()) {
 				throw new BadRequestException(request.getQueryString());

@@ -476,10 +476,19 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	@Override
 	public synchronized void optionsUpdated(IOptions options, long sequence) {
+		final String sourceMethod = "optionsUpdated"; //$NON-NLS-1$
 		if (options == null) {
 			return;
 		}
 		if (_cache.get() == null || !options.getOptionsMap().equals(_control.getOptionsMap())) {
+			if (log.isLoggable(Level.FINER)) {
+				String msg = "No local cache"; //$NON-NLS-1$
+				if (_cache.get() != null) {
+					msg = "options = " + options.getOptionsMap().toString() + " -- options from cache = " + //$NON-NLS-1$ //$NON-NLS-2$
+						_control.getOptionsMap();
+				}
+				log.logp(Level.FINER, CacheManagerImpl.class.getName(), sourceMethod, msg);
+			}
 			Map<String, String> previousOptions = _control.getOptionsMap();
 			_control.setOptionsMap(options.getOptionsMap());
 			if (_cache.get() == null || previousOptions != null) {
@@ -503,11 +512,20 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	@Override
 	public synchronized void dependenciesLoaded(IDependencies deps, long sequence) {
+		final String sourceMethod = "dependenciesLoaded"; //$NON-NLS-1$
 		if (deps == null) {
 			return;
 		}
 		long lastMod = deps.getLastModified();
 		if (_cache.get() == null || lastMod > _control.getDepsLastMod()) {
+			if (log.isLoggable(Level.FINER)) {
+				String msg = "No local cache"; //$NON-NLS-1$
+				if (_cache.get() != null) {
+					msg = "Dependencies last-modified = " + lastMod + " -- Cached dependencies last-modified = " + //$NON-NLS-1$ //$NON-NLS-2$
+						_control.getDepsLastMod();
+				}
+				log.logp(Level.FINER, CacheManagerImpl.class.getName(), sourceMethod, msg);
+			}
 			long previousLastMod = _control.getDepsLastMod();
 			_control.setDepsLastMod(lastMod);
 			if (previousLastMod != -1 || _cache.get() == null) {
@@ -531,11 +549,20 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 	@Override
 	public synchronized void configLoaded(IConfig config, long sequence) {
+		final String sourceMethod = "configLoaded"; //$NON-NLS-1$
 		if (config == null) {
 			return;
 		}
 		String rawConfig = config.toString();
 		if (_cache.get() == null || !StringUtils.equals(rawConfig, _control.getRawConfig())) {
+			if (log.isLoggable(Level.FINER)) {
+				String msg = "No local cache"; //$NON-NLS-1$
+				if (_cache.get() != null) {
+					msg = "config = " + rawConfig + " -- config from cache = " + //$NON-NLS-1$ //$NON-NLS-2$
+						_control.getRawConfig();
+				}
+				log.logp(Level.FINER, CacheManagerImpl.class.getName(), sourceMethod, msg);
+			}
 			Object previousConfig = _control.getRawConfig();
 			_control.setRawConfig(rawConfig);
 			if (_cache.get() == null || previousConfig != null) {

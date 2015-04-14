@@ -364,13 +364,25 @@ public class ModuleDepInfo implements Serializable {
 	}
 
 	/**
-	 * Resolves the formula using the variable values provided
-	 * in <code>features</code>
+	 * Resolves the formula using the variable values provided in <code>features</code>
 	 *
-	 * @param features the variable values to resolve with
+	 * @param features
+	 *            the variable values to resolve with
 	 */
 	public void resolveWith(Features features) {
-		formula.resolveWith(features);
+		resolveWith(features, false);
+	}
+
+	/**
+	 * Resolves the formula using the variable values provided in <code>features</code>
+	 *
+	 * @param features
+	 *            the variable values to resolve with
+	 * @param coerceUndefinedToFalse
+	 *            if true, then undefined features will be treated as false
+	 */
+	public void resolveWith(Features features, boolean coerceUndefinedToFalse) {
+		formula.resolveWith(features, coerceUndefinedToFalse);
 	}
 
 	/**

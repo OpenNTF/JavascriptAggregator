@@ -30,6 +30,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -61,19 +62,18 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	protected static final String CONFIGPROP_IDLISTHASHERRMODULE = "idListHashErrorModule"; //$NON-NLS-1$
 
 	private List<String> modules = null;
-	private List<String> reqExpExcludes = null;
+	private List<String> excludesEncoded = null;
 	private List<String> deps = Collections.emptyList();
 	private List<String> preloads = Collections.emptyList();
 	private List<String> scripts = Collections.emptyList();
 	private List<String> excludes = Collections.emptyList();
-	private String layer = null;
 	private String strRep = null;
 	private String moduleQueryArg;
-	private String reqExpExcludesQueryArg;
+	private String excludeEncQueryArg;
 	private final List<String> idList;
 	private final byte[] idListHash;
 	private byte[] base64decodedIdList = null;
-	private byte[] base64decodedReqExpExcludeIdList = null;
+	private byte[] base64decodedExcludeIdList = null;
 	private int count = 0;
 	// Instance of this object live only for the duration of a request, so ok to query trace logging flag in constructor
 	private final boolean isTraceLogging = log.isLoggable(Level.FINER);
@@ -96,14 +96,14 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		this.idListHash = idListHash;
 		moduleQueryArg = request.getParameter(AbstractHttpTransport.REQUESTEDMODULES_REQPARAM);
 		String moduleIdsQueryArg = request.getParameter(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM);
-		reqExpExcludesQueryArg = request.getParameter(AbstractHttpTransport.REQEXPEXCLUDES_REQPARAM);
-		String reqExpExcludeIdQueryArg = request.getParameter(AbstractHttpTransport.REQEXPEXCLUDEIDS_REQPARAM);
+		excludeEncQueryArg = request.getParameter(AbstractHttpTransport.EXCLUDEENC_REQPARAM);
+		String excludeIdQueryArg = request.getParameter(AbstractHttpTransport.EXCLUDEIDS_REQPARAM);
 		String countParam = request.getParameter(AbstractHttpTransport.REQUESTEDMODULESCOUNT_REQPARAM);
 		if (moduleQueryArg == null) moduleQueryArg = ""; //$NON-NLS-1$
 		if (moduleIdsQueryArg == null) moduleIdsQueryArg = ""; //$NON-NLS-1$
 		try {
 			// Validate parameter combination.  Requests must be loader generated, specifying
-			// count and modules/moduleIds or a single layer name, or application generated, specifying
+			// count and one of modules or moduleIds, or application generated, specifying
 			// one or more of scripts, deps and preloads.
 			if (countParam != null) {
 				if (moduleQueryArg.length() == 0 && moduleIdsQueryArg.length() == 0) {
@@ -174,20 +174,20 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				}
 			}
 
-			if (reqExpExcludeIdQueryArg != null) {
+			if (excludeIdQueryArg != null) {
 				if (countParam == null) {
 					throw new BadRequestException(request.getQueryString());
 				}
 				// Decode the id list so we can validate the id list hash
-				base64decodedReqExpExcludeIdList = Base64.decodeBase64(reqExpExcludeIdQueryArg);
+				base64decodedExcludeIdList = Base64.decodeBase64(excludeIdQueryArg);
 			}
 
-			if (reqExpExcludesQueryArg != null) {
+			if (excludeEncQueryArg != null) {
 				if (countParam == null) {
 					throw new BadRequestException(request.getQueryString());
 				}
 				try {
-					reqExpExcludesQueryArg = URLDecoder.decode(reqExpExcludesQueryArg, "UTF-8"); //$NON-NLS-1$
+					excludeEncQueryArg = URLDecoder.decode(excludeEncQueryArg, "UTF-8"); //$NON-NLS-1$
 				} catch (UnsupportedEncodingException e) {
 					throw new BadRequestException(e.getMessage());
 				}
@@ -199,8 +199,8 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				StringBuffer sb = new StringBuffer();
 				sb.append(moduleQueryArg != null ? moduleQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
 				  .append(moduleIdsQueryArg != null ? moduleIdsQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
-				  .append(reqExpExcludesQueryArg != null ? reqExpExcludesQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
-				  .append(reqExpExcludeIdQueryArg != null ? reqExpExcludeIdQueryArg : ""); //$NON-NLS-1$
+				  .append(excludeEncQueryArg != null ? excludeEncQueryArg : "").append(":") //$NON-NLS-1$ //$NON-NLS-2$
+				  .append(excludeIdQueryArg != null ? excludeIdQueryArg : ""); //$NON-NLS-1$
 				strRep = sb.toString();
 
 			} else if (moduleQueryArg.length() > 0){
@@ -260,15 +260,6 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			}
 			excludes = Collections.unmodifiableList(names);
 		}
-		String layerParam = request.getParameter(AbstractHttpTransport.LAYER_REQPARAM);
-		if (layerParam != null) {
-			if (countParam != null || moduleIdsQueryArg.length() > 0 || moduleQueryArg.length() > 0 || required != null
-				|| !scripts.isEmpty() || !deps.isEmpty() || !preloads.isEmpty()) {
-				throw new BadRequestException(request.getQueryString());
-			}
-			layer = layerParam;
-		}
-
 		if (isTraceLogging) {
 			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, this);
 		}
@@ -583,22 +574,29 @@ class RequestedModuleNames implements IRequestedModuleNames {
 		return modules;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#getRequireExpansionExcludes()
+	/**
+	 * Returns the list of modules specified by the <code>expEx</code> and/or the
+	 * <code>exIds</code> request parameter.  Require expansion excludes are
+	 * specified in Aggregator generated requests initiated by application generated
+	 * require() calls.  The specified modules and their dependencies will be
+	 * excluded from any expanded require lists.
+	 * <p>
+	 *
+	 * @return the list of modules to be excluded from require list expansion
+	 * @throws BadRequestException
 	 */
-	@Override
-	public List<String> getRequireExpansionExcludes() throws BadRequestException {
+	protected List<String> getExcludesEncoded() throws BadRequestException {
 		final String sourceMethod = "getRequireExpansionExcludes"; //$NON-NLS-1$
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
 		}
-		if (reqExpExcludes == null) {
-			reqExpExcludes = decodeModules(reqExpExcludesQueryArg, base64decodedReqExpExcludeIdList, false);
+		if (excludesEncoded == null) {
+			excludesEncoded = decodeModules(excludeEncQueryArg, base64decodedExcludeIdList, false);
 		}
 		if (isTraceLogging) {
-			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, reqExpExcludes);
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, excludesEncoded);
 		}
-		return reqExpExcludes;
+		return excludesEncoded;
 	}
 
 	protected List<String> decodeModules(String names, byte[] idList, boolean hasIdListHash) throws BadRequestException {
@@ -659,27 +657,19 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#getExcludes()
 	 */
 	@Override
-	public List<String> getExcludes() {
+	public List<String> getExcludes() throws BadRequestException {
 		final String sourceMethod = "getExcludes"; //$NON-NLS-1$
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
-			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, excludes);
 		}
-		return excludes;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.transport.IRequestedModuleNames#getLayer()
-	 */
-	@Override
-	public String getLayer() {
-		final String sourceMethod = "getLayer"; //$NON-NLS-1$
-		if (isTraceLogging) {
-			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
-			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, layer);
+		List<String> result = excludes;
+		List<String> encodedExcludes = getExcludesEncoded();
+		if (!encodedExcludes.isEmpty()) {
+			result = encodedExcludes;
+		if (isTraceLogging);
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, result);
 		}
-		return layer;
-
+		return result;
 	}
 
 
@@ -688,34 +678,53 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	 */
 	@Override
 	public String toString() {
+		return toString(false);
+	}
+
+	/**
+	 * Returns the string representation of the requested names.
+	 *
+	 * @param decode
+	 *            - if true, then the decoded names will be returned.
+	 * @return the string representation of this object
+	 */
+	public String toString(boolean decode) {
 		final String sourceMethod = "toString"; //$NON-NLS-1$
 		if (isTraceLogging) {
 			log.entering(RequestedModuleNames.class.getName(), sourceMethod);
 		}
 		String result = null;
-		if (strRep != null) {
+		if (strRep != null && !decode) {
 			result = strRep;
 		} else {
 			StringBuffer sb = new StringBuffer();
-			if (modules != null && !modules.isEmpty()) {
-				sb.append(modules);
-			}
-			if (reqExpExcludes != null && !reqExpExcludes.isEmpty()) {
-				sb.append(sb.length() > 0 ? ";":"").append("reqExpExcludes:").append(reqExpExcludes); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			}
-			if (scripts != null && !scripts.isEmpty()) {
-				sb.append(sb.length() > 0 ? ";":"").append("scripts:").append(scripts); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			}
-			if (deps != null && !deps.isEmpty()) {
-				sb.append(sb.length() > 0 ? ";":"").append("deps:").append(deps); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			}
-			if (preloads != null && !preloads.isEmpty()) {
-				sb.append(sb.length() > 0 ? ";":"").append("preloads:").append(preloads); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			}
-			if (excludes != null && !excludes.isEmpty()) {
-				sb.append(sb.length() > 0 ? ";":"").append("excludes:").append(excludes); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			try {
+				Collection<String> names = getModules();
+				if (!names.isEmpty()) {
+					sb.append("modules:").append(names); //$NON-NLS-1$
+				}
+				names = getScripts();
+				if (!names.isEmpty()) {
+					sb.append(sb.length() > 0 ? "; ":"").append("scripts:").append(names); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				}
+				names = getDeps();
+				if (!names.isEmpty()) {
+					sb.append(sb.length() > 0 ? "; ":"").append("deps:").append(names); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				}
+				names = getPreloads();
+				if (!names.isEmpty()) {
+					sb.append(sb.length() > 0 ? "; ":"").append("preloads:").append(names); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				}
+				names = getExcludes();
+				if (!names.isEmpty()) {
+					sb.append(sb.length() > 0 ? "; ":"").append("excludes:").append(names); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				}
+			} catch (BadRequestException e) {
+
 			}
 			result = sb.toString();
+
+
 		}
 		if (isTraceLogging) {
 			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, result);

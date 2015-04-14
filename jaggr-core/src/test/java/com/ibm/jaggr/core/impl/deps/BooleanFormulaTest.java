@@ -177,6 +177,10 @@ public class BooleanFormulaTest {
 
 		expression = new BooleanFormula(false);
 		Assert.assertEquals(new BooleanFormula(false), new BooleanFormula(expression).resolveWith(features));
+
+		// Test using coerceUndefined arg
+		expression = new BooleanFormula("(!A&!B)");
+		Assert.assertEquals(new BooleanFormula(true), expression.resolveWith(Features.emptyFeatures, true));
 	}
 
 	@Test

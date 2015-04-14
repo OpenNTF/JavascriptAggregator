@@ -53,7 +53,6 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 	}
 	private Set<String> dependentFeatures = null;
 	private Set<String> requiredModules = null;
-	private IModule layerModule = null;
 
 	ModuleList() {
 	}
@@ -68,14 +67,6 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 
 	void setRequiredModules(Set<String> requiredModules) {
 		this.requiredModules = requiredModules;
-	}
-
-	void setLayerModule(IModule layerModule) {
-		this.layerModule = layerModule;
-	}
-
-	IModule getLayerModule() {
-		return layerModule;
 	}
 
 	Set<String> getRequiredModules() {

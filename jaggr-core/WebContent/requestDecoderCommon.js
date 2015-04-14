@@ -60,11 +60,11 @@ define([
 					result.modules = moduleArray;
 				}
 				moduleArray = [];
-				if ("reqExpEx" in args) {
-					moduleDecoder.unfoldModuleNames(args.reqExpEx, moduleArray);
+				if ("exEnc" in args) {
+					moduleDecoder.unfoldModuleNames(args.exEnc, moduleArray);
 				}
-				if ("reqExpExIds" in args) {
-					moduleDecoder.decodeModuleIdList(args.reqExpExIds, base64decoder, moduleArray, false);
+				if ("exIds" in args) {
+					moduleDecoder.decodeModuleIdList(args.exIds, base64decoder, moduleArray, false);
 				}
 				for (i = 0; i < moduleArray.length; i++) {
 					if (!moduleArray[i]) {
@@ -72,7 +72,7 @@ define([
 					}
 				}
 				if (moduleArray.length) {
-					result.requireExpansionExcludes = moduleArray;
+					result.excludes = moduleArray;
 				}
 			} else {
 				if ("scripts" in args) {
@@ -83,6 +83,9 @@ define([
 				}
 				if ("preloads" in args) {
 					result.preloads = args.preloads.split(/[,\s]/);
+				}
+				if ("excludes" in args) {
+					result.excludes = args.excludes.split(/[,\s]/);
 				}
 			}			
 			

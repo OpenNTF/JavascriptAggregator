@@ -82,23 +82,6 @@ public interface IConfig {
 	public static final String ALIASES_CONFIGPARAM = "aliases"; //$NON-NLS-1$
 
 	/**
-	 * Static constant specifying the name of the {@code excludes} config param,
-	 * a property of the {@link #ALIASES_CONFIGPARAM} property
-	 */
-	public static final String EXCLUDES_CONFIGPARAM = "excludes";  //$NON-NLS-1$
-
-	/**
-	 * Static constant specifying the name of the {@code includeUndefinedFeatureDeps} config param,
-	 * a property of the {@link #ALIASES_CONFIGPARAM} property
-	 */
-	public static final String INCLUDEUNDEFINEDFEATUREDEPS_CONFIGPARAM = "includeUndefinedFeatureDeps";  //$NON-NLS-1$
-
-	/**
-	 * Static constant specifying the name of the {@code layers} config param
-	 */
-	public static final String LAYERS_CONFIGPARAM = "layers"; //$NON-NLS-1$
-
-	/**
 	 * Static constant specifying the name of the {@code deps} config param
 	 */
 	public static final String DEPS_CONFIGPARAM = "deps"; //$NON-NLS-1$
@@ -216,8 +199,6 @@ public interface IConfig {
 	 */
 	public List<IAlias> getAliases();
 
-	public Map<String, ILayerDef> getLayers();
-
 	/**
 	 * Returns the value of the {@code depsIncludeBaseUrl} config param.
 	 * <p>
@@ -274,7 +255,7 @@ public interface IConfig {
 	 * returns an empty list.
 	 * <p>
 	 * This method is deprecated in favor of
-	 * {@link IRequestedModuleNames#getRequireExpansionExcludes()} which is
+	 * {@link IRequestedModuleNames#getExcludes()} which is
 	 * specified by Aggregator generated requests based on the modules requested
 	 * in the boot layer for the application.
 	 *
@@ -689,13 +670,5 @@ public interface IConfig {
 		 *         is specified.
 		 */
 		public String getMain();
-	}
-
-	public interface ILayerDef {
-
-		public Set<String> getExcludes();
-
-		public boolean isIncludeUndefinedFeatureDeps();
-
 	}
 }

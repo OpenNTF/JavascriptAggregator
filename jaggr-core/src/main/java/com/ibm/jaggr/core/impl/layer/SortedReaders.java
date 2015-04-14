@@ -77,8 +77,8 @@ public class SortedReaders {
 				break;
 			}
 			if (!noAddModules) {
-				for (ModuleBuildFuture afterFuture : reader.getExtraBuilds()) {
-					sortFuture(afterFuture);
+				for (ModuleBuildFuture extra : reader.getExtraBuilds()) {
+					sortFuture(extra);
 				}
 			}
 		} catch (InterruptedException e) {

@@ -388,7 +388,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 							return new ModuleBuildReader(new StringReader(build
 									.getBuildOutput().toString()), builder.isScript(request), null, build.getErrorMessage());
 						}
-						cacheEntry.setData(build.getBuildOutput(), build.getBefore(), build.getAfter());
+						cacheEntry.setData(build.getBuildOutput(), build.getExtraModules());
 
 						// If the cache key generator has changed, then update the
 						if (newCacheKeyGenerators == null || !newCacheKeyGenerators.equals(build.getCacheKeyGenerators())) {
@@ -496,7 +496,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 			throws IOException {
 
 		List<String> extraModules = cacheEntry.getExtraModules();
-		if (!!extraModules.isEmpty()) {
+		if (!extraModules.isEmpty()) {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			IConfig config = aggr.getConfig();
 			for (String mid : cacheEntry.getExtraModules()) {
@@ -756,13 +756,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		/**
 		 * @param content
 		 *            The built output
-		 * @param before
-		 *            The list of before modules for this module build
-		 * @param after
-		 *            The list of after modules for this module build
+		 * @param extraModules
+		 *            The list of extra modules for this module build
 		 */
-		public void setData(Object content, List<String> before, List<String> after) {
-			this.extraModules = after;
+		public void setData(Object content, List<String> extraModules) {
+			this.extraModules = extraModules;
 			this.content = content;
 			this.isString = content instanceof String;
 		}

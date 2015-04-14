@@ -49,7 +49,5 @@
 
 	cacheBust: getBundleVersionsHash(					// Gets hash of header values in specified bundles
 			["Bundle-Version","Bnd-LastModified"], 		// Header values to include
-			"." /* this bundle */, "com.ibm.jaggr.sample.dojo"),	// bundles to get header values from
-			
-	serverExpandedLayers: true
+			"." /* this bundle */, "com.ibm.jaggr.sample.dojo")	// bundles to get header values from
 }

@@ -22,6 +22,7 @@ define(["dojo/_base/lang"], function(lang) {
 	}
 	describe("test getLocalesUrlProcessor", function() {
 		beforeEach(function() {
+			require.combo.serverExpandLayers = 0;
 			dojo.locale = "en_US";
 		});
 		it("should add locale to url", function() {
@@ -31,6 +32,8 @@ define(["dojo/_base/lang"], function(lang) {
 			expect(processUrl("/server.com?count=1", [{name:"app/nls/foo", prefix:""}])).toContain("&locs=en_US,es");
 			require(lang.mixin(require.combo, {plugins:{"combo/i18n":1}}));
 			expect(processUrl("/server.com?count=1", [{name:"app/foo", prefix:"combo/i18n"}])).toContain("&locs=en_US,es");
+			require.combo.serverExpandLayers = 1;
+			expect(processUrl("/server.com?count=1", [{name:"app/foo", prefix:""}])).toContain("&locs=en_US,es");
 		});
 		it("should not add locale to url", function() {
 			expect(processUrl("/server.com?count=1", [{name:"app/nlsfoo", prefix:""}])).not.toContain("&locs=");

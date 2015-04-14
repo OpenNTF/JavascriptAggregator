@@ -89,7 +89,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	private Map<String, IPackage> packages;
 	private Map<String, Location> paths;
 	private List<IAlias> aliases;
-	private Map<String, ILayerDef> layers;
 	private List<String> deps;
 	private boolean depsIncludeBaseUrl;
 	private boolean coerceUndefinedToFalse;
@@ -242,7 +241,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			packages = Collections.unmodifiableMap(loadPackages(rawConfig));
 			paths = Collections.unmodifiableMap(loadPaths(rawConfig));
 			aliases = Collections.unmodifiableList(loadAliases(rawConfig));
-			layers = Collections.unmodifiableMap(loadLayers(rawConfig));
 			deps = Collections.unmodifiableList(loadDeps(rawConfig));
 			depsIncludeBaseUrl = loadDepsIncludeBaseUrl(rawConfig);
 			coerceUndefinedToFalse = loadCoerceUndefinedToFalse(rawConfig);
@@ -330,11 +328,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	@Override
 	public List<IAlias> getAliases() {
 		return aliases;
-	}
-
-	@Override
-	public Map<String, ILayerDef> getLayers() {
-		return layers;
 	}
 
 	/* (non-Javadoc)
@@ -1134,35 +1127,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		return aliases;
 	}
 
-	protected Map<String, ILayerDef> loadLayers(Scriptable cfg) throws IOException {
-		Object layerList = cfg.get(LAYERS_CONFIGPARAM, cfg);
-		Map<String, ILayerDef> layers = new HashMap<String,ILayerDef>();
-		if (layerList instanceof Scriptable) {
-			for (Object id : ((Scriptable)layerList).getIds()) {
-				if (id instanceof String) {
-					String layerName = (String)id;
-					Scriptable layerScript = (Scriptable)((Scriptable)layerList).get(layerName, sharedScope);
-					Object excludeList = layerScript.get(EXCLUDES_CONFIGPARAM, sharedScope);
-					Set<String> excludes = new HashSet<String>();
-					if (excludeList != Scriptable.NOT_FOUND) {
-						for (Object i : ((Scriptable)excludeList).getIds()) {
-							if (i instanceof Number) {
-								excludes.add((String)((Scriptable)excludeList).get(((Number)i).intValue(), sharedScope));
-							}
-						}
-					}
-					Object obj = layerScript.get(INCLUDEUNDEFINEDFEATUREDEPS_CONFIGPARAM, sharedScope);
-					boolean includeUndefinedFeatureDeps = false;
-					if (obj != Scriptable.NOT_FOUND) {
-						includeUndefinedFeatureDeps = Context.toBoolean(obj);
-					}
-					layers.put(layerName, new LayerDef(excludes, includeUndefinedFeatureDeps));
-				}
-			}
-		}
-		return layers;
-	}
-
 	/**
 	 * Initializes and returns the list of module dependencies specified in the
 	 * server-side config JavaScript.
@@ -1697,27 +1661,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			return new StringBuffer("[").append(pattern.toString()).append(", ").append(replacement).append("]").toString(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
-	}
-
-	protected static class LayerDef implements ILayerDef {
-
-		private final Set<String> excludes;
-		private final boolean includeUndefinedFeatureDeps;
-
-		public LayerDef(Set<String> excludes, boolean includeUndefinedFeatureDeps) {
-			this.excludes = excludes;
-			this.includeUndefinedFeatureDeps = includeUndefinedFeatureDeps;
-		}
-
-		@Override
-		public Set<String> getExcludes() {
-			return excludes;
-		}
-
-		@Override
-		public boolean isIncludeUndefinedFeatureDeps() {
-			return includeUndefinedFeatureDeps;
-		}
 	}
 
 	/**

@@ -24,7 +24,6 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 import java.io.IOException;
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -104,11 +103,6 @@ public class DependencyList {
 	 * Flag indicating whether or not to include dependencies specified in require() calls.
 	 */
 	private final boolean includeRequireDeps;
-
-	/**
-	 * List of module names that should not be expanded.
-	 */
-	private Collection<String> dontExpands = null;
 
 
 	/**
@@ -415,16 +409,6 @@ public class DependencyList {
 			log.entering(DependencyList.class.getName(), methodName, new Object[]{name, depInfo, expandedDependencies});
 		}
 
-		if (dontExpands != null && dontExpands.contains(name)) {
-			if (traceLogging) {
-				log.logp(Level.FINEST, DependencyList.class.getName(), methodName, "Skipping module " + name); //$NON-NLS-1$
-			}
-			if (entryExitLogging) {
-				log.exiting(DependencyList.class.getName(), methodName);
-			}
-			return;
-		}
-
 		List<String> dependencies = new ArrayList<String>();
 		List<String> declaredDeps = aggr.getDependencies().getDelcaredDependencies(name);
 		if (traceLogging) {
@@ -595,23 +579,5 @@ public class DependencyList {
 				if (entryExitLogging) {
 					log.exiting(DependencyList.class.getName(), methodName);
 				}
-	}
-
-	/**
-	 * Sets the list of modules to not expand.  Must be called before calling any
-	 * getXXX methods.
-	 *
-	 * @param dontExpands the modules that shouldn't be expanded
-	 */
-	public void setDontExpands(Collection<String> dontExpands) {
-		final boolean entryExitLogging = log.isLoggable(Level.FINER);
-		final String methodName = "setDontExpands"; //$NON-NLS-1$
-		if (entryExitLogging) {
-			log.entering(DependencyList.class.getName(), methodName, dontExpands);
-		}
-		this.dontExpands = dontExpands;
-		if (entryExitLogging) {
-			log.exiting(DependencyList.class.getName(), methodName);
-		}
 	}
 }
