@@ -115,7 +115,15 @@ var params = {
 						oFolded[pluginPrefixesPropName] = oPrefixes;
 					}
 				}
-				oChild[segment] = dep.prefix ? [position, oPrefixes[dep.prefix]] : position;
+				var key = segment;
+				if (oChild[key]) {
+					if (typeof oChild[key] === 'number') {
+						throw new Error("Duplicate name assignment: " + name);
+					}
+					oChild = oChild[key];
+					key = '.';
+				}
+				oChild[key] = dep.prefix ? [position, oPrefixes[dep.prefix]] : position;
 			}
 			else if (segment != '.') {
 				// add path component to folded modules
