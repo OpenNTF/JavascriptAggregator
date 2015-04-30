@@ -881,7 +881,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			if (queryArgs != null) {
 				url.append("?").append(queryArgs); //$NON-NLS-1$
 			}
-			log.log(logLevel, url.toString(), t);
+			log.log(logLevel, url.toString() + ": " + t.getMessage(), t); //$NON-NLS-1$
 		}
 		if (getOptions().isDevelopmentMode() || getOptions().isDebugMode()) {
 			// In development mode, display server exceptions on the browser console
