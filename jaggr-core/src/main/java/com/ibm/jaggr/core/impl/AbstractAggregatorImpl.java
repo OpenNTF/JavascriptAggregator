@@ -65,6 +65,7 @@ import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.mutable.Mutable;
 import org.apache.commons.lang3.mutable.MutableInt;
@@ -464,23 +465,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 					is = resolved.getInputStream();
 					resp.setContentLength(resolved.getURI().toURL().openConnection().getContentLength());
 				}
-				OutputStream os = resp.getOutputStream();
-				CopyUtil.copy(is, os);
+				writeResponse(is, req, resp);
 			}
 		} catch (BadRequestException e) {
-			if (log.isLoggable(Level.INFO)) {
-				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
-			}
+			logException(req, Level.INFO, sourceMethod, e);
 			resp.setStatus(HttpServletResponse.SC_BAD_REQUEST);
 		} catch (NotFoundException e) {
-			if (log.isLoggable(Level.INFO)) {
-				log.log(Level.INFO, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
-			}
+			logException(req, Level.INFO, sourceMethod, e);
 			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
 		} catch (Exception e) {
-			if (log.isLoggable(Level.WARNING)) {
-				log.log(Level.WARNING, e.getMessage() + " - " + req.getRequestURI(), e); //$NON-NLS-1$
-			}
+			logException(req, Level.WARNING, sourceMethod, e);
 			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		}
 		if (isTraceLogging) {
@@ -558,7 +552,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 							"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 					);
 				}
-				CopyUtil.copy(in, resp.getOutputStream());
+				writeResponse(in, req, resp);
 			}
 			notifyRequestListeners(RequestNotifierAction.end, req, resp);
 		} catch (DependencyVerificationException e) {
@@ -858,6 +852,86 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	}
 
 	/**
+	 * Writes the response to the response object. IOExceptions that occur when writing to the
+	 * response output stream are not propagated, but are handled internally. Such exceptions
+	 * are assumed to be caused by the client closing the connection and are not real errors.
+	 *
+	 * @param in
+	 *            the input stream.
+	 * @param request
+	 *            the http request object
+	 * @param response
+	 *            the http response object
+	 * @return true if all of the data from the input stream was written to the response
+	 * @throws IOException
+	 */
+	protected boolean writeResponse(InputStream in, HttpServletRequest request, HttpServletResponse response) throws IOException {
+		final String sourceMethod = "writeResponse"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{in, response});
+		}
+		boolean success = true;
+        int n = 0;
+        byte[] buffer = new byte[4096];
+        OutputStream out = response.getOutputStream();
+        try {
+	        while (-1 != (n = in.read(buffer))) {
+	        	try {
+	        		out.write(buffer, 0, n);
+	        	} catch (IOException e) {
+	        		// Error writing to the output stream, probably because the connection
+	        		// was closed by the client.  Don't attempt to write anything else to
+	        		// the response and just log the error using FINE level logging.
+	        		logException(request, Level.FINE, sourceMethod, e);
+	        		success = false;
+	        		break;
+	        	}
+	        }
+        } finally {
+        	IOUtils.closeQuietly(in);
+        	IOUtils.closeQuietly(out);
+        }
+        if (isTraceLogging) {
+        	log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, success);
+        }
+        return success;
+	}
+
+	/**
+	 * Formats and logs an exception log message including the request url, query args, the exception class
+	 * name and exception message.
+	 *
+	 * @param req
+	 *            the http servlet request
+	 * @param level
+	 *            the logging level
+	 * @param sourceMethod
+	 *            the calling method name
+	 * @param t
+	 *            the exception
+	 */
+	void logException(HttpServletRequest req, Level level, String sourceMethod, Throwable t) {
+		if (log.isLoggable(level)) {
+			StringBuffer sb = new StringBuffer();
+			// add the request URI and query args
+			String uri = req.getRequestURI();
+			if (uri != null) {
+				sb.append(uri);
+				String queryArgs = req.getQueryString();
+				if (queryArgs != null) {
+					sb.append("?").append(queryArgs); //$NON-NLS-1$
+				}
+			}
+			// append the exception class name
+			sb.append(": ").append(t.getClass().getName()); //$NON-NLS-1$
+			// append the exception message
+			sb.append(" - ").append(t.getMessage() != null ? t.getMessage() : "null");  //$NON-NLS-1$//$NON-NLS-2$
+			log.logp(level, AbstractAggregatorImpl.class.getName(), sourceMethod, sb.toString(), t);
+		}
+	}
+
+	/**
 	 * Sets response status and headers for an error response based on the information in the
 	 * specified exception. If development mode is enabled, then returns a 200 status with a
 	 * console.error() message specifying the exception message
@@ -872,17 +946,11 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	 *            The response status
 	 */
 	protected void exceptionResponse(HttpServletRequest req, HttpServletResponse resp, Throwable t, int status) {
+		final String sourceMethod = "exceptionResponse"; //$NON-NLS-1$
 		resp.addHeader("Cache-control", "no-store"); //$NON-NLS-1$ //$NON-NLS-2$
 		Level logLevel = (t instanceof BadRequestException || t instanceof NotFoundException)
 				? Level.WARNING : Level.SEVERE;
-		if (log.isLoggable(logLevel)) {
-			String queryArgs = req.getQueryString();
-			StringBuffer url = req.getRequestURL();
-			if (queryArgs != null) {
-				url.append("?").append(queryArgs); //$NON-NLS-1$
-			}
-			log.log(logLevel, url.toString() + ": " + t.getMessage(), t); //$NON-NLS-1$
-		}
+		logException(req, logLevel, sourceMethod, t);
 		if (getOptions().isDevelopmentMode() || getOptions().isDebugMode()) {
 			// In development mode, display server exceptions on the browser console
 			String msg = StringUtil.escapeForJavaScript(
