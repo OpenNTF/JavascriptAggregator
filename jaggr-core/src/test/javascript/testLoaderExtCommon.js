@@ -39,6 +39,23 @@ define(["dojo/_base/array",
 			expected[pluginPrefixesPropName] = {'combo/text':0, abc:1};
 			expect(oFolded).toEqual(expected);
 		});
+		it("tests path folding with overlapping module/folder name", function() {
+			var oFolded = {}, oPrefixes = {};
+			var names = [{name:"foo/bar"},  {name:"foo/baz/bar"}, {name:"foo/baz"}];
+			arrays.forEach(names, function(name, i) {
+				addFoldedModuleName(name, i, oFolded, oPrefixes);
+			});
+			var expected = {foo:{bar:0,baz:{bar:1,'.':2}}};
+			expect(oFolded).toEqual(expected);
+			
+			oFolded = {}; oPrefixes = {};
+			names = [{name:"foo/bar"}, {name:"foo/baz"}, {name:"foo/baz/bar"}];
+			arrays.forEach(names, function(name, i) {
+				addFoldedModuleName(name, i, oFolded, oPrefixes);
+			});
+			expected = {foo:{bar:0,baz:{'.':1,bar:2}}};
+			expect(oFolded).toEqual(expected);
+		});
 		/*
 		it("should throw invlalid module name", function() {
 			var invalidChars = ['{', '}', ',', ':', '|', '<', '>', '*'];
