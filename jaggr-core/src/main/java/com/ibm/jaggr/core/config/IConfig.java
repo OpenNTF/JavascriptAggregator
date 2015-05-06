@@ -255,7 +255,7 @@ public interface IConfig {
 	 * returns an empty list.
 	 * <p>
 	 * This method is deprecated in favor of
-	 * {@link IRequestedModuleNames#getRequireExpansionExcludes()} which is
+	 * {@link IRequestedModuleNames#getExcludes()} which is
 	 * specified by Aggregator generated requests based on the modules requested
 	 * in the boot layer for the application.
 	 *

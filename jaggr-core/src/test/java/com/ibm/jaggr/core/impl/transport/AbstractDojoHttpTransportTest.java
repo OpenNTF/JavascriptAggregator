@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
+import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
 import com.ibm.jaggr.core.util.TypeUtil;
 
@@ -210,6 +211,36 @@ public class AbstractDojoHttpTransportTest {
 
 		transport.decorateRequest(mockRequest);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(AbstractHttpTransport.NOTEXTADORN_REQATTRNAME)));
+	}
+
+	@Test
+	public void testBeforeModule() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
+		String result = transport.beforeModule(mockRequest, new ModuleInfo("module", true));
+		Assert.assertEquals("", result);
+		result = transport.beforeModule(mockRequest, new ModuleInfo("textModule", false));
+		Assert.assertEquals("define(", result);
+		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
+		result = transport.beforeModule(mockRequest, new ModuleInfo("module", true));
+		Assert.assertEquals("!require.combo.isDefined('module')&&", result);
+		result = transport.beforeModule(mockRequest, new ModuleInfo("textModule", false));
+		Assert.assertEquals("!require.combo.isDefined('textModule')&&define(", result);
+	}
+
+	@Test
+	public void testAfterModule() throws Exception {
+		TestDojoHttpTransport transport = new TestDojoHttpTransport();
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
+		String result = transport.afterModule(mockRequest, new ModuleInfo("module", true));
+		Assert.assertEquals("", result);
+		result = transport.afterModule(mockRequest, new ModuleInfo("textModule", false));
+		Assert.assertEquals(");", result);
+		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
+		result = transport.afterModule(mockRequest, new ModuleInfo("module", true));
+		Assert.assertEquals("", result);
+		result = transport.afterModule(mockRequest, new ModuleInfo("textModule", false));
+		Assert.assertEquals(");", result);
 	}
 
 	@Test

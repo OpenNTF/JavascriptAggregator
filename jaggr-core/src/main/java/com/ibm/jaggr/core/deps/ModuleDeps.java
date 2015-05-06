@@ -229,16 +229,30 @@ public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
 	}
 
 	/**
-	 * Calls {@link ModuleDepInfo#resolveWith(Features)} on each of the
-	 * values in the map.
+	 * Calls {@link ModuleDepInfo#resolveWith(Features)} on each of the values in the map.
 	 *
-	 * @param features the feature set to apply.
+	 * @param features
+	 *            the feature set to apply.
 	 *
 	 * @return the current object
 	 */
 	public ModuleDeps resolveWith(Features features) {
+		return resolveWith(features, false);
+	}
+
+	/**
+	 * Calls {@link ModuleDepInfo#resolveWith(Features)} on each of the values in the map.
+	 *
+	 * @param features
+	 *            the feature set to apply.
+	 * @param coerceUndefinedToFalse
+	 *            if true, undefined features will be treated as false
+	 *
+	 * @return the current object
+	 */
+	public ModuleDeps resolveWith(Features features, boolean coerceUndefinedToFalse) {
 		for (ModuleDepInfo info : values()) {
-			info.resolveWith(features);
+			info.resolveWith(features, coerceUndefinedToFalse);
 		}
 		return this;
 	}

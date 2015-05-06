@@ -15,7 +15,6 @@
  */
 package com.ibm.jaggr.core.test;
 
-import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 
 import java.util.Collections;
@@ -86,28 +85,19 @@ public class MockRequestedModuleNames implements IRequestedModuleNames{
 		this.excludes = excludes;
 	}
 
-	public void setReqExpExcludes(List<String> reqExpExcludes) {
-		if (reqExpExcludes == null) {
-			throw new NullPointerException();
-		}
-		this.reqExpExcludes = reqExpExcludes;
-	}
-
-	@Override
-	public List<String> getRequireExpansionExcludes() throws BadRequestException {
-		return reqExpExcludes;
-	}
-
-
-
 	public void setString(String strRep) {
 		this.strRep = strRep;
 	}
 
 	@Override
 	public String toString() {
+		return toString(false);
+	}
+
+	@Override
+	public String toString(boolean decode) {
 		String result = null;
-		if (strRep != null) {
+		if (strRep != null && !decode) {
 			result = strRep;
 		} else {
 			StringBuffer sb = new StringBuffer();

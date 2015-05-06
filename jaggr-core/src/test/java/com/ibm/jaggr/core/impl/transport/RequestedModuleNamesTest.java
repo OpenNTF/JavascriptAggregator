@@ -72,18 +72,18 @@ public class RequestedModuleNamesTest {
 		assertTrue(requestedNames.getPreloads().isEmpty());
 		assertEquals(encModules+":::", requestedNames.toString());
 
-		// Test with encoded modules and reqExpEx params
+		// Test with encoded modules and expEx params
 		encModules = "(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!3)";
-		String encReqExpEx = "(foo!(ex!0))";
+		String expEx = "(foo!(ex!0))";
 		requestParams.put("modules", new String[]{encModules});
-		requestParams.put("reqExpEx", new String[]{encReqExpEx});
+		requestParams.put("exEnc", new String[]{expEx});
 		requestParams.put("count", new String[]{"4"});
 		requestedNames = new RequestedModuleNames(request, null, null);
 		assertEquals(expected, requestedNames.getModules());
-		assertEquals(Arrays.asList("foo/ex"), requestedNames.getRequireExpansionExcludes());
+		assertEquals(Arrays.asList("foo/ex"), requestedNames.getExcludesEncoded());
 		assertTrue(requestedNames.getDeps().isEmpty());
 		assertTrue(requestedNames.getPreloads().isEmpty());
-		assertEquals(encModules+"::"+encReqExpEx+":", requestedNames.toString());
+		assertEquals(encModules+"::"+expEx+":", requestedNames.toString());
 
 
 		// Test with invalid count param
@@ -183,6 +183,7 @@ public class RequestedModuleNamesTest {
 		assertTrue(requestedNames.getModules().isEmpty());
 		assertTrue(requestedNames.getDeps().isEmpty());
 		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertTrue(requestedNames.getExcludes().isEmpty());
 		assertEquals("scripts:[script/a, script/b]", requestedNames.toString());
 
 		// test with deps only
@@ -192,6 +193,7 @@ public class RequestedModuleNamesTest {
 		assertEquals(Arrays.asList(new String[]{"dep/a", "dep/b"}), requestedNames.getDeps());
 		assertTrue(requestedNames.getModules().isEmpty());
 		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertTrue(requestedNames.getExcludes().isEmpty());
 		assertEquals("deps:[dep/a, dep/b]", requestedNames.toString());
 
 		// test with preloads only
@@ -201,16 +203,29 @@ public class RequestedModuleNamesTest {
 		assertEquals(Arrays.asList(new String[]{"preload/a", "preload/b"}), requestedNames.getPreloads());
 		assertTrue(requestedNames.getModules().isEmpty());
 		assertTrue(requestedNames.getDeps().isEmpty());
+		assertTrue(requestedNames.getExcludes().isEmpty());
 		assertEquals("preloads:[preload/a, preload/b]", requestedNames.toString());
 
-		// test with all three
+		// test with excludes only
+		requestParams.remove(AbstractHttpTransport.PRELOADS_REQPARAM);
+		requestParams.put(AbstractHttpTransport.EXCLUDES_REQPARAM, new String[]{"exclude/a,exclude/b"});
+		requestedNames = new RequestedModuleNames(request, null, null);
+		assertEquals(Arrays.asList(new String[]{"exclude/a", "exclude/b"}), requestedNames.getExcludes());
+		assertTrue(requestedNames.getModules().isEmpty());
+		assertTrue(requestedNames.getDeps().isEmpty());
+		assertTrue(requestedNames.getPreloads().isEmpty());
+		assertEquals("excludes:[exclude/a, exclude/b]", requestedNames.toString());
+
+		// test with all four
 		requestParams.put(AbstractHttpTransport.DEPS_REQPARAM, new String[]{"dep/a,dep/b"});
 		requestParams.put(AbstractHttpTransport.SCRIPTS_REQPARAM, new String[]{"script/a, script/b"});
+		requestParams.put(AbstractHttpTransport.PRELOADS_REQPARAM, new String[]{"preload/a,preload/b"});
 		requestedNames = new RequestedModuleNames(request, null, null);
 		assertEquals(Arrays.asList(new String[]{"script/a", "script/b"}), requestedNames.getScripts());
 		assertEquals(Arrays.asList(new String[]{"dep/a", "dep/b"}), requestedNames.getDeps());
 		assertEquals(Arrays.asList(new String[]{"preload/a", "preload/b"}), requestedNames.getPreloads());
-		assertEquals("scripts:[script/a, script/b];deps:[dep/a, dep/b];preloads:[preload/a, preload/b]", requestedNames.toString());
+		assertEquals(Arrays.asList(new String[]{"exclude/a", "exclude/b"}), requestedNames.getExcludes());
+		assertEquals("scripts:[script/a, script/b]; deps:[dep/a, dep/b]; preloads:[preload/a, preload/b]; excludes:[exclude/a, exclude/b]", requestedNames.toString());
 
 	}
 

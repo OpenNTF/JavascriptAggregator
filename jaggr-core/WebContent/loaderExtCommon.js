@@ -39,7 +39,16 @@ var params = {
 		noCache: [null, "nc"],
 		
 		// perform has branching in require list expansion
-		hasBranching: [null, "hb"]
+		hasBranching: [null, "hb"],
+		
+		// True if the aggregator should include expanded dependencies of 
+		// requested modules in the response.  Takes precedence over 
+		// expandRequire if both are specified
+		serverExpandLayers: [false, "sel"],
+		
+		// True if the aggregator should output dependency expansion
+		// logging to the browser console
+		depExpLog: [null, "depExpLog"]
 	},
 
 	extraArgs = {},

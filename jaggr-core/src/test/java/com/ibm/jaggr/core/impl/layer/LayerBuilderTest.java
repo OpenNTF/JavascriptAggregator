@@ -159,15 +159,26 @@ public class LayerBuilderTest {
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
 		ModuleList moduleList;
 		Map<String, String> content = new HashMap<String, String>();
+		content.put("s1", "script1");
+		content.put("s2", "script2");
 		content.put("m1", "foo");
 		content.put("m2", "bar");
+
+		// Single script file
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/a1.js")), ModuleSpecifier.SCRIPTS)
+		}));
+		TestLayerBuilder builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		String output = builder.build();
+		System.out.println(output);
+		Assert.assertEquals("[script1]", output);
 
 		// Single module specified with 'modules' query arg
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES)
 		}));
-		TestLayerBuilder builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		String output = builder.build();
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		output = builder.build();
 		System.out.println(output);
 		Assert.assertEquals("[(\"<m1>foo<m1>\")]", output);
 
@@ -182,6 +193,17 @@ public class LayerBuilderTest {
 		System.out.println(output);
 		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
 
+		// two scripts and two modules
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/s1.js")), ModuleSpecifier.SCRIPTS),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("s2", new URI("file:/c:/s2.js")), ModuleSpecifier.SCRIPTS),
+		}));
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		output = builder.build();
+		System.out.println(output);
+		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
 
 		// Test developmentMode and showFilenames
 		IOptions options = mockAggregator.getOptions();
@@ -254,25 +276,35 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
-		Assert.assertEquals("[(\"<m1>foo<m1>\")[m2]{'<m2>bar<m2>'}[m2]]", output);
+		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 
-		// one required module followed by one module (throws exception)
+		// one required module followed by one module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
 				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
 		}));
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
-		boolean exceptionCaught = false;
-		try {
-			output = builder.build();
-		} catch (IllegalStateException ex) {
-			exceptionCaught = true;
-		}
-		Assert.assertTrue(exceptionCaught);
+		output = builder.build();
+		Assert.assertEquals("[[m1]{'<m1>foo<m1>'}[m1](\"<m2>bar<m2>\")]", output);
+		System.out.println(output);
 
-		// Test addBefore with required module
+		// one script, one module and one layer module
+		// one required module followed by one module
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/s1.js")), ModuleSpecifier.SCRIPTS)
+		}));
+		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		output = builder.build();
+		Assert.assertEquals("[script1[m1]{'<m1>foo<m1>'}[m1](\"<m2>bar<m2>\")]", output);
+		System.out.println(output);
+
+
+		// test addExtraBuild with required module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
 		}));
@@ -284,36 +316,9 @@ public class LayerBuilderTest {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
 					ModuleBuildReader mbr = futures.get(0).get();
-					mbr.addBefore(
+					mbr.addExtraBuild(
 							new ModuleBuildFuture(
-									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"),true)),
-									ModuleSpecifier.BUILD_ADDED)
-							);
-				} catch (Exception e) {
-					throw new IOException(e.getMessage(), e);
-				}
-				return futures;
-			}
-		};
-		output = builder.build();
-		Assert.assertEquals("[[m1]{'<mBefore>bar<mBefore>','<m1>foo<m1>'}[m1]]", output);
-		System.out.println(output);
-
-		// Test addBefore with module
-		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
-		}));
-		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
-			@Override
-			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
-					throws IOException {
-				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
-				try {
-					ModuleBuildReader mbr = futures.get(0).get();
-					mbr.addBefore(
-							new ModuleBuildFuture(
-									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
+									new ModuleImpl("mExtra", new URI("file:/c:/mExtra.js")),
 									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
@@ -324,38 +329,10 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[(\"<mBefore>bar<mBefore>\",\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[[m1]{'<m1>foo<m1>','<mExtra>bar<mExtra>'}[m1]]", output);
 		System.out.println(output);
 
-		// test addAfter with required module
-		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
-				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.LAYER),
-		}));
-		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
-		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content) {
-			@Override
-			protected List<ModuleBuildFuture> collectFutures(ModuleList moduleList, HttpServletRequest request)
-					throws IOException {
-				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
-				try {
-					ModuleBuildReader mbr = futures.get(0).get();
-					mbr.addAfter(
-							new ModuleBuildFuture(
-									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"), true)),
-									ModuleSpecifier.BUILD_ADDED)
-							);
-				} catch (Exception e) {
-					throw new IOException(e.getMessage(), e);
-				}
-				return futures;
-			}
-		};
-		output = builder.build();
-		Assert.assertEquals("[[m1]{'<m1>foo<m1>','<mAfter>bar<mAfter>'}[m1]]", output);
-		System.out.println(output);
-
-		// Test addAfter with module
+		// Test addExtraBuild with module
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES)
 		}));
@@ -366,9 +343,9 @@ public class LayerBuilderTest {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
 					ModuleBuildReader mbr = futures.get(0).get();
-					mbr.addAfter(
+					mbr.addExtraBuild(
 							new ModuleBuildFuture(
-									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
+									new ModuleImpl("mExtra", new URI("file:/c:/mExtra.js")),
 									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("bar"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
@@ -379,7 +356,7 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<mAfter>bar<mAfter>\")]", output);
+		Assert.assertEquals("[[]{'<mExtra>bar<mExtra>'}[](\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 
 		// Make sure cache key generators are added to the keygen list
@@ -394,7 +371,7 @@ public class LayerBuilderTest {
 		builder.build();
 		Assert.assertEquals(1, keyGens.size());
 
-		// required and non-required modules with before and after modules
+		// required and non-required modules with extra modules
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
 				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.LAYER)
@@ -407,17 +384,17 @@ public class LayerBuilderTest {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
 					ModuleBuildReader mbr = futures.get(0).get();
-					mbr.addAfter(
+					mbr.addExtraBuild(
 							new ModuleBuildFuture(
-									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("after"), true)),
+									new ModuleImpl("mExtra1", new URI("file:/c:/mExtra1.js")),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("extra1"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 					mbr = futures.get(1).get();
-					mbr.addBefore(
+					mbr.addExtraBuild(
 							new ModuleBuildFuture(
-									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("before"), true)),
+									new ModuleImpl("mExtra2", new URI("file:/c:/mExtra2.js")),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("extra2"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -427,10 +404,10 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<mAfter>after<mAfter>\")[m2]{'<mBefore>before<mBefore>','<m2>bar<m2>'}[m2]]", output);
+		Assert.assertEquals("[[m2]{'<mExtra1>extra1<mExtra1>','<m2>bar<m2>','<mExtra2>extra2<mExtra2>'}[m2](\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 
-		// Make sure NOADDMODULES request attribute disables before and after module expansion
+		// Make sure NOADDMODULES request attribute disables extra module expansion
 		requestAttributes.put(IHttpTransport.NOADDMODULES_REQATTRNAME, Boolean.TRUE);
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
 				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
@@ -444,17 +421,17 @@ public class LayerBuilderTest {
 				List<ModuleBuildFuture> futures = super.collectFutures(moduleList, request);
 				try {
 					ModuleBuildReader mbr = futures.get(0).get();
-					mbr.addAfter(
+					mbr.addExtraBuild(
 							new ModuleBuildFuture(
-									new ModuleImpl("mAfter", new URI("file:/c:/mAfter.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("after"), true)),
+									new ModuleImpl("mExtra1", new URI("file:/c:/mExtra1.js")),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("extra1"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 					mbr = futures.get(1).get();
-					mbr.addBefore(
+					mbr.addExtraBuild(
 							new ModuleBuildFuture(
-									new ModuleImpl("mBefore", new URI("file:/c:/mBefore.js")),
-									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("before"), true)),
+									new ModuleImpl("mExtra2", new URI("file:/c:/mExtra2.js")),
+									new CompletedFuture<ModuleBuildReader>(new ModuleBuildReader(new StringReader("extra2"), true)),
 									ModuleSpecifier.BUILD_ADDED)
 							);
 				} catch (Exception e) {
@@ -464,7 +441,7 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[(\"<m1>foo<m1>\")[m2]{'<m2>bar<m2>'}[m2]]", output);
+		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](\"<m1>foo<m1>\")]", output);
 		System.out.println(output);
 
 
@@ -496,18 +473,18 @@ public class LayerBuilderTest {
 				return result;
 			}
 			@Override
-			protected void processFuture(ModuleBuildFuture future, StringBuffer sb) throws IOException {
-				super.processFuture(future, sb);
+			protected void processReader(ModuleBuildReader reader, StringBuffer sb) throws IOException {
+				super.processReader(reader, sb);
 				@SuppressWarnings("unchecked")
 				Set<String> dependentFeatures = (Set<String>)mockRequest.getAttribute(ILayer.DEPENDENT_FEATURES);
-				dependentFeatures.add("processFuture");
+				dependentFeatures.add("processReader");
 			}
 		};
 		output = builder.build();
 		Assert.assertEquals("prologue[AMD(interlude file:/c:/m1.js\"<m1>foo<m1>\"interlude file:/c:/m2.js,\"<m2>bar<m2>\")epilogue]", output);
 		Assert.assertEquals(
 				(Set<String>)new HashSet<String>(Arrays.asList(new String[]{
-						"prologueFeature", "AMDFeature", "interludeFeature", "processFuture", "epilogueFeature"
+						"prologueFeature", "AMDFeature", "interludeFeature", "processReader", "epilogueFeature"
 				})),
 				moduleList.getDependentFeatures());
 		System.out.println(output);
@@ -653,7 +630,7 @@ public class LayerBuilderTest {
 		checkpoints.clear();
 		// Test END_LAYER with two null contributions
 		result = builder.notifyLayerListeners(EventType.END_LAYER, mockRequest, module1);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		Assert.assertEquals(0,  moduleList.getDependentFeatures().size());
 		Assert.assertEquals(Arrays.asList(new String[]{"Listener2_END_LAYER", "Listener1_END_LAYER"}), checkpoints);  // ensure reverse order
 
@@ -701,7 +678,7 @@ public class LayerBuilderTest {
 		// Verify that dependent features can be updated by listeners
 		result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module2);
 		Assert.assertEquals("foobar", result);
-		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), moduleList.getDependentFeatures());
+		Assert.assertEquals(new HashSet<String>(Arrays.asList(new String[]{"feature1", "feature2"})), builder.getDepenedentFeatures());
 		Assert.assertEquals(Arrays.asList(new String[]{"Listener1_BEGIN_MODULE", "Listener2_BEGIN_MODULE"}), checkpoints);
 	}
 
@@ -755,12 +732,12 @@ public class LayerBuilderTest {
 		protected String notifyLayerListeners(ILayerListener.EventType type, HttpServletRequest request, IModule module) throws IOException {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			ILayerListener listener = new AggregatorLayerListener(aggr);
-			return listener.layerBeginEndNotifier(type, request,
+			String result = listener.layerBeginEndNotifier(type, request,
 					type == EventType.BEGIN_MODULE ?
 							Arrays.asList(new IModule[]{module}) :
 								moduleList.getModules(),
 								new HashSet<String>());
-
+			return result != null ? result : "";
 		}
 	}
 }

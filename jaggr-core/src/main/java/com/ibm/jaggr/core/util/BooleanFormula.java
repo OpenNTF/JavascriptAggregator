@@ -265,12 +265,27 @@ public class BooleanFormula implements Set<BooleanTerm>, Serializable {
 	 * @return this object
 	 */
 	public BooleanFormula resolveWith(Features features) {
+		return resolveWith(features, false);
+	}
+
+	/**
+	 * Resolves the formula using the boolean values specified in
+	 * <code>features</code>. If there are no more un-resolved variables in the
+	 * forumula, the resulting formula will be either TRUE or FALSE.
+	 *
+	 * @param features
+	 *            the values to assign to variables in the formula
+	 * @param coerceUndefinedToFalse
+	 *            if true, then undefined features will be treated as false
+	 * @return this object
+	 */
+	public BooleanFormula resolveWith(Features features, boolean coerceUndefinedToFalse) {
 		if (isTrue() || isFalse()) {
 			return this;
 		}
 		BooleanFormula formula = new BooleanFormula();
 		for (BooleanTerm term : this) {
-			BooleanTerm evaluated = term.resolveWith(features);
+			BooleanTerm evaluated = term.resolveWith(features, coerceUndefinedToFalse);
 			if (evaluated.isFalse()) {
 				// term is false.  Don't add to result
 			} else if (evaluated.isTrue()) {

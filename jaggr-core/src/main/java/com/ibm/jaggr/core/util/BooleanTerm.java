@@ -109,12 +109,28 @@ public class BooleanTerm extends HashSet<BooleanVar> {
 	 * @return the result
 	 */
 	public BooleanTerm resolveWith(Features features) {
+		return resolveWith(features, false);
+	}
+
+	/**
+	 * Applies the feature values specified in <code>features</code> to the term
+	 * and returns a new term with the resolved result. A result of null
+	 * indicates the term is false. An empty term indicates the the term is true
+	 *
+	 * @param features
+	 *            the varialbe names and values to resolve with
+	 * @param coerceUndefinedToFalse
+	 *            if true, undefined features will be treated as false
+	 *
+	 * @return the result
+	 */
+	public BooleanTerm resolveWith(Features features, boolean coerceUndefinedToFalse) {
 		if (isEmpty()) {
 			return this;
 		}
 		Set<BooleanVar> term = new HashSet<BooleanVar>();
 		for (BooleanVar var : this) {
-			if (features.contains(var.name)) {
+			if (features.contains(var.name) || coerceUndefinedToFalse) {
 				boolean featureState = features.isFeature(var.name);
 				if (featureState && var.state || !featureState && !var.state) {
 					// The var is true.  Don't add to term

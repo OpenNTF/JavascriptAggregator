@@ -19,6 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.ibm.jaggr.core.BadRequestException;
 import com.ibm.jaggr.core.IAggregator;
@@ -118,6 +119,68 @@ public class LayerImpl_getModulesTest {
 	}
 
 	@Test
+	public void testGetModules_moduleListWithScript() throws Exception {
+		LayerImpl layer = new TestLayerImpl();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
+		names.setModules(Arrays.asList(new String[]{"module/a", "module/b"}));
+		names.setScripts(Arrays.asList(new String[]{"script/a"}));
+		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
+		ModuleList modules = layer.getModules(mockRequest);
+		assertTrue(modules.getDependentFeatures().isEmpty());
+		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
+		List<IModule> expected = makeModuleList("module/a", "module/b","script/a");
+		assertEquals(expected, modules.getModules());
+		for (ModuleListEntry entry : modules) {
+			if ("script/a".equals(entry.getModule().getModuleName())) {
+				assertEquals(ModuleSpecifier.SCRIPTS, entry.getSource());
+			} else {
+				assertEquals(ModuleSpecifier.MODULES, entry.getSource());
+			}
+		}
+	}
+
+	@Test
+	public void testGetModules_moduleList_with_serverExpandLayers() throws Exception {
+		LayerImpl layer = new TestLayerImpl();
+		MockRequestedModuleNames names = new MockRequestedModuleNames();
+		names.setModules(Arrays.asList(new String[]{"module/a"}));
+		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
+		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
+		ModuleDeps depsExplicitDeps = new ModuleDeps();
+		ModuleDeps depsExpandedDeps = new ModuleDeps();
+		depsExplicitDeps.add("module/a", new ModuleDepInfo());
+		depsExpandedDeps.add("dep/moduledep", new ModuleDepInfo());
+		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature")));
+		PowerMock.expectNew(
+				DependencyList.class,
+				EasyMock.eq(LayerImpl.DEPSOURCE_MODULEDEPS),
+				EasyMock.eq(Arrays.asList(new String[]{"module/a"})),
+				EasyMock.eq(mockAggregator),
+				EasyMock.eq(features),
+				EasyMock.eq(true),
+				EasyMock.eq(false),
+				EasyMock.eq(false))
+			.andReturn(depsDependencies).once();
+		PowerMock.replay(DependencyList.class);
+		ModuleList modules = layer.getModules(mockRequest);
+		PowerMock.verify(DependencyList.class);
+		assertEquals(new HashSet<String>(Arrays.asList("feature")), modules.getDependentFeatures());
+		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
+		List<IModule> expected = makeModuleList("module/a", "dep/moduledep");
+		assertEquals(expected, modules.getModules());
+		for (ModuleListEntry entry : modules) {
+			String moduleName = entry.getModule().getModuleName();
+			if ("module/a".equals(moduleName)) {
+				assertEquals(ModuleSpecifier.MODULES, entry.getSource());
+			} else if ("dep/moduledep".equals(moduleName)) {
+				assertEquals(ModuleSpecifier.LAYER, entry.getSource());
+			} else {
+				fail("unexpected entry " + moduleName);
+			}
+		}
+	}
+
+	@Test
 	public void testGetModules_deps() throws Exception {
 		LayerImpl layer = new TestLayerImpl();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
@@ -144,7 +207,7 @@ public class LayerImpl_getModulesTest {
 		PowerMock.verify(DependencyList.class);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep");
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
-		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));
+		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
 		assertEquals(expected, modules.getModules());
 		assertEquals(new HashSet<String>(Arrays.asList("dep/a")), modules.getRequiredModules());
 		assertEquals(new HashSet<String>(Arrays.asList("feature")), modules.getDependentFeatures());
@@ -199,7 +262,7 @@ public class LayerImpl_getModulesTest {
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep", "preload/a", "preload/adep");
 		assertEquals(expected, modules.getModules());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
-		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));
+		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
 		assertEquals(new HashSet<String>(Arrays.asList("dep/a")), modules.getRequiredModules());
 		assertEquals(new HashSet<String>(Arrays.asList("feature1", "feature2")), modules.getDependentFeatures());
 		assertEquals(ModuleSpecifier.LAYER, modules.get(0).getSource());
@@ -265,7 +328,7 @@ public class LayerImpl_getModulesTest {
 		List<IModule> expected = makeModuleList("dep/a", "combo/text!dep/adep", "preload/a", "combo/text!preload/adep", "preload/nls/adep");
 		assertEquals(expected, modules.getModules());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
-		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));
+		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
 		assertEquals(new HashSet<String>(Arrays.asList("dep/a")), modules.getRequiredModules());
 		assertEquals(new HashSet<String>(Arrays.asList("feature1", "feature2")), modules.getDependentFeatures());
 		assertEquals(ModuleSpecifier.LAYER, modules.get(0).getSource());
@@ -333,7 +396,7 @@ public class LayerImpl_getModulesTest {
 
 		PowerMock.replay(DependencyList.class);
 		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
-		mockRequest.setAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME, true);
+		mockRequest.setAttribute(IHttpTransport.DEPENDENCYEXPANSIONLOGGING_REQATTRNAME, true);
 		mockAggregator.getOptions().setOption("developmentMode", "true");
 
 		ModuleList modules = layer.getModules(mockRequest);
@@ -348,7 +411,7 @@ public class LayerImpl_getModulesTest {
 		assertEquals(ModuleSpecifier.LAYER, modules.get(2).getSource());
 		assertEquals(ModuleSpecifier.LAYER, modules.get(3).getSource());
 
-		DependencyList bootLayerDeps = (DependencyList)requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME);
+		DependencyList bootLayerDeps = (DependencyList)requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME);
 		ModuleDeps expectedExplicitDeps = new ModuleDeps();
 		expectedExplicitDeps.add("dep/a", new ModuleDepInfo());
 		expectedExplicitDeps.add("preload/a", new ModuleDepInfo());
@@ -455,7 +518,7 @@ public class LayerImpl_getModulesTest {
 		PowerMock.verify(DependencyList.class);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep");
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
-		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));
+		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
 		assertEquals(expected, modules.getModules());
 		assertEquals(new HashSet<String>(Arrays.asList("dep/a")), modules.getRequiredModules());
 		assertEquals(new HashSet<String>(Arrays.asList("feature")), modules.getDependentFeatures());
@@ -481,7 +544,7 @@ public class LayerImpl_getModulesTest {
 		PowerMock.verify(DependencyList.class);
 		expected = makeModuleList("dep/a", "dep/adep", "foo", "bar");
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
-		assertNull(requestAttributes.get(LayerImpl.BOOTLAYERDEPS_PROPNAME));
+		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
 		assertEquals(expected, modules.getModules());
 
 	}

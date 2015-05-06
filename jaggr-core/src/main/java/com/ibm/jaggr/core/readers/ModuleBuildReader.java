@@ -38,8 +38,7 @@ import javax.servlet.http.HttpServletRequest;
  */
 public class ModuleBuildReader extends Reader {
 	private Reader reader;
-	private List<ModuleBuildFuture> before;
-	private List<ModuleBuildFuture> after;
+	private List<ModuleBuildFuture> extraBuilds;
 	private List<ICacheKeyGenerator> keyGenerators;
 	private final boolean isScript;
 	private final String error;
@@ -58,7 +57,7 @@ public class ModuleBuildReader extends Reader {
 		this.isScript = isScript;
 		this.keyGenerators = keyGens;
 		this.error = error;
-		before = after = null;
+		extraBuilds = null;
 		if (keyGenerators != null && KeyGenUtil.isProvisional(keyGenerators)) {
 			throw new IllegalStateException();
 		}
@@ -134,50 +133,25 @@ public class ModuleBuildReader extends Reader {
 	}
 
 	/**
-	 * Adds the specified future to the list of before futures.
+	 * Adds the specified future to the list of extra builds.
 	 * <p>
-	 * Before futures are processed ahead of this future.
 	 *
-	 * @param future The future to add to the before list
+	 * @param future The future to add
 	 */
-	public void addBefore(ModuleBuildFuture future) {
-		if (before == null) {
-			before = new LinkedList<ModuleBuildFuture>();
+	public void addExtraBuild(ModuleBuildFuture future) {
+		if (extraBuilds == null) {
+			extraBuilds = new LinkedList<ModuleBuildFuture>();
 		}
-		before.add(future);
+		extraBuilds.add(future);
 	}
 
 	/**
-	 * Adds the specified future to the list of after futures.
-	 * <p>
-	 * After futures are processed following this future.
-	 *
-	 * @param future The future to add to the before after
-	 */
-	public void addAfter(ModuleBuildFuture future) {
-		if (after == null) {
-			after = new LinkedList<ModuleBuildFuture>();
-		}
-		after.add(future);
-	}
-
-	/**
-	 * Returns the list of additional futures that should be processed ahead
-	 * of this future
-	 *
-	 * @return The list of before futures.
-	 */
-	public List<ModuleBuildFuture> getBefore() {
-		return before == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(before);
-	}
-
-	/**
-	 * Returns the list of additional futures that should be processed following
+	 * Returns the list of additional futures that should be processed along with this build
 	 * this future
 	 *
-	 * @return The list of after futures.
+	 * @return The list of extra build futures.
 	 */
-	public List<ModuleBuildFuture> getAfter() {
-		return after == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(after);
+	public List<ModuleBuildFuture> getExtraBuilds() {
+		return extraBuilds == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(extraBuilds);
 	}
 }

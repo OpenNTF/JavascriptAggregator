@@ -98,8 +98,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	public static final String REQUESTEDMODULEIDS_REQPARAM = "moduleIds"; //$NON-NLS-1$
 	public static final String REQUESTEDMODULESCOUNT_REQPARAM = "count"; //$NON-NLS-1$
 
-	public static final String REQEXPEXCLUDES_REQPARAM = "reqExpEx"; //$NON-NLS-1$
-	public static final String REQEXPEXCLUDEIDS_REQPARAM = "reqExpExIds"; //$NON-NLS-1$
+	public static final String EXCLUDEENC_REQPARAM = "exEnc"; //$NON-NLS-1$
+	public static final String EXCLUDEIDS_REQPARAM = "exIds"; //$NON-NLS-1$
 
 	public static final String CONSOLE_WARNING_MSG_FMT = "window.console && console.warn(\"{0}\");"; //$NON-NLS-1$
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
@@ -168,6 +168,10 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String[] CACHEBUST_REQPARAMS = {"cacheBust", "cachebust", "cb"}; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 
+	public static final String[] SERVEREXPANDLAYERS_REQPARAMS = {"serverExpandLayers", "sel"}; //$NON-NLS-1$ //$NON-NLS-2$
+
+	public static final String[] DEPENDENCYEXPANSIONLOGGING_REQPARAMS = {"depExpLog"}; //$NON-NLS-1$
+
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
@@ -225,6 +229,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.transport.IHttpTransport#decorateRequest(javax.servlet.http.HttpServletRequest, com.ibm.jaggr.service.IAggregator)
 	 */
+	@SuppressWarnings("deprecation")
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 
@@ -243,6 +248,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		} else {
 			request.setAttribute(EXPANDREQUIRELISTS_REQATTRNAME, TypeUtil.asBoolean(value));
 		}
+		request.setAttribute(DEPENDENCYEXPANSIONLOGGING_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, DEPENDENCYEXPANSIONLOGGING_REQPARAMS)));
 
 		boolean exportModuleNamesDefault = requestedModuleNames.getPreloads().isEmpty() &&
 				                           requestedModuleNames.getDeps().isEmpty();
@@ -262,10 +268,17 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		request.setAttribute(ASSERTNONLS_REQATTRNAME, getParameter(request, ASSERTNONLS_REQPARAM));
 
+		request.setAttribute(SERVEREXPANDLAYERS_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SERVEREXPANDLAYERS_REQPARAMS)));
+
 		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));
 		} else if (getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, getAggregator().getConfig().getProperty(CONFIGVARNAME_REQPARAM, String.class).toString());
+		}
+
+		// SERVEREXPANDPLAYERS takes precedence over EXPANDREQUIRELISTS
+		if (TypeUtil.asBoolean(request.getAttribute(SERVEREXPANDLAYERS_REQATTRNAME))) {
+			request.removeAttribute(EXPANDREQUIRELISTS_REQATTRNAME);
 		}
 	}
 
@@ -820,8 +833,9 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 			break;
 		case BEGIN_MODULES:
-			if (previousType != LayerContributionType.BEGIN_RESPONSE) {
-				throw new IllegalStateException();
+			if (previousType != LayerContributionType.BEGIN_RESPONSE &&
+			    previousType != LayerContributionType.END_LAYER_MODULES) {
+				throw new IllegalStateException(previousType.toString());
 			}
 			break;
 		case BEFORE_FIRST_MODULE:
@@ -882,7 +896,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			break;
 		case END_RESPONSE:
 			if (previousType != LayerContributionType.END_MODULES &&
-			previousType != LayerContributionType.END_LAYER_MODULES) {
+			previousType != LayerContributionType.END_LAYER_MODULES &&
+			previousType != LayerContributionType.BEGIN_RESPONSE /* scripts only */) {
 				throw new IllegalStateException();
 			}
 			break;
@@ -1274,7 +1289,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				putDeps(deps, modules.getPreloads());
 				if (!deps.isEmpty()) {
 					String json = new JSONArray(deps).toString();
-					sb.append("require.combo.bootLayerDeps=").append(json).append(";\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
+					sb.append("require.combo.addBootLayerDeps(").append(json).append(");\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			} catch (Exception ex) {
 				log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), methodName, ex.getMessage(), ex);

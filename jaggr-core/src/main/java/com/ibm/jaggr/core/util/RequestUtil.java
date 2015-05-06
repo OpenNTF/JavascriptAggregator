@@ -17,6 +17,7 @@
 package com.ibm.jaggr.core.util;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
@@ -65,8 +66,10 @@ public class RequestUtil {
 		boolean result = false;
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
+		IConfig config = aggr.getConfig();
 		Boolean reqattr = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME));
 		result = (options == null || !options.isDisableRequireListExpansion())
+				&& (config == null || !isServerExpandedLayers(request))
 				&& reqattr != null && reqattr;
 		return result;
 	}
@@ -86,6 +89,8 @@ public class RequestUtil {
 	/**
 	 * @param request
 	 * @return True if require expansion logging should be enabled for the request
+	 * @deprecated this method is deprecated in favor of
+	 *             {@link #isDependencyExpansionLogging(HttpServletRequest)}
 	 */
 	public static boolean isRequireExpLogging(HttpServletRequest request) {
 		boolean result = false;
@@ -93,6 +98,23 @@ public class RequestUtil {
 		IOptions options = aggr.getOptions();
 		if (options.isDebugMode() || options.isDevelopmentMode()) {
 			result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME));
+		}
+		return result;
+	}
+
+	/**
+	 * @param request
+	 * @return True if dependency expansion logging should be enabled for the request. Dependency
+	 *         expansion logging is output as console.log() statements in the response.
+	 */
+	@SuppressWarnings("deprecation")
+	public static boolean isDependencyExpansionLogging(HttpServletRequest request) {
+		boolean result = false;
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		if (options.isDebugMode() || options.isDevelopmentMode()) {
+			result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.DEPENDENCYEXPANSIONLOGGING_REQATTRNAME)) ||
+					TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPANDREQLOGGING_REQATTRNAME));
 		}
 		return result;
 	}
@@ -132,4 +154,7 @@ public class RequestUtil {
 		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.ASSERTNONLS_REQATTRNAME));
 	}
 
+	public static boolean isServerExpandedLayers(HttpServletRequest request) {
+		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME));
+	}
 }

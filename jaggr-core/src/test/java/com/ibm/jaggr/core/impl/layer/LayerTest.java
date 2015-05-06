@@ -542,7 +542,7 @@ public class LayerTest extends EasyMock {
 		in.close();
 		String s = layer.toString();
 		System.out.println(s);
-		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};lyr:0:0:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
+		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};sexp:0;lyr:0:0:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
 	}
 
 	/**
@@ -799,16 +799,36 @@ public class LayerTest extends EasyMock {
 
 	@Test
 	public void testCacheKeyGenerator() throws Exception {
+		LayerImpl impl = new LayerImpl("", 0) {
+			// Increase visibility of methods we need to call
+			@Override
+			public 	void addCacheKeyGenerators(
+					Map<String, ICacheKeyGenerator> cacheKeyGenerators,
+					Iterable<ICacheKeyGenerator> gens) {
+				super.addCacheKeyGenerators(cacheKeyGenerators, gens);
+			}
+			@Override
+			public String generateCacheKey(
+					HttpServletRequest request,
+					Map<String, ICacheKeyGenerator> cacheKeyGenerators)
+							throws IOException {
+				return super.generateCacheKey(request, cacheKeyGenerators);
+			}
+		};
+		Map<String, ICacheKeyGenerator> keyGens = new HashMap<String, ICacheKeyGenerator>();
+		impl.addCacheKeyGenerators(keyGens, LayerImpl.s_layerCacheKeyGenerators);
 		replay(mockAggregator, mockRequest);
-		Assert.assertEquals("lyr:0:0:0:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		Assert.assertEquals("sexp:0;lyr:0:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		requestHeaders.put("Accept-Encoding", "gzip");
-		Assert.assertEquals("lyr:1:0:0:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		Assert.assertEquals("sexp:0;lyr:1:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
+		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
+		Assert.assertEquals("sexp:1;lyr:1:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME, true);
-		Assert.assertEquals("lyr:1:1:0:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		Assert.assertEquals("sexp:1;lyr:1:1:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.INCLUDEREQUIREDEPS_REQATTRNAME, true);
-		Assert.assertEquals("lyr:1:1:1:0", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		Assert.assertEquals("sexp:1;lyr:1:1:1:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME, true);
-		Assert.assertEquals("lyr:1:1:1:1", LayerImpl.s_layerCacheKeyGenerators.get(0).generateKey(mockRequest));
+		Assert.assertEquals("sexp:1;lyr:1:1:1:1", impl.generateCacheKey(mockRequest, keyGens));
 	}
 
 	@SuppressWarnings("serial")

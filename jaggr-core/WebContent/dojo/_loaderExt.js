@@ -51,7 +51,9 @@ var depmap = {},
     includeUndefinedFeatures,
 
     // Map of module name to number id pairs
-    moduleIdMap = {};
+    moduleIdMap = {},
+    
+    excludes = [];
 
     // Query arg from window.location
     windowArgs = parseQueryArgs(window.location.href) || {};
@@ -99,11 +101,14 @@ urlProcessors.push(function(url) {
  */
 urlProcessors.push(function(url, deps){
 	// determine if any of the modules in the request are i18n resources
-	var isI18n = false;
-	for (var i = 0; i < deps.length; i++) {
-		if (combo.isI18nResource(deps[i])) {
-			isI18n = true;
-			break;
+	var isI18n = true;
+	if (!combo.serverExpandLayers) {
+		isI18n = false;
+		for (var i = 0; i < deps.length; i++) {
+			if (combo.isI18nResource(deps[i])) {
+				isI18n = true;
+				break;
+			}
 		}
 	}
 	if (isI18n) {
@@ -123,7 +128,7 @@ combo.done = function(load, config, opt_deps) {
 			opt_deps = opt_deps || deps;
 			
 			// Determine if we need to split the request into i18n/non-i18n parts
-			if (combo.i18nSplit) {
+			if (combo.i18nSplit && !combo.serverExpandLayers) {
 				var i18nModules = [], nonI18nModules = [];
 				for (i = 0; i < opt_deps.length; i++) {
 					dep = opt_deps[i];
@@ -145,7 +150,7 @@ combo.done = function(load, config, opt_deps) {
 			
 			var url = contextPath;
 			url = addModulesToUrl(url, ["modules", "moduleIds"], opt_deps, moduleIdMap, base64 ? base64.encode : null);
-			url = addModulesToUrl(url, ["reqExpEx", "reqExpExIds"], combo.bootLayerDeps || [], moduleIdMap,  base64 ? base64.encode : null);
+			url = addModulesToUrl(url, ["exEnc", "exIds"], excludes || [], moduleIdMap,  base64 ? base64.encode : null);
 			url += (hasArg ? '&' + hasArg : "");
 			
 			// Allow any externally provided URL processors to make their contribution
@@ -165,13 +170,16 @@ combo.done = function(load, config, opt_deps) {
 				sendRequest(load, config, parta);
 				sendRequest(load, config, partb);
 			} else {
+				if (combo.serverExpandLayers) {
+					excludes = excludes.concat(deps);
+				}
 				if (deps === opt_deps) {
 					// we have not split the module list to trim url size, so we can clear this safely.
 					// otherwise clearing these is the responsibility of the initial function.
 					deps = [];
 					depmap = {};
 				}
-				load(mids, url);			
+				load(mids, url);
 			}
 	    };
 	
@@ -192,7 +200,7 @@ combo.done = function(load, config, opt_deps) {
 		}
 		hasArg = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
 	}
-		
+	
 	// If sending the feature set in a cookie is enabled, then try to 
 	// set the cookie.
 	var featureMap = null, featureCookie = null;
@@ -278,6 +286,22 @@ combo.isI18nResource = combo.isI18nResource || function(mid) {
 		// no combo/i18n plugin support.  Figure it out from the module name
 		return !mid.prefix && /.?\/nls\/.?/.test(mid.name); 
 	}
+};
+
+combo.addBootLayerDeps = function(deps) {
+	excludes = excludes.concat(deps);
+};
+
+/*
+ * Returns true if the specified module is defined, false otherwise
+ */
+combo.isDefined = function(name) {
+	try {
+		require(name);
+		return true;
+	} catch (ignore) {
+	}
+	return false;
 };
 
 setTimeout(function() {
