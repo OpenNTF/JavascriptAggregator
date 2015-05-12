@@ -26,8 +26,9 @@ define([
 	'dojo/_base/Deferred',
 	'dojo/has!dojo-combo-api?:postcss?dojo/promise/all',
 	'dojo/has!dojo-combo-api?:postcss?postcss',
-	'dojo/text',
-], function(require, dwindow, dhtml, domConstruct, has, query, arrays, lang, ioQuery, Deferred, all, postcss){
+	'dojo/has!css-inject-api?dojo/aspect',
+	'dojo/text'
+], function(require, dwindow, dhtml, domConstruct, has, query, arrays, lang, ioQuery, Deferred, all, postcss, aspect){
 	/*
 	 * module:
 	 *    css
@@ -46,6 +47,41 @@ define([
 	 *    stylesA.css is required before stylesB.css, then the styles for stylesA.css
 	 *    will be inserted into the DOM ahead of the styles for stylesB.css.  This
 	 *    behavior ensures proper cascading of styles based on order of request.
+	 *    
+	 *    This plugin supports two modes of operation.  In the default mode, style
+	 *    elements are injected into the DOM when the plugin's load method is called
+	 *    for the resource.  This ensures that styles will be inserted into the DOM
+	 *    in the order that they appear in the dependency list, but the order of 
+	 *    insertion for styles loaded by different modules is undefined.
+	 *    
+	 *    The second mode of operation is enabled by the 'css-inject-api' feature.
+	 *    In this mode, CSS is not injected into the DOM directly by the plugin.  Instead, 
+	 *    the application calls the inject() method to inject the CSS in the dependency
+	 *    list from within the require() or define() callback.  For example:
+	 *    
+	 *    <code>
+	 *    	define(['app/foo', 'js/css!app/styles/foo.css'], function(foo) {
+	 *        require('js/css').inject.apply(this, arguments);
+	 *    </code>
+	 *    
+	 *    The inject() function iterates over the arguments passed and injects into 
+	 *    the DOM any style elements that have not previously been injected.  This mode 
+	 *    provides for more predictable order of injection of styles since the order 
+	 *    for styles injected from different modules corresponds to the define order 
+	 *    of the JavaScript modules doing the injecting.
+	 *    
+	 *    The task of calling inject() at the beginning of every require() or define()
+	 *    callback can be automated by calling installAutoInjectHooks().  This method
+	 *    installs intercepts for the global require() and define() functions.  The 
+	 *    intercepts hook the callback functions passed to require() and define() 
+	 *    for the purpose of automatically invoking the inject() method before the 
+	 *    callback function is executed.  These hooks also watch for context require()
+	 *    instances and install intercepts for the context require() callbacks as well.
+	 * 
+	 *    The only caveat is that installAutoInjectHooks() must be called before any 
+	 *    require() or define() functions that use this plugin to load css, or that 
+	 *    reference a context require which uses this plugin to load css, are called, 
+	 *    otherwise the inject api will not automatically be invoked for those cases.
 	 */
 	var
 		head = dwindow.doc.getElementsByTagName('head')[0],
@@ -276,8 +312,9 @@ define([
 			// see if a stylesheet element has already been added for this module
 			var styles = query("head>style[url='" + url.split('?').shift() + "']"), style;
 			if (styles.length === 0) {
-				// create a new style element for this module and add it to the DOM
-				style = domConstruct.create('style', {}, head);
+				// create a new style element for this module.  Add it to the DOM if the 'css-inject-api'
+				// feature is not true.
+				style = domConstruct.create('style', {}, has('css-inject-api') ? null : head);
 				style.type = 'text/css';
 				dhtml.setAttr(style, 'url', url.split('?').shift());
 				dhtml.setAttr(style, 'loading', '');
@@ -343,6 +380,136 @@ define([
 					dhtml.removeAttr(style, "loading");
 					load(style);
 				});
+			}
+		},
+		
+		/*
+		 * Iterates through the function arguments and for any style node arguments that 
+		 * are not already in the DOM, appends them to the HEAD element of the DOM.  Used
+		 * when the 'css-injet-api' feature is true.
+		 */
+		inject: function() {
+			if (has('css-inject-api')) {
+				dojo.forEach(arguments, function(arg) {
+					if (arg && arg.nodeType === Node.ELEMENT_NODE && arg.tagName === 'STYLE' && !arg.parentNode) {
+						// Unparented style node.  Add it to the DOM
+						domConstruct.place(arg, head);
+					}
+				});
+			}
+		},
+		
+		/*
+		 * Installs the global require() and define() function intercepts.  
+		 * 
+		 * @return An object with a remove() function that can be called to cancel the intercepts
+		 *         (useful for unit testing).
+		 */
+		installAutoInjectHooks: function() {
+			if (has('css-inject-api')) {
+				var self = this,
+				
+				// The return value from this function replaces the callback passed 
+				// to require() or define().  The callback replacement scans the arguments
+				// for context require instances that need to be intercepted, and invokes
+				// our inject() api before calling the original callback.
+				callbackIntercept = function(moduleIdList, callbackFn) {
+					return function() {
+						var i, args = arguments, newArgValues = [];
+						dojo.forEach(moduleIdList, function(mid, i) {
+							newArgValues.push(mid==="require" ?	contextRequireIntercept(args[i]) : args[i]);
+						});
+						self.inject.apply(this, newArgValues);
+						return callbackFn.apply(this, newArgValues);
+					};
+				},
+				
+				// The return value from this function replaces the context require passed
+				// in a require() or define() callback with a function that invokes our
+				// intercept.
+				contextRequireIntercept = function(contextRequire) {
+					return proxyMixin(function() {
+						return contextRequire.apply(this, reqDefIntercept.apply(this, arguments));
+					}, contextRequire);
+				},
+				
+				// The require()/define() intercept.  This function scans the require()/define()
+				// arguments and replaces the callback function with our calback intercept
+				// function.
+				reqDefIntercept = function() {
+					// copy arguments to a new array that will contain our callback intercept
+					var callback, moduleList, newArgs = [];
+					dojo.forEach(arguments, function(arg) {
+						if (!callback && !moduleList && lang.isArray(arg)) {
+							moduleList = arg;
+						}
+						if (!callback && lang.isFunction(arg) && moduleList) {
+							callback = arg;
+							arg = callbackIntercept(moduleList, callback);
+						}
+						newArgs.push(arg);
+					});
+					return newArgs;
+				},
+				
+				// Creates accessors in the target to proxy the properties in the source.
+				// Non-function properties are proxied by defining setters and getters that
+				// reference the value of the property in the source object.  Function 
+				// properties are proxied by setting the value in the target to a hitched
+				// function that invokes the source method in the context of the source
+				// object.  This works well as long as the source does not add new 
+				// properties after the object has been proxied (not a problem for our
+				// use case).
+				proxyMixin = function(target, source) {
+					function setter(obj, name) { 
+						return function(value) { obj[name] = value; };
+					}
+					function getter(obj, name) { 
+						return function() { return obj[name];};
+					}
+					for (var s in source) {
+						if (source.hasOwnProperty(s)) {
+							if (lang.isFunction(source[s])) {
+								// Function property.  Set value to a hitched function
+								Object.defineProperty(target, s, {
+									enumerable: true,
+									configurable: true,
+									value: lang.hitch(source, source[s])
+								});
+							} else {
+								// Non-function property.  Define setter and getter
+								Object.defineProperty(target, s, {
+									enumerable: true,
+									configurable: true,
+									get: getter(source, s),
+									set: setter(source, s)
+								});
+							}
+						}
+					}
+					return target;
+				},
+				
+				result;
+				
+				// install our intercepts for the global require() and define() functions
+				(function(){
+					// Make sure we're looking at the global require/define
+					var signals = [], req = this.require, def = this.define;
+					signals.push(aspect.before(this, "define", reqDefIntercept));
+					signals.push(aspect.before(this, "require", reqDefIntercept));
+					if (!this.define.amd) {
+						// mixin properties defined in original functions
+						proxyMixin(this.define, def);
+						proxyMixin(this.require, req);
+					}
+					result = {remove: function() {
+						dojo.forEach(signals, function(signal) {
+							signal.remove();
+						});
+					}};
+				})();
+				return result;
 			}
 		},
 
