@@ -455,11 +455,9 @@ define([
 				// Creates accessors in the target to proxy the properties in the source.
 				// Non-function properties are proxied by defining setters and getters that
 				// reference the value of the property in the source object.  Function 
-				// properties are proxied by setting the value in the target to a hitched
-				// function that invokes the source method in the context of the source
-				// object.  This works well as long as the source does not add new 
-				// properties after the object has been proxied (not a problem for our
-				// use case).
+				// properties are proxied by setting the value in the target.  This works well 
+				// as long as the source does not add new properties after the object has been 
+				// proxied (not a problem for our use case).
 				proxyMixin = function(target, source) {
 					function setter(obj, name) { 
 						return function(value) { obj[name] = value; };
@@ -470,11 +468,11 @@ define([
 					for (var s in source) {
 						if (source.hasOwnProperty(s)) {
 							if (lang.isFunction(source[s])) {
-								// Function property.  Set value to a hitched function
+								// Function property.  Set value because get and set don't work for functions.
 								Object.defineProperty(target, s, {
 									enumerable: true,
 									configurable: true,
-									value: lang.hitch(source, source[s])
+									value: source[s]
 								});
 							} else {
 								// Non-function property.  Define setter and getter
