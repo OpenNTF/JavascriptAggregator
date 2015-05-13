@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require, has, win, css) {
+define(['require', 'dojo/has', 'dojo/_base/window', 'js/css', 'dojo/query', "dojo/NodeList-manipulate"], function(require, has, win, css, query) {
 
+	var querySelector = "head>style[url='spec/styles/test.css']";
 	describe('CSS plugin tests', function() {
 
 		if (!win.doc.baseURI) {
@@ -137,6 +138,7 @@ define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require,
 		});
 		
 		afterEach(function() {
+			query(querySelector).remove();
 			require.undef('js/css');
 			has.add('postcss', false, true, true);
 			has.add('dojo-combo-api', true, true, true);
@@ -154,6 +156,116 @@ define(['require', 'dojo/has', 'dojo/_base/window', 'js/css'], function(require,
 			});
 			runs(function() {
 				expect(style.innerHTML).toBe('.html {color: red;}');
+			});
+		});
+	});
+	
+	describe("tests css-inject-api feature", function() {
+		var undef, signal;
+		beforeEach(function() {
+			require.undef("js/css");
+			css = undef;
+			require.undef("spec/styles/test.css");
+		});
+		
+		afterEach(function() {
+			query(querySelector).remove();
+			if (signal) {
+				signal.remove();
+				signal = undef;
+			}
+		});
+		
+		it("should not automatically inject the css when inject API is enabled", function() {
+			has.add("css-inject-api", true, true, true);
+			var requireArgs;
+			runs(function() {
+				require(['js/css!./styles/test.css'], function(test) {
+					requireArgs = arguments;
+				});
+			});
+			waitsFor(function() {
+				return requireArgs;
+			});
+			runs(function() {
+				var style = requireArgs[0];
+				var url = style.getAttribute("url");
+				// make sure the style is not in the DOM
+				expect(query(querySelector).length).toBe(0);
+				// now inject the style
+				require('js/css').inject.apply(this, requireArgs);
+				// verify the style was injected
+				expect(query(querySelector).length).toBe(1);
+				expect(query(querySelector)[0]).toBe(style);
+			});
+		});
+		
+		it("should automatically inject the css when inject API is enabled and installAutoInjectHooks has been called with global require", function() {
+			has.add("css-inject-api", true, true, true);
+			runs(function() {
+				window.require(["js/css"], function(plugin) {
+					css = plugin;
+				});
+			});
+			waitsFor(function() {
+				return css;
+			});
+			runs(function() {
+				signal = css.installAutoInjectHooks();
+				var style;
+				expect(query(querySelector).length).toBe(0);
+				runs(function() {
+					window.require(['js/css!spec/styles/test.css'], function(test) {
+						style = arguments[0];
+					});
+				});
+				waitsFor(function() {
+					return style;
+				});
+				runs(function() {
+					// verify the style was injected
+					expect(query(querySelector).length).toBe(1);
+					expect(query(querySelector)[0]).toBe(style);
+					// verify that require function has property values
+					expect(require.toUrl("spec/styles/test.css")).toEqual("spec/styles/test.css");
+					expect(define.amd.vendor).toBe("dojotoolkit.org");
+				});
+			});
+		});
+
+		it("should automatically inject the css when inject API is enabled and installAutoInjectHooks has been called with context require", function() {
+			has.add("css-inject-api", true, true, true);
+			var contextRequire;
+			runs(function() {
+				window.require(["js/css"], function(plugin) {
+					css = plugin;
+				});
+			});
+			waitsFor(function() {
+				return css;
+			});
+			runs(function() {
+				signal = css.installAutoInjectHooks();
+				var style;
+				expect(query(querySelector).length).toBe(0);
+				window.require(["require"], function(contextRequire) {
+					runs(function() {
+						contextRequire(['js/css!spec/styles/test.css'], function() {
+							style = arguments[0];
+						});
+					});
+					waitsFor(function() {
+						return style;
+					}, "timeout waiting for contextRequire");
+					runs(function() {
+						// verify the style was injected
+						expect(query(querySelector).length).toBe(1);
+						expect(query(querySelector)[0]).toBe(style);
+						// verify that context require function has property values
+						expect(contextRequire.toUrl("./styles/test.css")).toEqual("./styles/test.css");
+						expect(define.amd.vendor).toBe("dojotoolkit.org");
+					});
+				});
 			});
 		});
 	});
