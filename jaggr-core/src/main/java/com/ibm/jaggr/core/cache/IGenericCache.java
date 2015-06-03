@@ -23,17 +23,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 
-public interface IGenericCache <T> {
-
-	/**
-	 * Returns the cache entry with the specified key, or null if the
-	 * cache entry with the specified key is not in the cache
-	 *
-	 * @param key the entry key
-	 * @return the requested entry or null
-	 */
-	T get(String key);
-
+public interface IGenericCache {
 	/**
 	 * Returns true if the entry with the specified key is in the
 	 * cache
@@ -81,4 +71,12 @@ public interface IGenericCache <T> {
 	 * @param aggregator The aggregator instance for the cache
 	 */
 	public void setAggregator(IAggregator aggregator);
+
+	/**
+	 * Returns a new, empty, instance of this cache object. Used by the cache manager when clearing
+	 * the aggregator cache.
+	 *
+	 * @return a new instance of this cache object
+	 */
+	public IGenericCache newInstance();
 }

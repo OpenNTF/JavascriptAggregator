@@ -31,30 +31,13 @@ import java.util.List;
  * This class implements an aggregating resource that combines the
  * contents of one or more component resources.
  */
-public class AggregationResource implements IResource, IResourceVisitor.Resource {
+public class AggregationResource extends AbstractResourceBase {
 
-	private final URI facadeUri;
 	private final List<IResource> resources;
 
 	public AggregationResource(URI facadeUri, List<IResource> resources) {
-		this.facadeUri = facadeUri;
+		super(facadeUri);
 		this.resources = resources;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.resource.IResource#getURI()
-	 */
-	@Override
-	public URI getURI() {
-		return facadeUri;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.resource.IResource#getPath()
-	 */
-	@Override
-	public String getPath() {
-		return getURI().getPath();
 	}
 
 	/* (non-Javadoc)
@@ -108,36 +91,5 @@ public class AggregationResource implements IResource, IResourceVisitor.Resource
 	@Override
 	public InputStream getInputStream() throws IOException {
 		return new ReaderInputStream(getReader(), "UTF-8"); //$NON-NLS-1$
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.resource.IResource#walkTree(com.ibm.jaggr.core.resource.IResourceVisitor)
-	 */
-	@Override
-	public void walkTree(IResourceVisitor visitor) throws IOException {
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.resource.IResource#asVisitorResource()
-	 */
-	@Override
-	public IResourceVisitor.Resource asVisitorResource() throws IOException {
-		return this;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#isFolder()
-	 */
-	@Override
-	public boolean isFolder() {
-		return false;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.resource.IResource#resolve(java.lang.String)
-	 */
-	@Override
-	public IResource resolve(String relative) {
-		throw new UnsupportedOperationException();
 	}
 }

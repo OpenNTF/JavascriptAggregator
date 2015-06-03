@@ -32,6 +32,7 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
+import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
 import org.apache.commons.lang3.mutable.Mutable;
@@ -184,12 +185,30 @@ public interface IAggregator {
 	 * <p>
 	 * This method may return an instance of {@link NotFoundResource} if a resource factory
 	 * for the URI cannot be found.
+	 * <p>
+	 * This method calls {@link #runConverters(IResource)} against the resource
+	 * obtained from the resource factory before returning the result.
 	 *
 	 * @param uri
 	 *            The URI for the resource
 	 * @return The newly created resource object.
 	 */
 	public IResource newResource(URI uri);
+
+	/**
+	 * Run the registered resource converters against the specified resource. This method returns
+	 * either the specified resource or new resource if the resource is converted.
+	 * <p>
+	 * Note that this method is called automatically by {@link #newResource(URI)}, so you only need
+	 * to call this method for resources obtained directly from a resource factory (e.g. from
+	 * {@link Resource#newResource()}).
+	 *
+	 * @param res
+	 *            the resource to run converters against
+	 *
+	 * @return the converted resource, or {@code res} if no conversion is applied.
+	 */
+	public IResource runConverters(IResource res);
 
 	/**
 	 * Returns an {@link IModuleBuilder} for the specified arguments. The aggregator will select the

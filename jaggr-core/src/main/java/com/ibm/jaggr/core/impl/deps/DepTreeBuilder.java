@@ -133,7 +133,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 						return false;
 					}
 				}
-				if (!resource.getPath().endsWith(".js")) { //$NON-NLS-1$
+				if (!resource.getURI().getPath().endsWith(".js")) { //$NON-NLS-1$
 					// non-JavaScript resource
 					idx = resname.lastIndexOf("."); //$NON-NLS-1$
 					String extension = idx == -1 ? "" : resname.substring(idx+1); //$NON-NLS-1$
@@ -166,7 +166,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				 */
 				if (node.lastModified() != resource.lastModified()) {
 					// File has changed, or is new. Submit an async parser job.
-					parserCs.submit(new DepParser(node, resource));
+					parserCs.submit(new DepParser(node, aggregator.runConverters(resource.newResource())));
 					parserCount.incrementAndGet();
 				}
 				return true;

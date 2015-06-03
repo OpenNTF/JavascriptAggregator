@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.core.impl.resource;
 
+import com.ibm.jaggr.core.resource.AbstractResourceBase;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
@@ -35,7 +36,11 @@ import java.util.logging.Logger;
  * An implementation of {@link IResource} for File resources
  * that does not rely on java.nio
  */
-public class FileResource implements IResource {
+/**
+ * @author chuckd
+ *
+ */
+public class FileResource extends AbstractResourceBase {
 	static final Logger log = Logger.getLogger(FileResource.class.getName());
 
 	final File file;
@@ -47,32 +52,13 @@ public class FileResource implements IResource {
 	 *            the resource URI
 	 */
 	public FileResource(URI uri) {
+		super(uri);
 		if (uri.getAuthority() != null && File.separatorChar == '\\') {
 			// Special case for UNC filenames on Windows
 			file = new File("\\\\" + uri.getAuthority() + '/' + uri.getPath()); //$NON-NLS-1$
 		} else {
 			file = new File(uri);
 		}
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see com.ibm.jaggr.service.modules.Resource#getURI()
-	 */
-	@Override
-	public URI getURI() {
-		return getURI(file);
-	}
-
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see com.ibm.jaggr.service.modules.Resource#getPath()
-	 */
-	@Override
-	public String getPath() {
-		return getURI(file).getPath();
 	}
 
 	/*
@@ -96,11 +82,19 @@ public class FileResource implements IResource {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.net.URI)
+	 * @see com.ibm.jaggr.core.resource.IResource#isFolder()
 	 */
 	@Override
-	public IResource resolve(String relative) {
-		return newInstance(getURI().resolve(relative));
+	public boolean isFolder() {
+		return file.isDirectory();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.resource.IResource#getSize()
+	 */
+	@Override
+	public long getSize() throws IOException {
+		return file.length();
 	}
 
 	/*
@@ -146,11 +140,8 @@ public class FileResource implements IResource {
 	 * com.ibm.jaggr.service.resource.IResource#asVisitorResource()
 	 */
 	@Override
-	public VisitorResource asVisitorResource() throws IOException {
-		if (!exists()) {
-			throw new IOException(this.file.getAbsolutePath());
-		}
-		return new VisitorResource(file, file.lastModified());
+	public VisitorResource asVisitorResource() {
+		return new VisitorResource(file, file.lastModified(), null);
 	}
 
 	@Override
@@ -177,7 +168,7 @@ public class FileResource implements IResource {
 			String childName = path + (path.length() == 0 ? "" : "/") //$NON-NLS-1$ //$NON-NLS-2$
 					+ child.getName();
 			boolean result = visitor.visitResource(new VisitorResource(child,
-					child.lastModified()), childName);
+					child.lastModified(), childName), childName);
 			if (child.isDirectory() && result) {
 				recurse(child, visitor, childName);
 			}
@@ -189,16 +180,19 @@ public class FileResource implements IResource {
 	}
 
 	/**
-	 * Implementation of {@link IResourceVisitor.Resource} for files.
+	 * Implementation of {@link com.ibm.jaggr.core.resource.IResourceVisitor.Resource} for files.
 	 */
-	private static class VisitorResource implements IResourceVisitor.Resource {
+	protected class VisitorResource implements IResourceVisitor.Resource {
 
-		File file;
-		long lastModified;
+		private final File file;
+		private final long lastModified;
+		private final String relpath; 	// relpath of this resource relative to the resource that
+		                                // walkTree was invoked on.
 
-		private VisitorResource(File file, long lastModified) {
+		protected VisitorResource(File file, long lastModified, String relpath) {
 			this.file = file;
 			this.lastModified = lastModified;
+			this.relpath = relpath;
 		}
 
 		/*
@@ -230,18 +224,6 @@ public class FileResource implements IResource {
 		 *
 		 * @see
 		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
-		 * getPath()
-		 */
-		@Override
-		public String getPath() {
-			return getURI().getPath();
-		}
-
-		/*
-		 * (non-Javadoc)
-		 *
-		 * @see
-		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
 		 * lastModified()
 		 */
 		@Override
@@ -249,24 +231,19 @@ public class FileResource implements IResource {
 			return lastModified;
 		}
 
-		/*
-		 * (non-Javadoc)
-		 *
-		 * @see
-		 * com.ibm.jaggr.service.modules.ResourceVisitor.Resource#
-		 * getReader()
-		 */
-		@Override
-		public Reader getReader() throws IOException {
-			return new InputStreamReader(new FileInputStream(file), "UTF-8"); //$NON-NLS-1$
-		}
-
 		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#getInputStream()
+		 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#newResource()
 		 */
 		@Override
-		public InputStream getInputStream() throws IOException {
-			return new FileInputStream(file);
+		public IResource newResource() {
+			if (relpath == null) {
+				throw new UnsupportedOperationException();
+			}
+			FileResource result = newInstance(getURI());
+			if (!FileResource.this.getURI().equals(FileResource.this.getReferenceURI())) {
+				result.setReferenceURI(FileResource.this.resolve(relpath));
+			}
+			return result;
 		}
 	}
 

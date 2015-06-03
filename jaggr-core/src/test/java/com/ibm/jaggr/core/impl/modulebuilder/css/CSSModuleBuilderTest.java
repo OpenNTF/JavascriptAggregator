@@ -267,7 +267,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 		boolean exceptionCaught = false;
 		try {
 			output = buildCss(new StringResource(css, resuri));
-		} catch (FileNotFoundException e) {
+		} catch (NotFoundException e) {
 			exceptionCaught = true;
 		}
 		Assert.assertTrue("Expected FileNotFoundException", exceptionCaught);

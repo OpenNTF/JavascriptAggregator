@@ -205,4 +205,9 @@ public class MockAggregatorWrapper implements IAggregator {
 		return mock.getCurrentRequest();
 	}
 
+	@Override
+	public IResource runConverters(IResource res) {
+		return res;
+	}
+
 }

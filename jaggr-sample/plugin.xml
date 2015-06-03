@@ -16,11 +16,18 @@
    limitations under the License.
 -->
 <plugin>
+  <extension
+    id="converter.jsxResourceConverter" 
+  	point="com.ibm.jaggr.service.resourceconverter">
+	<converter class="com.ibm.jaggr.core.impl.resource.JsxResourceConverter"/>
+  </extension>
+
   <extension point="org.eclipse.equinox.http.registry.servlets">
     <servlet alias="/test/aggr" class="com.ibm.jaggr.service.impl.AggregatorImpl" load-on-startup="true">
       <!-- No scheme on the URI means the resource is located 
            in the same resource bundle as this file -->
       <init-param name="config" value="testaggr-config.js"/>
+      <init-param name="resourceconverters" value="converter.jsxResourceConverter"/>
       <init-param name="serviceproviders" value="com.ibm.jaggr.service.configextension.bundleVersionsHash"/>
       
       <!-- The following init-params define internally scoped aliases and resource paths for the application, -->
@@ -54,5 +61,5 @@
   <extension point="org.eclipse.equinox.http.registry.resources">
     <resource alias="/test/res" base-name="/" httpcontextId="resources" />
   </extension>
-
+  
 </plugin>

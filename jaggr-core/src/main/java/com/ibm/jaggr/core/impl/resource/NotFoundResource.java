@@ -16,29 +16,27 @@
 
 package com.ibm.jaggr.core.impl.resource;
 
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
-import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.resource.AbstractResourceBase;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 
-public class NotFoundResource implements IResource {
-	private final URI uri;
+public class NotFoundResource extends AbstractResourceBase {
+
 	public NotFoundResource(URI uri) {
-		this.uri = uri;
+		super(uri);
 	}
 
 	@Override
-	public URI getURI() {
-		return uri;
+	public Reader getReader() throws IOException {
+		throw new IOException(getURI().toString());
 	}
 
 	@Override
-	public String getPath() {
-		return getURI().getPath();
+	public InputStream getInputStream() throws IOException {
+		throw new IOException(getURI().toString());
 	}
 
 	@Override
@@ -47,38 +45,7 @@ public class NotFoundResource implements IResource {
 	}
 
 	@Override
-	public long lastModified() {
-		return 0;
-	}
-
-	@Override
-	public Reader getReader() throws IOException {
-		throw new IOException(uri.toString());
-	}
-
-	@Override
-	public InputStream getInputStream() throws IOException {
-		throw new IOException(uri.toString());
-	}
-
-	@Override
-	public void walkTree(IResourceVisitor visitor) throws IOException {
-		throw new IOException(uri.toString());
-	}
-
-	@Override
-	public Resource asVisitorResource() throws IOException {
-		throw new IOException(uri.toString());
-	}
-
-	@Override
-	public IResource resolve(String relative) {
-		throw new UnsupportedOperationException();
-	}
-
-	@Override
 	public String toString() {
-		return super.toString() + ": " + "Not found: " + uri.toString(); //$NON-NLS-1$ //$NON-NLS-2$
+		return super.toString() + ": " + "Not found: " + getURI().toString(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
-
 }

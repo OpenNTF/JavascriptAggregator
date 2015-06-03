@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.service.impl.resource;
 
+import com.ibm.jaggr.core.resource.AbstractResourceBase;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
@@ -29,17 +30,23 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.util.Enumeration;
+import java.util.logging.Logger;
 
-public class BundleResource implements IResource {
-	final URI uri;
+public class BundleResource extends AbstractResourceBase {
+	static final Logger log = Logger.getLogger(BundleResource.class.getName());
+
 	final String symname;
+	final BundleContext context;
 
 	public BundleResource(URI uri, BundleContext context) {
-		this.uri = uri;
+		super(uri);
+		this.context = context;
 		Bundle bundle = null;
 		if (!uri.getScheme().equals("bundleresource") && !uri.getScheme().equals("bundleentry")) { //$NON-NLS-1$ //$NON-NLS-2$
 			throw new IllegalArgumentException(uri.toString());
@@ -51,27 +58,6 @@ public class BundleResource implements IResource {
 		} catch (NumberFormatException ignore) {
 		}
 		symname = (bundle != null) ? bundle.getSymbolicName() : null;
-	}
-
-	protected BundleResource(URI uri, String symname) {
-		this.uri = uri;
-		this.symname = symname;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#getURI()
-	 */
-	@Override
-	public URI getURI() {
-		return uri;
-	}
-
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#exists()
-	 */
-	@Override
-	public boolean exists() {
-		return lastModified() != 0;
 	}
 
 	/* (non-Javadoc)
@@ -87,11 +73,16 @@ public class BundleResource implements IResource {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.lang.String)
+	 * @see com.ibm.jaggr.core.resource.IResource#isFolder()
 	 */
 	@Override
-	public IResource resolve(String relative) {
-		return new BundleResource(getURI().resolve(relative), symname);
+	public boolean isFolder() {
+		return getURI().getPath().endsWith("/"); //$NON-NLS-1$
+	}
+
+	@Override
+	public long getSize() throws IOException {
+		return getURI().toURL().openConnection().getContentLength();
 	}
 
 	/* (non-Javadoc)
@@ -99,7 +90,7 @@ public class BundleResource implements IResource {
 	 */
 	@Override
 	public Reader getReader() throws IOException {
-		return new InputStreamReader(uri.toURL().openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
+		return new InputStreamReader(getURI().toURL().openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
 	}
 
 	/* (non-Javadoc)
@@ -107,7 +98,7 @@ public class BundleResource implements IResource {
 	 */
 	@Override
 	public InputStream getInputStream() throws IOException {
-		return uri.toURL().openConnection().getInputStream();
+		return getURI().toURL().openConnection().getInputStream();
 	}
 
 	/* (non-Javadoc)
@@ -116,29 +107,23 @@ public class BundleResource implements IResource {
 	@Override
 	public void walkTree(IResourceVisitor visitor) throws IOException {
 		if (!exists() || symname == null) {
-			throw new IOException(uri.toString());
+			throw new IOException(getURI().toString());
 		}
 		Bundle bundle = Platform.getBundle(symname);
-		recurse(bundle, uri.getPath(), visitor, ""); //$NON-NLS-1$
+		recurse(bundle, getURI().getPath(), visitor, ""); //$NON-NLS-1$
 	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.resource.IResource#asVisitorResource()
 	 */
 	@Override
-	public Resource asVisitorResource() throws IOException {
-		Resource resource = null;
-		if (!exists()) {
-			throw new IOException(uri.toString());
-		}
+	public Resource asVisitorResource() {
+		URL url = null;
 		try {
-			resource = new VisitorResource(uri.toURL());
-		} catch (IOException e) {
-			throw e;
-		} catch (Exception e) {
-			throw new IOException(e);
+			url = getURI().toURL();
+		} catch (MalformedURLException ignore) {
 		}
-		return resource;
+		return new VisitorResource(url, ""); //$NON-NLS-1$
 	}
 
 	/**
@@ -166,7 +151,7 @@ public class BundleResource implements IResource {
 						+ (relPathName.length() == 0 ? "" : "/") //$NON-NLS-1$ //$NON-NLS-2$
 						+ childName;
 				boolean result = visitor.visitResource(
-						new VisitorResource(child), relPath);
+						new VisitorResource(child, relPath), relPath);
 				if (result && child.getPath().endsWith("/")) { //$NON-NLS-1$
 					recurse(bundle, childPath, visitor, relPath);
 				}
@@ -176,22 +161,31 @@ public class BundleResource implements IResource {
 
 	@Override
 	public String getPath() {
-		return getURI().getPath();
+		return getReferenceURI().getPath();
 	}
 
 	@Override
 	public String toString() {
-		return super.toString() + ": " +  (symname != null ? symname  : "null") + " - " + uri.toString(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		return super.toString() + ": " +  (symname != null ? symname  : "null") + " - " + getURI().toString(); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 
-	private static class VisitorResource implements IResourceVisitor.Resource {
+	private class VisitorResource implements IResourceVisitor.Resource {
 
-		URL url;
+		final URL url;
 		long lastModified;
+		final String path;
 
-		private VisitorResource(URL url) throws IOException {
+		private VisitorResource(URL url, String path) {
 			this.url = url;
-			this.lastModified = url.openConnection().getLastModified();
+			this.path = path;
+			if (url != null) {
+				try {
+					URLConnection connection = url.openConnection();
+					this.lastModified = connection.getLastModified();
+				} catch (IOException ex) {
+					this.lastModified = 0;
+				}
+			}
 		}
 
 		/* (non-Javadoc)
@@ -222,27 +216,16 @@ public class BundleResource implements IResource {
 			return lastModified;
 		}
 
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.modules.ResourceVisitor.Resource#getReader()
-		 */
 		@Override
-		public Reader getReader() throws IOException {
-			return new InputStreamReader(url.openConnection().getInputStream(), "UTF-8"); //$NON-NLS-1$
-		}
-
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#getInputStream()
-		 */
-		@Override
-		public InputStream getInputStream() throws IOException {
-			return url.openConnection().getInputStream();
-		}
-
-		@Override
-		public String getPath() {
-			return getURI().getPath();
+		public IResource newResource() {
+			if (path == null) {
+				throw new UnsupportedOperationException();
+			}
+			BundleResource result = new BundleResource(getURI(), context);
+			if (!BundleResource.this.getURI().equals(BundleResource.this.getReferenceURI())) {
+				result.setReferenceURI(BundleResource.this.resolve(path));
+			}
+			return result;
 		}
 	}
-
-
 }

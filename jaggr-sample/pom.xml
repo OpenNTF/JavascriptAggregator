@@ -75,6 +75,7 @@
             <Bundle-SymbolicName>${bundle.symbolicName};singleton:=true</Bundle-SymbolicName>
             <Require-Bundle>org.eclipse.core.runtime,com.ibm.jaggr.service,com.ibm.jaggr.sample.dojo</Require-Bundle>
             <Import-Package>
+            	com.ibm.jaggr.core.impl.resource,
             	javax.servlet;version="[2,4)",
             	javax.servlet.http;version="[2,4)",
             	*

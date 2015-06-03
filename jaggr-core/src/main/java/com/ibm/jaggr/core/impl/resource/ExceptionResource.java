@@ -16,39 +16,22 @@
 
 package com.ibm.jaggr.core.impl.resource;
 
-import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
-import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.resource.AbstractResourceBase;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.net.URI;
 
-public class ExceptionResource implements IResource, IResourceVisitor.Resource {
+public class ExceptionResource extends AbstractResourceBase {
 	private URI uri;
 	private long lastModified;
 	private IOException ex;
 
 	public ExceptionResource(URI uri, long lastModified, IOException ex) {
-		this.uri = uri;
+		super(uri);
 		this.lastModified = lastModified;
 		this.ex = ex;
-	}
-
-	@Override
-	public URI getURI() {
-		return uri;
-	}
-
-	@Override
-	public String getPath() {
-		return getURI().getPath();
-	}
-
-	@Override
-	public boolean exists() {
-		return true;
 	}
 
 	@Override
@@ -63,25 +46,6 @@ public class ExceptionResource implements IResource, IResourceVisitor.Resource {
 
 	public InputStream getInputStream() throws IOException {
 		throw ex;
-	}
-
-	@Override
-	public void walkTree(IResourceVisitor visitor) throws IOException {
-	}
-
-	@Override
-	public Resource asVisitorResource() throws IOException {
-		return this;
-	}
-
-	@Override
-	public boolean isFolder() {
-		return false;
-	}
-
-	@Override
-	public IResource resolve(String relative) {
-		throw new UnsupportedOperationException();
 	}
 
 	@Override

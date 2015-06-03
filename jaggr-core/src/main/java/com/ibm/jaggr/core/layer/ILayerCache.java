@@ -31,7 +31,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * Interface for layer cache object
  */
-public interface ILayerCache extends Serializable, IGenericCache<ILayer> {
+public interface ILayerCache extends Serializable, IGenericCache {
 
 	/**
 	 * Returns a layer object for the specified request.  If a layer is already in

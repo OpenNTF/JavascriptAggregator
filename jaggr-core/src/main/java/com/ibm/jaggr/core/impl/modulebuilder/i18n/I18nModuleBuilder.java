@@ -234,12 +234,13 @@ extends JavaScriptModuleBuilder {
 		String path = res.getPath();
 		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 		final String resourceName = idx == 0 ? path : path.substring(idx+1);
-		final IResource baseRes = res.resolve(""); //$NON-NLS-1$
+		final IAggregator aggregator = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		final IResource baseRes = aggregator.newResource(res.resolve("")); //$NON-NLS-1$
 		baseRes.walkTree(new IResourceVisitor() {
 			@Override
 			public boolean visitResource(Resource resource, String pathName) throws IOException {
 				if (resource.isFolder() && !pathName.startsWith(".")) { //$NON-NLS-1$
-					IResource localeRes = baseRes.resolve(pathName + "/" + resourceName); //$NON-NLS-1$
+					IResource localeRes = aggregator.newResource(baseRes.resolve(pathName + "/" + resourceName)); //$NON-NLS-1$
 					if (localeRes.exists()) {
 						result.add(pathName);
 					}

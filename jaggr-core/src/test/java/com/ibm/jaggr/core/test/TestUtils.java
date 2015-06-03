@@ -314,6 +314,11 @@ public class TestUtils {
 				return mockAggregatorNewResource((URI)EasyMock.getCurrentArguments()[0], workdir);
 			}
 		}).anyTimes();
+		EasyMock.expect(mockAggregator.runConverters((IResource)EasyMock.anyObject())).andAnswer(new IAnswer<IResource>() {
+			public IResource answer() throws Throwable {
+				return (IResource)EasyMock.getCurrentArguments()[0];
+			}
+		}).anyTimes();
 		EasyMock.expect(mockAggregator.getResourceFactory(EasyMock.isA(Mutable.class))).andAnswer(new IAnswer<IResourceFactory>() {
 			public IResourceFactory answer() throws Throwable {
 				Mutable<URI> uriRef = (Mutable<URI>)EasyMock.getCurrentArguments()[0];

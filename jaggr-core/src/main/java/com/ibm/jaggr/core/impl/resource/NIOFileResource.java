@@ -21,12 +21,8 @@ package com.ibm.jaggr.core.impl.resource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Reader;
 import java.net.URI;
 import java.nio.file.FileVisitOption;
 import java.nio.file.FileVisitResult;
@@ -68,27 +64,23 @@ public class NIOFileResource extends FileResource {
 				String name = NIOFileResource.this.file.toPath().relativize(dir).toString();
 				boolean cont = true;
 				if (name.length() > 0) { // No need to visit root dir.
-					cont = visitor.visitResource(
-						getResource(dir.toFile(), attrs),
-						NIOFileResource.this.file.toPath().relativize(dir).toString().replace("\\", "/") //$NON-NLS-1$ //$NON-NLS-2$
-					);
+					String path = NIOFileResource.this.file.toPath().relativize(dir).toString().replace("\\", "/"); //$NON-NLS-1$ //$NON-NLS-2$
+					cont = visitor.visitResource(getResource(dir.toFile(), attrs, path), path);
 				}
 				return cont ? FileVisitResult.CONTINUE : FileVisitResult.SKIP_SUBTREE;
 			}
 
 			@Override
 			public FileVisitResult visitFile(final Path file, final BasicFileAttributes attrs) throws IOException {
-				visitor.visitResource(
-					getResource(file.toFile(), attrs),
-					NIOFileResource.this.file.toPath().relativize(file).toString().replace("\\", "/") //$NON-NLS-1$ //$NON-NLS-2$
-				);
+				String path = NIOFileResource.this.file.toPath().relativize(file).toString().replace("\\", "/"); //$NON-NLS-1$ //$NON-NLS-2$
+				visitor.visitResource(getResource(file.toFile(), attrs, path), path);
 				return FileVisitResult.CONTINUE;
 			}
 		});
 	}
 
-	private IResourceVisitor.Resource getResource(final File file, final BasicFileAttributes attrs) {
-		return new IResourceVisitor.Resource() {
+	private IResourceVisitor.Resource getResource(final File file, final BasicFileAttributes attrs, String path) {
+		return new FileResource.VisitorResource(file, 0, path) {
 			@Override
 			public long lastModified() {
 				return attrs.lastModifiedTime().to(TimeUnit.MILLISECONDS);
@@ -100,18 +92,6 @@ public class NIOFileResource extends FileResource {
 			@Override
 			public URI getURI() {
 				return FileResource.getURI(file);
-			}
-			@Override
-			public String getPath() {
-				return getURI().getPath();
-			}
-			@Override
-			public Reader getReader() throws IOException {
-				return new InputStreamReader(new FileInputStream(file), "UTF-8"); //$NON-NLS-1$
-			}
-			@Override
-			public InputStream getInputStream() throws IOException {
-				return new FileInputStream(file);
 			}
 		};
 	}

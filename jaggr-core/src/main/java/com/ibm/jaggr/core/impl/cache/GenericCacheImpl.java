@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class GenericCacheImpl <T> implements IGenericCache<T>, Serializable {
+public abstract class GenericCacheImpl <T> implements IGenericCache, Serializable {
 	private static final long serialVersionUID = 7063606966797433122L;
 
 	protected ConcurrentMap<String, T> cacheMap;
@@ -41,10 +41,13 @@ public class GenericCacheImpl <T> implements IGenericCache<T>, Serializable {
 		cacheMap = other.cacheMap;
 	}
 
-	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.cache.IGenericCache#get(java.lang.String)
+	/**
+	 * Returns the cache entry with the specified key, or null if the
+	 * cache entry with the specified key is not in the cache
+	 *
+	 * @param key the entry key
+	 * @return the requested entry or null
 	 */
-	@Override
 	public T get(String key) {
 		return cacheMap.get(key);
 	}
@@ -105,6 +108,14 @@ public class GenericCacheImpl <T> implements IGenericCache<T>, Serializable {
 			writer.append(typeName + " key: ").append(entry.getKey()).append(linesep); //$NON-NLS-1$
 			writer.append(entry.getValue().toString()).append(linesep).append(linesep);
 		}
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.cache.IGenericCache#newInstance()
+	 */
+	@Override
+	public IGenericCache newInstance() {
+		throw new UnsupportedOperationException();
 	}
 
 }

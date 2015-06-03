@@ -472,7 +472,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				continue;
 			}
 
-			IResource importRes = res.resolve(importNameMatch);
+			IResource importRes = aggregator.newResource(res.resolve(importNameMatch));
 			URI uri = null;
 			if (importRes.exists()) {
 				uri = importRes.getURI();
@@ -615,7 +615,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// Catch IllegalArgumentExceptions when trying to resolve the match URL in case
 			// parsing of the URL failed and gave us a malformed URL.
 			try {
-				imageUri = res.resolve(urlMatch).getURI();
+				imageUri = res.resolve(urlMatch);
 			} catch (IllegalArgumentException ignore) {
 				m.appendReplacement(buf, BLANK);
 				buf.append(fullMatch);
@@ -660,11 +660,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				InputStream in = null;
 				try {
 					// In-line the image.
-					URLConnection connection = imageUri.toURL().openConnection();
+					IResource imageRes = aggregator.newResource(imageUri);
+					if (!imageRes.exists()) {
+						throw new NotFoundException(imageUri.toString());
+					}
 
-					if (include || connection.getContentLength() <= imageSizeThreshold) {
-						in = connection.getInputStream();
-						String base64 = getBase64(connection);
+					if (include || imageRes.getSize() <= imageSizeThreshold) {
+						String base64 = getBase64(imageRes.getInputStream());
 						m.appendReplacement(buf, BLANK);
 						buf.append("url('data:" + type + //$NON-NLS-1$
 								";base64," + base64 + "')"); //$NON-NLS-1$ //$NON-NLS-2$
@@ -938,13 +940,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * Returns a base64 encoded string representation of the contents of the
 	 * resource associated with the {@link URLConnection}.
 	 *
-	 * @param connection
-	 *            The URLConnection object for the resource
+	 * @param in
+	 *            The input stream for the resource
 	 * @return The base64 encoded string representation of the resource
 	 * @throws IOException
 	 */
-	protected String getBase64(URLConnection connection) throws IOException {
-		InputStream in = connection.getInputStream();
+	protected String getBase64(InputStream in) throws IOException {
 		ByteArrayOutputStream out = new ByteArrayOutputStream();
 		CopyUtil.copy(in, out);
 		return new String(Base64.encodeBase64(out.toByteArray()), "UTF-8"); //$NON-NLS-1$

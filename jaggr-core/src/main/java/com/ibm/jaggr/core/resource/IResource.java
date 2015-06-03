@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.core.resource;
 
+import com.ibm.jaggr.core.IAggregator;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
@@ -35,20 +37,48 @@ import java.net.URI;
 public interface IResource {
 
 	/**
-	 * Returns the URI for this resource.  Note that there is no requirement
-	 * that the value returned be the same value that was provided to the
-	 * {@link IResourceFactory} object used to create this instance.
+	 * Returns the URI for this resource. Note that there is no requirement that the value returned
+	 * be the same value that was provided to the {@link IResourceFactory} object used to create
+	 * this instance. Neither is there any requirement that the path/filename of the URI have any
+	 * relationship to the URI originally specified in {@link IAggregator#newResource(URI)}. The
+	 * method may return a URI to a file in a cache directory with an arbitrary name as a result of
+	 * bundle extraction and/or running resource converters. The file extension portion of the URI
+	 * will be the same as the originally requested URI, however.
+	 * <p>
+	 * Use {@link #getReferenceURI()} to obtain the originally requested URI.
 	 *
 	 * @return The resource URI
 	 */
 	public URI getURI();
 
 	/**
-	 * Returns the path of the resource.
+	 * Returns the reference path of this resource. This is equivalent to calling
+	 * {@code getReferenceURI().getPath()}.
 	 *
-	 * @return String Path of the resource
+	 * @return the reference path of the resource
 	 */
 	public String getPath();
+
+	/**
+	 * Returns the reference URI. This is the URI that was passed to
+	 * {@link IAggregator#newResource(URI)}, before any conversions by resource factories or
+	 * resource converters. This URI may or may not be the same value that is returned by
+	 * {@link #getURI()} and it may be a pseudo URI specifying a scheme that is not directly
+	 * supported by the platform (e.g. namedbundleresource).
+	 *
+	 * @return the reference URI.
+	 */
+	public URI getReferenceURI();
+
+	/**
+	 * Sets the reference URI.  This method may be called only once.  If the reference
+	 * URI has been set and this method is called again an {@link IllegalStateException}
+	 * is thrown.
+	 *
+	 * @param referenceUri the reference uri
+	 * throws IllegalStateException
+	 */
+	public void setReferenceURI(URI referenceUri);
 
 	/**
 	 * Returns true if the resource exists.
@@ -65,19 +95,30 @@ public interface IResource {
 	public long lastModified();
 
 	/**
-	 * Returns an IResource for the resource obtained by resolving the URI of
-	 * this resource with the specified relative URI. Use this method instead of
-	 * calling {@link URI#resolve(String)} on the value returned by
-	 * {@link #getURI()} to ensure that the cached resource for the URI
-	 * exists as {@link URI#resolve(String)} can be unreliable when dealing with
-	 * bundle resources.
+	 * @return true if the resource is a folder.
+	 */
+	public boolean isFolder();
+
+	/**
+	 * Returns the size of the content for this resource. Note that not all implementations are able
+	 * to support this method. If the size cannot be provided, a
+	 * {@link IOException} is thrown.
+	 *
+	 * @return the size of the content for the resource
+	 * @throws IOException
+	 */
+	public long getSize() throws IOException;
+
+	/**
+	 * This is equivalent to calling
+	 * {@code relative.getReferenceURI().resolve()}
 	 *
 	 * @param relative
 	 *            the path to resolve against
 	 * @return
 	 *        the resolved path
 	 */
-	public IResource resolve(String relative);
+	public URI resolve(String relative);
 
 	/**
 	 * Returns a {@link Reader} object for the resource if the resource is not a
@@ -118,9 +159,12 @@ public interface IResource {
 	 * want to invoke a resource visitor for a resource that was obtained by
 	 * means other than {@link #walkTree(IResourceVisitor)}.  The resource
 	 * must exist.
+	 * <p>
+	 * Note that calling {@link IResourceVisitor.Resource#newResource()} on
+	 * objects returned from this method will generally throw
+	 * {@link UnsupportedOperationException}
 	 *
 	 * @return An {@link IResourceVisitor.Resource} for current resource
-	 * @throws IOException if the resource does not exist
 	 */
-	public IResourceVisitor.Resource asVisitorResource() throws IOException;
+	public IResourceVisitor.Resource asVisitorResource();
 }
