@@ -31,11 +31,13 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceConverter;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
+import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.NativeObject;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.commonjs.module.Require;
@@ -55,6 +57,10 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Hashtable;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -80,8 +86,14 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	static final String JSX_CACHE_NAME = "jsxCache"; //$NON-NLS-1$
 	private static final String JSXTRANSFORMER_DIRNAME = "JSXTransformer.js"; //$NON-NLS-1$
 	private static final String JSXTRANSFORMER_NAME = "JSXTransformer"; //$NON-NLS-1$
+	private static final String JSXTRANSFORM_INSTANCE = "JSXTransformInstance";  //$NON-NLS-1$
+	private static final int DEFAULT_SCOPE_POOL_SIZE = 4;
+	private static final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
+	private static final String SCOPE_POOL_SIZE_INITPARAM = "scope-pool-size"; //$NON-NLS-1$
+
 	private IAggregator aggregator;
 	private IServiceRegistration cacheMgrListenerReg;
+	private int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.IExtensionInitializer#initialize(com.ibm.jaggr.core.IAggregator, com.ibm.jaggr.core.IAggregatorExtension, com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar)
@@ -103,6 +115,11 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		dict.put("name", aggregator.getName()); //$NON-NLS-1$
 		cacheMgrListenerReg = aggregator.getPlatformServices().registerService(ICacheManagerListener.class.getName(), this, dict);
 
+		// Get the configured scope pool size
+		if (extension != null) {
+			scopePoolSize = TypeUtil.asInt(extension.getInitParams().getValue(SCOPE_POOL_SIZE_INITPARAM), DEFAULT_SCOPE_POOL_SIZE);
+		}
+
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod);
 		}
@@ -120,10 +137,18 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		}
 		// Cache manager is initialized.  De-register the listener and add our named cache
 		cacheMgrListenerReg.unregister();
-		IGenericCache cache = newCache(newConverter(), "jsx.", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		JsxConverter converter = newConverter();
+		IGenericCache cache = newCache(converter, "jsx.", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		cache.setAggregator(aggregator);
 		IResourceConverterCache oldCache = (IResourceConverterCache)cacheManager.getCache().putIfAbsent(JSX_CACHE_NAME, cache);
-		cache = oldCache != null ? oldCache : cache;
+		if (oldCache == null) {
+			// initialize the converter since we're going to use it.  The converter is not initialized when it
+			// is constructed so as to avoid the overhead of creating the rhino thread scopes if we're not
+			// going to use is because a cache instance already exists.
+			converter.initialize();
+		} else {
+			cache = oldCache;
+		}
 
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod);
@@ -188,7 +213,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	}
 
 	protected JsxConverter newConverter() {
-		return new JsxConverter();
+		return new JsxConverter(scopePoolSize);
 	}
 
 	protected IResourceConverterCache newCache(IConverter converter, String prefix, String suffix) {
@@ -419,21 +444,28 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	 * is a serializable cache implementation.
 	 */
 	static class JsxConverter implements IConverter, Serializable {
-		private static final long serialVersionUID = -590148122175231052L;
+		private static final long serialVersionUID = -2614480008100526342L;
 
-		private transient Function transformFunction;
-		private transient Scriptable scope;
-		private transient Scriptable jsxTransformScript;
+		private transient BlockingQueue<Scriptable> threadScopes;
+		private transient boolean initialized;
+		final private int scopePoolSize;
 
 		protected JsxConverter() {
-			initTransients();	// initialize the transient properties
+			this(JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE);
+		}
+		protected JsxConverter(int scopePoolSize) {
+			this.scopePoolSize = scopePoolSize;
 		}
 
 		/**
 		 * The rhino properties are not serializable and so must be initialized every time
 		 * this class is instantiated or de-serialized.
 		 */
-		protected void initTransients() {
+		public void initialize() {
+			if (initialized) {
+				return;
+			}
+			initialized = true;
 			// Initialize the rhino properties used by the converter
 			ArrayList<URI> modulePaths = new ArrayList<URI>(1);
 			try {
@@ -449,12 +481,20 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				builder.setModuleScriptProvider(new SoftCachingModuleScriptProvider(
 					new UrlModuleSourceProvider(modulePaths, null)
 				));
-				scope = ctx.initStandardObjects();
-				Require require = builder.createRequire(ctx, scope);
+				Scriptable sharedScope = ctx.initStandardObjects();
 
-				// require in the transformer and extract the transform function
-				jsxTransformScript = require.requireMain(ctx, JSXTRANSFORMER_NAME);
-				transformFunction = (Function) jsxTransformScript.get("transform", scope); //$NON-NLS-1$
+				// Create the thread scope pool
+				threadScopes = new ArrayBlockingQueue<Scriptable>(scopePoolSize);
+				for (int i = 0; i < scopePoolSize; i++) {
+					Scriptable threadScope = ctx.newObject(sharedScope);
+					threadScope.setPrototype(sharedScope);
+					threadScope.setParentScope(null);
+					threadScopes.add(threadScope);
+					// require in the transformer and extract the transform function
+					Require require = builder.createRequire(ctx, threadScope);
+					Scriptable jsxTransformInstance = require.requireMain(ctx, JSXTRANSFORMER_NAME);
+					threadScope.put(JSXTRANSFORM_INSTANCE, threadScope, jsxTransformInstance);
+				}
 			} finally {
 				Context.exit();
 			}
@@ -479,13 +519,29 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				IOUtils.closeQuietly(is);
 			}
 			String jsstring;
+			Scriptable scope = null;
 			Context ctx = Context.enter();
 			try {
-				synchronized (this) {
-					NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, jsxTransformScript, new String[]{jsx});
-					jsstring = convertedJSX.get("code").toString();  //$NON-NLS-1$
+				scope = threadScopes.poll(SCOPE_POOL_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+				if (scope == null) {
+					throw new TimeoutException("Timeout waiting for thread scope"); //$NON-NLS-1$
 				}
+				Scriptable transformInstance = (Scriptable)scope.get(JSXTRANSFORM_INSTANCE, scope);
+				Function transformFunction = (Function) transformInstance.get("transform", scope); //$NON-NLS-1$
+				NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, transformInstance, new String[]{jsx});
+				jsstring = convertedJSX.get("code").toString();  //$NON-NLS-1$
+			} catch (JavaScriptException e) {
+				// Add module info
+				String message = "Error parsing " + source.getURI() + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
+				throw new IOException(message, e);
+			} catch (InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (TimeoutException e) {
+				throw new RuntimeException(e);
 			} finally {
+				if (scope != null) {
+					threadScopes.add(scope);
+				}
 				Context.exit();
 			}
 			// write the contents of the transformed javascript to the target file
@@ -501,12 +557,13 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		 * @param stream the serialization input stream
 		 * @throws InvalidObjectException
 		 */
-		private void readObject(ObjectInputStream stream) throws InvalidObjectException {
+		private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
 			/*
 			 * We have no serializable properties, but we need to initialize the transient
 			 * properties each time this object is de-serialized.
 			 */
-			initTransients();
+			stream.defaultReadObject();
+			initialize();
 		}
 	}
 

@@ -256,7 +256,8 @@ public class JsxResourceConverterTest {
 	public void testJsxConverter() throws Exception {
 		File tmpdir = Files.createTempDir();
 		File cacheFile = new File(tmpdir, "test.js");
-		IConverter jsxConverter = new JsxResourceConverter.JsxConverter();
+		JsxResourceConverter.JsxConverter jsxConverter = new JsxResourceConverter.JsxConverter();
+		jsxConverter.initialize();
 		IResource res = new StringResource(jsxSource, new URI("test.jsx"));
 		jsxConverter.generateCacheContent(res, cacheFile);
 		Assert.assertEquals(transpiledJs, FileUtils.readFileToString(cacheFile));
