@@ -32,7 +32,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
 public class CacheImpl implements ICache {
-	private static final long serialVersionUID = 7009828162307975619L;
+	private static final long serialVersionUID = -4409057458310867441L;
 	/// The caches
 	private ILayerCache _layerCache;
 	private IModuleCache _moduleCache;

@@ -470,21 +470,26 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			if (isTraceLogging) {
 				log.entering(JsxConverter.class.getName(), sourceMethod, new Object[]{source, cacheFile});
 			}
+			// read the contents of the jsx file and convert it
+			InputStream is = source.getInputStream();
+			String jsx;
+			try {
+				jsx = IOUtils.toString(is);
+			} finally {
+				IOUtils.closeQuietly(is);
+			}
+			String jsstring;
 			Context ctx = Context.enter();
 			try {
-				// read the contents of the jsx file and convert it
-				String jsx = IOUtils.toString(source.getInputStream());
-				NativeObject convertedJSX;
-				String jsstring;
 				synchronized (this) {
-					convertedJSX = (NativeObject) transformFunction.call(ctx, scope, jsxTransformScript, new String[]{jsx});
+					NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, jsxTransformScript, new String[]{jsx});
 					jsstring = convertedJSX.get("code").toString();  //$NON-NLS-1$
 				}
-				// write the contents of the transformed javascript to the target file
-				FileUtils.writeStringToFile(cacheFile, jsstring);
 			} finally {
 				Context.exit();
 			}
+			// write the contents of the transformed javascript to the target file
+			FileUtils.writeStringToFile(cacheFile, jsstring);
 			if (isTraceLogging) {
 				log.exiting(JsxConverter.class.getName(), sourceMethod);
 			}

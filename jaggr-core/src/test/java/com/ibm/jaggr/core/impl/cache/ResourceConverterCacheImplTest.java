@@ -121,12 +121,12 @@ public class ResourceConverterCacheImplTest {
 		replay(mockAggregator, mockCacheMgr, mockExt);
 		impl.setAggregator(mockAggregator);
 
-		long lastmod = new Date().getTime() - 1000;
+		long lastmod = new Date().getTime() - 10000;
 		IResource source = new StringResource("Hello world", new URI("/test/resource.txt"), lastmod);
 		IResource result = impl.convert("testResource", source);
 		assertEquals("HELLO WORLD", FileUtils.readFileToString(new File(result.getURI())));
 		File cacheFile = new File(result.getURI());
-		assertEquals(lastmod, cacheFile.lastModified());
+		assertTrue(Math.abs(lastmod - cacheFile.lastModified()) < 1000);
 		assertNull(deleteFileName.getValue());
 		assertEquals(new URI("/test/resource.txt"), result.getReferenceURI());
 
@@ -134,7 +134,7 @@ public class ResourceConverterCacheImplTest {
 		// request the source again and make sure we get back the same result URI form the cache
 		result = impl.convert("testResource", source);
 		assertEquals(uri, result.getURI());
-		assertEquals(lastmod, cacheFile.lastModified());
+		assertTrue(Math.abs(lastmod - cacheFile.lastModified()) < 1000);
 		assertNull(deleteFileName.getValue());
 
 		// Change the source string but don't change last mod.  Should get old result
@@ -142,18 +142,18 @@ public class ResourceConverterCacheImplTest {
 		result = impl.convert("testResource", source);
 		assertEquals(uri, result.getURI());
 		assertEquals("HELLO WORLD", FileUtils.readFileToString(new File(result.getURI())));
-		assertEquals(lastmod, cacheFile.lastModified());
+		assertTrue(Math.abs(lastmod - cacheFile.lastModified()) < 1000);
 		assertNull(deleteFileName.getValue());
 
 		// Now update the last modified date of the source resource
-		lastmod += 1000;
+		lastmod += 10000;
 		source = new StringResource("Hello world 2", new URI("/test/resource.txt"), lastmod);
 		result = impl.convert("testResource", source);
 		assertFalse(uri.equals(result.getURI()));
 		assertEquals("HELLO WORLD 2", FileUtils.readFileToString(new File(result.getURI())));
 		assertEquals(deleteFileName.getValue(), cacheFile.getName());
 		cacheFile = new File(result.getURI());
-		assertEquals(lastmod, cacheFile.lastModified());
+		assertTrue(Math.abs(lastmod - cacheFile.lastModified()) < 1000);
 
 		// test exception handling
 		source = new NotFoundResource(new URI("/test/noexist.txt"));

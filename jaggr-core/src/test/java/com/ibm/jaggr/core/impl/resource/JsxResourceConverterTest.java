@@ -163,16 +163,16 @@ public class JsxResourceConverterTest {
 		Assert.assertEquals("test.js", converted.getReferenceURI().toString());
 
 		// Test last-modified handling
-		newResourceWrapper.setValue(new StringResource("hello", new URI("test.jsx"), lastmod+1000));
+		newResourceWrapper.setValue(new StringResource("hello", new URI("test.jsx"), lastmod+10000));
 		EasyMock.reset(mockConverterCache);
 		EasyMock.expect(mockConverterCache.convert("test.js", newResourceWrapper.getValue())).andAnswer(new TestConverterAnswer());
 		EasyMock.replay(mockConverterCache);
 		converted = converter.convert(res);
 		EasyMock.verify(mockConverterCache);
-		Assert.assertEquals(lastmod+1000, converted.lastModified());
+		Assert.assertTrue(Math.abs(lastmod+10000 - converted.lastModified()) < 1000);
 
 		// Make sure an exception resource is returned if the converter throws an exception
-		newResourceWrapper.setValue(new StringResource("hello", new URI("test.jsx"), lastmod+2000));
+		newResourceWrapper.setValue(new StringResource("hello", new URI("test.jsx"), lastmod+20000));
 		EasyMock.reset(mockConverterCache);
 		EasyMock.expect(mockConverterCache.convert("test.js", newResourceWrapper.getValue())).andThrow(new IOException("test"));
 		EasyMock.replay(mockConverterCache);
