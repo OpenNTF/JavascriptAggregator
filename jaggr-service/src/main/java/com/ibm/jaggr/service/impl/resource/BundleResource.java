@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.service.impl.resource;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.resource.AbstractResourceBase;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
@@ -216,8 +217,11 @@ public class BundleResource extends AbstractResourceBase {
 			return lastModified;
 		}
 
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#newResource(com.ibm.jaggr.core.IAggregator)
+		 */
 		@Override
-		public IResource newResource() {
+		public IResource newResource(IAggregator aggregator) {
 			if (path == null) {
 				throw new UnsupportedOperationException();
 			}
@@ -225,7 +229,7 @@ public class BundleResource extends AbstractResourceBase {
 			if (!BundleResource.this.getURI().equals(BundleResource.this.getReferenceURI())) {
 				result.setReferenceURI(BundleResource.this.resolve(path));
 			}
-			return result;
+			return aggregator.runConverters(result);
 		}
 	}
 }

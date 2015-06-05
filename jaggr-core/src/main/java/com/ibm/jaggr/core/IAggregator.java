@@ -32,7 +32,6 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
-import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
 import org.apache.commons.lang3.mutable.Mutable;
@@ -199,9 +198,8 @@ public interface IAggregator {
 	 * Run the registered resource converters against the specified resource. This method returns
 	 * either the specified resource or new resource if the resource is converted.
 	 * <p>
-	 * Note that this method is called automatically by {@link #newResource(URI)}, so you only need
-	 * to call this method for resources obtained directly from a resource factory (e.g. from
-	 * {@link Resource#newResource()}).
+	 * Note that this method is called automatically by {@link #newResource(URI)}, so it is
+	 * generally not necessary to call this method directly.
 	 *
 	 * @param res
 	 *            the resource to run converters against

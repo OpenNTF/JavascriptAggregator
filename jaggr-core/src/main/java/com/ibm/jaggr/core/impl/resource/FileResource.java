@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.core.impl.resource;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.resource.AbstractResourceBase;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
@@ -235,7 +236,7 @@ public class FileResource extends AbstractResourceBase {
 		 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#newResource()
 		 */
 		@Override
-		public IResource newResource() {
+		public IResource newResource(IAggregator aggregator) {
 			if (relpath == null) {
 				throw new UnsupportedOperationException();
 			}
@@ -243,7 +244,7 @@ public class FileResource extends AbstractResourceBase {
 			if (!FileResource.this.getURI().equals(FileResource.this.getReferenceURI())) {
 				result.setReferenceURI(FileResource.this.resolve(relpath));
 			}
-			return result;
+			return aggregator.runConverters(result);
 		}
 	}
 

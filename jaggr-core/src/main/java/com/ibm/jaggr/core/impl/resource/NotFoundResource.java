@@ -16,6 +16,7 @@
 
 package com.ibm.jaggr.core.impl.resource;
 
+import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.resource.AbstractResourceBase;
 
 import java.io.IOException;
@@ -31,12 +32,12 @@ public class NotFoundResource extends AbstractResourceBase {
 
 	@Override
 	public Reader getReader() throws IOException {
-		throw new IOException(getURI().toString());
+		throw new NotFoundException(getURI().toString());
 	}
 
 	@Override
 	public InputStream getInputStream() throws IOException {
-		throw new IOException(getURI().toString());
+		throw new NotFoundException(getURI().toString());
 	}
 
 	@Override

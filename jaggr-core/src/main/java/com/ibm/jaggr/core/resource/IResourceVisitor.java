@@ -72,17 +72,17 @@ public interface IResourceVisitor {
 		public long lastModified();
 
 		/**
-		 * Return an IResource object for this resource. Note that IResource objects returned by
-		 * this method <strong>DO NOT</strong> have resource converters run against them before
-		 * returning the way that resources created using {@link IAggregator#newResource(URI)} do,
-		 * so callers of this method should call {@link IAggregator#runConverters(IResource)} prior
-		 * to using the resource.
+		 * Return an IResource object for this resource. Implementors are responsible for calling
+		 * {@link IAggregator#runConverters(IResource)} against the new resource before returning.
+		 *
+		 * @param aggregator
+		 *            the aggregator instance
 		 *
 		 * @return an IResource object for this resource.
 		 * @throws UnsupportedOperationException
-		 *         for instances of this class returned by {@link IResource#asVisitorResource()}
+		 *             for instances of this class returned by {@link IResource#asVisitorResource()}
 		 */
-		public IResource newResource();
+		public IResource newResource(IAggregator aggregator);
 
 	}
 }

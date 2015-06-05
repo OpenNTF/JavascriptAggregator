@@ -166,7 +166,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				 */
 				if (node.lastModified() != resource.lastModified()) {
 					// File has changed, or is new. Submit an async parser job.
-					parserCs.submit(new DepParser(node, aggregator.runConverters(resource.newResource())));
+					parserCs.submit(new DepParser(node, resource.newResource(aggregator)));
 					parserCount.incrementAndGet();
 				}
 				return true;

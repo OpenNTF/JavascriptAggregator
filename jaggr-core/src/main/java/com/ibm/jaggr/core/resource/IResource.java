@@ -46,6 +46,9 @@ public interface IResource {
 	 * will be the same as the originally requested URI, however.
 	 * <p>
 	 * Use {@link #getReferenceURI()} to obtain the originally requested URI.
+	 * <p>
+	 * Because instances of this object can refer to cache resources, you should not hold on to
+	 * references to IResource objects long term (more than the duration of a request).
 	 *
 	 * @return The resource URI
 	 */
@@ -155,14 +158,12 @@ public interface IResource {
 
 	/**
 	 * This is a convenience method to return the current resource as a
-	 * {@link IResourceVisitor.Resource} object. This is useful for when you
-	 * want to invoke a resource visitor for a resource that was obtained by
-	 * means other than {@link #walkTree(IResourceVisitor)}.  The resource
-	 * must exist.
+	 * {@link IResourceVisitor.Resource} object. This is useful for when you want to invoke a
+	 * resource visitor for a resource that was obtained by means other than
+	 * {@link #walkTree(IResourceVisitor)}. The resource must exist.
 	 * <p>
-	 * Note that calling {@link IResourceVisitor.Resource#newResource()} on
-	 * objects returned from this method will generally throw
-	 * {@link UnsupportedOperationException}
+	 * Note that calling {@link IResourceVisitor.Resource#newResource(IAggregator)} on objects
+	 * returned from this method will generally throw {@link UnsupportedOperationException}
 	 *
 	 * @return An {@link IResourceVisitor.Resource} for current resource
 	 */

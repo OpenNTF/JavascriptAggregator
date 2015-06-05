@@ -23,6 +23,8 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cache.ICacheManagerListener;
+import com.ibm.jaggr.core.cache.IGenericCache;
+import com.ibm.jaggr.core.cache.IResourceConverterCache;
 import com.ibm.jaggr.core.impl.cache.ResourceConverterCacheImpl;
 import com.ibm.jaggr.core.impl.cache.ResourceConverterCacheImpl.IConverter;
 import com.ibm.jaggr.core.resource.IResource;
@@ -75,7 +77,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
         }
 	};
 
-	private static final String JSX_CACHE_NAME = "jsxCache"; //$NON-NLS-1$
+	static final String JSX_CACHE_NAME = "jsxCache"; //$NON-NLS-1$
 	private static final String JSXTRANSFORMER_DIRNAME = "JSXTransformer.js"; //$NON-NLS-1$
 	private static final String JSXTRANSFORMER_NAME = "JSXTransformer"; //$NON-NLS-1$
 	private IAggregator aggregator;
@@ -118,9 +120,9 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		}
 		// Cache manager is initialized.  De-register the listener and add our named cache
 		cacheMgrListenerReg.unregister();
-		ResourceConverterCacheImpl cache = new ResourceConverterCacheImpl(new JsxConverter(), "jsx.", ""); //$NON-NLS-1$ //$NON-NLS-2$
+		IGenericCache cache = newCache(newConverter(), "jsx.", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		cache.setAggregator(aggregator);
-		ResourceConverterCacheImpl oldCache = (ResourceConverterCacheImpl)cacheManager.getCache().putIfAbsent(JSX_CACHE_NAME, cache);
+		IResourceConverterCache oldCache = (IResourceConverterCache)cacheManager.getCache().putIfAbsent(JSX_CACHE_NAME, cache);
 		cache = oldCache != null ? oldCache : cache;
 
 		if (isTraceLogging) {
@@ -146,41 +148,30 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				if (resource.getPath().endsWith(".js") && resource.getPath().length() > 3) { //$NON-NLS-1$
 					if (!resource.exists()){
 						// The requested javascript file doesn't exist.  See if we can satisfy the request
-						// from our cache.
-						ICache cache = aggregator.getCacheManager().getCache();
-						try {
-							ResourceConverterCacheImpl jsxCache = (ResourceConverterCacheImpl)cache.getCache(JSX_CACHE_NAME);
-							if (jsxCache == null) {
-								throw new NotFoundException(JSX_CACHE_NAME);
-							}
-							// Use the resource's reference uri as the cache key
-							String cacheKey = resource.getReferenceURI().toString();
-							// Look for the file in the cache.
-							IResource tryResult = jsxCache.convert(cacheKey, null);
-							if (tryResult != null && !aggregator.getOptions().isDevelopmentMode()) {
-								// Converted resource found in cache.  Return it.
-								result = tryResult;
-							} else {
-								// Resource not in cache, or we're in development mode and we need to
-								// check the last-modified time of the cache entry against the source.
-								// Construct a resource object for the .jsx file with the same base name
-								// and in the same directory as the requested javascript file.
-								String path = resource.getReferenceURI().getPath();
-								int idx = path.lastIndexOf("/"); //$NON-NLS-1$
-								String name = path.substring(idx == -1 ? 0 : idx+1, path.length()-3) + ".jsx"; //$NON-NLS-1$
-								IResource jsxRes = aggregator.newResource(resource.resolve(name));
-								// see if the jsx resource exists.
-								if (jsxRes.exists()) {
-									// get the converted resource from the cache, this time
-									// providing the .jsx source so that it can be converted if
-									// the cache entry is missing or is stale.
-									jsxRes.setReferenceURI(resource.getReferenceURI());
-									result = jsxCache.convert(cacheKey, jsxRes);
+						// by converting a .jsx file.
+
+						// Construct a resource object for the .jsx file with the same base name
+						// and in the same directory as the requested javascript file.
+						String path = resource.getReferenceURI().getPath();
+						int idx = path.lastIndexOf("/"); //$NON-NLS-1$
+						String name = path.substring(idx == -1 ? 0 : idx+1, path.length()-3) + ".jsx"; //$NON-NLS-1$
+						IResource jsxRes = aggregator.newResource(resource.resolve(name));
+						if (jsxRes.exists()) {
+							ICache cache = aggregator.getCacheManager().getCache();
+							try {
+								IResourceConverterCache jsxCache = (IResourceConverterCache)cache.getCache(JSX_CACHE_NAME);
+								if (jsxCache == null) {
+									throw new NotFoundException(JSX_CACHE_NAME);
 								}
+								// Use the resource's reference uri as the cache key
+								String cacheKey = resource.getReferenceURI().toString();
+								// get the converted resource from the cache.
+								jsxRes.setReferenceURI(resource.getReferenceURI());
+								result = jsxCache.convert(cacheKey, jsxRes);
+							} catch (IOException ex) {
+								log.logp(Level.WARNING, sourceClass, sourceMethod, ex.getMessage(), ex);
+								result = new ExceptionResource(resource.getReferenceURI(), resource.lastModified(), ex);
 							}
-						} catch (IOException ex) {
-							log.logp(Level.WARNING, sourceClass, sourceMethod, ex.getMessage(), ex);
-							result = new ExceptionResource(resource.getReferenceURI(), resource.lastModified(), ex);
 						}
 					}
 				}
@@ -194,6 +185,14 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			log.exiting(sourceClass, sourceMethod, result);
 		}
 		return result;
+	}
+
+	protected JsxConverter newConverter() {
+		return new JsxConverter();
+	}
+
+	protected IResourceConverterCache newCache(IConverter converter, String prefix, String suffix) {
+		return new ResourceConverterCacheImpl(converter, prefix, suffix);
 	}
 
 	/**
@@ -349,10 +348,11 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	}
 
 	/**
-	 * Resource visitor for synthesized .js entries that returns a {@link NotFoundResource}
-	 * from the {@link #newResource()} method.  When this {@link NotFoundResource} is provided
-	 * to the {@link JsxResourceConverter#convert(IResource)} method, then we will convert
-	 * it to a resource with content from the transpiled .jsx file.
+	 * Visitor resource who's {@link Resource#newResource(IAggregator)} method runs converters
+	 * against {@link NotFoundResource} instances for synthetic .js entries used to represent the
+	 * transpiled .jsx resources. When these {@link NotFoundResource} are provided to the
+	 * {@link JsxResourceConverter#convert(IResource)} method, then we will convert them to the
+	 * .js resources using content from the transpiled .jsx files.
 	 */
 	static class JsxVisitorResource implements Resource {
 		final URI uri;
@@ -401,14 +401,14 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#newResource()
 		 */
 		@Override
-		public IResource newResource() {
+		public IResource newResource(IAggregator aggregator) {
 			if (path == null) {
 				throw new UnsupportedOperationException();
 			}
-			// return a new NotFoundResource, which JsxResourceConverter#convert() will
-			// convert into a resource for the js file when it is called
-			// to process the NotFoundResource.
-			return new NotFoundResource(uri);
+			// Call IAggregator#runConverters() against a NotFoundResource to that
+			// the JsxResourceConverter#convert() method be invoked to convert the
+			// NotFoundResource to a .js resource for the transpiled .jsx resource.
+			return aggregator.runConverters(new NotFoundResource(uri));
 		}
 
 	}
@@ -478,9 +478,9 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				String jsstring;
 				synchronized (this) {
 					convertedJSX = (NativeObject) transformFunction.call(ctx, scope, jsxTransformScript, new String[]{jsx});
-					// write the contents of the transformed javascript to the target file
 					jsstring = convertedJSX.get("code").toString();  //$NON-NLS-1$
 				}
+				// write the contents of the transformed javascript to the target file
 				FileUtils.writeStringToFile(cacheFile, jsstring);
 			} finally {
 				Context.exit();

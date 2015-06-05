@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.cache;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.cache.IGenericCache;
+import com.ibm.jaggr.core.cache.IResourceConverterCache;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
@@ -34,7 +35,7 @@ import java.util.logging.Logger;
  * for converting a resource and writing it to a cache file, and this class handles the management
  * of the cache file in the aggregator cache.
  */
-public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConverterCacheImpl.CacheEntry> implements Serializable {
+public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConverterCacheImpl.CacheEntry> implements Serializable, IResourceConverterCache {
 
 	private static final long serialVersionUID = 5441922319434222745L;
 
@@ -55,7 +56,7 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 	private transient IResourceFactory fileResourceFactory;
 
 	/**
-	 * The cache entry object. In order to minimize thread contention.
+	 * The cache entry object.
 	 */
 	static class CacheEntry implements Serializable {
 		private static final long serialVersionUID = -1613609199037083555L;
@@ -110,20 +111,7 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 		return this.suffix;
 	}
 
-	/**
-	 * Returns the cache file for the specified key. If the cache file does not exist, then a new
-	 * cache file is created by calling the resource converter that was provided in the constructor
-	 * for this cache instance with the specified source resource.
-	 *
-	 * @param key
-	 *            the cache key
-	 * @param source
-	 *            the resource to be converted (may be null). If null, the result will be non-null
-	 *            only if the cache entry already exists.
-	 * @return the cached resource object, or null if {@code source} is null and the cache entry
-	 *         does not already exist.
-	 * @throws IOException
-	 */
+	@Override
 	public IResource convert(String key, IResource source) throws IOException {
 		final String sourceMethod = "getInputStream"; //$NON-NLS-1$
 		final boolean isTraceLogging = log.isLoggable(Level.FINER);
@@ -143,7 +131,7 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 			if (cacheFile != null) {
 
 				// Some platforms round file last modified times to nearest second.
-				if (source != null && Math.abs(source.lastModified() - cacheFile.lastModified()) > 1000) {
+				if (source != null && Math.abs(source.lastModified() - cacheFile.lastModified()) >= 1000) {
 					// Stale cache entry, remove it and create a new one below
 					cacheMap.remove(key, tryCacheEntry);
 					// also delete the associated cache file asynchronously.

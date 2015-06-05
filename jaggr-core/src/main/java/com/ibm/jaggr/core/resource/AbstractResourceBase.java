@@ -15,6 +15,7 @@
  */
 package com.ibm.jaggr.core.resource;
 
+import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 
 import java.io.IOException;
@@ -123,7 +124,7 @@ public abstract class AbstractResourceBase implements IResource {
 			 * @see com.ibm.jaggr.core.resource.IResourceVisitor.Resource#newResource()
 			 */
 			@Override
-			public IResource newResource() {
+			public IResource newResource(IAggregator aggregator) {
 				throw new UnsupportedOperationException();
 			}
 
