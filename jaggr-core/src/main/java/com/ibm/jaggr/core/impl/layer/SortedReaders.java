@@ -84,6 +84,9 @@ public class SortedReaders {
 		} catch (InterruptedException e) {
 			throw new IOException(e);
 		} catch (ExecutionException e) {
+			if (e.getCause() instanceof IOException) {
+				throw (IOException) e.getCause();
+			}
 			throw new IOException(e);
 		}
 	}
