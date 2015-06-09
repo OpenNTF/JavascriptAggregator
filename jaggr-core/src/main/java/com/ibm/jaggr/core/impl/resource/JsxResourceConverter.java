@@ -59,6 +59,11 @@ import java.util.Dictionary;
 import java.util.Hashtable;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -88,6 +93,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	private static final String JSXTRANSFORMER_NAME = "JSXTransformer"; //$NON-NLS-1$
 	private static final String JSXTRANSFORM_INSTANCE = "JSXTransformInstance";  //$NON-NLS-1$
 	private static final int DEFAULT_SCOPE_POOL_SIZE = 4;
+	private static final int INITIALIZER_THREAD_POOL_SIZE = 4;
 	private static final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 	private static final String SCOPE_POOL_SIZE_INITPARAM = "scope-pool-size"; //$NON-NLS-1$
 
@@ -462,8 +468,13 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		 * this class is instantiated or de-serialized.
 		 */
 		public void initialize() {
+			final String sourceMethod = "initialize"; //$NON-NLS-1$
+			final boolean isTraceLogging = log.isLoggable(Level.FINER);
 			if (initialized) {
 				return;
+			}
+			if (isTraceLogging) {
+				log.entering(JsxConverter.class.getName(), sourceMethod);
 			}
 			initialized = true;
 			// Initialize the rhino properties used by the converter
@@ -474,29 +485,62 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				// rethrow as unchecked exception
 				throw new RuntimeException(e);
 			}
+			// make a require builder and initialize scope
+			final RequireBuilder builder = new RequireBuilder();
+			builder.setModuleScriptProvider(new SoftCachingModuleScriptProvider(
+				new UrlModuleSourceProvider(modulePaths, null)
+			));
 			Context ctx = Context.enter();
+			// create the shared scope
+			final Scriptable sharedScope;
 			try {
-				// make a require builder and initialize scope
-				RequireBuilder builder = new RequireBuilder();
-				builder.setModuleScriptProvider(new SoftCachingModuleScriptProvider(
-					new UrlModuleSourceProvider(modulePaths, null)
-				));
-				Scriptable sharedScope = ctx.initStandardObjects();
-
-				// Create the thread scope pool
-				threadScopes = new ArrayBlockingQueue<Scriptable>(scopePoolSize);
-				for (int i = 0; i < scopePoolSize; i++) {
-					Scriptable threadScope = ctx.newObject(sharedScope);
-					threadScope.setPrototype(sharedScope);
-					threadScope.setParentScope(null);
-					threadScopes.add(threadScope);
-					// require in the transformer and extract the transform function
-					Require require = builder.createRequire(ctx, threadScope);
-					Scriptable jsxTransformInstance = require.requireMain(ctx, JSXTRANSFORMER_NAME);
-					threadScope.put(JSXTRANSFORM_INSTANCE, threadScope, jsxTransformInstance);
-				}
+				sharedScope = ctx.initStandardObjects();
 			} finally {
 				Context.exit();
+			}
+			// Now create the thread scope pool.  We use a thread pool executor service to
+			// create the scope pool in order to take advantage of parallel processing
+			// capabilities on multi-core processors.
+			threadScopes = new ArrayBlockingQueue<Scriptable>(scopePoolSize);
+			ExecutorService es = Executors.newFixedThreadPool(INITIALIZER_THREAD_POOL_SIZE);
+			final CompletionService<Scriptable> cs = new ExecutorCompletionService<Scriptable>(es);
+			for (int i = 0; i < scopePoolSize; i++) {
+				cs.submit(new Callable<Scriptable>() {
+					@Override
+					public Scriptable call() throws Exception {
+						Context ctx = Context.enter();
+						try {
+							Scriptable threadScope = ctx.newObject(sharedScope);
+							threadScope.setPrototype(sharedScope);
+							threadScope.setParentScope(null);
+							// require in the transformer and extract the transform function
+							Require require = builder.createRequire(ctx, threadScope);
+							Scriptable jsxTransformInstance = require.requireMain(ctx, JSXTRANSFORMER_NAME);
+							// Save the instance in the scope
+							threadScope.put(JSXTRANSFORM_INSTANCE, threadScope, jsxTransformInstance);
+							return threadScope;
+						} finally {
+							Context.exit();
+						}
+					}
+				});
+			}
+			// now get the results
+			for (int i = 0; i < scopePoolSize; i++) {
+				try {
+					threadScopes.add(cs.take().get());
+				} catch (Exception e) {
+					if (log.isLoggable(Level.SEVERE)) {
+						log.logp(Level.SEVERE, JsxConverter.class.getName(), sourceMethod, e.getMessage(), e);
+					}
+					throw new RuntimeException(e);
+				}
+			}
+			// Shut down the executor and release the threads
+			es.shutdown();
+
+			if (isTraceLogging) {
+				log.exiting(JsxConverter.class.getName(), sourceMethod);
 			}
 		}
 
@@ -518,6 +562,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			} finally {
 				IOUtils.closeQuietly(is);
 			}
+
 			String jsstring;
 			Scriptable scope = null;
 			Context ctx = Context.enter();
@@ -534,9 +579,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				// Add module info
 				String message = "Error parsing " + source.getURI() + "\r\n" + e.getMessage(); //$NON-NLS-1$ //$NON-NLS-2$
 				throw new IOException(message, e);
-			} catch (InterruptedException e) {
-				throw new RuntimeException(e);
-			} catch (TimeoutException e) {
+			} catch (Exception e) {
 				throw new RuntimeException(e);
 			} finally {
 				if (scope != null) {
