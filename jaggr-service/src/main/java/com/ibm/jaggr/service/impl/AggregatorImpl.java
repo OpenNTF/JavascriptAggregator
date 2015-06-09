@@ -17,6 +17,7 @@
 package com.ibm.jaggr.service.impl;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IExtensionSingleton;
 import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.IVariableResolver;
 import com.ibm.jaggr.core.InitParams;
@@ -119,6 +120,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	private File workdir = null;
 	private IOptions options = null;
 	private boolean isShuttingDown = false;
+	private Map<String, Object> singletonExtensions;
 
 
 	/* (non-Javadoc)
@@ -234,6 +236,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		Map<String, String> configMap = new HashMap<String, String>();
 		configMap = getConfigMap(configElem);
 		initParams = getConfigInitParams(configElem);
+		singletonExtensions = new HashMap<String, Object>();
 
 		try {
 			BundleContext bundleContext = Activator.getBundleContext();
@@ -281,6 +284,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (!isShuttingDown) {
 			isShuttingDown = true;
 			super.shutdown();
+			singletonExtensions.clear();
 			executorsServiceTracker.close();
 			variableResolverServiceTracker.close();
 		}
@@ -543,7 +547,17 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 					if (contributingBundle.getState() != Bundle.ACTIVE && contributingBundle.getState() != Bundle.STARTING) {
 						contributingBundle.start();
 					}
-					Object ext = member.createExecutableExtension("class"); //$NON-NLS-1$
+					// get class attribute so we can see if the class is a singleton that we
+					// already have an instance for.
+					String className = member.getAttribute("class"); //$NON-NLS-1$
+					Object ext = singletonExtensions.get(className);
+					if (ext == null) {
+						ext = member.createExecutableExtension("class"); //$NON-NLS-1$
+						if (ext instanceof IExtensionSingleton) {
+							// Add it to the map of singleton extensions
+							singletonExtensions.put(className, ext);
+						}
+					}
 					Properties props = new Properties();
 					for (String attributeName : member.getAttributeNames()) {
 						props.put(attributeName, member.getAttribute(attributeName));

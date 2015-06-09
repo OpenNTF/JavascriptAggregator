@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.impl.modulebuilder.css;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IExtensionInitializer;
+import com.ibm.jaggr.core.IExtensionSingleton;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
 import com.ibm.jaggr.core.NotFoundException;
@@ -70,6 +71,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -178,7 +184,7 @@ import javax.servlet.http.HttpServletRequest;
  * ],
  * </pre></code>
  */
-public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IShutdownListener, IConfigListener {
+public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionInitializer, IExtensionSingleton, IShutdownListener, IConfigListener {
 
 	static final String sourceClass = CSSModuleBuilder.class.getName();
 	static final Logger log = Logger.getLogger(sourceClass);
@@ -220,6 +226,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	static public final Map<String, Boolean> POSTCSS_OPTIONS = ImmutableMap.of(
 	        "safe", Boolean.TRUE //$NON-NLS-1$
 	);
+	static public final int INITIALIZER_THREAD_POOL_SIZE = 4;
 	static public final int DEFAULT_SCOPE_POOL_SIZE = 10;
 	static public final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 
@@ -338,6 +345,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private BlockingQueue<Scriptable> threadScopes;
 
 	private ReadWriteLock configUpdatingRWL = new ReentrantReadWriteLock();
+	private boolean initialized = false;
 
 	/* (non-Javadoc)
 	/* (non-Javadoc)
@@ -765,7 +773,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		Context cx = Context.enter();
 		try {
 			Scriptable configScript = (Scriptable)config.getRawConfig();
-			Scriptable configScope = (Scriptable)config.getConfigScope();
+			final Scriptable configScope = (Scriptable)config.getConfigScope();
 
 			int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
 			// Read the scope pool size if specified
@@ -852,15 +860,33 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			// Create the thread scope pool
 			threadScopes = new ArrayBlockingQueue<Scriptable>(scopePoolSize);
+			// Now create the thread scope pool.  We use a thread pool executor service to
+			// create the scope pool in order to take advantage of parallel processing
+			// capabilities on multi-core processors.
+			ExecutorService es = Executors.newFixedThreadPool(INITIALIZER_THREAD_POOL_SIZE);
+			final CompletionService<Scriptable> cs = new ExecutorCompletionService<Scriptable>(es);
 			for (int i = 0; i < scopePoolSize; i++) {
-				threadScopes.add(createThreadScope(cx, configScope));
+				cs.submit(new Callable<Scriptable>() {
+					@Override
+					public Scriptable call() throws Exception {
+						Context ctx = Context.enter();
+						try {
+							return createThreadScope(ctx, configScope);
+						} finally {
+							Context.exit();
+						}
+					}
+				});
 			}
-
-			// Seal the scopes to prevent changes
-			for (Scriptable threadScope : threadScopes) {
+			// now get the results
+			for (int i = 0; i < scopePoolSize; i++) {
+				Scriptable threadScope = cs.take().get();
+				// Seal the scopes to prevent changes
 				((ScriptableObject)threadScope).sealObject();
+				threadScopes.add(threadScope);
 			}
-
+			// Shut down the executor and release the threads
+			es.shutdown();
 
 		} catch (Exception e) {
 			throw new RuntimeException(e.getMessage(), e);
@@ -1015,6 +1041,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	@Override
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
+		if (initialized) {
+			return;
+		}
 		this.aggregator = aggregator;
 		Hashtable<String, String> props;
 		props = new Hashtable<String, String>();
@@ -1027,6 +1056,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		if (config != null) {
 			configLoaded(config, 1);
 		}
+		initialized = true;
 	}
 
 	/* (non-Javadoc)
