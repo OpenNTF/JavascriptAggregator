@@ -773,8 +773,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		ZipUtil.Packer packer = new ZipUtil.Packer();
 		packer.open(bundleFile);
 		try {
-			packer.packDirectory(getWorkingDirectory(), JAGGR_CACHE_DIRECTORY);
 			packer.packEntryFromStream("META-INF/MANIFEST.MF", new ByteArrayInputStream(manifest.getBytes("UTF-8")), new Date().getTime()); //$NON-NLS-1$ //$NON-NLS-2$
+			packer.packDirectory(getWorkingDirectory(), JAGGR_CACHE_DIRECTORY);
 		} finally {
 			packer.close();
 		}
