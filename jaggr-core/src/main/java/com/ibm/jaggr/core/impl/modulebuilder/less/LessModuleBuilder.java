@@ -17,6 +17,7 @@
 package com.ibm.jaggr.core.impl.modulebuilder.less;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IExtensionSingleton;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
@@ -39,7 +40,7 @@ import java.util.regex.Pattern;
 /**
  * This class compiles LESS resources that are loaded by the AMD aggregator.
  */
-public class LessModuleBuilder extends CSSModuleBuilder {
+public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSingleton {
 	static final String sourceClass = LessModuleBuilder.class.getName();
 	static final Logger log = Logger.getLogger(sourceClass);
 
