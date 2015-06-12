@@ -61,12 +61,14 @@ import org.osgi.framework.Constants;
 import org.osgi.framework.InvalidSyntaxException;
 import org.osgi.util.tracker.ServiceTracker;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.OutputStream;
 import java.io.StringWriter;
@@ -157,18 +159,28 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	 * @see com.ibm.jaggr.core.impl.AbstractAggregatorImpl#init(javax.servlet.ServletConfig)
 	 */
 	public void init(ServletConfig servletConfig) throws ServletException {
+		super.init(servletConfig);
 		// If contributing bundle has a mime.types file in the META-INF directory, then
 		// add the contents to the map
-		super.init(servletConfig);
 		URL url = getContributingBundle().getResource("META-INF/mime.types"); //$NON-NLS-1$
 		if (url != null) {
+			// Some implementations of MimetypesFileTypeMap (e.g. servicemix) don't
+			// implement addMimeTypes() correctly, requiring us to feed it the mime.types
+			// file line-by-line.
+			BufferedReader reader = null;
 			try {
-				StringWriter writer = new StringWriter();
-				CopyUtil.copy(url.openStream(), writer);
-				super.fileTypeMap.addMimeTypes(writer.toString());
+				reader = new BufferedReader(new InputStreamReader(url.openStream()));
+				String line;
+				while ((line = reader.readLine()) != null) {
+					super.fileTypeMap.addMimeTypes(line);
+				}
 			} catch (IOException e) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.log(Level.WARNING, e.getMessage(), e);
+				}
+			} finally {
+				if (reader != null) {
+					IOUtils.closeQuietly(reader);
 				}
 			}
 		}
