@@ -428,7 +428,7 @@ define([
 				// in a require() or define() callback with a function that invokes our
 				// intercept.
 				contextRequireIntercept = function(contextRequire) {
-					return proxyMixin(function() {
+					return lang.mixin(function() {
 						return contextRequire.apply(this, reqDefIntercept.apply(this, arguments));
 					}, contextRequire);
 				},
@@ -452,42 +452,6 @@ define([
 					return newArgs;
 				},
 				
-				// Creates accessors in the target to proxy the properties in the source.
-				// Non-function properties are proxied by defining setters and getters that
-				// reference the value of the property in the source object.  Function 
-				// properties are proxied by setting the value in the target.  This works well 
-				// as long as the source does not add new properties after the object has been 
-				// proxied (not a problem for our use case).
-				proxyMixin = function(target, source) {
-					function setter(obj, name) { 
-						return function(value) { obj[name] = value; };
-					}
-					function getter(obj, name) { 
-						return function() { return obj[name];};
-					}
-					for (var s in source) {
-						if (source.hasOwnProperty(s)) {
-							if (lang.isFunction(source[s])) {
-								// Function property.  Set value because get and set don't work for functions.
-								Object.defineProperty(target, s, {
-									enumerable: true,
-									configurable: true,
-									value: source[s]
-								});
-							} else {
-								// Non-function property.  Define setter and getter
-								Object.defineProperty(target, s, {
-									enumerable: true,
-									configurable: true,
-									get: getter(source, s),
-									set: setter(source, s)
-								});
-							}
-						}
-					}
-					return target;
-				},
-				
 				result;
 				
 				// install our intercepts for the global require() and define() functions
@@ -498,8 +462,8 @@ define([
 					signals.push(aspect.before(this, "require", reqDefIntercept));
 					if (!this.define.amd) {
 						// mixin properties defined in original functions
-						proxyMixin(this.define, def);
-						proxyMixin(this.require, req);
+						lang.mixin(this.define, def);
+						lang.mixin(this.require, req);
 					}
 					result = {remove: function() {
 						dojo.forEach(signals, function(signal) {
