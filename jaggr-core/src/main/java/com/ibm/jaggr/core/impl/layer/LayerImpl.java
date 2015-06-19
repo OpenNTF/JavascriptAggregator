@@ -745,6 +745,14 @@ public class LayerImpl implements ILayer {
 								isDepExpLogging,	// include details
 								false  // include require deps
 								);
+						// When doing server expanded layers, we treat undefined features as false
+						// for the purpose of evaluating has! loader plugin conditionals.  We can do
+						// this because 1.) unlike with require list expansion, the feature values are
+						// less likely to change before being evaluated by the loader so an undefined
+						// feature is likely to be meant to represent false, and 2.) even if
+						// we get it wrong, there is no harm done other than including a module
+						// (and its dependencies) that won't get defined.
+						moduleList.setCoerceUndefinedToFalse(true);
 						dependentFeatures.addAll(moduleList.getDependentFeatures());
 
 						explicit.addAll(moduleList.getExplicitDeps());

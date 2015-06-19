@@ -160,4 +160,14 @@ public class DependencyListTest {
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has!test?has", "has!test?foo/dep2"})),depList.getExpandedDeps().getModuleIds());
 		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"test", "yyy", "zzz"})), depList.getDependentFeatures());
 	}
+
+	@Test
+	public void testSetCoerceUndefinedToFalse() throws Exception {
+		Set<String> names = new HashSet<String>(Arrays.asList(new String[]{"has!test?:foo/test"}));
+		moduleDeps.put("foo/test", new String[]{"has!zzz?foo/dep1", "has!yyy?:foo/dep2"});
+		DependencyList depList = new DependencyList("test", names, mockAggregator, features, true, false);
+		depList.setCoerceUndefinedToFalse(true);
+		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "foo/test"})),depList.getExplicitDeps().getModuleIds());
+		assertEquals(new HashSet<String>(Arrays.asList(new String[]{"has", "foo/dep2"})),depList.getExpandedDeps().getModuleIds());
+	}
 }
