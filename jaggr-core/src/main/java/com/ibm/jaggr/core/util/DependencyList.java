@@ -115,6 +115,12 @@ public class DependencyList {
 	 */
 	private String label = null;
 
+	/**
+	 * If true, then undefined features should be treated as false for the purposes of
+	 * resolving has! loader plugin conditionals.
+	 */
+	private boolean coerceUndefinedToFalse = false;
+
 
 	/**
 	 * Object constructor. Note that resolution of expanded dependencies is not
@@ -311,6 +317,18 @@ public class DependencyList {
 		}
 	}
 
+	public void setCoerceUndefinedToFalse(boolean state) {
+		final boolean entryExitLogging = log.isLoggable(Level.FINER);
+		final String methodName = "setCoerceUndefinedToFalse"; //$NON-NLS-1$
+		if (entryExitLogging) {
+			log.entering(DependencyList.class.getName(), methodName, new Object[]{state});
+		}
+		this.coerceUndefinedToFalse = state;
+		if (entryExitLogging) {
+			log.exiting(DependencyList.class.getName(), methodName);
+		}
+	}
+
 	/**
 	 * Returns the label set by {@link #setLabel(String)}
 	 * @return The previously set label string
@@ -365,8 +383,8 @@ public class DependencyList {
 			// necessary because we don't specify features when doing has! plugin branching
 			// so that dependent features that are discovered by has! plugin branching don't
 			// vary based on the specified features.
-			explicitDeps.resolveWith(features);
-			expandedDeps.resolveWith(features);
+			explicitDeps.resolveWith(features, coerceUndefinedToFalse);
+			expandedDeps.resolveWith(features, coerceUndefinedToFalse);
 
 
 			if (traceLogging) {
