@@ -153,7 +153,7 @@ public interface IOptions {
 	 * alert message on the browser indicating the module that caused the
 	 * failure, and instructions to clear the browser cache and reload the page.
 	 * It also causes dependencies to be revalidated on the server (the
-	 * equivilent if issuing a 'aggregator verifyDeps' console command).
+	 * equivilent if issuing a 'aggregator validatedeps' console command).
 	 * <p>
 	 * Valid values: <code>true/false</code>
 	 */
