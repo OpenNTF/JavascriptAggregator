@@ -54,5 +54,4 @@
   <extension point="org.eclipse.equinox.http.registry.resources">
     <resource alias="/test/res" base-name="/" httpcontextId="resources" />
   </extension>
-
 </plugin>

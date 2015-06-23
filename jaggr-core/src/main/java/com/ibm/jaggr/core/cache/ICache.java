@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import java.io.IOException;
 import java.io.Serializable;
 import java.io.Writer;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
 /**
@@ -51,6 +52,41 @@ public interface ICache extends Serializable {
 	 */
 	public IGzipCache getGzipCache();
 
+	/**
+	 * Returns the named generic cache. The named cache must have been added using
+	 * {@link #putIfAbsent(String, IGenericCache)}.
+	 *
+	 * @param key
+	 *            the cache name
+	 * @return the generic cache or null if it does not exist
+	 */
+	public IGenericCache getCache(String key);
+
+
+	/**
+	 * Adds the named cache object to the Aggregator cache. Implements the same semantics as
+	 * {@link ConcurrentMap#putIfAbsent(Object, Object)}. Once a generic cache object is added, it
+	 * persists across server restarts. When the Aggregator cache is cleared, the
+	 * {@link IGenericCache#newInstance()} method is called to create a new cache object for the
+	 * updated cache.
+	 *
+	 * @param key
+	 *            the cache name
+	 * @param cache
+	 *            the new cache object
+	 * @return null, if an entry with the specified key did not already exist in the cache and
+	 *         the specified cache was added, else the previously existing entry.
+	 */
+	public IGenericCache putIfAbsent(String key, IGenericCache cache);
+
+	/**
+	 * Removes the named cache object with the specified key.
+	 *
+	 * @param key
+	 *            name of the cache object to remove
+	 * @return true if the specified cache object existed and was removed.
+	 */
+	public boolean remove(String key);
 	/**
 	 * Returns the date and time that this cache object was created.
 	 *

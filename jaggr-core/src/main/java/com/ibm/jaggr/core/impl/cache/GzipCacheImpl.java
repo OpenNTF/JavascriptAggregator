@@ -17,6 +17,7 @@ package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.IGenericCache;
 import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.cache.IGzipCache.ICacheEntry;
 import com.ibm.jaggr.core.impl.layer.VariableGZIPOutputStream;
@@ -244,5 +245,13 @@ public class GzipCacheImpl extends GenericCacheImpl<ICacheEntry> implements Seri
 	@Override
 	public void setAggregator(IAggregator aggregator) {
 		cacheManager = aggregator.getCacheManager();
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.cache.IGenericCache#newInstance()
+	 */
+	@Override
+	public IGenericCache newInstance() {
+		return new GzipCacheImpl();
 	}
 }

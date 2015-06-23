@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.impl.AggregatorExtension;
 import com.ibm.jaggr.core.impl.options.OptionsImpl;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
+import com.ibm.jaggr.core.resource.IResourceConverterExtensionPoint;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.util.AggregatorUtil;
@@ -471,6 +472,21 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		}
 
 		/*
+		 *  Init the resource converter extensions
+		 */
+		extensionIds = getInitParams().getValues(InitParams.RESOURCECONVERTERS_INITPARAM);
+		for (String extensionId : extensionIds) {
+			IExtension extension = registry.getExtension(
+					IResourceConverterExtensionPoint.NAMESPACE,
+					IResourceConverterExtensionPoint.NAME,
+					extensionId);
+			if (extension == null) {
+				throw new NotFoundException(extensionId);
+			}
+			extensions.add(extension);
+		}
+
+		/*
 		 *  Init the module builder extensions
 		 */
 		extensionIds = getInitParams().getValues(InitParams.MODULEBUILDERS_INITPARAM);
@@ -556,7 +572,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 				try {
 					// make sure the contributing bundle is started.
 					Bundle contributingBundle = Platform.getBundle(member.getNamespaceIdentifier());
-					if (contributingBundle.getState() != Bundle.ACTIVE && contributingBundle.getState() != Bundle.STARTING) {
+					if (contributingBundle != null && contributingBundle.getState() != Bundle.ACTIVE && contributingBundle.getState() != Bundle.STARTING) {
 						contributingBundle.start();
 					}
 					// get class attribute so we can see if the class is a singleton that we

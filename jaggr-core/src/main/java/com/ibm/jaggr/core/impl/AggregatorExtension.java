@@ -23,6 +23,8 @@ import com.ibm.jaggr.core.IServiceProviderExtensionPoint;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
+import com.ibm.jaggr.core.resource.IResourceConverter;
+import com.ibm.jaggr.core.resource.IResourceConverterExtensionPoint;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -98,6 +100,17 @@ public class AggregatorExtension  implements IAggregatorExtension {
 			}
 			// Validate required attributes
 			for (String attr : IResourceFactoryExtensionPoint.REQUIRED_ATTRIBUTES) {
+				String value = attributes.getProperty(attr);
+				if (value == null || value.length() == 0) {
+					throw new IllegalArgumentException(attr);
+				}
+			}
+		} else if (IResourceConverterExtensionPoint.ID.equals(extensionPointId)) {
+			if (!(instance instanceof IResourceConverter)) {
+				throw new IllegalArgumentException(instance.getClass().getName());
+			}
+			// Validate required attributes
+			for (String attr : IResourceConverterExtensionPoint.REQUIRED_ATTRIBUTES) {
 				String value = attributes.getProperty(attr);
 				if (value == null || value.length() == 0) {
 					throw new IllegalArgumentException(attr);

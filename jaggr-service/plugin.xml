@@ -21,6 +21,11 @@
 			schema="schema/resourcefactory.exsd"/>
 
 	<extension-point
+			id="resourceconverter"
+			name="Resource Converter"
+			schema="schema/resourceconverter.exsd"/>
+			
+	<extension-point
 			id="modulebuilder"
 			name="Asynchronous Module Definition (AMD) Aggregator Module Builder"
 			schema="schema/modulebuilder.exsd"/>
@@ -47,7 +52,7 @@
 		<factory scheme="namedbundleresource"
 		         class="com.ibm.jaggr.service.impl.resource.BundleResourceFactory"/>
 	</extension>
-
+	
 	<extension
 			id="default.modulebuilders"
 			point="com.ibm.jaggr.service.modulebuilder">

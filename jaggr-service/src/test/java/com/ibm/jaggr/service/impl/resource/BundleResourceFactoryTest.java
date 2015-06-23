@@ -162,9 +162,8 @@ public class BundleResourceFactoryTest {
 		PowerMock.replay(Activator.class, mockContributingBundle, mockContext, mockUrlConverterSR, mockUrlConverter);
 		IResource res = factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
-		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
-		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "resolvableUri"));
-		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
+		Assert.assertEquals(bundleUrl.toURI(), res.getReferenceURI());
+		Assert.assertEquals(fileUrl.toURI(), res.getURI());
 
 		/*
 		 * Test when URLConverter.toFileUrl throws FileNotFoundException
@@ -200,12 +199,11 @@ public class BundleResourceFactoryTest {
 		bundleNameMap.put("com.test.bundle", mockBundle);
 		res = factory.newResource(namedBundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter, mockBundle);
-		Assert.assertTrue(factory == Whitebox.getInternalState(res, "factory"));
-		Assert.assertEquals(bundleUrl.toURI(), Whitebox.getInternalState(res, "resolvableUri"));
-		Assert.assertEquals(new File(fileUrl.toURI()).toURI(), res.getURI());
+		Assert.assertEquals(namedBundleUrl.toURI(), res.getReferenceURI());
+		Assert.assertEquals(fileUrl.toURI(), res.getURI());
 
 		/*
-		 * Test namedbundleresource with not found path
+		 * Test namedbundleresource with not found relpath
 		 */
 		EasyMock.reset(mockBundle);
 		EasyMock.expect(mockBundle.getEntry(EasyMock.anyObject(String.class))).andReturn(null).once();

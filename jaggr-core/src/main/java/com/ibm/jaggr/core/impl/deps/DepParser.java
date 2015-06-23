@@ -17,7 +17,7 @@
 package com.ibm.jaggr.core.impl.deps;
 
 import com.ibm.jaggr.core.impl.deps.DepUtils.ParseResult;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.CompilerUtil;
 
 import com.google.javascript.jscomp.Compiler;
@@ -48,7 +48,7 @@ final class DepParser implements Callable<URI> {
 	}
 
 	private final DepTreeNode treeNode;
-	private final IResourceVisitor.Resource resource;
+	private final IResource resource;
 
 	/**
 	 * Object constructor
@@ -59,7 +59,7 @@ final class DepParser implements Callable<URI> {
 	 * @param resource
 	 *            The resource to be parsed for dependencies
 	 */
-	DepParser(DepTreeNode treeNode, IResourceVisitor.Resource resource) {
+	DepParser(DepTreeNode treeNode, IResource resource) {
 		this.treeNode = treeNode;
 		this.resource = resource;
 	}

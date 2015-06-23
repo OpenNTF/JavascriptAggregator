@@ -16,9 +16,9 @@
 
 package com.ibm.jaggr.core.resource;
 
+import com.ibm.jaggr.core.IAggregator;
+
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.Reader;
 import java.net.URI;
 
 /**
@@ -60,10 +60,6 @@ public interface IResourceVisitor {
 		 * @return The URI for this resource
 		 */
 		public URI getURI();
-		/**
-		 * @return String The path for this resource
-		 */
-		public String getPath();
 
 		/**
 		 * @return True if the resource is a folder
@@ -76,17 +72,17 @@ public interface IResourceVisitor {
 		public long lastModified();
 
 		/**
-		 * @return A {@link Reader} object for the resource.
+		 * Return an IResource object for this resource. Implementors are responsible for calling
+		 * {@link IAggregator#runConverters(IResource)} against the new resource before returning.
 		 *
-		 * @throws IOException
+		 * @param aggregator
+		 *            the aggregator instance
+		 *
+		 * @return an IResource object for this resource.
+		 * @throws UnsupportedOperationException
+		 *             for instances of this class returned by {@link IResource#asVisitorResource()}
 		 */
-		public Reader getReader() throws IOException;
+		public IResource newResource(IAggregator aggregator);
 
-		/**
-		 * @return A {@link InputStream} object for the resource.
-		 *
-		 * @throws IOException
-		 */
-		public InputStream getInputStream() throws IOException;
 	}
 }

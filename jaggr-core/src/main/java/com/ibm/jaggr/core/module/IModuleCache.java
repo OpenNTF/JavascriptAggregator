@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * Interface for module cache object
  */
-public interface IModuleCache extends Serializable, IGenericCache<IModule> {
+public interface IModuleCache extends Serializable, IGenericCache {
 
 	public static final String MODULECACHEINFO_PROPNAME = IModuleCache.class.getName() + ".MODULE_CACHEINFO"; //$NON-NLS-1$
 

@@ -55,6 +55,8 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.resource.IResourceConverter;
+import com.ibm.jaggr.core.resource.IResourceConverterExtensionPoint;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -164,6 +166,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 	protected FileNameMap fileNameMap = null;
 
 	private LinkedList<IAggregatorExtension> resourceFactoryExtensions = new LinkedList<IAggregatorExtension>();
+	private LinkedList<IAggregatorExtension> resourceConverterExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> moduleBuilderExtensions = new LinkedList<IAggregatorExtension>();
 	private LinkedList<IAggregatorExtension> serviceProviderExtensions = new LinkedList<IAggregatorExtension>();
 	private IAggregatorExtension httpTransportExtension = null;
@@ -292,6 +295,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			// Clear references to objects that can potentially reference this object
 			// so as to avoid memory leaks due to circular references.
 			resourceFactoryExtensions.clear();
+			resourceConverterExtensions.clear();
 			moduleBuilderExtensions.clear();
 			serviceProviderExtensions.clear();
 			httpTransportExtension = null;
@@ -454,6 +458,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				setResourceResponseCacheHeaders(req, resp, resolved, isNoCache);
 				String contentType = getContentType(resolved.getPath());
 				resp.setHeader("Content-Type", contentType); //$NON-NLS-1$
+				resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
 
 				InputStream is = null;
 				if (RequestUtil.isGzipEncoding(req) && !contentType.startsWith("image/")) { //$NON-NLS-1$
@@ -757,11 +762,36 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		} else {
 			result = new NotFoundResource(uriRef.getValue());
 		}
+		result = runConverters(result);
 		if (isTraceLogging) {
 			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, result);
 		}
 		return result;
 	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.IAggregator#runConverters(com.ibm.jaggr.core.resource.IResource)
+	 */
+	@Override
+	public IResource runConverters(IResource resource) {
+		final String sourceMethod = "convertResource";  //$NON-NLS-1$
+		boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(AbstractAggregatorImpl.class.getName(), sourceMethod, new Object[]{resource});
+		}
+		IResource result = resource;
+		Iterable<IAggregatorExtension> extensions = getExtensions(IResourceConverterExtensionPoint.ID);
+		if (extensions != null) {	// may be null when unit testing
+			for (IAggregatorExtension extension : extensions) {
+				result = ((IResourceConverter)extension.getInstance()).convert(result);
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(AbstractAggregatorImpl.class.getName(), sourceMethod, result);
+		}
+		return result;
+	}
+
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilderProvider#getModuleBuilder(java.lang.String, com.ibm.jaggr.service.resource.IResource)
@@ -806,6 +836,9 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		}
 		if (extensionPointId == null || extensionPointId == IResourceFactoryExtensionPoint.ID) {
 			result.addAll(resourceFactoryExtensions);
+		}
+		if (extensionPointId == null || extensionPointId == IResourceConverterExtensionPoint.ID) {
+			result.addAll(resourceConverterExtensions);
 		}
 		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
 			result.addAll(moduleBuilderExtensions);
@@ -1212,6 +1245,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			List<IAggregatorExtension> list;
 			if (IResourceFactoryExtensionPoint.ID.equals(id)) {
 				list = resourceFactoryExtensions;
+			} else if (IResourceConverterExtensionPoint.ID.equals(id)) {
+				list = resourceConverterExtensions;
 			} else if (IModuleBuilderExtensionPoint.ID.equals(id)) {
 				list = moduleBuilderExtensions;
 			} else if (IServiceProviderExtensionPoint.ID.equals(id)) {
@@ -1496,8 +1531,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		// caches, etc.
 		OverrideFoldersTreeWalker walker = new OverrideFoldersTreeWalker(this, config);
 		walker.walkTree();
-		deps = newDependencies(walker.getLastModifiedJS());
 		cacheMgr = newCacheManager(walker.getLastModified());
+		deps = newDependencies(walker.getLastModifiedJS());
 		resourcePaths = getPathsAndAliases(getInitParams());
 
 		// Notify listeners

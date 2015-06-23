@@ -24,7 +24,7 @@ import java.net.URI;
 /**
  * Interface for a cache of gzipped modules
  */
-public interface IGzipCache extends IGenericCache<IGzipCache.ICacheEntry> {
+public interface IGzipCache extends IGenericCache {
 
 	/**
 	 * The type of the cache entry is opaque to the user.

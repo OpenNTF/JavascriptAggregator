@@ -22,7 +22,6 @@ import com.ibm.jaggr.core.IExtensionInitializer;
 import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.impl.resource.FileResourceFactory;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
-import com.ibm.jaggr.core.impl.resource.ResolverResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.PathUtil;
 
@@ -77,24 +76,23 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 				URI fileUri = null;
 				try {
 					fileUri = PathUtil.url2uri(converter.toFileURL(toURL(uri)));
-					FileResource fileResource = null;
 					Constructor<?> constructor = getNIOFileResourceConstructor(URI.class);
 					try {
-						fileResource = (FileResource)getNIOInstance(constructor, fileUri);
+						result = (FileResource)getNIOInstance(constructor, fileUri);
 					} catch (Throwable t) {
 						if (log.isLoggable(Level.SEVERE)) {
 							log.log(Level.SEVERE, t.getMessage(), t);
 						}
 					}
 
-					if (fileResource == null) {
-						fileResource = new FileResource(fileUri);
+					if (result == null) {
+						result = new FileResource(fileUri);
 					}
-					// Wrap the result in a ResolverResource so that this resource factory object
+					// Set the reference uri to the bundle resource uri so that this resource factory object
 					// will be used to construct new, resolved resources.  This is necessary since
 					// URLConverter.toFileURL needs to be invoked on any resolved resources to
 					// ensure that the resource the resolved URL points to exists.
-					result = new ResolverResource(fileResource, uri, this);
+					result.setReferenceURI(uri);
 				} catch (FileNotFoundException e) {
 					if (log.isLoggable(Level.FINE)) {
 						log.log(Level.FINE, uri.toString(), e);
@@ -118,14 +116,18 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 			if (bundle != null) {
 				URL url = bundle.getEntry(getNBRPath(bundleName, uri));
 				if (url != null) {
+					URI fileUri = null;
 					try {
-						uri = PathUtil.url2uri(url);
+						fileUri = PathUtil.url2uri(url);
 					} catch (URISyntaxException e) {
 						if (log.isLoggable(Level.WARNING)) {
 							log.log(Level.WARNING, e.getMessage(), e);
 						}
 					}
-					result = newResource(uri);
+					if (fileUri != null) {
+						result = newResource(fileUri);
+						result.setReferenceURI(uri);
+					}
 				} else {
 					result = new NotFoundResource(uri);
 				}

@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICache;
+import com.ibm.jaggr.core.cache.IGenericCache;
 import com.ibm.jaggr.core.cache.IGzipCache;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -25,25 +26,37 @@ import com.ibm.jaggr.core.module.IModuleCache;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
 public class CacheImpl implements ICache {
-	private static final long serialVersionUID = 7009828162307975619L;
+	private static final long serialVersionUID = -4409057458310867441L;
 	/// The caches
 	private ILayerCache _layerCache;
 	private IModuleCache _moduleCache;
 	private IGzipCache _gzipCache;
+	private ConcurrentMap<String, IGenericCache> _namedCaches;
 
 	private Object _control;	// used by cache manager to control cache life span
 
 	private final long _created;
 
-	public CacheImpl(ILayerCache layerCache, IModuleCache moduleCache, IGzipCache gzipCache, Object control) {
-		_layerCache = layerCache;
-		_moduleCache = moduleCache;
-		_gzipCache = gzipCache;
+	public CacheImpl(IAggregator aggregator, Object control, ICache oldCache) {
+		_layerCache = aggregator.newLayerCache();
+		_moduleCache = aggregator.newModuleCache();
+		_gzipCache = aggregator.newGzipCache();
+		_namedCaches = new ConcurrentHashMap<String, IGenericCache>();
+		// If there are any generic cache objects in the old cache , then create new instances
+		// of those in the new cache.
+		if (oldCache != null) {
+			ConcurrentMap<String, IGenericCache> old = ((CacheImpl)oldCache)._namedCaches;
+			for (Map.Entry<String, IGenericCache> entry : old.entrySet()) {
+				_namedCaches.put(entry.getKey(), entry.getValue().newInstance());
+			}
+		}
 		_control = control;
-
 		_created = new Date().getTime();
 	}
 
@@ -68,6 +81,29 @@ public class CacheImpl implements ICache {
 		return _gzipCache;
 	}
 
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.cache.ICache#getCache(java.lang.String)
+	 */
+	@Override
+	public IGenericCache getCache(String key) {
+		return _namedCaches.get(key);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.cache.ICache#putIfAbsent(java.lang.String, com.ibm.jaggr.core.cache.IGenericCache)
+	 */
+	@Override
+	public IGenericCache putIfAbsent(String key, IGenericCache cache) {
+		return _namedCaches.putIfAbsent(key, cache);
+	}
+
+	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.cache.ICache#remove(java.lang.String)
+	 */
+	@Override
+	public boolean remove(String key) {
+		return _namedCaches.remove(key) != null;
+	}
 	@Override
 	public long getCreated() {
 		return _created;
@@ -84,6 +120,9 @@ public class CacheImpl implements ICache {
 		_layerCache.clear();
 		_moduleCache.clear();
 		_gzipCache.clear();
+		for (IGenericCache cache : _namedCaches.values()) {
+			cache.clear();
+		}
 	}
 
 	/* (non-Javadoc)
@@ -94,6 +133,9 @@ public class CacheImpl implements ICache {
 		_layerCache.dump(writer, filter);
 		_moduleCache.dump(writer, filter);
 		_gzipCache.dump(writer, filter);
+		for (IGenericCache cache : _namedCaches.values()) {
+			cache.dump(writer, filter);
+		}
 	}
 
 	@Override
@@ -101,6 +143,9 @@ public class CacheImpl implements ICache {
 		_layerCache.setAggregator(aggregator);
 		_moduleCache.setAggregator(aggregator);
 		_gzipCache.setAggregator(aggregator);
+		for (IGenericCache cache : _namedCaches.values()) {
+			cache.setAggregator(aggregator);
+		}
 	}
 
 }

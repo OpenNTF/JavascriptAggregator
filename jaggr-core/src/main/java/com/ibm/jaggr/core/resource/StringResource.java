@@ -25,41 +25,30 @@ import java.io.StringReader;
 import java.net.URI;
 import java.util.Date;
 
-public class StringResource implements IResource, IResourceVisitor.Resource {
+public class StringResource extends AbstractResourceBase {
 	final String content;
-	final URI uri;
 	final long lastModified;
 
 	public StringResource(String content, URI uri) {
+		super(uri);
 		this.content = content;
-		this.uri = uri;
 		this.lastModified = new Date().getTime();
 	}
 
 	public StringResource(String content, URI uri, long lastModified) {
+		super(uri);
 		this.content = content;
-		this.uri = uri;
 		this.lastModified = lastModified;
-	}
-
-	@Override
-	public URI getURI() {
-		return uri;
-	}
-
-	@Override
-	public String getPath() {
-		return getURI().getPath();
-	}
-
-	@Override
-	public boolean exists() {
-		return true;
 	}
 
 	@Override
 	public long lastModified() {
 		return lastModified;
+	}
+
+	@Override
+	public long getSize() {
+		return content.length();
 	}
 
 	@Override
@@ -73,27 +62,8 @@ public class StringResource implements IResource, IResourceVisitor.Resource {
 	}
 
 	@Override
-	public void walkTree(IResourceVisitor visitor) throws IOException {
-	}
-
-	@Override
-	public IResourceVisitor.Resource asVisitorResource() throws IOException {
-		return this;
-	}
-
-	@Override
-	public boolean isFolder() {
-		return false;
-	}
-
-	@Override
-	public IResource resolve(String relative) {
-		return new StringResource("", uri.resolve(relative)); //$NON-NLS-1$
-	}
-
-	@Override
 	public String toString() {
-		return super.toString() + " - " + uri.toString(); //$NON-NLS-1$
+		return super.toString() + " - " + getURI().toString(); //$NON-NLS-1$
 	}
 
 }

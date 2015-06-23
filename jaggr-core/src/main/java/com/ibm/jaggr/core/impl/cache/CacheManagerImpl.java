@@ -17,11 +17,14 @@
 package com.ibm.jaggr.core.impl.cache;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IServiceReference;
 import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.IShutdownListener;
+import com.ibm.jaggr.core.PlatformServicesException;
 import com.ibm.jaggr.core.cache.CacheControl;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.cache.ICacheManagerListener;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.IDependencies;
@@ -199,11 +202,6 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			_serviceRegistrations.add(_aggregator.getPlatformServices().registerService(IOptionsListener.class.getName(), this, dict));
 		}
 
-		optionsUpdated(aggregator.getOptions(), 1);
-		configLoaded(aggregator.getConfig(), 1);
-		dependenciesLoaded(aggregator.getDependencies(), 1);
-
-
 		// Now invoke the listeners for objects that have already been initialized
 		IOptions options = _aggregator.getOptions();
 		if (options != null) {
@@ -218,10 +216,13 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 		if (deps != null) {
 			dependenciesLoaded(deps, 1);
 		}
+
+		// notify listeners that we're initialized
+		notifyInit();
 	}
 
 	public synchronized void clearCache() {
-		CacheImpl newCache = new CacheImpl(_aggregator.newLayerCache(), _aggregator.newModuleCache(), _aggregator.newGzipCache(), _control);
+		CacheImpl newCache = new CacheImpl(_aggregator, _control, _cache.get());
 		// Use AggregatorProxy so that getCacheManager will return non-null
 		// if called from within setAggregator.  Need to do this because
 		// IAggregator.getCacheManager() may be unable to return this object
@@ -583,4 +584,38 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 			}
 		}
 	}
+
+	/**
+	 * Notify listeners that the cache manager is initialized.
+	 */
+	protected void notifyInit () {
+		final String sourceMethod = "notifyInit"; //$NON-NLS-1$
+		IServiceReference[] refs = null;
+		try {
+			if(_aggregator != null && _aggregator.getPlatformServices() != null){
+				refs = _aggregator.getPlatformServices().getServiceReferences(ICacheManagerListener.class.getName(),"(name=" + _aggregator.getName() + ")");	//$NON-NLS-1$ //$NON-NLS-2$
+				if (refs != null) {
+					for (IServiceReference ref : refs) {
+						ICacheManagerListener listener = (ICacheManagerListener)_aggregator.getPlatformServices().getService(ref);
+						if (listener != null) {
+							try {
+								listener.initialized(this);
+							} catch (Throwable t) {
+								if (log.isLoggable(Level.WARNING)) {
+									log.logp(Level.WARNING, CacheManagerImpl.class.getName(), sourceMethod, t.getMessage(), t);
+								}
+							} finally {
+								_aggregator.getPlatformServices().ungetService(ref);
+							}
+						}
+					}
+				}
+			}
+		} catch (PlatformServicesException e) {
+			if (log.isLoggable(Level.SEVERE)) {
+				log.log(Level.SEVERE, e.getMessage(), e);
+			}
+		}
+	}
+
 }

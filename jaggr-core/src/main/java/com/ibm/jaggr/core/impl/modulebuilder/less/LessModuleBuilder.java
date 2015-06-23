@@ -131,7 +131,7 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 		if (isTraceLogging) {
 			log.entering(sourceClass, sourceMethod, new Object[]{css, resource});
 		}
-		if (resource.getURI().getPath().endsWith(".less")) { //$NON-NLS-1$
+		if (resource.getPath().endsWith(".less")) { //$NON-NLS-1$
 			css = processLess(resource.getURI().toString(), css);
 		}
 		css = super.postcss(css, resource);

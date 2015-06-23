@@ -30,11 +30,10 @@ import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.impl.resource.ExceptionResource;
 import com.ibm.jaggr.core.readers.AggregationReader;
+import com.ibm.jaggr.core.resource.AbstractResourceBase;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
 import com.ibm.jaggr.core.resource.IResourceFactoryExtensionPoint;
-import com.ibm.jaggr.core.resource.IResourceVisitor;
-import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
@@ -1307,29 +1306,18 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * sources (dynamic and static content) of the loader extension
 	 * javascript for this transport
 	 */
-	protected class LoaderExtensionResource implements IResource, IResourceVisitor.Resource {
+	protected class LoaderExtensionResource extends AbstractResourceBase {
 		IResource res;
 
 		public LoaderExtensionResource(IResource res) {
+			super(res.getURI());
 			this.res = res;
 		}
 
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResource#getURI()
-		 */
 		@Override
-		public URI getURI() {
-			return res.getURI();
+		public URI getReferenceURI() {
+			return res.getReferenceURI();
 		}
-
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResource#getPath()
-		 */
-		@Override
-		public String getPath() {
-			return getURI().getPath();
-		}
-
 		/* (non-Javadoc)
 		 * @see com.ibm.jaggr.service.resource.IResource#exists()
 		 */
@@ -1367,37 +1355,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 					res.getReader(),
 					getDynamicLoaderExtensionJavaScript(request),
 					"})();"); //$NON-NLS-1$
-		}
-
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResource#walkTree(com.ibm.jaggr.service.resource.IResourceVisitor)
-		 */
-		@Override
-		public void walkTree(IResourceVisitor visitor) throws IOException {
-		}
-
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResource#asVisitorResource()
-		 */
-		@Override
-		public Resource asVisitorResource() throws IOException {
-			return this;
-		}
-
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResourceVisitor.Resource#isFolder()
-		 */
-		@Override
-		public boolean isFolder() {
-			return false;
-		}
-
-		/* (non-Javadoc)
-		 * @see com.ibm.jaggr.service.resource.IResource#resolve(java.lang.String)
-		 */
-		@Override
-		public IResource resolve(String relative) {
-			throw new UnsupportedOperationException();
 		}
 	}
 }

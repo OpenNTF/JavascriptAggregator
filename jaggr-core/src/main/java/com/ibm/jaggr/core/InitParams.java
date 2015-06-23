@@ -57,6 +57,12 @@ public class InitParams implements Iterable<InitParam>{
 	 */
 	public static final String RESOURCEFACTORIES_INITPARAM = "resourcefactories"; //$NON-NLS-1$
 	/**
+	 * Name of the servlet init-param that specifies the name of the
+	 * resourceconverter plugin extension(s) used by this servlet.  Multiple
+	 * extensions may be specified using multiple init-params.
+	 */
+	public static final String RESOURCECONVERTERS_INITPARAM = "resourceconverters"; //$NON-NLS-1$
+	/**
 	 * Name of the servlet init-param that specifies the name of the service provider extension(s)
 	 * used by this servlet. Multiple extensions may be specified using multple init-params. The
 	 * extensions will be initialized in the order that they are specified.
