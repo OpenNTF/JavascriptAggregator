@@ -53,6 +53,14 @@ ask a question on [Stack Overflow](http://stackoverflow.com/) with the tag
 
 ###UPGRADING###
 
+####1.3.0####
+Major changes since 1.2 can be found at [What's new in Version 1.3]
+(https://github.com/OpenNTF/JavascriptAggregator/wiki/What%27s-new-in-Version-1.3).
+
+There are some interface changes affecting resource factories.  See the above link
+for details.  Some extensions may need to be updated and re-compiled in order to  
+run using the new interfaces.
+
 ####1.2.0####
 This is a major upgrade.  [Read what it brings](https://github.com/OpenNTF/JavascriptAggregator/wiki/What%27s-new-in-Version-1.2).
 
