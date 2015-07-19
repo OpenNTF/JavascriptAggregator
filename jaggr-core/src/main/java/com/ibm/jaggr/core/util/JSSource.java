@@ -98,6 +98,29 @@ public class JSSource {
 		return new PositionLocator(lineno, colno);
 	}
 
+	/**
+	 * Appends the lines in the specified string to the current source.
+	 *
+	 * @param str
+	 */
+	public void appendln(String str) {
+		BufferedReader rdr = new BufferedReader(new StringReader(str));
+		while (true) {
+			String line = null;
+			try {
+				line = rdr.readLine();
+			} catch (IOException e) {
+				// shouldn't ever happen since we're using a StringReader
+				throw new RuntimeException(e);
+			}
+			if (line != null) {
+				lines.add(new LineInfo(line));
+				continue;
+			}
+			break;
+		}
+	}
+
 	@Override
 	public String toString() {
 		final String sourceMethod = "toString"; //$NON-NLS-1$
@@ -131,15 +154,15 @@ public class JSSource {
 
 	/**
 	 * Locates the array literal specified by the <code>array</code> node, in the source using the
-	 * source location information provided by the node, and inserts <code>str</code> as a string
-	 * literal (quoted) in the source at the end of the array.
+	 * source location information provided by the node, and inserts <code>str</code>
+	 * in the source after the end of the array.
 	 *
 	 * @param array
 	 *           Node with source position information
 	 * @param str
 	 *           the string to insert into the source at the end of the specified array
 	 */
-	public void appendToArrayLit(Node array, String str) {
+	public void appendAfterArrayLit(Node array, String str) {
 		final String sourceMethod = "appendToArrayLit"; //$NON-NLS-1$
 		if (isTraceLogging) {
 			log.entering(JSSource.class.getName(), sourceMethod, new Object[]{array, str});
@@ -166,7 +189,7 @@ public class JSSource {
 		int charno = lastChild.getCharno() + len;
 		PositionLocator pos = new PositionLocator(lineno, charno);
 		if (pos.findNextJSToken() == ']') {
-			insert(",\"" + str + "\"", pos.getLineno(), pos.getCharno()); //$NON-NLS-1$ //$NON-NLS-2$
+			insert(str, pos.getLineno(), pos.getCharno()+1);
 		} else {
 			if (log.isLoggable(Level.WARNING)) {
 				log.warning("Closing array bracket not found in " + mid + "(" + lineno + "," + charno + ")"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
@@ -175,6 +198,15 @@ public class JSSource {
 		if (isTraceLogging) {
 			log.exiting(JSSource.class.getName(), sourceMethod);
 		}
+	}
+
+	/**
+	 * Returns the module id specified in the constructor
+	 *
+	 * @return the module id
+	 */
+	public String getModuleId() {
+		return mid;
 	}
 
 	/**

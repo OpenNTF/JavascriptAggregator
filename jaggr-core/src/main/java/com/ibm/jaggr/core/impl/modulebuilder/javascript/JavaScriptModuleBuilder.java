@@ -29,10 +29,13 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
+import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
+import com.ibm.jaggr.core.modulebuilder.SourceMap;
+import com.ibm.jaggr.core.modulebuilder.SourceMappedBuildRenderer;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -63,6 +66,7 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.StringWriter;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -110,9 +114,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * Used when module id encoding is in use and expanded require lists are not
 	 * specified in-line within the require call.
 	 * <p>
-	 * The value is of type {@link List}&lt;{@link String}{@code []}&gt;
+	 * The value is of type {@link List}&lt;{@link String}{@code []}&gt; and the visibility
+	 * is public for unit tests.
 	 */
-	static final String MODULE_EXPANDED_DEPS = JavaScriptModuleBuilder.class.getName() + ".moduleExpandedDeps"; //$NON-NLS-1$
+	public static final String MODULE_EXPANDED_DEPS = JavaScriptModuleBuilder.class.getName() + ".moduleExpandedDeps"; //$NON-NLS-1$
 
 	static final String FORMULA_CACHE_REQATTR = JavaScriptModuleBuilder.class.getName() + ".formulaCache"; //$NON-NLS-1$
 
@@ -174,11 +179,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	public String layerBeginEndNotifier(EventType type, HttpServletRequest request, List<IModule> modules, Set<String> dependentFeatures) {
 		String result = null;
 		if (type == EventType.BEGIN_LAYER) {
+			StringBuffer sb = new StringBuffer();
 			// If we're doing require list expansion, then set the EXPANDED_DEPENDENCIES attribute
 			// with the set of expanded dependencies for the layer.  This will be used by the
 			// build renderer to filter layer dependencies from the require list expansion.
 			if (RequestUtil.isExplodeRequires(request)) {
-				StringBuffer sb = new StringBuffer();
+				request.setAttribute(MODULE_EXPANDED_DEPS, new ConcurrentListBuilder<String[]>(modules.size()));
+				request.setAttribute(FORMULA_CACHE_REQATTR, new ConcurrentHashMap<Object, Object>());
 				boolean isReqExpLogging = RequestUtil.isDependencyExpansionLogging(request);
 				IRequestedModuleNames requestedModuleNames = (IRequestedModuleNames)request.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME);
 				List<String> moduleIds = new ArrayList<String>(modules.size());
@@ -254,12 +261,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 				// Save the resolved layer dependencies in the request.
 				request.setAttribute(EXPANDED_DEPENDENCIES, resolvedDeps);
-				result = sb.toString();
 			}
+			result = sb.append(moduleNameIdEncodingBeginLayer(request)).toString();
 		} else if (type == EventType.BEGIN_AMD) {
-			// Emit module id encoding code
-			result = moduleNameIdEncodingBeginLayer(request, modules);
-			request.setAttribute(FORMULA_CACHE_REQATTR, new ConcurrentHashMap<Object, Object>());
+			result = moduleNameIdEncodingBeginAMD(request);
 		} else if (type == EventType.END_LAYER) {
 			// Emit module id encoding code
 			result = moduleNameIdEncodingEndLayer(request, modules);
@@ -293,6 +298,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		CompilationLevel level = getCompilationLevel(request);
 		boolean createNewKeyGen = (keyGens == null);
 		boolean isHasFiltering = RequestUtil.isHasFiltering(request);
+		boolean isSourceMaps = RequestUtil.isSourceMapsEnabled(request);
 		// If the source doesn't exist, throw an exception.
 		if (!resource.exists()) {
 			if (log.isLoggable(Level.WARNING)) {
@@ -309,7 +315,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		List<JSSourceFile> sources = this.getJSSource(mid, resource, request, keyGens);
 
 		JSSource source = null;
-		if (level == null) {
+		if (level == null || isSourceMaps) {
 			// If optimization level is none, then we need to modify the source code
 			// when expanding require lists and exporting module names because the
 			// parsed AST produced by closure does not preserve whitespace and comments.
@@ -348,7 +354,12 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					);
 			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
 		}
-
+		if (isSourceMaps) {
+			// Set compiler options for generating source maps
+			compiler_options.setSourceMapDetailLevel(com.google.javascript.jscomp.SourceMap.DetailLevel.ALL);
+			compiler_options.setSourceMapFormat(com.google.javascript.jscomp.SourceMap.Format.V3);
+			compiler_options.setSourceMapOutputPath(mid);
+		}
 		boolean isReqExpLogging = RequestUtil.isDependencyExpansionLogging(request);
 		boolean isExpandRequires = RequestUtil.isExplodeRequires(request);
 		List<ModuleDeps> expandedDepsList = null;
@@ -402,6 +413,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		// we do our own threading, so disable compiler threads.
 		compiler.disableThreads();
+		String sourceMap = null;
 
 		// compile the module
 		Result result = compiler.compile(externs, sources, compiler_options);
@@ -441,6 +453,11 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			} else {
 				// Get the compiler output and set the data in the ModuleBuild
 				output = compiler.toSource();
+				if (isSourceMaps) {
+					StringWriter srcMapWriter = new StringWriter();
+					compiler.getSourceMap().appendTo(srcMapWriter, mid);
+					sourceMap = srcMapWriter.toString();
+				}
 			}
 		} else {
 			// Got a compiler error.  Output a warning message to the browser console
@@ -467,13 +484,23 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				throw new Exception(sb.toString());
 			}
 		}
+		Object build = expandedDepsList == null || expandedDepsList.size() == 0 ?
+				output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging);
+
+		if (isSourceMaps && sourceMap != null && !(build instanceof IModuleBuilder)) {
+			// If we need to include a source map in the build output, then return an
+			// instance of SourceMappedBuildRenderer.
+			String name = sources.get(0).getName();
+			String src = sources.get(0).getCode();
+			SourceMap smap = new SourceMap(name, src, sourceMap);
+			build = new SourceMappedBuildRenderer(build, smap);
+		}
 		return new ModuleBuild(
-				expandedDepsList == null || expandedDepsList.size() == 0 ?
-						output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging),
-						createNewKeyGen ?
-								getCacheKeyGenerators(discoveredHasConditionals, hasExpandableRequires.getValue()) :
-									keyGens,
-									null);
+				build,
+				createNewKeyGen ?
+						getCacheKeyGenerators(discoveredHasConditionals, hasExpandableRequires.getValue()) :
+							keyGens,
+							null);
 	}
 
 	/**
@@ -521,30 +548,47 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	/**
 	 * Returns the text to be included at the beginning of the layer if module name id
-	 * encoding is enabled.  This is basically just the declaration of the var name that
-	 * will hold the expanded dependency names and ids within a scoping function.
+	 * encoding is enabled.
 	 *
 	 * @param request
 	 *            the http request object
-	 * @param modules
-	 *            the list of modules in the layer
 	 * @return the string to include at the beginning of the layer
 	 */
-	protected String moduleNameIdEncodingBeginLayer(HttpServletRequest request, List<IModule> modules) {
-		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		if (aggr.getTransport().getModuleIdMap() != null && !aggr.getOptions().isDisableModuleNameIdEncoding() && RequestUtil.isExplodeRequires(request)) {
-			// Set the request attribute that will be populated by the build renderers
-			request.setAttribute(MODULE_EXPANDED_DEPS, new ConcurrentListBuilder<String[]>(modules.size()));
-			// Open the scoping function and declare the var
-			return "(function(){var " + EXPDEPS_VARNAME + ";"; //$NON-NLS-1$ //$NON-NLS-2$
+	protected String moduleNameIdEncodingBeginLayer(HttpServletRequest request) {
+		StringBuffer sb = new StringBuffer();
+		if (request.getParameter(AbstractHttpTransport.SCRIPTS_REQPARAM) != null) {
+			// This is a request for a bootstrap layer with non-AMD script modules.
+			// Define the deps variable in global scope in case it's needed by
+			// the script modules.
+			sb.append("var " + EXPDEPS_VARNAME + ";");  //$NON-NLS-1$//$NON-NLS-2$
 		}
-		return ""; //$NON-NLS-1$
+		return sb.toString();
+	}
+
+
+	/**
+	 * Returns the text to be included at the beginning of the AMD portion of a layer if module name
+	 * id encoding is enabled.
+	 *
+	 * @param request
+	 *            the http request object
+	 * @return the string to include at the beginning of the layer
+	 */
+	protected String moduleNameIdEncodingBeginAMD(HttpServletRequest request) {
+		StringBuffer sb = new StringBuffer();
+		sb.append("(function(){"); //$NON-NLS-1$
+		if (request.getParameter(AbstractHttpTransport.SCRIPTS_REQPARAM) == null) {
+			// If we didn't already define the deps variable in global scope because
+			// of the presence of non-AMD script modules, then define it now
+			sb.append("var " + EXPDEPS_VARNAME + ";");  //$NON-NLS-1$//$NON-NLS-2$
+		}
+		return sb.toString();
 	}
 
 	/**
 	 * Returns the text to be included at the end of the layer if module name id encoding is
 	 * enabled. This includes the assignment of the value to the var declared in
-	 * {@link #moduleNameIdEncodingBeginLayer(HttpServletRequest, List)} as well as invocation of
+	 * {@link #moduleNameIdEncodingBeginLayer(HttpServletRequest)} as well as invocation of
 	 * the registration function and closing and self-invocation of the scoping function.
 	 * <p>
 	 * The format of the data is as described by {@link IHttpTransport#getModuleIdRegFunctionName()}.
@@ -585,28 +629,31 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 		List<String[]> expDeps = expDepsBuilder.toList();
 		StringBuffer sb = new StringBuffer();
+		Map<String, Integer> idMap = null;
+		if (!aggr.getOptions().isDisableModuleNameIdEncoding()) {
+			idMap = aggr.getTransport().getModuleIdMap();
+		}
+		if (RequestUtil.isExplodeRequires(request)) {
+			if (expDeps.size() > 0) {
+				sb.append(EXPDEPS_VARNAME).append("=") //$NON-NLS-1$
+				  .append(generateModuleIdReg(expDeps, idMap))
+				  .append(";"); //$NON-NLS-1$
 
-		if (aggr.getTransport().getModuleIdMap() != null && !aggr.getOptions().isDisableModuleNameIdEncoding()) {
-			if (RequestUtil.isExplodeRequires(request)) {
-				if (expDeps.size() > 0) {
-					sb.append(EXPDEPS_VARNAME).append("=") //$NON-NLS-1$
-					  .append(generateModuleIdReg(expDeps, aggr.getTransport().getModuleIdMap()))
-					  .append(";"); //$NON-NLS-1$
-
+				if (idMap != null) {
 					// Now, invoke the registration function to register the names/ids
 					sb.append(aggr.getTransport().getModuleIdRegFunctionName())
 					  .append("(") //$NON-NLS-1$
 					  .append(EXPDEPS_VARNAME)
 					  .append(");"); //$NON-NLS-1$
 				}
-				// Finally, close the scoping function and invoke it.
-				sb.append("})();"); //$NON-NLS-1$
-			} else if (expDeps.size() > 0) {
-				sb.append(aggr.getTransport().getModuleIdRegFunctionName()).append("(") //$NON-NLS-1$
-				  .append(generateModuleIdReg(expDeps, aggr.getTransport().getModuleIdMap()))
-				  .append(");"); //$NON-NLS-1$
 			}
+		} else if (expDeps.size() > 0 && idMap != null) {
+			sb.append(aggr.getTransport().getModuleIdRegFunctionName()).append("(") //$NON-NLS-1$
+			  .append(generateModuleIdReg(expDeps, idMap))
+			  .append(");"); //$NON-NLS-1$
 		}
+		// Finally, close the scoping function and invoke it.
+		sb.append("})();"); //$NON-NLS-1$
 		result = sb.toString();
 		return result;
 	}
@@ -620,7 +667,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * @param expDeps
 	 *            List of string arrays containing the expanded module names
 	 * @param idMap
-	 *            the module name to module id map
+	 *            the module name to module id map.  If null, then the returned
+	 *            string will contain only an array of the module names defined in
+	 *            {@code expDeps}.
 	 * @return the module id registration string
 	 */
 	protected String generateModuleIdReg(List<String[]> expDeps, Map<String, Integer> idMap) {
@@ -641,48 +690,51 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		}
 		sb.append("]"); //$NON-NLS-1$
 
-		// Now, specify the module name id array
-		i = 0;
-		sb.append(",["); //$NON-NLS-1$
-		for (String[] deps : expDeps) {
-			sb.append(i++==0?"":",").append("["); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
-			int j = 0;
-			for (String dep : deps) {
-				Matcher m = hasPluginPattern.matcher(dep);
-				if (m.find()) {
-					// mid specifies the dep loader plugin.  Process the
-					// constituent mids separately
-					HasNode hasNode = new HasNode(m.group(2));
-					ModuleDeps hasDeps = hasNode.evaluateAll(
-							"has", Features.emptyFeatures, //$NON-NLS-1$
-							new HashSet<String>(),
-							(ModuleDepInfo)null, null);
-					sb.append(j++==0?"":",").append(hasDeps.size() > 1 ? "[" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
-					int k = 0;
-					for (Map.Entry<String, ModuleDepInfo> entry : hasDeps.entrySet()) {
-						dep = entry.getKey();
+		if (idMap != null) {
+			// Now, specify the module name id array
+			i = 0;
+			sb.append(",["); //$NON-NLS-1$
+			for (String[] deps : expDeps) {
+				sb.append(i++==0?"":",").append("["); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+				int j = 0;
+				for (String dep : deps) {
+					Matcher m = hasPluginPattern.matcher(dep);
+					if (m.find()) {
+						// mid specifies the dep loader plugin.  Process the
+						// constituent mids separately
+						HasNode hasNode = new HasNode(m.group(2));
+						ModuleDeps hasDeps = hasNode.evaluateAll(
+								"has", Features.emptyFeatures, //$NON-NLS-1$
+								new HashSet<String>(),
+								(ModuleDepInfo)null, null);
+						sb.append(j++==0?"":",").append(hasDeps.size() > 1 ? "[" : ""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+						int k = 0;
+						for (Map.Entry<String, ModuleDepInfo> entry : hasDeps.entrySet()) {
+							dep = entry.getKey();
+							int idx = dep.lastIndexOf('!');
+							if (idx != -1) {
+								dep = dep.substring(idx+1);
+							}
+							Integer val = idMap.get(dep);
+							int id = val != null ? val.intValue() : 0;
+							sb.append(k++==0?"":",").append(id); //$NON-NLS-1$ //$NON-NLS-2$
+						}
+						sb.append(hasDeps.size() > 1 ? "]" : ""); //$NON-NLS-1$ //$NON-NLS-2$
+					} else {
 						int idx = dep.lastIndexOf('!');
 						if (idx != -1) {
 							dep = dep.substring(idx+1);
 						}
 						Integer val = idMap.get(dep);
 						int id = val != null ? val.intValue() : 0;
-						sb.append(k++==0?"":",").append(id); //$NON-NLS-1$ //$NON-NLS-2$
+						sb.append(j++==0?"":",").append(id); //$NON-NLS-1$ //$NON-NLS-2$
 					}
-					sb.append(hasDeps.size() > 1 ? "]" : ""); //$NON-NLS-1$ //$NON-NLS-2$
-				} else {
-					int idx = dep.lastIndexOf('!');
-					if (idx != -1) {
-						dep = dep.substring(idx+1);
-					}
-					Integer val = idMap.get(dep);
-					int id = val != null ? val.intValue() : 0;
-					sb.append(j++==0?"":",").append(id); //$NON-NLS-1$ //$NON-NLS-2$
 				}
+				sb.append("]"); //$NON-NLS-1$
 			}
 			sb.append("]"); //$NON-NLS-1$
 		}
-		sb.append("]]"); //$NON-NLS-1$
+		sb.append("]"); //$NON-NLS-1$
 		return sb.toString();
 	}
 
@@ -735,13 +787,15 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			boolean requireListExpansion = RequestUtil.isExplodeRequires(request);
 			boolean reqExpLogging = RequestUtil.isDependencyExpansionLogging(request);
 			boolean hasFiltering = RequestUtil.isHasFiltering(request);
+			//boolean isSourceMapsEnabled = RequestUtil.isSourceMapsEnabled(request);
 
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest("Creating cache key: level=" +  //$NON-NLS-1$
 						(level != null ? level.toString() : "null") + ", " + //$NON-NLS-1$ //$NON-NLS-2$
 						"requireListExpansion=" + Boolean.toString(requireListExpansion && hasExpandableRequires) + ", " + //$NON-NLS-1$ //$NON-NLS-2$
 						"requireExpLogging=" + Boolean.toString(reqExpLogging) + "," + //$NON-NLS-1$ //$NON-NLS-2$
-						"hasFiltering=" + Boolean.toString(hasFiltering) //$NON-NLS-1$
+						"hasFiltering=" + Boolean.toString(hasFiltering) + ", "//$NON-NLS-1$ //$NON-NLS-2$
+						//"isSourceMapsEnabled" + Boolean.toString(isSourceMapsEnabled) //$NON-NLS-1$
 						);
 
 			}
@@ -750,6 +804,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			.append(requireListExpansion && hasExpandableRequires ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(reqExpLogging ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
 			.append(hasFiltering ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
+			//.append(isSourceMapsEnabled ? ":1" : ":0"); //$NON-NLS-1$ //$NON-NLS-2$
 
 			if (featureKeyGen != null &&
 					RequestUtil.isHasFiltering(request) &&

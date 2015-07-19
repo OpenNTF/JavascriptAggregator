@@ -132,6 +132,11 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 	}
 
 	@Override
+	public boolean isSourceMapsEnabled() {
+		return Boolean.parseBoolean(getOption(SOURCE_MAPS));
+	}
+
+	@Override
 	public boolean isDisableHasFiltering() {
 		return Boolean.parseBoolean(getOption(DISABLE_HASFILTERING));
 	}

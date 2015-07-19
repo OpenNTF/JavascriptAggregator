@@ -357,7 +357,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		}
 
 		String pathInfo = req.getPathInfo();
-		if (pathInfo == null) {
+		if (pathInfo == null  || RequestUtil.isSourceMapRequest(req)) {
 			currentRequest.set(req);
 			try {
 				processAggregatorRequest(req, resp);

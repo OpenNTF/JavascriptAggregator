@@ -18,7 +18,6 @@ package com.ibm.jaggr.core.impl.layer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
@@ -35,6 +34,7 @@ import com.ibm.jaggr.core.impl.AggregatorLayerListener;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.module.NotFoundModule;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
+import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
@@ -50,7 +50,10 @@ import com.ibm.jaggr.core.util.Features;
 import com.google.common.io.Files;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
@@ -829,6 +832,91 @@ public class LayerTest extends EasyMock {
 		Assert.assertEquals("sexp:1;lyr:1:1:1:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME, true);
 		Assert.assertEquals("sexp:1;lyr:1:1:1:1", impl.generateCacheKey(mockRequest, keyGens));
+	}
+
+	@Test
+	public void testSetResponse() throws Exception {
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
+		HttpServletResponse mockResponse = EasyMock.createMock(HttpServletResponse.class);
+		CacheEntry mockCacheEntry = EasyMock.createMock(CacheEntry.class);
+		final String sourceMapContent = "Source Map";
+		final InputStream mockInputStream = EasyMock.createMock(InputStream.class);
+		final byte[] sourceMapBytes = sourceMapContent.getBytes();
+		final MutableObject<String> contentType = new MutableObject<String>();
+		final MutableInt contentLength = new MutableInt();
+
+		mockResponse.setContentType((String)EasyMock.anyObject());
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+			@Override
+			public Void answer() throws Throwable {
+				contentType.setValue((String)EasyMock.getCurrentArguments()[0]);
+				return null;
+			}
+		}).anyTimes();
+		mockResponse.setContentLength(EasyMock.anyInt());
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+			@Override
+			public Void answer() throws Throwable {
+				contentLength.setValue((Integer)EasyMock.getCurrentArguments()[0]);
+				return null;
+			}
+		}).anyTimes();
+
+		EasyMock.expect(mockCacheEntry.getSize()).andReturn(100).anyTimes();
+		EasyMock.expect(mockCacheEntry.getInputStream(EasyMock.isA(HttpServletRequest.class), (MutableObject<byte[]>)EasyMock.anyObject())).andAnswer(new IAnswer<InputStream>() {
+			@Override
+			public InputStream answer() throws Throwable {
+				MutableObject<byte[]> sm = (MutableObject<byte[]>)EasyMock.getCurrentArguments()[1];
+				if (sm != null) {
+					sm.setValue(sourceMapBytes);
+				}
+				return mockInputStream;
+			}
+		}).anyTimes();
+		EasyMock.replay(mockAggregator, mockResponse, mockRequest, mockCacheEntry);
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/a"}));
+		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
+		InputStream in = layer.setResponse(mockRequest, mockResponse, mockCacheEntry);
+		// Validate results for non-source map request
+		Assert.assertEquals(in, mockInputStream);
+		Assert.assertEquals(100, contentLength.intValue());
+		Assert.assertEquals("application/javascript; charset=utf-8", contentType.getValue());
+
+		mockRequest = TestUtils.createMockRequest(mockAggregator);
+		EasyMock.expect(mockRequest.getPathInfo()).andReturn("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP).anyTimes();
+		EasyMock.replay(mockRequest);
+		in = layer.setResponse(mockRequest, mockResponse, mockCacheEntry);
+		// Validate results for source map request
+		Assert.assertEquals(sourceMapContent, IOUtils.toString(in));
+		Assert.assertEquals(sourceMapContent.length(), contentLength.intValue());
+		Assert.assertEquals("application/json; charset=utf-8", contentType.getValue());
+
+		EasyMock.reset(mockCacheEntry);
+		EasyMock.expect(mockCacheEntry.getInputStream(EasyMock.isA(HttpServletRequest.class), (MutableObject<byte[]>)EasyMock.anyObject())).andThrow(new IOException()).once();
+		EasyMock.replay(mockCacheEntry);
+		boolean exceptionThrown = false;
+		try {
+			layer.setResponse(mockRequest, mockResponse, mockCacheEntry);
+		} catch (IOException e) {
+			exceptionThrown = true;
+		}
+		Assert.assertTrue(exceptionThrown);
+	}
+
+	@Test
+	public void testTrySetResponse() throws Exception {
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
+		HttpServletResponse mockResponse = EasyMock.createMock(HttpServletResponse.class);
+		CacheEntry mockCacheEntry = EasyMock.createMock(CacheEntry.class);
+		EasyMock.expect(mockCacheEntry.tryGetInputStream(EasyMock.isA(HttpServletRequest.class), (MutableObject<byte[]>)EasyMock.anyObject())).andReturn(null).once();
+		EasyMock.replay(mockAggregator, mockRequest, mockResponse, mockCacheEntry);
+		MockRequestedModuleNames modules = new MockRequestedModuleNames();
+		modules.setModules(Arrays.asList(new String[]{"p1/a"}));
+		LayerImpl layer = newLayerImpl(modules.toString(), mockAggregator);
+		InputStream in = layer.trySetResponse(mockRequest, mockResponse, mockCacheEntry);
+		Assert.assertNull(in);
+		EasyMock.verify(mockCacheEntry);
 	}
 
 	@SuppressWarnings("serial")

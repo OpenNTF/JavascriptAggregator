@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.util;
 
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
@@ -156,5 +157,38 @@ public class RequestUtil {
 
 	public static boolean isServerExpandedLayers(HttpServletRequest request) {
 		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME));
+	}
+
+	/**
+	 * @param request
+	 *            the request object
+	 *
+	 * @return True if source maps are enabled for this request
+	 */
+	public static boolean isSourceMapsEnabled(HttpServletRequest request) {
+		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IOptions options = aggr.getOptions();
+		boolean result = false;
+		if (options.isSourceMapsEnabled()) {
+			result = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME));
+		}
+		return result;
+	}
+
+	/**
+	 * @param request
+	 *            the request object
+	 *
+	 * @return True if this is a request for a source map
+	 */
+	public static boolean isSourceMapRequest(HttpServletRequest request) {
+		String pathInfo = request.getPathInfo();
+		boolean result = false;
+		if (pathInfo != null) {
+			if (pathInfo.equals("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP)) { //$NON-NLS-1$
+				result = true;
+			}
+		}
+		return result;
 	}
 }

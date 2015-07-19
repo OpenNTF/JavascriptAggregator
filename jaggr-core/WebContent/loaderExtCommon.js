@@ -46,6 +46,9 @@ var params = {
 		// expandRequire if both are specified
 		serverExpandLayers: [false, "sel"],
 		
+		// Enable requests for source maps
+		sourceMaps: [null, "sm"],
+		
 		// True if the aggregator should output dependency expansion
 		// logging to the browser console
 		depExpLog: [null, "depExpLog"]
