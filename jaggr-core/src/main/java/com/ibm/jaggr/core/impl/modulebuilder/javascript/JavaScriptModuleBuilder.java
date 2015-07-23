@@ -48,7 +48,6 @@ import com.ibm.jaggr.core.util.JSSource;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.StringUtil;
 
-import com.google.common.collect.HashMultimap;
 import com.google.javascript.jscomp.CheckLevel;
 import com.google.javascript.jscomp.CompilationLevel;
 import com.google.javascript.jscomp.Compiler;
@@ -56,13 +55,14 @@ import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.DiagnosticGroups;
 import com.google.javascript.jscomp.JSError;
-import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.jscomp.Result;
+import com.google.javascript.jscomp.SourceFile;
 
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -94,7 +94,7 @@ import javax.servlet.http.HttpServletRequest;
 public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, ILayerListener, IShutdownListener {
 	private static final Logger log = Logger.getLogger(JavaScriptModuleBuilder.class.getName());
 
-	private static final List<JSSourceFile> externs = Collections.emptyList();
+	private static final List<SourceFile> externs = Collections.emptyList();
 
 	/**
 	 * Name of the request attribute containing the expanded dependencies for
@@ -306,7 +306,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			throw new NotFoundException(resource.getURI().toString());
 		}
 
-		List<JSSourceFile> sources = this.getJSSource(mid, resource, request, keyGens);
+		List<SourceFile> sources = this.getJSSource(mid, resource, request, keyGens);
 
 		JSSource source = null;
 		if (level == null) {
@@ -314,7 +314,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			// when expanding require lists and exporting module names because the
 			// parsed AST produced by closure does not preserve whitespace and comments.
 			StringBuffer code = new StringBuffer();
-			for (JSSourceFile sf : sources) {
+			for (SourceFile sf : sources) {
 				code.append(sf.getCode());
 			}
 			source = new JSSource(code.toString(), mid);
@@ -336,7 +336,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 		Compiler compiler = new Compiler();
 		CompilerOptions compiler_options = CompilerUtil.getDefaultOptions();
-		compiler_options.customPasses = HashMultimap.create();
+		//compiler_options.setWarningLevel(DiagnosticGroups.CHECK_USELESS_CODE, CheckLevel.OFF);
 		if (isHasFiltering && (level != null || keyGens == null)) {
 			// Run has filtering compiler pass if we are doing has filtering, or if this
 			// is the first build for this module (keyGens == null) so that we can get
@@ -346,7 +346,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					keyGens == null ? hasFiltDiscoveredHasConditionals : null,
 							coerceUndefinedToFalse
 					);
-			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, hfcp);
+			compiler_options.addCustomPass(CustomPassExecutionTime.BEFORE_OPTIMIZATIONS, hfcp);
 		}
 
 		boolean isReqExpLogging = RequestUtil.isDependencyExpansionLogging(request);
@@ -371,7 +371,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 							isReqExpLogging,
 							source);
 
-			compiler_options.customPasses.put(CustomPassExecutionTime.BEFORE_CHECKS, recp);
+			compiler_options.addCustomPass(CustomPassExecutionTime.BEFORE_CHECKS, recp);
 
 			// Call IRequestedModuleNames.getBaseLayerDeps() in case it throws an exception so that
 			// we propagate it here instead of in layerBeginEndNotifier where we can't propagate
@@ -382,7 +382,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 		}
 		if (RequestUtil.isExportModuleName(request)) {
-			compiler_options.customPasses.put(
+			compiler_options.addCustomPass(
 					CustomPassExecutionTime.BEFORE_CHECKS,
 					new ExportModuleNameCompilerPass(source)
 			);
@@ -459,7 +459,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				// together with the uncompressed source.
 				String errorMsg = StringUtil.escapeForJavaScript(sb.toString());
 				StringBuffer code = new StringBuffer();
-				for (JSSourceFile sf : sources) {
+				for (SourceFile sf : sources) {
 					code.append(sf.getCode());
 				}
 				return new ModuleBuild(code.toString(), null, errorMsg);
@@ -490,11 +490,11 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 * @return the list of source files
 	 * @throws IOException
 	 */
-	protected List<JSSourceFile> getJSSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
+	protected List<SourceFile> getJSSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
 
-		List<JSSourceFile> result = new LinkedList<JSSourceFile>();
+		List<SourceFile> result = new LinkedList<SourceFile>();
 		InputStream in = resource.getInputStream();
-		JSSourceFile sf = JSSourceFile.fromInputStream(mid, in);
+		SourceFile sf = SourceFile.fromInputStream(mid, in, Charset.forName("UTF-8")); //$NON-NLS-1$
 		sf.setOriginalPath(resource.getURI().toString());
 		in.close();
 		result.add(sf);

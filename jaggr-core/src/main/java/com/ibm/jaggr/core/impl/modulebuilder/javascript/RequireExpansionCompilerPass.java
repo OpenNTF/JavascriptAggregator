@@ -236,7 +236,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 										) : null,
 						false);
 			} else if ((dependencies = NodeUtil.moduleDepsFromDefine(cursor)) != null) {
-				String moduleName = cursor.getFirstChild().getProp(Node.SOURCENAME_PROP).toString();
+				String moduleName = cursor.getFirstChild().getSourceFileName();
 
 				if (aggregator.getOptions().isDevelopmentMode() &&
 						aggregator.getOptions().isVerifyDeps()) {
@@ -311,7 +311,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 			return;
 		}
 		List<String> msg = new LinkedList<String>();
-		String moduleName = array.getParent().getProp(Node.SOURCENAME_PROP).toString();
+		String moduleName = array.getParent().getSourceFileName();
 		if (logDebug) {
 			msg.add("%c" + MessageFormat.format( //$NON-NLS-1$
 					Messages.RequireExpansionCompilerPass_6,

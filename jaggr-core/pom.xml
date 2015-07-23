@@ -177,6 +177,8 @@
             </Import-Package>
             <Embed-Dependency>
               closure-compiler,
+              protobuf-java,
+              gson,
               commons-codec,
               commons-io,
               commons-lang3,
@@ -391,6 +393,14 @@
     <dependency>
       <groupId>com.google.javascript</groupId>
       <artifactId>closure-compiler</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
     </dependency>
     <dependency>
       <groupId>org.mozilla</groupId>

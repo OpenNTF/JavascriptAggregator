@@ -16,12 +16,11 @@
 
 package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
-import com.ibm.jaggr.core.impl.modulebuilder.javascript.HasFilteringCompilerPass;
 import com.ibm.jaggr.core.util.Features;
 
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.rhino.Node;
 
 import org.junit.Assert;
@@ -193,7 +192,7 @@ public class HasFilteringCompilerPassTest {
 
 	private String runPass(HasFilteringCompilerPass pass, String code) {
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("test", code));
+		Node root = compiler.parse(SourceFile.fromCode("test", code));
 		pass.process(null, root);
 		CodeBuilder cb = new CodeBuilder();
 		compiler.toSource(cb, 0, root);

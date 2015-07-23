@@ -53,13 +53,14 @@ var params = {
 
 	extraArgs = {},
 	
+	featureFilter = 
 	/**
 	 * Default feature filter allows all features
 	 * 
-	 * @return true if the specified feature should be included
+	 * @return {boolean} true if the specified feature should be included
 	 *         in the list of features sent to the aggregator
 	 */
-	featureFilter = function(feature) {return true;},
+		function(feature) {return true;},
 	
 	/**
 	 * Array of functions that process a url, returning the new,
@@ -88,6 +89,7 @@ var params = {
 		return size;
 	},
 	
+	addFoldedModuleName = 
 	/**
 	 * Adds the module specified by dep to the list of folded module names
 	 * in oFolded.  
@@ -107,7 +109,7 @@ var params = {
 	 *            plugin, then the plugin name and its ordinal are added to this
 	 *            map.
 	 */
-	addFoldedModuleName = function(dep, position, oFolded, oPrefixes) {
+	function(dep, position, oFolded, oPrefixes) {
 		var name = dep.name,
 		    segments = name.split('/'),
 		    len = segments.length,
@@ -146,6 +148,7 @@ var params = {
 		}
 	},
 	
+	addModuleIdEncoded = 
 	/**
 	 * Adds the module specified by dep to the encoded module id list at the specified
 	 * list position.  The encoded module id list uses the mapping of module name to 
@@ -179,7 +182,7 @@ var params = {
 	 *            the server.
 	 * @return true if the module was added to the encoded list
 	 */
-	addModuleIdEncoded = function(dep, position, encodedIds, moduleIdMap) {
+	function(dep, position, encodedIds, moduleIdMap) {
 		
 		var nameId = moduleIdMap[dep.name], result = false,
 			pluginNameId = dep.prefix ? moduleIdMap[dep.prefix] : 0;
@@ -266,6 +269,7 @@ var params = {
 		return asEnc.join('');
 	},
 	
+	base64EncodeModuleIds = 
 	/**
 	 * Performs base64 encoding of the encoded module id list
 	 * 
@@ -275,7 +279,7 @@ var params = {
 	 *            the base64 encoder
 	 * @return the URL safe base64 encoded representation of the number array
 	 */
-	base64EncodeModuleIds = function(ids, encoder, idListHash) {
+	function(ids, encoder, idListHash) {
 		// First, determine the max id.  If max id is less than 64k, then we can
 		// use 16-bit encoding.  Otherwise, we need to use 32-bit encoding.
 		var use32BitEncoding = false;
@@ -305,6 +309,7 @@ var params = {
 		});
 	},
 	
+	addModulesToUrl = 
 	/**
 	 * Adds the list of modules specified in opt_deps to the request as 
 	 * request URL query args.  For each module in the list, we will try
@@ -327,7 +332,7 @@ var params = {
 	 *             the base64 encoder to use for encoding the encoded module id
 	 *             list.
 	 */
-	addModulesToUrl = function(url, argNames, opt_deps, moduleIdMap, base64Encoder) {
+	function(url, argNames, opt_deps, moduleIdMap, base64Encoder) {
 		var oFolded = {},
 		    oPrefixes = {},
 		    ids = [],
