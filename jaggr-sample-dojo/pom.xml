@@ -103,7 +103,7 @@
 						</goals>
 						<configuration>
 							<tasks>
-								<unzip src="${basedir}/source_1.8.0-20120830-IBM_dojo.zip" dest="${basedir}/WebContent/source_1.8.0-20120830-IBM_dojo" overwrite="false" />
+								<unzip src="${basedir}/source_1.10.4-20150621-IBM_dojo.zip" dest="${basedir}/WebContent/source_1.10.4-20150621-IBM_dojo" overwrite="false" />
 							</tasks>
 						</configuration>
 					</execution>

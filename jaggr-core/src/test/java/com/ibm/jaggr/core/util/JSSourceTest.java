@@ -16,7 +16,7 @@
 package com.ibm.jaggr.core.util;
 
 import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.rhino.Node;
 
 import org.junit.Test;
@@ -91,7 +91,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -114,7 +114,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -145,7 +145,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -174,7 +174,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -203,7 +203,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -234,7 +234,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -273,7 +273,7 @@ public class JSSourceTest {
 			"});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");
@@ -296,7 +296,7 @@ public class JSSourceTest {
 			"   ,\"insertedDep\"], function(dep1, dep2) {alert('hello world');});});";
 
 		Compiler compiler = new Compiler();
-		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
+		Node root = compiler.parse(SourceFile.fromCode("name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
 		source.appendToArrayLit(array, "insertedDep");

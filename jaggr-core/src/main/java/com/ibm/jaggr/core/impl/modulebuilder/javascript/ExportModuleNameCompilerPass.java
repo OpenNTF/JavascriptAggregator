@@ -56,7 +56,7 @@ public class ExportModuleNameCompilerPass implements CompilerPass {
 						name.getString().equals("define")) { // name is "define" //$NON-NLS-1$
 					Node param = name.getNext();
 					if (param != null && param.getType() != Token.STRING) {
-						String expname = name.getProp(Node.SOURCENAME_PROP).toString();
+						String expname = name.getSourceFileName();
 						if (source != null) {
 							PositionLocator locator = source.locate(name.getLineno(), name.getCharno()+6);
 							char tok = locator.findNextJSToken();	// move cursor to the open paren

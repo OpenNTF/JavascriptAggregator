@@ -21,11 +21,12 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.CompilerUtil;
 
 import com.google.javascript.jscomp.Compiler;
-import com.google.javascript.jscomp.JSSourceFile;
+import com.google.javascript.jscomp.SourceFile;
 import com.google.javascript.rhino.Node;
 
 import java.io.InputStream;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -77,7 +78,7 @@ final class DepParser implements Callable<URI> {
 		InputStream in = resource.getInputStream();
 		Node node = null;
 		try {
-			node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
+			node = compiler.parse(SourceFile.fromInputStream(resource.getURI().toString(), in, Charset.forName("UTF-8"))); //$NON-NLS-1$
 		} catch (Throwable e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e); //$NON-NLS-1$ //$NON-NLS-2$

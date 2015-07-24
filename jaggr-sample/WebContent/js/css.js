@@ -402,7 +402,7 @@ define([
 		/*
 		 * Installs the global require() and define() function intercepts.  
 		 * 
-		 * @return An object with a remove() function that can be called to cancel the intercepts
+		 * Return an object with a remove() function that can be called to cancel the intercepts
 		 *         (useful for unit testing).
 		 */
 		installAutoInjectHooks: function() {
