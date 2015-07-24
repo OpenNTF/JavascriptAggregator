@@ -89,7 +89,6 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	};
 
 	static final String JSX_CACHE_NAME = "jsxCache"; //$NON-NLS-1$
-	private static final String JSXTRANSFORMER_DIRNAME = "JSXTransformer.js"; //$NON-NLS-1$
 	private static final String JSXTRANSFORMER_NAME = "JSXTransformer"; //$NON-NLS-1$
 	private static final String JSXTRANSFORM_INSTANCE = "JSXTransformInstance";  //$NON-NLS-1$
 	private static final int DEFAULT_SCOPE_POOL_SIZE = 4;
@@ -100,6 +99,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	private IAggregator aggregator;
 	private IServiceRegistration cacheMgrListenerReg;
 	private int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
+	private IResource xformerRes;
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.IExtensionInitializer#initialize(com.ibm.jaggr.core.IAggregator, com.ibm.jaggr.core.IAggregatorExtension, com.ibm.jaggr.core.IExtensionInitializer.IExtensionRegistrar)
@@ -114,6 +114,20 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		}
 		this.aggregator = aggregator;
 		isSkipResourceConversion.set(false);
+
+		// Get the transformer javascript resource from init-params
+		String xformerUri = extension.getInitParams().getValue(JSXTRANSFORMER_NAME);
+		if (xformerUri == null) {
+			throw new IllegalStateException("Missing transformer init-param"); //$NON-NLS-1$
+		}
+		try {
+			xformerRes = aggregator.newResource(new URI(xformerUri));
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+		if (!xformerRes.exists()) {
+			throw new RuntimeException(new NotFoundException(xformerUri));
+		}
 		// Register a cache manager listener so that we can add our named cache after
 		// the cache manager has been initialized.
 		Dictionary<String,String> dict;
@@ -143,7 +157,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		}
 		// Cache manager is initialized.  De-register the listener and add our named cache
 		cacheMgrListenerReg.unregister();
-		JsxConverter converter = newConverter();
+		JsxConverter converter = newConverter(xformerRes.getURI());
 		IGenericCache cache = newCache(converter, "jsx.", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		cache.setAggregator(aggregator);
 		IResourceConverterCache oldCache = (IResourceConverterCache)cacheManager.getCache().putIfAbsent(JSX_CACHE_NAME, cache);
@@ -218,8 +232,8 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		return result;
 	}
 
-	protected JsxConverter newConverter() {
-		return new JsxConverter(scopePoolSize);
+	protected JsxConverter newConverter(URI xformer) {
+		return new JsxConverter(xformer, scopePoolSize);
 	}
 
 	protected IResourceConverterCache newCache(IConverter converter, String prefix, String suffix) {
@@ -455,12 +469,14 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		private transient BlockingQueue<Scriptable> threadScopes;
 		private transient boolean initialized;
 		final private int scopePoolSize;
+		final private URI xformer;
 
-		protected JsxConverter() {
-			this(JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE);
+		protected JsxConverter(URI xformer) {
+			this(xformer, JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE);
 		}
-		protected JsxConverter(int scopePoolSize) {
+		protected JsxConverter(URI xformer, int scopePoolSize) {
 			this.scopePoolSize = scopePoolSize;
+			this.xformer = xformer;
 		}
 
 		/**
@@ -479,12 +495,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			initialized = true;
 			// Initialize the rhino properties used by the converter
 			ArrayList<URI> modulePaths = new ArrayList<URI>(1);
-			try {
-				modulePaths.add(JsxResourceConverter.class.getClassLoader().getResource(JSXTRANSFORMER_DIRNAME).toURI());
-			} catch (URISyntaxException e) {
-				// rethrow as unchecked exception
-				throw new RuntimeException(e);
-			}
+			modulePaths.add(xformer);
 			// make a require builder and initialize scope
 			final RequireBuilder builder = new RequireBuilder();
 			builder.setModuleScriptProvider(new SoftCachingModuleScriptProvider(

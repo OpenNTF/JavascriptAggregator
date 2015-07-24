@@ -177,7 +177,7 @@ public class TestUtils {
 		}
 	}
 
-	private static IResource mockAggregatorNewResource(URI uri, File workDir) throws Throwable {
+	public static IResource mockAggregatorNewResource(URI uri, File workDir) throws Throwable {
 		final String aggrResPath = "/com.ibm.jaggr.core/"; // path for bundle resource in the aggregator
 		String scheme = uri.getScheme();
 		if ("file".equals(scheme)) {
