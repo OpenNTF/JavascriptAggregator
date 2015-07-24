@@ -151,21 +151,26 @@ define(['require', 'dojo/has', 'dojo/_base/window', 'js/css', 'dojo/query', "doj
 					style = test;
 				});
 			});
+			
 			waitsFor(function() {
 				return style;
 			});
+			
 			runs(function() {
 				expect(style.innerHTML).toBe('.html {color: red;}');
 			});
+
 		});
 	});
 	
 	describe("tests css-inject-api feature", function() {
 		var undef, signal;
 		beforeEach(function() {
-			require.undef("js/css");
 			css = undef;
-			require.undef("spec/styles/test.css");
+			require.undef("js/css");
+			require.undef("js/css!spec/styles/test.css");
+			delete require.modules["js/css"];
+			delete require.modules["js/css!spec/styles/test.css"];
 		});
 		
 		afterEach(function() {
