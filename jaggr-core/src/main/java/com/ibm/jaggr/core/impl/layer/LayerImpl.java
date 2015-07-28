@@ -200,6 +200,8 @@ public class LayerImpl implements ILayer {
 		String key = null;
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<String> cacheInfoReport = null;
+		ModuleList moduleList = null;
+
 		if (_isReportCacheInfo) {
 			cacheInfoReport = (List<String>)request.getAttribute(LAYERCACHEINFO_PROPNAME);
 			if (cacheInfoReport != null) {
@@ -297,8 +299,6 @@ public class LayerImpl implements ILayer {
 			// List of Future<IModule.ModuleReader> objects that will be used to read the module
 			// data from
 			List<ICacheKeyGenerator> moduleKeyGens = null;
-
-			ModuleList moduleList = null;
 
 			// Synchronize on the LayerBuild object for the build.  This will prevent multiple
 			// threads from building the same output.  If more than one thread requests the same
@@ -517,7 +517,6 @@ public class LayerImpl implements ILayer {
 				_layerBuilds.removeLayerFromCache(this);
 			}
 			// Help out the GC by clearing the module list
-			ModuleList moduleList = (ModuleList)request.getAttribute(MODULE_FILES_PROPNAME);
 			if (moduleList != null) {
 				request.removeAttribute(MODULE_FILES_PROPNAME);
 				moduleList.clear();

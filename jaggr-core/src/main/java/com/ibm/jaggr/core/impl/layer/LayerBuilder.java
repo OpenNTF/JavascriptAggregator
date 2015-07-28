@@ -47,7 +47,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -71,6 +70,7 @@ public class LayerBuilder {
 	final ModuleList moduleList;
 	final IHttpTransport transport;
 	final List<IModule> layerListenerModuleList;
+	final List<IModule> umLayerListenerModuleList;
 	final Set<String> dependentFeatures;
 
 	boolean hasErrors = false;
@@ -102,7 +102,8 @@ public class LayerBuilder {
 		aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		options = aggr.getOptions();
 		transport = aggr.getTransport();
-		this.layerListenerModuleList = Collections.unmodifiableList(moduleList.getModules());
+		layerListenerModuleList = moduleList.getModules();
+		umLayerListenerModuleList = Collections.unmodifiableList(layerListenerModuleList);
 		dependentFeatures = new HashSet<String>();
 	}
 
@@ -186,7 +187,6 @@ public class LayerBuilder {
 				addTransportContribution(sb, LayerContributionType.END_MODULES, null);
 			}
 		}
-		sorted.clear();		// Help out the GC
  		sb.append(notifyLayerListeners(EventType.END_LAYER, request, null));
 		addTransportContribution(sb, LayerContributionType.END_RESPONSE, null);
 
@@ -201,6 +201,10 @@ public class LayerBuilder {
 				sb.append("\r\nconsole.warn(\"" + msg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
+		// Help out the GC
+		sorted.clear();
+		futures.clear();
+		layerListenerModuleList.clear();
 
 		return sb.toString();
 	}
@@ -287,7 +291,7 @@ public class LayerBuilder {
 			log.entering(sourceClass, sourceMethod, new Object[]{moduleList, request});
 		}
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-		List<ModuleBuildFuture> futures = new LinkedList<ModuleBuildFuture>();
+		List<ModuleBuildFuture> futures = new ArrayList<ModuleBuildFuture>();
 
 		IModuleCache moduleCache = aggr.getCacheManager().getCache().getModules();
 
@@ -393,7 +397,7 @@ public class LayerBuilder {
 						Set<String> depFeatures = new HashSet<String>();
 						String str = listener.layerBeginEndNotifier(type, request,
 								type == ILayerListener.EventType.BEGIN_MODULE ?
-										Arrays.asList(new IModule[]{module}) : layerListenerModuleList,
+										Arrays.asList(new IModule[]{module}) : umLayerListenerModuleList,
 										depFeatures);
 						dependentFeatures.addAll(depFeatures);
 						if (str != null) {

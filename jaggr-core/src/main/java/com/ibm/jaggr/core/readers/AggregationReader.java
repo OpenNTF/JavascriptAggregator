@@ -120,7 +120,6 @@ public class AggregationReader extends Reader {
 			reader.close();
 		}
 		// Help out the GC
-		objects.clear();
 		objects = null;
 		curr = null;
 		iter = null;
