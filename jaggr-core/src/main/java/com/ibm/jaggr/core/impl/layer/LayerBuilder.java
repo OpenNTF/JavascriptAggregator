@@ -139,7 +139,6 @@ public class LayerBuilder {
 
 		List<ModuleBuildFuture> futures = collectFutures(moduleList, request);
 		SortedReaders sorted = new SortedReaders(futures, request);
-		futures.clear();	// help out the GC
 
 		/*
 		 * Set layer dependent features attribute.  The build readers add the layer dependent features
