@@ -1350,11 +1350,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			HttpServletRequest request = aggregator.getCurrentRequest();
 
 			// Return an aggregation reader for the loader extension javascript
-			return new AggregationReader(
+			return new AggregationReader(Arrays.asList(
 					"(function(){", //$NON-NLS-1$
 					res.getReader(),
 					getDynamicLoaderExtensionJavaScript(request),
-					"})();"); //$NON-NLS-1$
+					"})();")); //$NON-NLS-1$
 		}
 	}
 }

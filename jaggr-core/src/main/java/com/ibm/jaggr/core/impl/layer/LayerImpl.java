@@ -516,6 +516,12 @@ public class LayerImpl implements ILayer {
 			if (_layerBuilds.isLayerEvicted()) {
 				_layerBuilds.removeLayerFromCache(this);
 			}
+			// Help out the GC by clearing the module list
+			ModuleList moduleList = (ModuleList)request.getAttribute(MODULE_FILES_PROPNAME);
+			if (moduleList != null) {
+				request.removeAttribute(MODULE_FILES_PROPNAME);
+				moduleList.clear();
+			}
 		}
 	}
 

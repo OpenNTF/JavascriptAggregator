@@ -298,6 +298,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			resourceConverterExtensions.clear();
 			moduleBuilderExtensions.clear();
 			serviceProviderExtensions.clear();
+			currentRequest.remove();
+			resourcePaths = null;
 			httpTransportExtension = null;
 			initParams = null;
 			cacheMgr = null;

@@ -90,4 +90,17 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 		}
 		return result;
 	}
+
+	@Override
+	public void clear() {
+		super.clear();
+		if (dependentFeatures != null) {
+			dependentFeatures.clear();
+			dependentFeatures = null;
+		}
+		if (requiredModules != null) {
+			requiredModules.clear();
+			requiredModules = null;
+		}
+	}
 }

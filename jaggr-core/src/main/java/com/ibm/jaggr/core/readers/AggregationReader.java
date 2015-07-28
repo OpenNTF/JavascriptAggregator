@@ -21,13 +21,12 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Arrays;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * This class aggregates multiple inputs into a single Reader stream. The inputs
- * are provided as an instance of Iterable<Object> or as a variable length
- * parameter list of objects. For each object, if the object is an instance of
+ * are provided as list of objects. For each object, if the object is an instance of
  * Reader or InputStream, then the contents of the reader or the stream is
  * incorporated into this reader, otherwise, the result of calling the object's
  * toString() method is incorporated into this reader.
@@ -41,7 +40,8 @@ public class AggregationReader extends Reader {
 	boolean eof = false;
 	boolean closed = false;
 	Reader curr = null;
-	Iterator<Object> iter;
+	Iterator<?> iter;
+	List<?> objects;
 
 	/**
 	 * Default constructor.  Subclasses using this constructor must
@@ -51,13 +51,9 @@ public class AggregationReader extends Reader {
 		iter = null;
 	}
 
-	@SuppressWarnings("unchecked")
-	public AggregationReader(Object ... objects) {
-		if (objects.length == 1 && objects[0] instanceof Iterable) {
-			this.iter = ((Iterable<Object>)objects[0]).iterator();
-		} else {
-			this.iter = Arrays.asList(objects).iterator();
-		}
+	public AggregationReader(List<?> objects) {
+		this.objects = objects;
+		this.iter = objects.iterator();
 	}
 	/**
 	 * Read data from each of the readers in turn until all the data has been
@@ -123,6 +119,11 @@ public class AggregationReader extends Reader {
 		while ((reader = getNextInputReader()) != null) {
 			reader.close();
 		}
+		// Help out the GC
+		objects.clear();
+		objects = null;
+		curr = null;
+		iter = null;
 		closed = true;
 	}
 

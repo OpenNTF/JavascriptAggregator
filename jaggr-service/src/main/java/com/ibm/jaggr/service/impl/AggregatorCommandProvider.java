@@ -68,6 +68,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_VALIDATEDEPS = "validatedeps"; //$NON-NLS-1$
 	static final String CMD_GETDEPS = "getdeps"; //$NON-NLS-1$
 	static final String CMD_CLEARCACHE = "clearcache"; //$NON-NLS-1$
+	static final String CMD_SERIALIZECACHE = "serializecache"; //$NON-NLS-1$
 	static final String CMD_DUMPCACHE = "dumpcache"; //$NON-NLS-1$
 	static final String CMD_GETOPTIONS = "getoptions"; //$NON-NLS-1$
 	static final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
@@ -86,6 +87,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_VALIDATEDEPS,
 		CMD_GETDEPS,
 		CMD_CLEARCACHE,
+		CMD_SERIALIZECACHE,
 		CMD_DUMPCACHE,
 		CMD_GETOPTIONS,
 		CMD_SETOPTION,
@@ -138,6 +140,9 @@ public class AggregatorCommandProvider implements CommandProvider {
 				.append(MessageFormat.format(
 						Messages.CommandProvider_6,
 						new Object[]{EYECATCHER, scopeSep, CMD_CLEARCACHE})).append(newline)
+				.append(MessageFormat.format(
+						Messages.CommandProvider_30,
+						new Object[]{EYECATCHER, scopeSep, CMD_SERIALIZECACHE})).append(newline)
 				.append(MessageFormat.format(
 						Messages.CommandProvider_7,
 						new Object[]{EYECATCHER, scopeSep, CMD_DUMPCACHE, PARAM_CONSOLE, PARAM_FILE})).append(newline)
@@ -194,6 +199,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 				ci.println(getdeps(args));
 			} else if (command.equals(CMD_CLEARCACHE)){
 				ci.println(clearcache(args));
+			} else if (command.equals(CMD_SERIALIZECACHE)){
+				ci.println(serializecache(args));
 			} else if (command.equals(CMD_DUMPCACHE)) {
 				ci.println(dumpcache(args));
 			} else if (command.equals(CMD_GETOPTIONS)) {
@@ -364,6 +371,26 @@ public class AggregatorCommandProvider implements CommandProvider {
 				return
 						MessageFormat.format(
 								Messages.CommandProvider_26,
+								new Object[]{aggregator.getName()}
+								);
+			} finally {
+				getBundleContext().ungetService(ref);
+			}
+		} else {
+			return sb.toString();
+		}
+	}
+
+	protected String serializecache(String[] args) throws InvalidSyntaxException {
+		StringBuffer sb = new StringBuffer();
+		ServiceReference ref = getServiceRef(args, sb);
+		if (ref != null) {
+			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
+			try {
+				aggregator.getCacheManager().serializeCache();
+				return
+						MessageFormat.format(
+								Messages.CommandProvider_31,
 								new Object[]{aggregator.getName()}
 								);
 			} finally {

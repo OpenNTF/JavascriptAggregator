@@ -136,7 +136,9 @@ public class LayerBuilder {
 			}
 		}
 
-		SortedReaders sorted = new SortedReaders(collectFutures(moduleList, request), request);
+		List<ModuleBuildFuture> futures = collectFutures(moduleList, request);
+		SortedReaders sorted = new SortedReaders(futures, request);
+		futures.clear();	// help out the GC
 
 		/*
 		 * Set layer dependent features attribute.  The build readers add the layer dependent features
@@ -184,6 +186,7 @@ public class LayerBuilder {
 				addTransportContribution(sb, LayerContributionType.END_MODULES, null);
 			}
 		}
+		sorted.clear();		// Help out the GC
  		sb.append(notifyLayerListeners(EventType.END_LAYER, request, null));
 		addTransportContribution(sb, LayerContributionType.END_RESPONSE, null);
 

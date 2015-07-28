@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import java.io.StringReader;
+import java.util.Arrays;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -35,9 +36,9 @@ public class ErrorModuleReader extends AggregationReader {
 	}
 
 	public ErrorModuleReader(ConsoleMethod method, String msg, String mid, HttpServletRequest request) {
-		super(String.format(getFormat(request), method.name(), mid),
+		super(Arrays.asList(String.format(getFormat(request), method.name(), mid),
 				new StringReader(msg),
-				epilogue);
+				epilogue));
 	}
 
 	public ErrorModuleReader(String msg, String mid, HttpServletRequest request) {
