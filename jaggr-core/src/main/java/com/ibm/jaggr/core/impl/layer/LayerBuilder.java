@@ -72,6 +72,13 @@ public class LayerBuilder {
 	private static final String sourceClass = LayerBuilder.class.getName();
 	private static final Logger log = Logger.getLogger(sourceClass);
 
+	/**
+	 * JSON preamble used to guard against XSSI attacks.
+	 * @see <a href="https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit#heading=h.h7yy76c5il9v">
+	 * Source Map Version 3 Proposal - JSON over HTTP Transport</a>
+	 */
+	static final String SOURCEMAP_XSSI_PREAMBLE = ")]}'\n"; //$NON-NLS-1$
+
 	private final HttpServletRequest request;
 	private final List<ICacheKeyGenerator> keyGens;
 	private final IAggregator aggr;
@@ -226,7 +233,7 @@ public class LayerBuilder {
 			// create a source map for the layer and include the source mapping URL
 			// in the response.
 			writer.append("\n").append(getSourcesMappingEpilogue()); //$NON-NLS-1$
-			addSourcesContentToSourceMap();
+			finalizeSourceMap();
 		}
 
 		return writer.toString();
@@ -274,13 +281,14 @@ public class LayerBuilder {
 	}
 
 	/**
-	 * Add the sources content to the source map.  We need to do this because
+	 * Add the sources content to the source map and prepends the source map JSON
+	 * with characters that prevent XSSI attacks.  We need to do this because
 	 * {@link SourceMapGeneratorV3#mergeMapSection(int, int, String)} does not
 	 * preserve sourcesContent from the map being merged in the output map.
 	 *
 	 * @throws IOException
 	 */
-	private void addSourcesContentToSourceMap() throws IOException {
+	private void finalizeSourceMap() throws IOException {
 		StringWriter writer = new StringWriter();
 		smGen.appendTo(writer, "" /* file name */); //$NON-NLS-1$
 		sourceMap = writer.toString();
@@ -294,7 +302,8 @@ public class LayerBuilder {
 				sourcesContent.add(content != null ? content : ""); //$NON-NLS-1$
 			}
 			obj.put("sourcesContent", sourcesContent); //$NON-NLS-1$
-			sourceMap = obj.toString();
+			StringBuffer sb = new StringBuffer(SOURCEMAP_XSSI_PREAMBLE);
+			sourceMap = sb.append(obj.toString()).toString();
 		} catch (JSONException e) {
 			throw new IOException(e);
 		}
