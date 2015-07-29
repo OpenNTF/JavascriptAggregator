@@ -40,27 +40,42 @@ public class JavaScriptBuildRenderer implements Serializable, IModuleBuildRender
 	private static final Logger log = Logger.getLogger(JavaScriptBuildRenderer.class.getName());
 
 	/**
-	 * Format string for the place holder module name used to stand in for the
-	 * expanded require list. Note that the punctuation characters (including
-	 * space and curly braces) in the string prevents the compiler from trying
-	 * to optimize the module list array by replacing it with a single string
-	 * for the form "moduleA moduleB moduleC".split(' '), where the separator
-	 * character can be any of the punctuation characters that are included in
-	 * the place holder string.
+	 * Format string for the place holder variable used to stand in for the expanded require list
+	 * array element reference. Note that the first parameter (%1$s) is use for a variable length
+	 * string of underscore characters (0-2) in order to ensure that the length of the place holder
+	 * string will be constant regardless of the number of digits used to represent the second
+	 * parameter (%2$d), the array index. This is needed because the place holder is inserted before
+	 * optimizations are performed and the closure compiler would remove any leading zeros that we
+	 * tried to use for padding in the index. The underscore pad characters are removed and replaced
+	 * with leading zeros for the array index and the index value is updated for to reference the
+	 * expanded module list in the layer's dependency array during the build renderer phase.
+	 * <p>
+	 * For example, the expression {@code _$$JAGGR_DEPS$$___[0]} in the compiled module would be
+	 * replaced with {@code _$$JAGGR_DEPS$$_[012]} in the rendered build, assuming that the first
+	 * dependency array element from in the module mapped to the twelfth dependency array element in
+	 * the rendered layer.
+	 * <p>
+	 * We need to ensure that the number of characters used to represent the expanded deps variable
+	 * remains constant before vs. after compilation in order to avoid throwing off source maps.
 	 */
 	static final String REQUIRE_EXPANSION_PLACEHOLDER_FMT =
 			JavaScriptModuleBuilder.EXPDEPS_VARNAME + "%1$s[0][%2$d]"; //$NON-NLS-1$
 
 	/**
-	 * Format string for the replacement string that is used to append the expanded
-	 * module list to the require dependency array.
+	 * Format string for the replacement string that is used to replace the place holder reference
+	 * (see {@link #REQUIRE_EXPANSION_LOG_PLACEHOLDER_FMT}) at build render time. Uses a fixed
+	 * length array index with leading zeros to ensure that the length of the expression is
+	 * unaffected by the array index value.
 	 */
 	static final String REQUIRE_EXPANSION_REPLACE_FMT =
 			JavaScriptModuleBuilder.EXPDEPS_VARNAME + "[0][%1$03d]"; //$NON-NLS-1$
 
 	/**
 	 * Format string for the replacement string that is used to append the expanded
-	 * module list to the require dependency array.
+	 * module list to the require dependency logging.  Note that we don't worry about
+	 * the length of the expression like we do for the require list expansion because
+	 * logging code is appended to the end of the module and therefore doesn't affect
+	 * the module's source map.
 	 */
 	static final String REQUIRE_EXPANSION_LOG_PLACEHOLDER_FMT =
 			JavaScriptModuleBuilder.EXPDEPS_VARNAME + "LOG[%1$d]"; //$NON-NLS-1$

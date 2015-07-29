@@ -185,7 +185,7 @@ public class RequestUtil {
 		String pathInfo = request.getPathInfo();
 		boolean result = false;
 		if (pathInfo != null) {
-			if (pathInfo.equals("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP)) { //$NON-NLS-1$
+			if (pathInfo.endsWith("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP)) { //$NON-NLS-1$
 				result = true;
 			}
 		}
