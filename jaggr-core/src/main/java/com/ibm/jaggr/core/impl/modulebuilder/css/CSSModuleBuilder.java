@@ -227,7 +227,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	        "safe", Boolean.TRUE //$NON-NLS-1$
 	);
 	static public final int INITIALIZER_THREAD_POOL_SIZE = 4;
-	static public final int DEFAULT_SCOPE_POOL_SIZE = 10;
+	static public final int DEFAULT_SCOPE_POOL_SIZE = 4;
 	static public final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
@@ -1034,6 +1034,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			reg.unregister();
 		}
 		registrations.clear();
+		threadScopes.clear();
 	}
 
 	/* (non-Javadoc)
