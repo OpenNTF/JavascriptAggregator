@@ -297,6 +297,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		if (!isShuttingDown) {
 			isShuttingDown = true;
 			super.shutdown();
+			options = null;
+			platformServices = null;
 			singletonExtensions.clear();
 			executorsServiceTracker.close();
 			variableResolverServiceTracker.close();

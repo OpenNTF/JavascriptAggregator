@@ -16,8 +16,11 @@
 package com.ibm.jaggr.core.impl.resource;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.IPlatformServices;
 import com.ibm.jaggr.core.IServiceRegistration;
+import com.ibm.jaggr.core.InitParams;
+import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.cache.ICacheManager;
 import com.ibm.jaggr.core.cache.ICacheManagerListener;
@@ -28,6 +31,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
+import com.ibm.jaggr.core.test.TestUtils;
 
 import com.google.common.io.Files;
 
@@ -60,11 +64,20 @@ import junit.framework.Assert;
 
 public class JsxResourceConverterTest {
 
+	private File tmpdir;
+
 	@Before
-	public void setUp() throws Exception {}
+	public void setUp() throws Exception {
+		tmpdir = Files.createTempDir();
+	}
 
 	@After
-	public void tearDown() throws Exception {}
+	public void tearDown() throws Exception {
+		if (tmpdir != null) {
+			TestUtils.deleteRecursively(tmpdir);
+			tmpdir = null;
+		}
+	}
 
 	@SuppressWarnings("unchecked")
 	@Test
@@ -78,6 +91,12 @@ public class JsxResourceConverterTest {
 		final Mutable<ICacheManagerListener> listenerWrapper = new MutableObject<ICacheManagerListener>();
 		EasyMock.expect(mockAggregator.getName()).andReturn("test");
 		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices);
+		EasyMock.expect(mockAggregator.newResource(EasyMock.isA(URI.class))).andAnswer(new IAnswer<IResource>() {
+			@Override public IResource answer() throws Throwable {
+				return TestUtils.mockAggregatorNewResource((URI)EasyMock.getCurrentArguments()[0], tmpdir);
+			}
+
+		}).anyTimes();
 		EasyMock.expect(mockPlatformServices.registerService(
 				EasyMock.eq(ICacheManagerListener.class.getName()),
 				EasyMock.isA(ICacheManagerListener.class),
@@ -100,7 +119,18 @@ public class JsxResourceConverterTest {
 			}
 		};
 		// initialize the converter
-		converter.initialize(mockAggregator, null, null);
+		IAggregatorExtension mockExtension = EasyMock.createMock(IAggregatorExtension.class);
+		InitParams initParams = new InitParams(Arrays.asList(
+				new InitParam[] {
+						new InitParam(
+							"JSXTransformer",
+							JsxResourceConverterTest.class.getClassLoader().getResource("JSXTransformer.js").toString()
+					)
+				}
+		));
+		EasyMock.expect(mockExtension.getInitParams()).andReturn(initParams).anyTimes();
+		EasyMock.replay(mockExtension);
+		converter.initialize(mockAggregator, mockExtension, null);
 		EasyMock.verify(mockAggregator, mockPlatformServices);
 
 		EasyMock.reset(mockAggregator, mockPlatformServices);
@@ -254,9 +284,10 @@ public class JsxResourceConverterTest {
 
 	@Test
 	public void testJsxConverter() throws Exception {
+		URI converterUri = JsxResourceConverterTest.class.getClassLoader().getResource("JSXTransformer.js").toURI();
 		File tmpdir = Files.createTempDir();
 		File cacheFile = new File(tmpdir, "test.js");
-		JsxResourceConverter.JsxConverter jsxConverter = new JsxResourceConverter.JsxConverter();
+		JsxResourceConverter.JsxConverter jsxConverter = new JsxResourceConverter.JsxConverter(converterUri);
 		jsxConverter.initialize();
 		IResource res = new StringResource(jsxSource, new URI("test.jsx"));
 		jsxConverter.generateCacheContent(res, cacheFile);

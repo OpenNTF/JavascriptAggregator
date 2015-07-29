@@ -59,6 +59,12 @@ public class SortedReaders {
 		return cacheEntries;
 	}
 
+	public void clear() {
+		scripts.clear();
+		modules.clear();
+		cacheEntries.clear();
+	}
+
 	private void sortFuture(ModuleBuildFuture future) throws IOException {
 		try {
 			ModuleSpecifier spec = future.getModuleSpecifier();

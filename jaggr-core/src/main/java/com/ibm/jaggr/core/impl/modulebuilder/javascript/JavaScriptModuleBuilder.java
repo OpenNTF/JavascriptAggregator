@@ -519,7 +519,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	 */
 	protected List<JSSourceFile> getJSSource(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws IOException  {
 
-		List<JSSourceFile> result = new LinkedList<JSSourceFile>();
+		List<JSSourceFile> result = new ArrayList<JSSourceFile>(1);
 		InputStream in = resource.getInputStream();
 		JSSourceFile sf = JSSourceFile.fromInputStream(mid, in);
 		sf.setOriginalPath(resource.getURI().toString());

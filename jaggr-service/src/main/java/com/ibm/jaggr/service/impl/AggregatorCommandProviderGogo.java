@@ -105,6 +105,14 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 		return super.clearcache(new String[]{servlet});
 	}
 
+	@Descriptor("serializes the cache for the specified servlet")
+	public String serializecache(CommandSession cs,
+			@Descriptor("<servlet>")String servlet
+			) throws InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));	// Saves the command session so it can be accessed by async thread
+		return super.serializecache(new String[]{servlet});
+	}
+
 	@Descriptor("outputs the cache metadata for the specified servlet")
 	public String dumpcache(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,

@@ -21,14 +21,13 @@ import com.ibm.jaggr.core.module.ModuleSpecifier;
 
 import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
 // This class is not thread safe.  It is assumed that it does not
 // need to be.  If that assumption changes, then the implementation
 // will need to be reworked.
-class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
+class ModuleList extends ArrayList<ModuleList.ModuleListEntry> {
 	private static final long serialVersionUID = -5874021341817546757L;
 
 	static class ModuleListEntry {
@@ -89,5 +88,18 @@ class ModuleList extends LinkedList<ModuleList.ModuleListEntry> {
 			result.add(entry.getModule());
 		}
 		return result;
+	}
+
+	@Override
+	public void clear() {
+		super.clear();
+		if (dependentFeatures != null) {
+			dependentFeatures.clear();
+			dependentFeatures = null;
+		}
+		if (requiredModules != null) {
+			requiredModules.clear();
+			requiredModules = null;
+		}
 	}
 }
