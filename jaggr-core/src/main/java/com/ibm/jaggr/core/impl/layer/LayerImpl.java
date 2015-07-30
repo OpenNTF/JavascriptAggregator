@@ -37,23 +37,20 @@ import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
-import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.ZipUtil;
 
 import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringReader;
-import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -74,8 +71,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.Deflater;
-import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -354,19 +349,19 @@ public class LayerImpl implements ILayer {
 						}
 						// We need gzipped and the cached entry is unzipped
 						// Create the compression stream for the output
-						bytes = zip(otherEntry.getInputStream(request, sourceMapRef));
+						bytes = ZipUtil.zip(otherEntry.getInputStream(request, sourceMapRef));
 						if (isSourceMapsEnabled && sourceMapRef.getValue() != null) {
-							smbytes = zip(new ByteArrayInputStream(sourceMapRef.getValue()));
+							smbytes = ZipUtil.zip(new ByteArrayInputStream(sourceMapRef.getValue()));
 						}
 					} else {
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("unzip_zipped"); //$NON-NLS-1$
 						}
 						// We need unzipped and the cached entry is zipped.  Just unzip it
-						bytes = unzip(otherEntry.getInputStream(request, sourceMapRef));
+						bytes = ZipUtil.unzip(otherEntry.getInputStream(request, sourceMapRef));
 						if (isSourceMapsEnabled && sourceMapRef.getValue() != null) {
 							// unzip the source map too
-							smbytes = unzip(new ByteArrayInputStream(sourceMapRef.getValue()));
+							smbytes = ZipUtil.unzip(new ByteArrayInputStream(sourceMapRef.getValue()));
 						}
 					}
 					// Set the buildReader to the LayerBuild and release the lock by exiting the sync block
@@ -399,10 +394,10 @@ public class LayerImpl implements ILayer {
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("zip"); //$NON-NLS-1$
 						}
-						bytes = zip(new ReaderInputStream(new StringReader(layer)));
+						bytes = ZipUtil.zip(new ReaderInputStream(new StringReader(layer)));
 						// now compress the source map if there is one
 						if (sourceMap != null) {
-							smbytes = zip(new ReaderInputStream(new StringReader(sourceMap)));
+							smbytes = ZipUtil.zip(new ReaderInputStream(new StringReader(sourceMap)));
 						}
 					} else {
 						bytes = layer.getBytes();
@@ -1070,37 +1065,5 @@ public class LayerImpl implements ILayer {
 			response.setHeader("Content-Encoding", "gzip"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
 
-	}
-
-	/**
-	 * Returns a byte array containing the gzipped contents of the input stream
-	 *
-	 * @param in
-	 *            the input stream to zip
-	 * @return the gzipped contents in a byte array
-	 * @throws IOException
-	 */
-	protected byte[] zip(InputStream in) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
-		compress.setLevel(Deflater.BEST_COMPRESSION);
-		Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
-		// Copy the data from the input stream to the output, compressing as we go.
-		CopyUtil.copy(in, writer);
-		return bos.toByteArray();
-	}
-
-	/**
-	 * Returns the unzipped contents of the zipped input stream in a byte array
-	 *
-	 * @param in
-	 *            the input stream to unzip
-	 * @return the unzipped content in a byte array
-	 * @throws IOException
-	 */
-	protected byte[] unzip(InputStream in) throws IOException {
-		ByteArrayOutputStream bos = new ByteArrayOutputStream();
-		CopyUtil.copy(new GZIPInputStream(in), bos);
-		return bos.toByteArray();
 	}
 }
