@@ -140,6 +140,14 @@ public class AggregatorCommandProviderGogo extends AggregatorCommandProvider {
 		return super.getoptions(new String[]{servlet});
 	}
 
+	@Descriptor("displays the default options and their values for the specified servlet")
+	public String getdefaultoptions(CommandSession cs,
+			@Descriptor("<servlet>")String servlet
+			) throws InvalidSyntaxException {
+		new ConsoleService(new CSConsoleWriter(cs));		// Saves the command session so it can be accessed by async thread
+		return super.getdefaultoptions(new String[]{servlet});
+	}
+
 	@Descriptor("resets the specified option to the default value")
 	public String setoption(CommandSession cs,
 			@Descriptor("<servlet>")String servlet,

@@ -71,6 +71,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static final String CMD_SERIALIZECACHE = "serializecache"; //$NON-NLS-1$
 	static final String CMD_DUMPCACHE = "dumpcache"; //$NON-NLS-1$
 	static final String CMD_GETOPTIONS = "getoptions"; //$NON-NLS-1$
+	static final String CMD_GETDEFAULTOPTIONS = "getdefaultoptions"; //$NON-NLS-1$
 	static final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
 	static final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
 	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
@@ -90,6 +91,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_SERIALIZECACHE,
 		CMD_DUMPCACHE,
 		CMD_GETOPTIONS,
+		CMD_GETDEFAULTOPTIONS,
 		CMD_SETOPTION,
 		CMD_SHOWCONFIG,
 		CMD_GETSERVLETDIR,
@@ -150,6 +152,9 @@ public class AggregatorCommandProvider implements CommandProvider {
 						Messages.CommandProvider_8,
 						new Object[]{EYECATCHER, scopeSep, CMD_GETOPTIONS})).append(newline)
 				.append(MessageFormat.format(
+						Messages.CommandProvider_32,
+						new Object[]{EYECATCHER, scopeSep, CMD_GETDEFAULTOPTIONS})).append(newline)
+				.append(MessageFormat.format(
 						Messages.CommandProvider_9,
 						new Object[]{EYECATCHER, scopeSep, CMD_SETOPTION})).append(newline)
 				.append(MessageFormat.format(
@@ -205,6 +210,8 @@ public class AggregatorCommandProvider implements CommandProvider {
 				ci.println(dumpcache(args));
 			} else if (command.equals(CMD_GETOPTIONS)) {
 				ci.println(getoptions(args));
+			} else if (command.equals(CMD_GETDEFAULTOPTIONS)) {
+				ci.println(getdefaultoptions(args));
 			} else if (command.equals(CMD_SETOPTION)) {
 				ci.println(setoption(args));
 			} else if (command.equals(CMD_SHOWCONFIG)) {
@@ -473,6 +480,21 @@ public class AggregatorCommandProvider implements CommandProvider {
 						sb.append(newline).append(file.getAbsolutePath());
 					}
 				}  catch (Exception ignore) {}
+			} finally {
+				getBundleContext().ungetService(ref);
+			}
+		}
+		return sb.toString();
+	}
+
+	protected String getdefaultoptions(String[] args) throws InvalidSyntaxException {
+		StringBuffer sb = new StringBuffer();
+		ServiceReference ref = getServiceRef(args, sb);
+		if (ref != null) {
+			try {
+				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
+				IOptions options = aggregator.getOptions();
+				sb.append(options.getDefaultOptionsMap().toString());
 			} finally {
 				getBundleContext().ungetService(ref);
 			}
