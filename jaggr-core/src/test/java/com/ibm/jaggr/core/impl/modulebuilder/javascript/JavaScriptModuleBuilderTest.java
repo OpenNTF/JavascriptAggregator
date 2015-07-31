@@ -192,7 +192,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		List<ICacheKeyGenerator> gens = future.get().getCacheKeyGenerators();
 		String s = KeyGenUtil.toString(gens);
 		System.out.println(s);
-		assertEquals("expn;sexp;js:(has:[conditionFalse, conditionTrue])",s);
+		assertEquals("expn;sexp;sm;js:(has:[conditionFalse, conditionTrue])",s);
 
 		// Make sure the content of both has has features is present
 		assertTrue(compiled.contains("has(\"conditionTrue\")"));
@@ -283,7 +283,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		Collection<String> cacheKeys = new TreeSet<String>(p1.getKeys());
 		System.out.println(cacheKeys);
-		assertEquals("[expn:0;sexp:0;js:S:0:0:1;has{}, expn:0;sexp:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}, expn:0;sexp:0;js:S:1:0:1;has{conditionTrue}]",
+		assertEquals("[expn:0;sexp:0;sm:0;js:S:0:0:1;has{}, expn:0;sexp:0;sm:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}, expn:0;sexp:0;sm:0;js:S:1:0:1;has{conditionTrue}]",
 				cacheKeys.toString());
 
 		// Test source maps
@@ -331,7 +331,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		cacheKeys = new TreeSet<String>(p1.getKeys());
 		System.out.println(cacheKeys);
-		assertEquals("[expn:0;sexp:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}]",
+		assertEquals("[expn:0;sexp:0;sm:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}]",
 				cacheKeys.toString());
 
 		Thread.sleep(1500L);   // Wait long enough for systems with coarse grained last-mod
@@ -343,7 +343,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		p1.getBuild(mockRequest).get().close();
 		cacheKeys = p1.getKeys();
 		System.out.println(cacheKeys);
-		assertEquals("[expn:0;sexp:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
+		assertEquals("[expn:0;sexp:0;sm:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
 
 		// Test error handling.  In production mode, a js syntax error should throw an excepton
 		TestUtils.createTestFile(new File(tmpdir, "p1"), "err", TestUtils.err);
@@ -481,7 +481,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		assertTrue(Pattern.compile("IModule: p1/p1\\n").matcher(s).find());
 		assertTrue(Pattern.compile("Source: .*p1.js").matcher(s).find());
 		assertTrue(Pattern.compile("Modified: " + lastModified).matcher(s).find());
-		assertTrue(Pattern.compile("\\texpn:0;sexp:0;js:S:0:0:1;has\\{\\} : .*p1\\..*\\.cache").matcher(s).find());
+		assertTrue(Pattern.compile("\\texpn:0;sexp:0;sm:0;js:S:0:0:1;has\\{\\} : .*p1\\..*\\.cache").matcher(s).find());
 	}
 
 	@Test
@@ -491,32 +491,37 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		assertEquals("expn:0;sexp:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
-		assertEquals("expn:0;sexp:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.NONE);
-		assertEquals("expn:0;sexp:0;js:N:0:0:1", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:N:0:0:1", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.WHITESPACE);
-		assertEquals("expn:0;sexp:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		Features features = new Features();
 		features.put("foo", true);
 		features.put("bar", false);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		Set<String> hasConditionals = new HashSet<String>();
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("foo");
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("bar");
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
-		assertEquals("expn:0;sexp:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("undefined");
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
-		assertEquals("expn:0;sexp:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+
+		requestAttributes.put(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);
+		assertEquals("expn:0;sexp:0;sm:1;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+
 	}
 
 

@@ -27,6 +27,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.SourceMapsCacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
@@ -137,6 +138,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	private static final ICacheKeyGenerator serverExpandLayersCacheKeyGenerator =
 			new ServerExpandLayersCacheKeyGenerator();
+
+	private static final ICacheKeyGenerator sourceMapsCacheKeyGenerator =
+			new SourceMapsCacheKeyGenerator();
 
 	static {
 		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING); //$NON-NLS-1$
@@ -542,6 +546,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		ArrayList<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
 		keyGens.add(exportNamesCacheKeyGenerator);
 		keyGens.add(serverExpandLayersCacheKeyGenerator);
+		keyGens.add(sourceMapsCacheKeyGenerator);
 		keyGens.add(new CacheKeyGenerator(dependentFeatures, hasExpandableRequires, dependentFeatures == null));
 		return keyGens;
 	}

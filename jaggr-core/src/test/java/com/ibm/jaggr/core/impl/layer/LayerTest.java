@@ -545,7 +545,7 @@ public class LayerTest extends EasyMock {
 		in.close();
 		String s = layer.toString();
 		System.out.println(s);
-		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};sexp:0;lyr:0:0:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
+		assertTrue(Pattern.compile("\\s[0-9]+-expn:0;has\\{\\};sexp:0;sm:0;lyr:0:0:0:0;js:S:0:0.*layer\\..*\\.cache").matcher(s).find());
 	}
 
 	/**
@@ -821,17 +821,20 @@ public class LayerTest extends EasyMock {
 		Map<String, ICacheKeyGenerator> keyGens = new HashMap<String, ICacheKeyGenerator>();
 		impl.addCacheKeyGenerators(keyGens, LayerImpl.s_layerCacheKeyGenerators);
 		replay(mockAggregator, mockRequest);
-		Assert.assertEquals("sexp:0;lyr:0:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
+		Assert.assertEquals("sexp:0;sm:0;lyr:0:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		requestHeaders.put("Accept-Encoding", "gzip");
-		Assert.assertEquals("sexp:0;lyr:1:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
+		Assert.assertEquals("sexp:0;sm:0;lyr:1:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
-		Assert.assertEquals("sexp:1;lyr:1:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
+		Assert.assertEquals("sexp:1;sm:0;lyr:1:0:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.SHOWFILENAMES_REQATTRNAME, true);
-		Assert.assertEquals("sexp:1;lyr:1:1:0:0", impl.generateCacheKey(mockRequest, keyGens));
+		Assert.assertEquals("sexp:1;sm:0;lyr:1:1:0:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.INCLUDEREQUIREDEPS_REQATTRNAME, true);
-		Assert.assertEquals("sexp:1;lyr:1:1:1:0", impl.generateCacheKey(mockRequest, keyGens));
+		Assert.assertEquals("sexp:1;sm:0;lyr:1:1:1:0", impl.generateCacheKey(mockRequest, keyGens));
 		mockRequest.setAttribute(IHttpTransport.INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME, true);
-		Assert.assertEquals("sexp:1;lyr:1:1:1:1", impl.generateCacheKey(mockRequest, keyGens));
+		Assert.assertEquals("sexp:1;sm:0;lyr:1:1:1:1", impl.generateCacheKey(mockRequest, keyGens));
+		mockRequest.setAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);
+		Assert.assertEquals("sexp:1;sm:1;lyr:1:1:1:1", impl.generateCacheKey(mockRequest, keyGens));
 	}
 
 	@Test
@@ -886,6 +889,8 @@ public class LayerTest extends EasyMock {
 		mockRequest = TestUtils.createMockRequest(mockAggregator);
 		EasyMock.expect(mockRequest.getPathInfo()).andReturn("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP).anyTimes();
 		EasyMock.replay(mockRequest);
+		mockRequest.setAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);
 		in = layer.setResponse(mockRequest, mockResponse, mockCacheEntry);
 		// Validate results for source map request
 		Assert.assertEquals(sourceMapContent, IOUtils.toString(in));

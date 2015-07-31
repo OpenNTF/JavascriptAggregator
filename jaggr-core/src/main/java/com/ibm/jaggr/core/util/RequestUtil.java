@@ -184,7 +184,7 @@ public class RequestUtil {
 	public static boolean isSourceMapRequest(HttpServletRequest request) {
 		String pathInfo = request.getPathInfo();
 		boolean result = false;
-		if (pathInfo != null) {
+		if (pathInfo != null && isSourceMapsEnabled(request)) {
 			if (pathInfo.endsWith("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP)) { //$NON-NLS-1$
 				result = true;
 			}

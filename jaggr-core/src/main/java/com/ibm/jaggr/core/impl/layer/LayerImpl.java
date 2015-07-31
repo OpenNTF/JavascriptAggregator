@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.SourceMapsCacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -120,7 +121,8 @@ public class LayerImpl implements ILayer {
 					return eyeCatcher;
 				}
 			},
-			new ServerExpandLayersCacheKeyGenerator()
+			new ServerExpandLayersCacheKeyGenerator(),
+			new SourceMapsCacheKeyGenerator()
 	}));
 
 	public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):"); //$NON-NLS-1$
