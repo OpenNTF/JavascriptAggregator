@@ -24,7 +24,7 @@
   
   <groupId>com.ibm.jaggr</groupId>
   <artifactId>jaggr</artifactId>
-  <version>1.3.2-SNAPSHOT</version>
+  <version>1.3.2</version>
   <packaging>pom</packaging>
   
   <modules>
@@ -43,7 +43,7 @@
     <connection>scm:git:git@github.com:OpenNTF/JavascriptAggregator.git</connection>
     <developerConnection>scm:git:git@github.com:OpenNTF/JavascriptAggregator.git</developerConnection>
     <url>https://github.com/OpenNTF/JavascriptAggregator.git</url>
-    <tag>HEAD</tag>
+    <tag>jaggr-1.3.2</tag>
   </scm>
   <organization>
     <name>IBM</name>
@@ -301,52 +301,52 @@
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
         <classifier>javadoc</classifier>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
         <classifier>sources</classifier>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
         <classifier>tests</classifier>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-service</artifactId>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-service</artifactId>
         <classifier>javadoc</classifier>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-service</artifactId>
         <classifier>sources</classifier>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-sample</artifactId>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-sample-dojo</artifactId>
-        <version>1.3.2-SNAPSHOT</version>
+        <version>1.3.2</version>
       </dependency>
       <dependency>
         <groupId>org.apache.wink</groupId>
