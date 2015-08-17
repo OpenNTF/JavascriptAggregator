@@ -28,6 +28,7 @@ import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.JSSource;
 import com.ibm.jaggr.core.util.NodeUtil;
 import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.core.util.StringUtil;
 
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;
@@ -169,30 +170,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
-		/*
-		 * Emit code to call console.log on the client
-		 */
-		if (logDebug && consoleDebugOutput.size() > 0) {
-			Node node = root;
-			if (node.getType() == Token.BLOCK) {
-				node = node.getFirstChild();
-			}
-			if (node.getType() == Token.SCRIPT) {
-				Node firstNode = node.getFirstChild();
-				for (List<String> entry : consoleDebugOutput) {
-					Node call = new Node(Token.CALL,
-							new Node(Token.GETPROP,
-									Node.newString(Token.NAME, "console"),  //$NON-NLS-1$
-									Node.newString(Token.STRING, "log") //$NON-NLS-1$
-									)
-							);
-					for (String str : entry) {
-						call.addChildToBack(Node.newString(str));
-					}
-					node.addChildBefore(new Node(Token.EXPR_RESULT, call), firstNode);
-				}
-			}
-		}
+		appendConsoleLogging(root);
 	}
 
 	/**
@@ -428,12 +406,28 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 				msg.add("font-size:x-small"); //$NON-NLS-1$
 				consoleDebugOutput.add(msg);
 			}
-			String textToAdd = String.format(JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT, listIndex);
 			if (updateSource && source != null) {
-				// if there's a source file we need to update the do it
-				source.appendToArrayLit(array, textToAdd);
+				// if there's a source file we need to update then do it
+				String textToAdd = ".concat(" + //$NON-NLS-1$
+						String.format(
+								JavaScriptBuildRenderer.REQUIRE_EXPANSION_PLACEHOLDER_FMT,
+								getPadding(listIndex),
+								listIndex
+						) +
+						")"; //$NON-NLS-1$
+				source.appendAfterArrayLit(array, textToAdd);
 			}
-			array.addChildrenToBack(Node.newString(textToAdd));
+			// replace the array literal with a call to Array.concat();
+			// so require(["foo", "bar"], ... becomes
+			// require(["foo", "bar"].concat(<place holder>), ...
+			Node getProp = new Node(Token.GETPROP);
+			getProp.putProp(Node.ORIGINALNAME_PROP, "concat"); //$NON-NLS-1$
+			Node call = new Node(Token.CALL);
+			call.addChildToFront(getProp);
+			call.addChildToBack(createRequireExpansionPlaceHolderNode(listIndex));
+			getProp.addChildrenToFront(Node.newString("concat")); //$NON-NLS-1$
+			array.getParent().replaceChild(array, call);
+			getProp.addChildToFront(array);
 		}
 		// Add the expanded dependencies we found in this require call
 		// to the set of enclosing dependencies for all the child node
@@ -451,7 +445,7 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 	 *          the {@link ModuleDeps} object to be searched
 	 * @return true if {@code deps} contains only info objects with an identity value of FALSE
 	 */
-	boolean isEmpty(ModuleDeps deps) {
+	private boolean isEmpty(ModuleDeps deps) {
 		boolean result = true;
 		for (ModuleDepInfo info : deps.values()) {
 			if (!FALSE.equals(info)) {
@@ -462,4 +456,96 @@ public class RequireExpansionCompilerPass implements CompilerPass {
 		return result;
 	}
 
+	/**
+	 * Creates a var reference node for the require expansion place holder variable with the given
+	 * index. The node will correspond to javascript source similar to
+	 * <code>_&&JAGGR_DEPS___[0][3]</code>, where 3 is the specified index.
+	 * <p>
+	 * The underscores preceding the first array index are of variable length for the purpose of
+	 * keeping the source code representation of the reference constant length. For example, if
+	 * index is 125, then the reference will be <code>_&&JAGGR_DEPS_[0][125]</code>. Index values
+	 * greater than 999 will throw error.
+	 * <p>
+	 * This is done so that when the module relative index is replace with a layer relative index by
+	 * the layer builder, the length of the source code index value can change without changing the
+	 * code size of the reference. This is necessary to avoid invalidating source maps
+	 *
+	 * @param index
+	 *            the index value
+	 * @throws IllegalArgumentException
+	 *             if index >= 999
+	 * @return a node for the place holder reference.
+	 */
+	private Node createRequireExpansionPlaceHolderNode(int index) {
+		String varName = JavaScriptModuleBuilder.EXPDEPS_VARNAME + getPadding(index);
+		Node nameNode = Node.newString(Token.NAME, varName);
+		nameNode.putProp(Node.ORIGINALNAME_PROP, varName);
+		return new Node(Token.GETELEM, new Node(Token.GETELEM, nameNode, Node.newNumber(0)), Node.newNumber(index));
+	}
+
+	/**
+	 * Returns the padding string
+	 * used to keep the size of the source code for the place holder
+	 * reference constant.
+	 *
+	 * @param index
+	 *            the array index value
+	 * @throws IllegalArgumentException
+	 * @return the padding string
+	 */
+	private String getPadding(int index) {
+		if (index < 10) {
+			return "__"; //$NON-NLS-1$
+		} else if (index < 100) {
+			return "_"; //$NON-NLS-1$
+		} else if (index < 1000) {
+			return ""; //$NON-NLS-1$
+		}
+		throw new IllegalArgumentException("index >= 1000"); //$NON-NLS-1$
+	}
+
+	/**
+	 * Appends the console log output, if any, to the end of the module
+	 *
+	 * @param root
+	 *            the root node for the module
+	 */
+	private void appendConsoleLogging(Node root) {
+		if (logDebug && consoleDebugOutput.size() > 0) {
+			// Emit code to call console.log on the client
+			Node node = root;
+			if (node.getType() == Token.BLOCK) {
+				node = node.getFirstChild();
+			}
+			if (node.getType() == Token.SCRIPT) {
+				if (source == null) {
+					// This is non-source build.  Modify the AST
+					Node firstNode = node.getFirstChild();
+					for (List<String> entry : consoleDebugOutput) {
+						Node call = new Node(Token.CALL,
+								new Node(Token.GETPROP,
+										Node.newString(Token.NAME, "console"),  //$NON-NLS-1$
+										Node.newString(Token.STRING, "log") //$NON-NLS-1$
+										)
+								);
+						for (String str : entry) {
+							call.addChildToBack(Node.newString(str));
+						}
+						node.addChildAfter(new Node(Token.EXPR_RESULT, call), firstNode);
+					}
+				} else {
+					// Non-source build.  Modify the AST
+					for (List<String> entry : consoleDebugOutput) {
+						StringBuffer sb = new StringBuffer("console.log("); //$NON-NLS-1$
+						int i = 0;
+						for (String str : entry) {
+							sb.append((i++ == 0 ? "" : ",") + "\"" + StringUtil.escapeForJavaScript(str) + "\""); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+						}
+						sb.append(");\n"); //$NON-NLS-1$
+						source.appendln(sb.toString());
+					}
+				}
+			}
+		}
+	}
 }

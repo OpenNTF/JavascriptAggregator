@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder.
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.modulebuilder.SourceMap;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.test.MockRequestedModuleNames;
@@ -53,6 +54,9 @@ import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.google.common.io.Files;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.wink.json4j.JSONArray;
+import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
@@ -188,7 +192,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		List<ICacheKeyGenerator> gens = future.get().getCacheKeyGenerators();
 		String s = KeyGenUtil.toString(gens);
 		System.out.println(s);
-		assertEquals("expn;sexp;js:(has:[conditionFalse, conditionTrue])",s);
+		assertEquals("expn;sexp;sm;js:(has:[conditionFalse, conditionTrue])",s);
 
 		// Make sure the content of both has has features is present
 		assertTrue(compiled.contains("has(\"conditionTrue\")"));
@@ -226,6 +230,8 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		// compile again, this time specifying a has condition and require list expansion
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
+		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 
 		Features features = new Features();
 		features.put("conditionTrue", true);
@@ -244,11 +250,13 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		System.out.println(compiled);
 		// validate that require list was expanded and has blocks were removed
-		Matcher m = Pattern.compile("require\\(\\[\\\"([^\"]*)\\\",\\\"([^\"]*)\\\",\\\"([^\"]*)\\\"\\]").matcher(compiled);
+		Matcher m = Pattern.compile("require([\"p2/a\"].concat(" +
+				JavaScriptModuleBuilder.EXPDEPS_VARNAME +
+				"[0][000]),function(", Pattern.LITERAL).matcher(compiled);
 		Assert.assertTrue(compiled, m.find());
 		Assert.assertEquals(
-				new HashSet<String>(Arrays.asList(new String[]{"p2/a", "p2/b", "p2/c"})),
-				new HashSet<String>(Arrays.asList(new String[]{m.group(1), m.group(2), m.group(3)})));
+				new HashSet<String>(Arrays.asList(new String[]{"p2/b", "p2/c"})),
+				new HashSet<String>(Arrays.asList(expDeps.toList().get(0))));
 		assertTrue(compiled.contains("condition_True"));
 		assertFalse(compiled.contains("condition_False"));
 		assertFalse(compiled.contains("has("));
@@ -275,9 +283,36 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 		Collection<String> cacheKeys = new TreeSet<String>(p1.getKeys());
 		System.out.println(cacheKeys);
-		assertEquals("[expn:0;sexp:0;js:S:0:0:1;has{}, expn:0;sexp:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}, expn:0;sexp:0;js:S:1:0:1;has{conditionTrue}]",
+		assertEquals("[expn:0;sexp:0;sm:0;js:S:0:0:1;has{}, expn:0;sexp:0;sm:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}, expn:0;sexp:0;sm:0;js:S:1:0:1;has{conditionTrue}]",
 				cacheKeys.toString());
 
+		// Test source maps
+		mockRequest.setAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);
+		p1.clearCached(mockAggregator.getCacheManager());
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		System.out.println(compiled);
+		SourceMap sourceMap = ((ModuleBuildReader)reader).getSourceMap();
+		Assert.assertEquals("p1/p1", sourceMap.name);
+		Assert.assertEquals(FileUtils.readFileToString(new File(tmpdir, "/p1/p1.js")), sourceMap.source);
+		System.out.println(sourceMap.map);
+		JSONObject sm = new JSONObject(sourceMap.map);
+		Assert.assertEquals(sm.get("version"), 3);
+		Assert.assertEquals(sm.get("file"), "p1/p1");
+		Assert.assertEquals(sm.get("lineCount"), 1);
+		Assert.assertEquals(Arrays.asList(((JSONArray)sm.get("sources")).toArray()),
+				Arrays.asList("p1/p1"));
+		Assert.assertEquals(Arrays.asList(((JSONArray)sm.get("names")).toArray()),
+				Arrays.asList("define", "require", "alert", "has"));
+		String mappings = (String)sm.getString("mappings");
+		Assert.assertNotNull(mappings);
+		Assert.assertTrue(mappings.length() > 0);
+
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, false);
+		p1.clearCached(mockAggregator.getCacheManager());
 		// Now set the coerceUndefinedToFalse option and make sure that the
 		// conditionFalse block is again removed
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{coerceUndefinedToFalse:true}"));
@@ -290,12 +325,13 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		compiled = writer.toString();
 		System.out.println(compiled);
 
+		Assert.assertNull(((ModuleBuildReader)reader).getSourceMap());
 		assertFalse(compiled.contains("has(\"conditionFalse\")"));
 		assertFalse(compiled.contains("conditionFalse"));
 
 		cacheKeys = new TreeSet<String>(p1.getKeys());
 		System.out.println(cacheKeys);
-		assertEquals("[expn:0;sexp:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}]",
+		assertEquals("[expn:0;sexp:0;sm:0;js:S:1:0:1;has{!conditionFalse,conditionTrue}]",
 				cacheKeys.toString());
 
 		Thread.sleep(1500L);   // Wait long enough for systems with coarse grained last-mod
@@ -307,7 +343,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		p1.getBuild(mockRequest).get().close();
 		cacheKeys = p1.getKeys();
 		System.out.println(cacheKeys);
-		assertEquals("[expn:0;sexp:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
+		assertEquals("[expn:0;sexp:0;sm:0;js:S:1:0:1;has{!conditionFalse,!conditionTrue}]", cacheKeys.toString());
 
 		// Test error handling.  In production mode, a js syntax error should throw an excepton
 		TestUtils.createTestFile(new File(tmpdir, "p1"), "err", TestUtils.err);
@@ -445,7 +481,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		assertTrue(Pattern.compile("IModule: p1/p1\\n").matcher(s).find());
 		assertTrue(Pattern.compile("Source: .*p1.js").matcher(s).find());
 		assertTrue(Pattern.compile("Modified: " + lastModified).matcher(s).find());
-		assertTrue(Pattern.compile("\\texpn:0;sexp:0;js:S:0:0:1;has\\{\\} : .*p1\\..*\\.cache").matcher(s).find());
+		assertTrue(Pattern.compile("\\texpn:0;sexp:0;sm:0;js:S:0:0:1;has\\{\\} : .*p1\\..*\\.cache").matcher(s).find());
 	}
 
 	@Test
@@ -455,32 +491,37 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators(mockAggregator);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		assertEquals("expn:0;sexp:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.SIMPLE);
-		assertEquals("expn:0;sexp:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:S:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.NONE);
-		assertEquals("expn:0;sexp:0;js:N:0:0:1", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:N:0:0:1", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.OPTIMIZATIONLEVEL_REQATTRNAME, OptimizationLevel.WHITESPACE);
-		assertEquals("expn:0;sexp:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		Features features = new Features();
 		features.put("foo", true);
 		features.put("bar", false);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		Set<String> hasConditionals = new HashSet<String>();
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("foo");
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
-		assertEquals("expn:0;sexp:0;js:W:1:0:1;has{foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:1:0:1;has{foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("bar");
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
-		assertEquals("expn:0;sexp:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("undefined");
 		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
-		assertEquals("expn:0;sexp:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		assertEquals("expn:0;sexp:0;sm:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+
+		requestAttributes.put(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);
+		assertEquals("expn:0;sexp:0;sm:1;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+
 	}
 
 
@@ -520,7 +561,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
 		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
 	}
 
@@ -530,7 +571,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Set<String> dependentFeatures = new HashSet<String>();
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
 
 		Features features = new Features();
@@ -619,7 +660,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Set<String> dependentFeatures = new HashSet<String>();
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertNull(result);
+		Assert.assertEquals("", result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
 
 		Features features = new Features();
@@ -702,15 +743,20 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		List<IModule> modules = new ArrayList<IModule>();
 		Set<String> dependentFeatures = new HashSet<String>();
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder() {
-			@Override protected String moduleNameIdEncodingBeginLayer(HttpServletRequest request, List<IModule> modules) {
+			@Override protected String moduleNameIdEncodingBeginLayer(HttpServletRequest request) {
 				return "[moduleNameIdEncodingBeginLayer]";
+			}
+			@Override protected String moduleNameIdEncodingBeginAMD(HttpServletRequest request) {
+				return "[moduleNameIdEncodingBeginAMD]";
 			}
 			@Override protected String moduleNameIdEncodingEndLayer(HttpServletRequest request, List<IModule> modules) {
 				return "[moduleNameIdEncodingEndLayer]";
 			}
 		};
-		String result = builder.layerBeginEndNotifier(EventType.BEGIN_AMD, mockRequest, modules, dependentFeatures);
+		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertEquals("[moduleNameIdEncodingBeginLayer]", result);
+		result = builder.layerBeginEndNotifier(EventType.BEGIN_AMD, mockRequest, modules, dependentFeatures);
+		Assert.assertEquals("[moduleNameIdEncodingBeginAMD]", result);
 		result = builder.layerBeginEndNotifier(EventType.END_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertEquals("[moduleNameIdEncodingEndLayer]", result);
 	}
@@ -720,21 +766,21 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		List<IModule> modules = new ArrayList<IModule>();
 
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
-		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest, modules));
+		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest));
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
 
 		moduleIdMap[0] = new HashMap<String, Integer>();
-		String result = builder.moduleNameIdEncodingBeginLayer(mockRequest, modules);
+		String result = builder.moduleNameIdEncodingBeginLayer(mockRequest);
 		Assert.assertEquals("",  result);
 
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
-		result = builder.moduleNameIdEncodingBeginLayer(mockRequest, modules);
+		result = builder.moduleNameIdEncodingBeginAMD(mockRequest);
 		Assert.assertEquals("(function(){var " + JavaScriptModuleBuilder.EXPDEPS_VARNAME + ";", result);
-		Assert.assertNotNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
+		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
 
 		requestAttributes.put(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
 		requestAttributes.remove(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
-		result = builder.moduleNameIdEncodingBeginLayer(mockRequest, modules);
+		result = builder.moduleNameIdEncodingBeginLayer(mockRequest);
 		Assert.assertEquals("", result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
 		requestAttributes.remove(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME);
@@ -743,7 +789,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		IAggregator aggr = (IAggregator)mockRequest.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		IOptions options = aggr.getOptions();
 		options.setOption(IOptions.DISABLE_MODULENAMEIDENCODING, true);
-		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest, modules));
+		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest));
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
 	}
 
@@ -763,10 +809,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				return sb.toString();
 			}
 		};
-		Assert.assertEquals("", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
+		Assert.assertEquals("})();", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
 
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
-		Assert.assertEquals("})();", builder.moduleNameIdEncodingEndLayer(mockRequest, modules));
 
 		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		mockRequest.setAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
@@ -815,7 +860,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
 		System.out.println(result);
-		Assert.assertEquals("require.combo.reg([[bootLayerDep][bootLayerPreload][module1, module2]]);", result);
+		Assert.assertEquals("require.combo.reg([[bootLayerDep][bootLayerPreload][module1, module2]]);})();", result);
 	}
 
 	@Test
@@ -971,8 +1016,8 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 			return super.getCacheKeyGenerators(dependentFeatures, hasExpandableRequires);
 		}
 		@Override
-		public String moduleNameIdEncodingBeginLayer(HttpServletRequest request, List<IModule> modules) {
-			return super.moduleNameIdEncodingBeginLayer(request, modules);
+		public String moduleNameIdEncodingBeginLayer(HttpServletRequest request) {
+			return super.moduleNameIdEncodingBeginLayer(request);
 		}
 		@Override
 		public String moduleNameIdEncodingEndLayer(HttpServletRequest request, List<IModule> modules) {

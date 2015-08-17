@@ -24,13 +24,13 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
 
@@ -147,47 +147,58 @@ public class ModuleImplTest {
 		features.put("foo", true);
 		features.put("bar", true);
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
+		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 
 		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
-		Assert.assertEquals("[expn, sexp, js:(has:[conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
-		Assert.assertTrue(module.getKeys().size() == 1 && module.getKeys().containsAll(Arrays.asList(new String[]{"expn:0;sexp:0;js:S:1:0:1;has{foo}"})));
+		Assert.assertEquals("[expn, sexp, sm, js:(has:[conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
+		Assert.assertTrue(module.getKeys().size() == 1 && module.getKeys().containsAll(Arrays.asList(new String[]{"expn:0;sexp:0;sm:0;js:S:1:0:1;has{foo}"})));
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		String compiled = writer.toString();
 		System.out.println(compiled);
-		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
+		Assert.assertEquals(1, expDeps.size());
+		Assert.assertTrue(ArrayUtils.indexOf(expDeps.toList().get(0), "p1/foo/d") != -1);
 
+		expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		features.put("foo", false);
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
-		Assert.assertEquals("[expn, sexp, js:(has:[bar, conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
+		Assert.assertEquals("[expn, sexp, sm, js:(has:[bar, conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
 		Assert.assertTrue(module.getKeys().size() == 2 && module.getKeys().containsAll(Arrays.asList(
-				new String[]{"expn:0;sexp:0;js:S:1:0:1;has{foo}", "expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}"})));
+				new String[]{"expn:0;sexp:0;sm:0;js:S:1:0:1;has{foo}", "expn:0;sexp:0;sm:0;js:S:1:0:1;has{bar,!foo}"})));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
-		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/bar/d\\\".*?\\],").matcher(compiled).find());
+		Assert.assertEquals(1, expDeps.size());
+		Assert.assertTrue(ArrayUtils.indexOf(expDeps.toList().get(0), "p1/bar/d") != -1);
 
+		expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		features.put("bar", false);
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
 		List<ICacheKeyGenerator> cacheKeyGenerators = module.getCacheKeyGenerators();
-		Assert.assertEquals("[expn, sexp, js:(has:[bar, conditionFalse, conditionTrue, foo, non])]", module.getCacheKeyGenerators().toString());
+		Assert.assertEquals("[expn, sexp, sm, js:(has:[bar, conditionFalse, conditionTrue, foo, non])]", module.getCacheKeyGenerators().toString());
 		Assert.assertTrue(module.getKeys().size() == 3 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-						"expn:0;sexp:0;js:S:1:0:1;has{foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{!bar,!foo}"
 				}
 				)));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		System.out.println(compiled);
-		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/non/d\\\".*?\\],").matcher(compiled).find());
+		Assert.assertEquals(1, expDeps.size());
+		Assert.assertTrue(ArrayUtils.indexOf(expDeps.toList().get(0), "p1/non/d") != -1);
 
+		expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		features.remove("bar");
 		features.put("foo", true);
 		reader = module.getBuild(mockRequest).get();
@@ -195,33 +206,37 @@ public class ModuleImplTest {
 		Assert.assertTrue(cacheKeyGenerators == module.getCacheKeyGenerators());
 		Assert.assertTrue(module.getKeys().size() == 3 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-						"expn:0;sexp:0;js:S:1:0:1;has{foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{!bar,!foo}"
 				}
 				)));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
 		System.out.println(compiled);
-		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
+		Assert.assertEquals(1, expDeps.size());
+		Assert.assertTrue(ArrayUtils.indexOf(expDeps.toList().get(0), "p1/foo/d") != -1);
 
+		expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		features.put("bar", true);
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
 		Assert.assertTrue(cacheKeyGenerators == module.getCacheKeyGenerators());
 		Assert.assertTrue(module.getKeys().size() == 4 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-						"expn:0;sexp:0;js:S:1:0:1;has{foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{bar,foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;sexp:0;sm:0;js:S:1:0:1;has{!bar,!foo}"
 				}
 				)));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
-		assertTrue(Pattern.compile("require\\(\\[.*?,\\\"p1/foo/d\\\".*?\\],").matcher(compiled).find());
+		Assert.assertEquals(1, expDeps.size());
+		Assert.assertTrue(ArrayUtils.indexOf(expDeps.toList().get(0), "p1/foo/d") != -1);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -251,6 +266,8 @@ public class ModuleImplTest {
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}"));
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, new Features());
 		requestAttributes.put(ILayer.DEPENDENT_FEATURES, new HashSet<String>());
+		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
+		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());

@@ -71,6 +71,14 @@ public interface ILayer extends Serializable {
 	public static final String DEPENDENT_FEATURES = ILayer.class.getName() + ".dependentFeatures"; //$NON-NLS-1$
 
 	/**
+	 * Path component for source map resources.  This path component follows the aggregator
+	 * path component and is used to request source maps for the layer that would be obtained
+	 * without the source map path component.  For example, if the aggregator url is
+	 * /foo/aggr, then resource maps would be obtained form /foo/aggr/_sourcemap
+	 */
+	public static final String SOURCEMAP_RESOURSE_PATHCOMP = "_sourcemap"; //$NON-NLS-1$
+
+	/**
 	 * Returns the {@link InputStream} for the assembled and gzipped layer build
 	 * which was generated using the compilation level, has-conditions and
 	 * options that are specified in the request.

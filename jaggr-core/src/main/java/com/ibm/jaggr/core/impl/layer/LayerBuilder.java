@@ -29,15 +29,23 @@ import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.modulebuilder.SourceMap;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
-import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.RequestUtil;
+
+import com.google.debugging.sourcemap.SourceMapGeneratorV3;
+import com.google.debugging.sourcemap.SourceMapParseException;
+
+import org.apache.commons.io.IOUtils;
+import org.apache.wink.json4j.JSONArray;
+import org.apache.wink.json4j.JSONException;
+import org.apache.wink.json4j.JSONObject;
 
 import java.io.IOException;
 import java.io.StringWriter;
@@ -63,26 +71,36 @@ import javax.servlet.http.HttpServletRequest;
 public class LayerBuilder {
 	private static final String sourceClass = LayerBuilder.class.getName();
 	private static final Logger log = Logger.getLogger(sourceClass);
-	final HttpServletRequest request;
-	final List<ICacheKeyGenerator> keyGens;
-	final IAggregator aggr;
-	final IOptions options;
-	final ModuleList moduleList;
-	final IHttpTransport transport;
-	final List<IModule> layerListenerModuleList;
+
+	/**
+	 * JSON preamble used to guard against XSSI attacks.
+	 * @see <a href="https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit#heading=h.h7yy76c5il9v">
+	 * Source Map Version 3 Proposal - JSON over HTTP Transport</a>
+	 */
+	static final String SOURCEMAP_XSSI_PREAMBLE = ")]}'\n"; //$NON-NLS-1$
+
+	private final HttpServletRequest request;
+	private final List<ICacheKeyGenerator> keyGens;
+	private final IAggregator aggr;
+	private final IOptions options;
+	private final ModuleList moduleList;
+	private final IHttpTransport transport;
+	private final List<IModule> layerListenerModuleList;
 	final List<IModule> umLayerListenerModuleList;
-	final Set<String> dependentFeatures;
-
-	boolean hasErrors = false;
-
-	boolean built = false;
+	private final Set<String> dependentFeatures;
+	private final SourceMapGeneratorV3 smGen;
+	private final StringWriter writer;
+	private boolean built = false;
+	private int sectionCount = 0;
+	private Map<String, String> sourcesMap;
+	private String sourceMap = null;
 
 	/**
 	 * List of error message from build errors
 	 */
-	final List<String> errorMessages;
+	private final List<String> errorMessages;
 
-	final List<String> nonErrorMessages;
+	private final List<String> nonErrorMessages;
 
 	/**
 	 * @param request
@@ -105,6 +123,12 @@ public class LayerBuilder {
 		layerListenerModuleList = moduleList.getModules();
 		umLayerListenerModuleList = Collections.unmodifiableList(layerListenerModuleList);
 		dependentFeatures = new HashSet<String>();
+
+		// Source maps
+		boolean isSourceMapsEnabled = RequestUtil.isSourceMapsEnabled(request);
+		sourcesMap = isSourceMapsEnabled ? new HashMap<String, String>() : null;
+		smGen = isSourceMapsEnabled ? new SourceMapGeneratorV3() : null;
+		writer = isSourceMapsEnabled ? new LineCountingStringWriter() : new StringWriter();
 	}
 
 	/**
@@ -122,7 +146,6 @@ public class LayerBuilder {
 		}
 		built = true;
 
-		StringBuffer sb = new StringBuffer();
 		Map<String, String> moduleCacheInfo = null;
 		if (request.getAttribute(LayerImpl.LAYERCACHEINFO_PROPNAME) != null) {
 			moduleCacheInfo = new HashMap<String, String>();
@@ -133,7 +156,7 @@ public class LayerBuilder {
 			DependencyList depList = (DependencyList)request.getAttribute(LayerImpl.EXPANDEDDEPS_PROPNAME);
 			if (depList != null) {
 				// Output dependency expansion logging
-				sb.append(dependencyExpansionLogging(depList));
+				writer.append(dependencyExpansionLogging(depList));
 			}
 		}
 
@@ -146,58 +169,58 @@ public class LayerBuilder {
 		 */
 		request.setAttribute(ILayer.DEPENDENT_FEATURES, dependentFeatures);
 
-		sb.append(notifyLayerListeners(EventType.BEGIN_LAYER, request, null));
-		addTransportContribution(sb, LayerContributionType.BEGIN_RESPONSE, null);
+		writer.append(notifyLayerListeners(EventType.BEGIN_LAYER, request, null));
+		addTransportContribution(LayerContributionType.BEGIN_RESPONSE, null);
 
-		// Add script files to the layer first first.  Scripts have no transport contribution
-		for (ModuleBuildReader reader : sorted.getScripts().values()) {
-			processReader(reader, sb);
+		// Add script files to the layer first.  Scripts have no transport contribution
+		for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getScripts().entrySet()) {
+			processReader(entry.getKey(), entry.getValue());
 		}
 		if (sorted.getCacheEntries().size() > 0 || sorted.getModules().size() > 0) {
-			sb.append(notifyLayerListeners(EventType.BEGIN_AMD, request, null));
+			writer.append(notifyLayerListeners(EventType.BEGIN_AMD, request, null));
 
 			// Now add the loader cache entries.
 			if (sorted.getCacheEntries().size() > 0) {
-				addTransportContribution(sb, LayerContributionType.BEGIN_LAYER_MODULES, moduleList.getRequiredModules());
+				addTransportContribution(LayerContributionType.BEGIN_LAYER_MODULES, moduleList.getRequiredModules());
 				int i = 0;
 				for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getCacheEntries().entrySet()) {
-					sb.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
+					writer.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
 					ModuleInfo info = new ModuleInfo(entry.getKey().getModuleId(), entry.getValue().isScript());
 					LayerContributionType type = (i++ == 0) ? LayerContributionType.BEFORE_FIRST_LAYER_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_LAYER_MODULE;
-					addTransportContribution(sb, type, info);
-					processReader(entry.getValue(), sb);
-					addTransportContribution(sb, LayerContributionType.AFTER_LAYER_MODULE, info);
+					addTransportContribution(type, info);
+					processReader(entry.getKey(), entry.getValue());
+					addTransportContribution(LayerContributionType.AFTER_LAYER_MODULE, info);
 				}
-				addTransportContribution(sb, LayerContributionType.END_LAYER_MODULES, moduleList.getRequiredModules());
+				addTransportContribution(LayerContributionType.END_LAYER_MODULES, moduleList.getRequiredModules());
 			}
 
 			// Now add the loader requested modules
 			if (sorted.getModules().size() > 0) {
-				addTransportContribution(sb, LayerContributionType.BEGIN_MODULES, null);
+				addTransportContribution(LayerContributionType.BEGIN_MODULES, null);
 				int i = 0;
 				for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getModules().entrySet()) {
-					sb.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
+					writer.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
 					ModuleInfo info = new ModuleInfo(entry.getKey().getModuleId(), entry.getValue().isScript());
 					LayerContributionType type = (i++ == 0) ? LayerContributionType.BEFORE_FIRST_MODULE : LayerContributionType.BEFORE_SUBSEQUENT_MODULE;
-					addTransportContribution(sb, type, info);
-					processReader(entry.getValue(), sb);
-					addTransportContribution(sb, LayerContributionType.AFTER_MODULE, info);
+					addTransportContribution(type, info);
+					processReader(entry.getKey(), entry.getValue());
+					addTransportContribution(LayerContributionType.AFTER_MODULE, info);
 				}
-				addTransportContribution(sb, LayerContributionType.END_MODULES, null);
+				addTransportContribution(LayerContributionType.END_MODULES, null);
 			}
 		}
- 		sb.append(notifyLayerListeners(EventType.END_LAYER, request, null));
-		addTransportContribution(sb, LayerContributionType.END_RESPONSE, null);
+ 		writer.append(notifyLayerListeners(EventType.END_LAYER, request, null));
+		addTransportContribution(LayerContributionType.END_RESPONSE, null);
 
 		moduleList.getDependentFeatures().addAll(dependentFeatures);
 
 		// Output any messages to the console if debug mode is enabled
 		if (options.isDebugMode() || options.isDevelopmentMode()) {
 			for (String errorMsg : errorMessages) {
-				sb.append("\r\nconsole.error(\"" + errorMsg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
+				writer.append("\r\nconsole.error(\"" + errorMsg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 			for (String msg : nonErrorMessages) {
-				sb.append("\r\nconsole.warn(\"" + msg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
+				writer.append("\r\nconsole.warn(\"" + msg + "\");"); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}
 		// Help out the GC
@@ -205,9 +228,86 @@ public class LayerBuilder {
 		futures.clear();
 		layerListenerModuleList.clear();
 
+		if (sectionCount > 0) {
+			// If any of the modules in the layer contained source map info, then
+			// create a source map for the layer and include the source mapping URL
+			// in the response.
+			writer.append("\n").append(getSourcesMappingEpilogue()); //$NON-NLS-1$
+			finalizeSourceMap();
+		}
+
+		return writer.toString();
+	}
+
+	/**
+	 * Returns the source mapping epilogue for the layer that gets added to the end of the response.
+	 *
+	 * @see <a
+	 *      href="https://docs.google.com/document/d/1U1RGAehQwRypUTovF1KRlpiOFze0b-_2gc6fAH0KY0k/edit#heading=h.lmz475t4mvbx">Source
+	 *      Map Revision 3 Proposal - Linking generated code to source maps</a>
+	 *
+	 * @return the source mapping eplilogue
+	 */
+	protected String getSourcesMappingEpilogue() {
+		String root = ""; //$NON-NLS-1$
+		String contextPath = request.getRequestURI();
+		if (contextPath != null) {
+			// We may be re-building a layer for a source map request where the layer
+			// has been flushed from the cache.  If that's the case, then the context
+			// path will already include the source map path component, so just remove it.
+			if (contextPath.endsWith("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP)) { //$NON-NLS-1$
+				contextPath = contextPath.substring(0, contextPath.length()-(ILayer.SOURCEMAP_RESOURSE_PATHCOMP.length()+1));
+			}
+			// Because we're specifying a relative URL that is relative to the request for the
+			// layer and aggregator paths are assumed to NOT include a trailing '/', then we
+			// need to start the relative path with the last path component of the context
+			// path so that the relative URL will be resolved correctly by the browser.  For
+			// more details, see refer to the behavior of URI.resolve();
+			int idx = contextPath.lastIndexOf("/"); //$NON-NLS-1$
+			root = contextPath.substring(idx!=-1 ? idx+1 : 0);
+			if (root.length() > 0 && !root.endsWith("/")) { //$NON-NLS-1$
+				root += "/"; //$NON-NLS-1$
+			}
+		}
+		StringBuffer sb = new StringBuffer();
+		sb.append("//# sourceMappingURL=") //$NON-NLS-1$
+		  .append(root)
+	      .append(ILayer.SOURCEMAP_RESOURSE_PATHCOMP);
+		String queryString = request.getQueryString();
+		if (queryString != null) {
+			sb.append("?").append(queryString); //$NON-NLS-1$
+		}
 		return sb.toString();
 	}
 
+	/**
+	 * Add the sources content to the source map and prepends the source map JSON
+	 * with characters that prevent XSSI attacks.  We need to do this because
+	 * {@link SourceMapGeneratorV3#mergeMapSection(int, int, String)} does not
+	 * preserve sourcesContent from the map being merged in the output map.
+	 *
+	 * @throws IOException
+	 */
+	private void finalizeSourceMap() throws IOException {
+		StringWriter writer = new StringWriter();
+		smGen.appendTo(writer, "" /* file name */); //$NON-NLS-1$
+		sourceMap = writer.toString();
+		// now add the sourcesContent field
+		try {
+			JSONObject obj = new JSONObject(sourceMap);
+			JSONArray sources = (JSONArray)obj.get("sources"); //$NON-NLS-1$
+			JSONArray sourcesContent = new JSONArray();
+			for (int i = 0; i < sources.length(); i++) {
+				String content = sourcesMap.get(sources.get(i));
+				sourcesContent.add(content != null ? content : ""); //$NON-NLS-1$
+			}
+			obj.put("sourcesContent", sourcesContent); //$NON-NLS-1$
+			StringBuffer sb = new StringBuffer(SOURCEMAP_XSSI_PREAMBLE);
+			sourceMap = sb.append(obj.toString()).toString();
+		} catch (JSONException e) {
+			throw new IOException(e);
+		}
+	}
 	/**
 	 * Returns true if any of the module builds indicated an error
 	 *
@@ -220,24 +320,44 @@ public class LayerBuilder {
 	/**
 	 * Adds the content from {@code reader}, together with any transport contributions,
 	 * to the response aggregation.
-	 *
+	 * @param module
+	 *            The module id
 	 * @param reader
 	 *            The module build reader
-	 * @param sb
-	 *            Output - the output buffer to accept the content from {@code reader}
 	 * @throws IOException
 	 */
-	protected void processReader(ModuleBuildReader reader, StringBuffer sb) throws IOException {
+	protected void processReader(IModule module, ModuleBuildReader reader) throws IOException {
 		// Add the cache key generator list to the result list
 		List<ICacheKeyGenerator> keyGenList = reader.getCacheKeyGenerators();
 		if (keyGenList != null) {
 			keyGens.addAll(keyGenList);
 		}
-
+		if (smGen != null) {
+			// If we're generating a source map, then merge the source map for the module
+			// into the layer source map.
+			SourceMap moduleSourceMap = reader.getSourceMap();
+			if (moduleSourceMap != null && writer instanceof LineCountingStringWriter) {
+				sectionCount++;
+				LineCountingStringWriter lcWriter = (LineCountingStringWriter)writer;
+				try {
+					smGen.mergeMapSection(lcWriter.getLine(), lcWriter.getColumn(), moduleSourceMap.map);
+				} catch (SourceMapParseException e) {
+					throw new IOException(e);
+				}
+				// Save the sources content, indexed by the module name, so that we can
+				// add the 'sourcesContent' property to the layer map after the map
+				// has been generated.  We need to do this because SourceMapGeneratorV3
+				// does not merge the sourcesContent properties from module source maps into
+				// the merged layer source map.
+				sourcesMap.put(moduleSourceMap.name, moduleSourceMap.source);
+			}
+		}
 		// Add the reader contents to the result
-		StringWriter writer = new StringWriter();
-		CopyUtil.copy(reader, writer);
-		sb.append(writer.toString());
+		try {
+			IOUtils.copy(reader, writer);
+		} finally {
+			IOUtils.closeQuietly(reader);
+		}
 		if (reader.isError()) {
 			errorMessages.add(reader.getErrorMessage());
 		}
@@ -247,18 +367,16 @@ public class LayerBuilder {
 	 * Appends the layer contribution specified by {@code type}
 	 * (contributed by the transport) to the string buffer.
 	 *
-	 * @param sb
-	 *            The string buffer to append to
 	 * @param type
 	 *            The layer contribution type
 	 * @param arg
 	 *            The argument value (see
 	 *            {@link IHttpTransport#contributeLoaderExtensionJavaScript(String)}
+	 * @throws IOException
 	 */
 	protected void addTransportContribution(
-			StringBuffer sb,
 			LayerContributionType type,
-			Object arg) {
+			Object arg) throws IOException {
 
 		String transportContrib = transport.getLayerContribution(
 				request,
@@ -266,7 +384,7 @@ public class LayerBuilder {
 				arg
 				);
 		if (transportContrib != null) {
-			sb.append(transportContrib);
+			writer.append(transportContrib);
 		}
 	}
 
@@ -445,5 +563,9 @@ public class LayerBuilder {
 	// For unit testing
 	Set<String> getDepenedentFeatures() {
 		return dependentFeatures;
+	}
+
+	String getSourceMap() {
+		return sourceMap;
 	}
 }

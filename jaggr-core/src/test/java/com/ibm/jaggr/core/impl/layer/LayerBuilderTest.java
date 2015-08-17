@@ -41,6 +41,7 @@ import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
 import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.modulebuilder.SourceMap;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.test.TestCacheManager;
@@ -49,7 +50,12 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType;
 import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
 import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.RequestUtil;
 
+import com.google.debugging.sourcemap.SourceMapGeneratorV3;
+
+import org.apache.commons.lang3.mutable.MutableObject;
+import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
@@ -57,6 +63,7 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -158,11 +165,11 @@ public class LayerBuilderTest {
 		EasyMock.replay(mockAggregator);
 		List<ICacheKeyGenerator> keyGens = new LinkedList<ICacheKeyGenerator>();
 		ModuleList moduleList;
-		Map<String, String> content = new HashMap<String, String>();
-		content.put("s1", "script1");
-		content.put("s2", "script2");
-		content.put("m1", "foo");
-		content.put("m2", "bar");
+		Map<String, String[]> content = new HashMap<String, String[]>();
+		content.put("s1", new String[]{"script1", "sourceMap1"});
+		content.put("s2", new String[]{"script2", "sourceMap2"});
+		content.put("m1", new String[]{"foo", null});
+		content.put("m2", new String[]{"bar", null});
 
 		// Single script file
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
@@ -473,8 +480,8 @@ public class LayerBuilderTest {
 				return result;
 			}
 			@Override
-			protected void processReader(ModuleBuildReader reader, StringBuffer sb) throws IOException {
-				super.processReader(reader, sb);
+			protected void processReader(IModule mid, ModuleBuildReader reader) throws IOException {
+				super.processReader(mid, reader);
 				@SuppressWarnings("unchecked")
 				Set<String> dependentFeatures = (Set<String>)mockRequest.getAttribute(ILayer.DEPENDENT_FEATURES);
 				dependentFeatures.add("processReader");
@@ -488,6 +495,46 @@ public class LayerBuilderTest {
 				})),
 				moduleList.getDependentFeatures());
 		System.out.println(output);
+
+		// Test source map support
+		requestAttributes.put(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);
+		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
+				new ModuleListEntry(new ModuleImpl("s1", new URI("file:/c:/s1.js")), ModuleSpecifier.SCRIPTS),
+				new ModuleListEntry(new ModuleImpl("m1", new URI("file:/c:/m1.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("m2", new URI("file:/c:/m2.js")), ModuleSpecifier.MODULES),
+				new ModuleListEntry(new ModuleImpl("s2", new URI("file:/c:/s2.js")), ModuleSpecifier.SCRIPTS),
+		}));
+
+		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
+		SourceMapGeneratorV3 mockGenerator = EasyMock.createMock(SourceMapGeneratorV3.class);
+		Whitebox.setInternalState(builder, "smGen", mockGenerator);
+		final List<String> maps = new ArrayList<String>();
+		mockGenerator.mergeMapSection(EasyMock.anyInt(), EasyMock.anyInt(), EasyMock.isA(String.class));
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+			@Override public Void answer() throws Throwable {
+				maps.add((String)EasyMock.getCurrentArguments()[2]);
+				return null;
+			}
+		}).times(2);
+		mockGenerator.appendTo(EasyMock.isA(Appendable.class), EasyMock.isA(String.class));
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+			@Override
+			public Void answer() throws Throwable {
+				Appendable out = (Appendable)EasyMock.getCurrentArguments()[0];
+				out.append("{sources:[\"s1\",\"s2\"]}");
+				return null;
+			}
+		}).once();
+		EasyMock.replay(mockGenerator);
+		output = builder.build();
+		System.out.println(output);
+		Assert.assertEquals(Arrays.asList("sourceMap1", "sourceMap2"), maps);
+		System.out.println(builder.getSourceMap());
+		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]\n//# sourceMappingURL="+ILayer.SOURCEMAP_RESOURSE_PATHCOMP, output);
+		Assert.assertEquals(
+				new JSONObject("{\"sourcesContent\":[\"script1\",\"script2\"],\"sources\":[\"s1\",\"s2\"]}"),
+				new JSONObject(builder.getSourceMap().substring(LayerBuilder.SOURCEMAP_XSSI_PREAMBLE.length())));
 	}
 
 	@Test
@@ -682,6 +729,56 @@ public class LayerBuilderTest {
 		Assert.assertEquals(Arrays.asList(new String[]{"Listener1_BEGIN_MODULE", "Listener2_BEGIN_MODULE"}), checkpoints);
 	}
 
+	@Test
+	public void testAppendSourcesMappingURL() throws Exception {
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
+		final MutableObject<String> requestUri = new MutableObject<String>();
+		final MutableObject<String> queryString = new MutableObject<String>();
+		EasyMock.expect(mockRequest.getRequestURI()).andAnswer(new IAnswer<String>() {
+			@Override public String answer() throws Throwable {
+				return requestUri.getValue();
+			}
+		}).anyTimes();
+		EasyMock.expect(mockRequest.getQueryString()).andAnswer(new IAnswer<String>() {
+			@Override public String answer() throws Throwable {
+				return queryString.getValue();
+			}
+
+		}).anyTimes();
+		EasyMock.replay(mockRequest);
+		EasyMock.replay(mockAggregator);
+		List<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
+		ModuleList modules = new ModuleList();
+		LayerBuilder builder = new LayerBuilder(mockRequest, keyGens, modules);
+		mockRequest.setAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
+		String result = builder.getSourcesMappingEpilogue();
+		Assert.assertEquals("//# sourceMappingURL=_sourcemap", result);
+
+		requestUri.setValue("/");
+		result = builder.getSourcesMappingEpilogue();
+		Assert.assertEquals("//# sourceMappingURL=_sourcemap", result);
+
+		requestUri.setValue("/foo");
+		result = builder.getSourcesMappingEpilogue();
+		Assert.assertEquals("//# sourceMappingURL=foo/_sourcemap", result);
+
+		requestUri.setValue("/foo/");
+		queryString.setValue("debug=true&sourcemaps=1");
+		result = builder.getSourcesMappingEpilogue();
+		Assert.assertEquals("//# sourceMappingURL=_sourcemap?debug=true&sourcemaps=1", result);
+
+		requestUri.setValue("/foo/bar");
+		result = builder.getSourcesMappingEpilogue();
+		Assert.assertEquals("//# sourceMappingURL=bar/_sourcemap?debug=true&sourcemaps=1", result);
+
+		requestUri.setValue("/foo/bar/");
+		result = builder.getSourcesMappingEpilogue();
+		Assert.assertEquals("//# sourceMappingURL=_sourcemap?debug=true&sourcemaps=1", result);
+
+
+	}
+
 	String toString(Reader reader) throws IOException {
 		Writer writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
@@ -690,12 +787,12 @@ public class LayerBuilderTest {
 	}
 
 	static class TestLayerBuilder extends LayerBuilder {
-		Map<String, String> content;
+		Map<String, String[]> content;
 		HttpServletRequest request;
 		List<ICacheKeyGenerator> keyGens;
 		ModuleList moduleList;
 		Map<String, List<ICacheKeyGenerator>> mbrKeygens = null;
-		TestLayerBuilder(HttpServletRequest request, List<ICacheKeyGenerator> keyGens, ModuleList moduleList, Map<String, String> content) {
+		TestLayerBuilder(HttpServletRequest request, List<ICacheKeyGenerator> keyGens, ModuleList moduleList, Map<String, String[]> content) {
 			super(request, keyGens, moduleList);
 			this.content = content;
 			this.request = request;
@@ -717,7 +814,13 @@ public class LayerBuilderTest {
 				if (mbrKeygens != null) {
 					mbrKeygen = mbrKeygens.get(mid);
 				}
-				ModuleBuildReader mbr = new ModuleBuildReader(new StringReader(content.get(mid)), true, mbrKeygen, null);
+				ModuleBuildReader mbr = new ModuleBuildReader(new StringReader(content.get(mid)[0]), true, mbrKeygen, null);
+				if (RequestUtil.isSourceMapsEnabled(request)) {
+					String[] data = content.get(mid);
+					if (data[1] != null) {
+						mbr.setSourceMap(new SourceMap(mid, data[0], data[1]));
+					}
+				}
 				ModuleBuildFuture future = new ModuleBuildFuture(
 						new ModuleImpl(mid, entry.getModule().getURI()),
 						new CompletedFuture<ModuleBuildReader>(mbr),

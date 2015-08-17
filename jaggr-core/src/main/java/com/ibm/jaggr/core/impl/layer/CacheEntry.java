@@ -19,11 +19,15 @@ package com.ibm.jaggr.core.impl.layer;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cache.ICacheManager;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
+
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
@@ -42,11 +46,13 @@ import javax.servlet.http.HttpServletRequest;
  * various methods for details.
  */
 class CacheEntry implements Serializable {
-	private static final long serialVersionUID = -2129350665073838766L;
+	private static final long serialVersionUID = 6165683127051059701L;
 
 	private transient volatile byte[] bytes = null;
+	private transient volatile byte[] sourceMap = null;
 	private volatile String filename = null;
 	private volatile int size;
+	private volatile int sourceMapSize;
 	private volatile boolean delete = false;
 	final int layerId;
 	final String layerKey;
@@ -58,8 +64,10 @@ class CacheEntry implements Serializable {
 		layerKey = other.layerKey;
 		lastModified = other.lastModified;
 		bytes = other.bytes;
+		sourceMap = other.sourceMap;
 		filename = other.filename;
 		size = other.size;
+		sourceMapSize = other.sourceMapSize;
 		delete = other.delete;
 	}
 
@@ -75,39 +83,76 @@ class CacheEntry implements Serializable {
 	 *
 	 * @param request
 	 *            the request object
+	 * @param sourceMapResult
+	 *            (Output) mutable object reference to the source map.  May be null
+	 *            if source maps are not being requested.
 	 * @return The InputStream for the built layer
 	 * @throws IOException
 	 */
-	public InputStream getInputStream(HttpServletRequest request) throws IOException {
-		// Check bytes before filename when reading and reverse order when setting
+	public InputStream getInputStream(HttpServletRequest request, MutableObject<byte[]> sourceMapResult) throws IOException {
+		// Check bytes before filename when reading and reverse order when setting.
+		// The following local variables intentionally hide the instance variables.
 		byte[] bytes = this.bytes;
+		byte[] sourceMap = this.sourceMap;
 		String filename = this.filename;
-		InputStream in = null;
+
+		InputStream result = null;
 		if (bytes != null) {
-			in = new ByteArrayInputStream(bytes);
+			// Cache data is already in memory.  Don't need to de-serialize it.
+			result = new ByteArrayInputStream(bytes);
+			if (sourceMapResult != null && sourceMapSize > 0) {
+				sourceMapResult.setValue(sourceMap);
+			}
 		} else if (filename != null){
+			// De-serialize data from cache
 			ICacheManager cmgr = ((IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME)).getCacheManager();
 			File file = new File(cmgr.getCacheDir(), filename);
-			in = new FileInputStream(file);
+			if (sourceMapSize == 0) {
+				// No source map data in cache entry so just stream the file.
+				result = new FileInputStream(file);
+			} else {
+				// Entry contains source map data so that means it's a serialized CacheData
+				// instance.  De-serialize the object and extract the data.
+				CacheData data;
+				ObjectInputStream is = new ObjectInputStream(
+						new FileInputStream(file));
+				try {
+					data = (CacheData)is.readObject();
+				} catch (ClassNotFoundException e) {
+					throw new IOException(e.getMessage(), e);
+				} finally {
+					IOUtils.closeQuietly(is);
+				}
+				bytes = data.bytes;
+				sourceMap = data.sourceMap;
+				if (sourceMapResult != null) {
+					sourceMapResult.setValue(sourceMap);
+				}
+				result = new ByteArrayInputStream(bytes);
+			}
+		} else {
+			throw new IOException();
 		}
-		return in;
+		return result;
 	}
 
 	/**
-	 * Can fail by returning null, but won't throw an exception.  Will also return null
-	 * if no data is available after waiting for 10 seconds.
+	 * Can fail by returning null, but won't throw an exception.
 	 *
 	 * @param request
 	 *             the request object
+	 * @param sourceMapResult
+	 *             (Output) mutable object reference to the source map.  May be null
+	 *             if source maps are not being requested.
 	 * @return The LayerInputStream, or null if data is not available
 	 * @throws IOException
 	 */
-	public InputStream tryGetInputStream(HttpServletRequest request) throws IOException {
-		InputStream in = null;
+	public InputStream tryGetInputStream(HttpServletRequest request, MutableObject<byte[]> sourceMapResult) throws IOException {
+		InputStream result = null;
 		// Check bytes before filename when reading and reverse order when setting
 		if (bytes != null || filename != null) {
 			try {
-				in = getInputStream(request);
+				result = getInputStream(request, sourceMapResult);
 			} catch (Exception e) {
 				if (LayerImpl.log.isLoggable(Level.SEVERE)) {
 					LayerImpl.log.log(Level.SEVERE, e.getMessage(), e);
@@ -115,15 +160,29 @@ class CacheEntry implements Serializable {
 				// just return null
 			}
 		}
-		return in;
+		return result;
 	}
 
 	/**
-	 * @param bytes
+	 * Sets the contents of the cache entry
+	 *
+	 * @param bytes the layer content
 	 */
 	public void setBytes(byte[] bytes) {
 		this.size = bytes.length;
 		this.bytes = bytes;
+	}
+
+	/**
+	 * Sets the contents of the cache entry with source map info.
+	 *
+	 * @param bytes The layer content
+	 * @param sourceMap The source map for the layer
+	 */
+	public void setData(byte[] bytes, byte[] sourceMap) {
+		this.sourceMap = sourceMap;
+		sourceMapSize = sourceMap != null ? sourceMap.length : 0;
+		setBytes(bytes);
 	}
 
 	/**
@@ -162,6 +221,7 @@ class CacheEntry implements Serializable {
 		return size;
 	}
 
+
 	/**
 	 * Asynchronously write the layer build content to disk and set filename to the
 	 * name of the cache files when done.
@@ -171,29 +231,19 @@ class CacheEntry implements Serializable {
 	 */
 	public void persist(final ICacheManager mgr) throws IOException {
 		if (delete) return;
-		mgr.createCacheFileAsync("layer.", //$NON-NLS-1$
-				new ByteArrayInputStream(bytes),
-				new ICacheManager.CreateCompletionCallback() {
-			@Override
-			public void completed(final String fname, Exception e) {
-				if (e == null) {
-					synchronized (this) {
-						if (!delete) {
-							if (e == null) {
-								// Set filename before clearing bytes
-								filename = fname;
-								// Free up the memory for the content now that we've written out to disk
-								// TODO:  Determine a size threshold where we may want to keep the contents
-								// of small files in memory to reduce disk i/o.
-								bytes = null;
-							}
-						} else {
-							mgr.deleteFileDelayed(fname);
-						}
-					}
-				}
-			}
-		});
+		if (sourceMapSize == 0) {
+			// No source map.  Just stream the file
+			mgr.createCacheFileAsync("layer.", //$NON-NLS-1$
+					new ByteArrayInputStream(bytes),
+					new CreateCompletionCallback(mgr));
+		} else {
+			// cache entry contains source map info.  Create a CacheData instance
+			// and serialize object.
+			Object data = new CacheData(bytes, sourceMap);
+			mgr.externalizeCacheObjectAsync("layer.", //$NON-NLS-1$
+					data,
+					new CreateCompletionCallback(mgr));
+		}
 	}
 
 	@Override
@@ -205,5 +255,57 @@ class CacheEntry implements Serializable {
 		.append("file:").append(filename).append(",") //$NON-NLS-1$ //$NON-NLS-2$
 		.append("size:").append(size).append(",") //$NON-NLS-1$ //$NON-NLS-2$
 		.append("deleted:").append(delete).append(")").toString(); //$NON-NLS-1$ //$NON-NLS-2$
+	}
+
+	/**
+	 * Serializable cache data object for cache entries that include source map data
+	 */
+	static final class CacheData implements Serializable {
+		private static final long serialVersionUID = -3247844042962099916L;
+
+		public final byte[] bytes;
+		public final byte[] sourceMap;
+
+		public CacheData(byte[] bytes, byte[] sourceMap) {
+			this.bytes = bytes;
+			this.sourceMap = sourceMap;
+		}
+	}
+
+	/**
+	 * Common create completion callback used by {@link CacheEntry#persist(ICacheManager)}
+	 * for serializing both types of cache data (file stream and serialized object).
+	 */
+	class CreateCompletionCallback implements ICacheManager.CreateCompletionCallback {
+		private final ICacheManager mgr;
+
+		private CreateCompletionCallback(ICacheManager mgr) {
+			this.mgr = mgr;
+		}
+
+		/* (non-Javadoc)
+		 * @see com.ibm.jaggr.core.cache.ICacheManager.CreateCompletionCallback#completed(java.lang.String, java.lang.Exception)
+		 */
+		@Override
+		public void completed(String fname, Exception e) {
+			synchronized(this) {
+				if (!delete) {
+					if (e == null) {
+						// Must set filename before clearing content
+						// since we don't synchronize.
+						filename = fname;
+						// Free up the memory for the content now that
+						// we've written out to disk
+						// TODO: Determine a size threshold where we may
+						// want to keep the contents
+						// of small files in memory to reduce disk i/o.
+						sourceMap = null;
+						bytes = null;
+					}
+				} else {
+					mgr.deleteFileDelayed(fname);
+				}
+			}
+		}
 	}
 }

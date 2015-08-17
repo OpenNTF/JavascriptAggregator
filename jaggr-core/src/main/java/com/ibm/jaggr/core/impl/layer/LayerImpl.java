@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
+import com.ibm.jaggr.core.cachekeygenerator.SourceMapsCacheKeyGenerator;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -37,21 +38,20 @@ import com.ibm.jaggr.core.readers.ModuleBuildReader;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
-import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.ZipUtil;
 
+import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang3.mutable.MutableObject;
 
-import java.io.ByteArrayOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
-import java.io.OutputStreamWriter;
 import java.io.StringReader;
-import java.io.Writer;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -72,8 +72,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.Deflater;
-import java.util.zip.GZIPInputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -123,7 +121,8 @@ public class LayerImpl implements ILayer {
 					return eyeCatcher;
 				}
 			},
-			new ServerExpandLayersCacheKeyGenerator()
+			new ServerExpandLayersCacheKeyGenerator(),
+			new SourceMapsCacheKeyGenerator()
 	}));
 
 	public static final Pattern GZIPFLAG_KEY_PATTERN  = Pattern.compile(s_layerCacheKeyGenerators.get(0).toString() + ":([01]):"); //$NON-NLS-1$
@@ -215,6 +214,7 @@ public class LayerImpl implements ILayer {
 			IOptions options = aggr.getOptions();
 			ICacheManager mgr = aggr.getCacheManager();
 			boolean ignoreCached = RequestUtil.isIgnoreCached(request);
+			boolean isSourceMapsEnabled = RequestUtil.isSourceMapsEnabled(request);
 			InputStream result;
 			long lastModified = getLastModified(request);
 			CacheEntry newEntry = new CacheEntry(_id, _cacheKey, lastModified);
@@ -254,8 +254,7 @@ public class LayerImpl implements ILayer {
 						cacheInfoReport.add(existingEntry != null ? "hit_1" : "added"); //$NON-NLS-1$ //$NON-NLS-2$
 					}
 					if (existingEntry != null) {
-						if ((result = existingEntry.tryGetInputStream(request)) != null) {
-							setResponseHeaders(request, response, existingEntry.getSize());
+						if ((result = trySetResponse(request, response, existingEntry)) != null) {
 							if (log.isLoggable(Level.FINEST)) {
 								log.finest(cacheInfoReport.toString() + "\n" +  //$NON-NLS-1$
 										"key:" + key +  //$NON-NLS-1$
@@ -309,11 +308,10 @@ public class LayerImpl implements ILayer {
 
 				// Check to see if data is available one more time in case a different thread finished
 				// building the output while we were blocked on the sync object.
-				if (!ignoreCached && key != null && (result = entry.tryGetInputStream(request)) != null) {
+				if (!ignoreCached && key != null && (result = trySetResponse(request, response, entry)) != null) {
 					if (cacheInfoReport != null) {
 						cacheInfoReport.add("hit_2"); //$NON-NLS-1$
 					}
-					setResponseHeaders(request, response, entry.getSize());
 					if (log.isLoggable(Level.FINEST)) {
 						log.finest(cacheInfoReport.toString() + "\n" + //$NON-NLS-1$
 								"key:" + key +  //$NON-NLS-1$
@@ -326,7 +324,8 @@ public class LayerImpl implements ILayer {
 				}
 
 				boolean isGzip = RequestUtil.isGzipEncoding(request);
-				ByteArrayOutputStream bos = new ByteArrayOutputStream();
+				byte[] bytes, smbytes = null;
+
 
 				// See if we already have a cached response that uses a different gzip
 				// encoding option.  If we do, then just zip (or unzip) the cached
@@ -345,27 +344,30 @@ public class LayerImpl implements ILayer {
 					otherEntry = _layerBuilds.get(sb.toString());
 				}
 				if (otherEntry != null) {
+					MutableObject<byte[]> sourceMapRef = isSourceMapsEnabled ? new MutableObject<byte[]>() : null;
 					if (isGzip) {
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("zip_unzipped"); //$NON-NLS-1$
 						}
 						// We need gzipped and the cached entry is unzipped
 						// Create the compression stream for the output
-						VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
-						compress.setLevel(Deflater.BEST_COMPRESSION);
-						Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
-
-						// Copy the data from the input stream to the output, compressing as we go.
-						CopyUtil.copy(otherEntry.getInputStream(request), writer);
+						bytes = ZipUtil.zip(otherEntry.getInputStream(request, sourceMapRef));
+						if (isSourceMapsEnabled && sourceMapRef.getValue() != null) {
+							smbytes = ZipUtil.zip(new ByteArrayInputStream(sourceMapRef.getValue()));
+						}
 					} else {
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("unzip_zipped"); //$NON-NLS-1$
 						}
 						// We need unzipped and the cached entry is zipped.  Just unzip it
-						CopyUtil.copy(new GZIPInputStream(otherEntry.getInputStream(request)), bos);
+						bytes = ZipUtil.unzip(otherEntry.getInputStream(request, sourceMapRef));
+						if (isSourceMapsEnabled && sourceMapRef.getValue() != null) {
+							// unzip the source map too
+							smbytes = ZipUtil.unzip(new ByteArrayInputStream(sourceMapRef.getValue()));
+						}
 					}
 					// Set the buildReader to the LayerBuild and release the lock by exiting the sync block
-					entry.setBytes(bos.toByteArray());
+					entry.setData(bytes, smbytes);
 					if (!ignoreCached) {
 						_layerBuilds.replace(key, entry, entry);	// updates entry weight in map
 						if (cacheInfoReport != null) {
@@ -388,23 +390,23 @@ public class LayerImpl implements ILayer {
 					// reader becomes available.
 					layerBuilder = new LayerBuilder(request, moduleKeyGens, moduleList);
 					String layer = layerBuilder.build();
+					String sourceMap = layerBuilder.getSourceMap();
 
 					if (isGzip) {
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("zip"); //$NON-NLS-1$
 						}
-						VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
-						compress.setLevel(Deflater.BEST_COMPRESSION);
-						Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
-
-						// Copy the data from the input stream to the output, compressing as we go.
-						CopyUtil.copy(new StringReader(layer), writer);
-						// Set the buildReader to the LayerBuild and release the lock by exiting the sync block
-						entry.setBytes(bos.toByteArray());
+						bytes = ZipUtil.zip(new ReaderInputStream(new StringReader(layer)));
+						// now compress the source map if there is one
+						if (sourceMap != null) {
+							smbytes = ZipUtil.zip(new ReaderInputStream(new StringReader(sourceMap)));
+						}
 					} else {
-						entry.setBytes(layer.getBytes());
+						bytes = layer.getBytes();
+						smbytes = (sourceMap != null) ? sourceMap.getBytes() : null;
 					}
-
+					// Set the buildReader to the LayerBuild and release the lock by exiting the sync block
+					entry.setData(bytes, smbytes);
 					// entry will be persisted below after we determine if cache key
 					// generator needs to be updated
 				}
@@ -493,9 +495,7 @@ public class LayerImpl implements ILayer {
 					}
 				}
 			}
-			result = entry.getInputStream(request);
-			setResponseHeaders(request, response, entry.getSize());
-
+			result = setResponse(request, response, entry);
 			// return the input stream to the LayerBuild
 			if (log.isLoggable(Level.FINEST)) {
 				log.finest(cacheInfoReport.toString() + "\n" + //$NON-NLS-1$
@@ -524,6 +524,62 @@ public class LayerImpl implements ILayer {
 		}
 	}
 
+	/**
+	 * Sets the response data in the response object and calls
+	 * {@link #setResponseHeaders(HttpServletRequest, HttpServletResponse, int)} to set the headers.
+	 *
+	 * @param request
+	 *            The servlet request object
+	 * @param response
+	 *            The servlet response object
+	 * @param entry
+	 *            The {@link CacheEntry} object containing the response data.
+	 * @return The input stream to the response data
+	 * @throws IOException
+	 */
+	protected InputStream setResponse(HttpServletRequest request, HttpServletResponse response, CacheEntry entry) throws IOException {
+		InputStream result;
+		MutableObject<byte[]> sourceMap = RequestUtil.isSourceMapRequest(request) ? new MutableObject<byte[]>() : null;
+		result = entry.getInputStream(request, sourceMap);
+		if (sourceMap != null && sourceMap.getValue() != null) {
+			byte[] sm = sourceMap.getValue();
+			result = new ByteArrayInputStream(sm);
+			setResponseHeaders(request, response, sm.length);
+		} else {
+			setResponseHeaders(request, response, entry.getSize());
+		}
+		return result;
+	}
+
+	/**
+	 * Like {@link #setResponse(HttpServletRequest, HttpServletResponse, CacheEntry)}, but
+	 * returns null instead of throwing an exception if the cache data is not available.
+	 *
+	 * @param request
+	 *            The servlet request object
+	 * @param response
+	 *            The servlet response object
+	 * @param entry
+	 *            The {@link CacheEntry} object containing the response data.
+	 * @return The input stream to the response data or null if the no cache data is
+	 *         available.
+	 * @throws IOException
+	 */
+	protected InputStream trySetResponse(HttpServletRequest request, HttpServletResponse response, CacheEntry entry) throws IOException {
+		InputStream result;
+		MutableObject<byte[]> sourceMap = RequestUtil.isSourceMapRequest(request) ? new MutableObject<byte[]>() : null;
+		result = entry.tryGetInputStream(request, sourceMap);
+		if (result != null) {
+			if (sourceMap != null && sourceMap.getValue() != null) {
+				byte[] sm = sourceMap.getValue();
+				result = new ByteArrayInputStream(sm);
+				setResponseHeaders(request, response, sm.length);
+			} else {
+				setResponseHeaders(request, response, entry.getSize());
+			}
+		}
+		return result;
+	}
 
 	/**
 	 * Adds the cache key generators specified in {@code gens} to the map of
@@ -1002,7 +1058,10 @@ public class LayerImpl implements ILayer {
 	}
 
 	protected void setResponseHeaders(HttpServletRequest request, HttpServletResponse response, int size) {
-		response.setContentType("application/x-javascript; charset=utf-8"); //$NON-NLS-1$
+		response.setContentType(
+				RequestUtil.isSourceMapRequest(request) ?
+						"application/json; charset=utf-8" : //$NON-NLS-1$
+						"application/javascript; charset=utf-8"); //$NON-NLS-1$
 		response.setContentLength(size);
 		if (RequestUtil.isGzipEncoding(request)) {
 			response.setHeader("Content-Encoding", "gzip"); //$NON-NLS-1$ //$NON-NLS-2$
