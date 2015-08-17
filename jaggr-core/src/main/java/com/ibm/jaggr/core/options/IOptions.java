@@ -318,6 +318,17 @@ public interface IOptions {
 	public Map<String, String> getOptionsMap();
 
 	/**
+	 * Returns an immutable map of the default options and their values.
+	 * The default options are initialized by the application and are not
+	 * affected by calls to {@link IOptions#setOption(String, boolean)}
+	 * or {@link #setOption(String, String)}.
+	 *
+	 * @return A map of the default option name/value pairs.
+	 *
+	 */
+	public Map<String, String> getDefaultOptionsMap();
+
+	/**
 	 * Returns the name that can be used to track this options object using the IOptionsListener
 	 * interface.
 	 *
