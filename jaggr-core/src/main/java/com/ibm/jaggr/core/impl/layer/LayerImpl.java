@@ -53,6 +53,7 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.StringReader;
 import java.net.URI;
+import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,7 +67,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
+import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -100,6 +103,9 @@ public class LayerImpl implements ILayer {
 	static final String DEPSOURCE_EXCLUDES = "URL - excludes";  //$NON-NLS-1$
 
 	static final Pattern nlsPat = Pattern.compile("^.*(^|\\/)nls(\\/|$)"); //$NON-NLS-1$
+
+	static final long CACHEKEYGENMUTEXT_LOG_INTERVAL_SECONDS = 30;	// Log warning messages using this interval
+	static final long CACHEKEYGENMUTEX_ERROR_TIMEOUT_MINUTES = 15;	// Give up after this interval
 
 	protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
 			new AbstractCacheKeyGenerator() {
@@ -156,6 +162,12 @@ public class LayerImpl implements ILayer {
 	 */
 	private transient boolean _isReportCacheInfo = false;
 
+	/**
+	 * Mutex semaphore used to serialize threads so that only one thread (the first to grab
+	 * the mutex) creates the cache key generator.  Not used for cache key generator updates.
+	 */
+	private transient Semaphore _cacheKeyGenMutex;
+
 	private final String _cacheKey;
 
 	final int _id;
@@ -167,6 +179,7 @@ public class LayerImpl implements ILayer {
 	public LayerImpl(String cacheKey, int id) {
 		_cacheKey = cacheKey;
 		_id = id;
+		_cacheKeyGenMutex = new Semaphore(1);
 	}
 
 	/* (non-Javadoc)
@@ -195,11 +208,13 @@ public class LayerImpl implements ILayer {
 	public InputStream getInputStream(HttpServletRequest request,
 			HttpServletResponse response) throws IOException {
 
+		final String sourceMethod = "getInputStream"; //$NON-NLS-1$
 		CacheEntry entry = null;
 		String key = null;
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 		List<String> cacheInfoReport = null;
 		ModuleList moduleList = null;
+		boolean cacheKeyGenMutexAcquired = false;
 
 		if (_isReportCacheInfo) {
 			cacheInfoReport = (List<String>)request.getAttribute(LAYERCACHEINFO_PROPNAME);
@@ -236,6 +251,39 @@ public class LayerImpl implements ILayer {
 						}
 						_cacheKeyGenerators = null;
 					}
+				}
+			}
+
+			if (_cacheKeyGenerators == null) {
+				// The cache key generator for this layer hasn't been created yet.  Attempt
+				// to grab the mutex.
+				try {
+					long start = new Date().getTime();
+					while (!_cacheKeyGenMutex.tryAcquire(CACHEKEYGENMUTEXT_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
+						long elapsed = (new Date().getTime() - start)/1000;
+						if (log.isLoggable(Level.WARNING)) {
+							log.logp(Level.WARNING, sourceClass, sourceMethod,
+									MessageFormat.format(
+											Messages.LayerImpl_7,
+											new Object[]{elapsed})
+							);
+						}
+						if (elapsed > CACHEKEYGENMUTEX_ERROR_TIMEOUT_MINUTES * 60) {
+							throw new RuntimeException(new TimeoutException());
+						}
+					}
+				} catch (InterruptedException e) {
+					throw new RuntimeException(e);
+				}
+				if (_cacheKeyGenerators == null) {
+					// We're the first thread for this layer.  Set flag and proceed to build the
+					// layer.  We'll release the mutex and let other thread through once we have
+					// a cache key generator.
+					cacheKeyGenMutexAcquired = true;
+				} else {
+					// Another thread already created the cache key generator.  Just release the
+					// mutex and continue.
+					_cacheKeyGenMutex.release();
 				}
 			}
 			Map<String, ICacheKeyGenerator> cacheKeyGenerators = _cacheKeyGenerators;
@@ -443,6 +491,10 @@ public class LayerImpl implements ILayer {
 							}
 							_cacheKeyGenerators = Collections.unmodifiableMap(newKeyGens);
 						}
+						if (cacheKeyGenMutexAcquired) {
+							cacheKeyGenMutexAcquired = false;
+							_cacheKeyGenMutex.release();
+						}
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("update_keygen"); //$NON-NLS-1$
 						}
@@ -513,6 +565,9 @@ public class LayerImpl implements ILayer {
 			_layerBuilds.remove(key, entry);
 			throw e;
 		} finally {
+			if (cacheKeyGenMutexAcquired) {
+				_cacheKeyGenMutex.release();
+			}
 			if (_layerBuilds.isLayerEvicted()) {
 				_layerBuilds.removeLayerFromCache(this);
 			}
@@ -728,6 +783,7 @@ public class LayerImpl implements ILayer {
 		in.defaultReadObject();
 		// init transients
 		_validateLastModified = new AtomicBoolean(true);
+		_cacheKeyGenMutex = new Semaphore(1);
 		_isReportCacheInfo = false;
 	}
 

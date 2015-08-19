@@ -316,7 +316,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 					.toString());
 		}
 
-		CacheEntry newEntry = new CacheEntry();
+		CacheEntry newEntry = null;
 		// Try to retrieve an existing cache entry using the blocking
 		// putIfAbsent. If the return
 		// value is null, then the newEntry was successfully added to the map,
@@ -324,7 +324,11 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		// existing entry is returned in the buildReader and newEntry was not
 		// added.
 		if (!ignoreCached) {
-			existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
+			existingEntry = moduleBuilds.get(key);
+			if (existingEntry == null) {
+				newEntry = new CacheEntry();
+				existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
+			}
 			if (existingEntry != null
 					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request, sourceMap)) != null) {
 				if (isLogLevelFiner) {
