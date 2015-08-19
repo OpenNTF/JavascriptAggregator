@@ -531,7 +531,7 @@ public class LayerBuilderTest {
 		System.out.println(output);
 		Assert.assertEquals(Arrays.asList("sourceMap1", "sourceMap2"), maps);
 		System.out.println(builder.getSourceMap());
-		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]\n//# sourceMappingURL="+ILayer.SOURCEMAP_RESOURSE_PATHCOMP, output);
+		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]\n//# sourceMappingURL="+ILayer.SOURCEMAP_RESOURCE_PATHCOMP, output);
 		Assert.assertEquals(
 				new JSONObject("{\"sourcesContent\":[\"script1\",\"script2\"],\"sources\":[\"s1\",\"s2\"]}"),
 				new JSONObject(builder.getSourceMap().substring(LayerBuilder.SOURCEMAP_XSSI_PREAMBLE.length())));

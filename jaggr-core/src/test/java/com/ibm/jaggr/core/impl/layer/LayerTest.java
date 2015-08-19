@@ -887,7 +887,7 @@ public class LayerTest extends EasyMock {
 		Assert.assertEquals("application/javascript; charset=utf-8", contentType.getValue());
 
 		mockRequest = TestUtils.createMockRequest(mockAggregator);
-		EasyMock.expect(mockRequest.getPathInfo()).andReturn("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP).anyTimes();
+		EasyMock.expect(mockRequest.getPathInfo()).andReturn(ILayer.SOURCEMAP_RESOURCE_PATH).anyTimes();
 		EasyMock.replay(mockRequest);
 		mockRequest.setAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
 		mockAggregator.getOptions().setOption(IOptions.SOURCE_MAPS, true);

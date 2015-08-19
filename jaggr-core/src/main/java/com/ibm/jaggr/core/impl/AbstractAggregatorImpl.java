@@ -359,7 +359,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		}
 
 		String pathInfo = req.getPathInfo();
-		if (pathInfo == null  || RequestUtil.isSourceMapRequest(req)) {
+		if (pathInfo == null  || (ILayer.SOURCEMAP_RESOURCE_PATH).equals(pathInfo)) {
 			currentRequest.set(req);
 			try {
 				processAggregatorRequest(req, resp);
@@ -372,7 +372,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			for (Map.Entry<String, URI> entry : resourcePaths.entrySet()) {
 				String path = entry.getKey();
 				if (entry.getValue() == null) {
-					if (path.equals(pathInfo)) {
+					if (path.equals(pathInfo) || (path + ILayer.SOURCEMAP_RESOURCE_PATH).equals(pathInfo)) {
 						processAggregatorRequest(req, resp);
 						processed = true;
 						break;
@@ -531,6 +531,16 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			}
 
 			getTransport().decorateRequest(req);
+
+			// Validate source map requests now that we've decorated the request.
+			// Basically, ensures that requests for source map layers (<aggregator_path>/_sourcemap)
+			// specify the sourcemap query arg
+			String pathInfo = req.getPathInfo();
+			if (pathInfo != null &&
+					pathInfo.endsWith(ILayer.SOURCEMAP_RESOURCE_PATH) &&
+					!RequestUtil.isSourceMapRequest(req)) {
+				throw new BadRequestException();
+			}
 			notifyRequestListeners(RequestNotifierAction.start, req, resp);
 
 			ILayer layer = getLayer(req);
