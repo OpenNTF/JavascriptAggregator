@@ -69,6 +69,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -103,7 +104,8 @@ public class LayerImpl implements ILayer {
 
 	static final Pattern nlsPat = Pattern.compile("^.*(^|\\/)nls(\\/|$)"); //$NON-NLS-1$
 
-	static final long CACHEKEYGENMUTEXT_TIMEOUT_SECONDS = 30;
+	static final long CACHEKEYGENMUTEXT_LOG_INTERVAL_SECONDS = 30;	// Log warning messages using this interval
+	static final long CACHEKEYGENMUTEX_ERROR_TIMEOUT_MINUTES = 15;	// Give up after this interval
 
 	protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
 			new AbstractCacheKeyGenerator() {
@@ -257,13 +259,17 @@ public class LayerImpl implements ILayer {
 				// to grab the mutex.
 				try {
 					long start = new Date().getTime();
-					while (!_cacheKeyGenMutex.tryAcquire(CACHEKEYGENMUTEXT_TIMEOUT_SECONDS, TimeUnit.SECONDS)) {
+					while (!_cacheKeyGenMutex.tryAcquire(CACHEKEYGENMUTEXT_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
+						long elapsed = (new Date().getTime() - start)/1000;
 						if (log.isLoggable(Level.WARNING)) {
 							log.logp(Level.WARNING, sourceClass, sourceMethod,
 									MessageFormat.format(
 											Messages.LayerImpl_7,
-											new Object[]{(new Date().getTime() - start)/1000})
+											new Object[]{elapsed})
 							);
+						}
+						if (elapsed > CACHEKEYGENMUTEX_ERROR_TIMEOUT_MINUTES * 60) {
+							throw new RuntimeException(new TimeoutException());
 						}
 					}
 				} catch (InterruptedException e) {
