@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.deps;
 import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.Features;
 
+import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -33,7 +34,7 @@ import java.util.Set;
  * safety need to be made if instances of this class are to be shared
  * by multiple threads.
  */
-public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> {
+public class ModuleDeps extends LinkedHashMap<String, ModuleDepInfo> implements Serializable {
 
 	private static final long serialVersionUID = -8057569894102155520L;
 

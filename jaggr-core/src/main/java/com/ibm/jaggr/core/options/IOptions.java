@@ -80,6 +80,14 @@ public interface IOptions {
 	public static final String DEBUG_MODE = "debugMode"; //$NON-NLS-1$
 
 	/**
+	 * Name of property that specifies if requests for source maps should be honored.
+	 * The default value is false.
+	 * <p>
+	 * Valid values: <code>true/false</code>
+	 */
+	public static final String SOURCE_MAPS = "sourceMaps";  //$NON-NLS-1$
+
+	/**
 	 * Name of property that specifies if the aggregator should not perform
 	 * has.js feature trimming of javascript code.
 	 * <p>
@@ -208,6 +216,15 @@ public interface IOptions {
 	public boolean isDebugMode();
 
 	/**
+	 * Convenience method for reading the {@link #SOURCE_MAPS}
+	 * options property.
+	 *
+	 * @return The value of the {@link #SOURCE_MAPS} property
+	 * as a boolean
+	 */
+	public boolean isSourceMapsEnabled();
+
+	/**
 	 * Convenience method for reading the {@link #DISABLE_HASFILTERING}
 	 * options property.
 	 *
@@ -316,6 +333,17 @@ public interface IOptions {
 	 * @return A map of the current option name/value pairs.
 	 */
 	public Map<String, String> getOptionsMap();
+
+	/**
+	 * Returns an immutable map of the default options and their values.
+	 * The default options are initialized by the application and are not
+	 * affected by calls to {@link IOptions#setOption(String, boolean)}
+	 * or {@link #setOption(String, String)}.
+	 *
+	 * @return A map of the default option name/value pairs.
+	 *
+	 */
+	public Map<String, String> getDefaultOptionsMap();
 
 	/**
 	 * Returns the name that can be used to track this options object using the IOptionsListener

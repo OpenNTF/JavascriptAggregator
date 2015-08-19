@@ -20,7 +20,7 @@
     <groupId>com.ibm.jaggr</groupId>
     <artifactId>jaggr</artifactId>
     <relativePath>../pom.xml</relativePath>
-    <version>1.3.2-SNAPSHOT</version>
+    <version>1.3.3-SNAPSHOT</version>
   </parent>
   
   <artifactId>jaggr-sample</artifactId>
@@ -185,6 +185,7 @@
           <excludes>
             <exclude>src/test/resources/specRunner.htmltemplate</exclude>
             <exclude>src/test/javascript/styles/test.css</exclude>
+            <exclude>aggregator.properties</exclude>
           </excludes>
         </configuration>
       </plugin>

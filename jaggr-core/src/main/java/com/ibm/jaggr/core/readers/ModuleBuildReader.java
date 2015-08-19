@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.modulebuilder.SourceMap;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -42,6 +43,7 @@ public class ModuleBuildReader extends Reader {
 	private List<ICacheKeyGenerator> keyGenerators;
 	private final boolean isScript;
 	private final String error;
+	private SourceMap sourceMap;
 
 	/**
 	 * Constructor for a Build object specifying a reader, key generator
@@ -58,6 +60,7 @@ public class ModuleBuildReader extends Reader {
 		this.keyGenerators = keyGens;
 		this.error = error;
 		extraBuilds = null;
+		sourceMap = null;
 		if (keyGenerators != null && KeyGenUtil.isProvisional(keyGenerators)) {
 			throw new IllegalStateException();
 		}
@@ -153,5 +156,21 @@ public class ModuleBuildReader extends Reader {
 	 */
 	public List<ModuleBuildFuture> getExtraBuilds() {
 		return extraBuilds == null ? Collections.<ModuleBuildFuture>emptyList() : Collections.unmodifiableList(extraBuilds);
+	}
+
+	/**
+	 * Sets the source map object associated with this reader
+	 *
+	 * @param sourceMap the source map
+	 */
+	public void setSourceMap(SourceMap sourceMap) {
+		this.sourceMap = sourceMap;
+	}
+
+	/**
+	 * @return the source map object associated with this reader
+	 */
+	public SourceMap getSourceMap() {
+		return sourceMap;
 	}
 }

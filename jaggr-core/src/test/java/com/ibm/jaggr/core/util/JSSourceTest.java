@@ -85,7 +85,7 @@ public class JSSourceTest {
 			"});";
 		String expected =
 			"define(['foo','bar'], function(foo, bar) {\r\n" +
-			"   require(['dep1', 'dep2',\"insertedDep\"], function(dep1, dep2) {\r\n" +
+			"   require(['dep1', 'dep2'].concat([\"foo\"]), function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
 			"});";
@@ -94,7 +94,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat([\"foo\"])");
 		Assert.assertEquals(expected, source.toString());
 	}
 
@@ -108,7 +108,7 @@ public class JSSourceTest {
 			"});";
 		String expected =
 			"define(['foo','bar'], function(foo, bar) {\r\n" +
-			"   require(['dep1', vardep,\"insertedDep\"], function(dep1, dep2) {\r\n" +
+			"   require(['dep1', vardep].concat([]), function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
 			"});";
@@ -117,7 +117,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat([])");
 		Assert.assertEquals(expected, source.toString());
 	}
 
@@ -138,7 +138,7 @@ public class JSSourceTest {
 			"   require(\r\n["+
 			"      'dep1',\r\n"+
 			"	   'dep2'\r\n"+
-			"   ,\"insertedDep\"]\r\n"+
+			"   ].concat('')\r\n"+
 			", function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
@@ -148,7 +148,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat('')");
 		Assert.assertEquals(expected, source.toString());
 	}
 
@@ -168,7 +168,7 @@ public class JSSourceTest {
 			"   require(\r\n["+
 			"      'dep1',\r\n"+
 			"	   'dep2'  // [comment] \r\n"+
-			"   ,\"insertedDep\"], function(dep1, dep2) {\r\n" +
+			"   ].concat(['foo','bar'), function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
 			"});";
@@ -177,7 +177,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat(['foo','bar')");
 		Assert.assertEquals(expected, source.toString());
 	}
 
@@ -197,7 +197,7 @@ public class JSSourceTest {
 			"   require(\r\n["+
 			"      'dep1',\r\n"+
 			"	   'dep2'  /* ]comment // fake */\r\n"+
-			"   ,\"insertedDep\"], function(dep1, dep2) {\r\n" +
+			"   ].concat([]), function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
 			"});";
@@ -206,7 +206,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat([])");
 		Assert.assertEquals(expected, source.toString());
 	}
 
@@ -228,7 +228,7 @@ public class JSSourceTest {
 			"      'dep1',\r\n"+
 			"	   'dep2'  /* ]comment[\r\n"+
 			"      another comment line]\r\n"+
-			"//  */,\"insertedDep\"], function(dep1, dep2) {\r\n" +
+			"//  */].concat([\"foo\"]), function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
 			"});";
@@ -237,7 +237,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat([\"foo\"])");
 		Assert.assertEquals(expected, source.toString());
 	}
 
@@ -267,7 +267,7 @@ public class JSSourceTest {
 			" * hello world\r\n"+
 			" */\r\n"+
 			"\r\n"+
-			",\"insertedDep\"], function(dep1, dep2) {\r\n" +
+			"].concat(['foo']), function(dep1, dep2) {\r\n" +
 			"      alert('hello world');\r\n"+
 			"   });\r\n" +
 			"});";
@@ -276,7 +276,7 @@ public class JSSourceTest {
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat(['foo'])");
 		Assert.assertEquals(expected, source.toString());
 
 	}
@@ -293,13 +293,13 @@ public class JSSourceTest {
 			"define(['foo','bar'], function(foo, bar) {\r\n" +
 			"   require(['dep1', 'dep2'\r\n"+
 			"\r\n"+
-			"   ,\"insertedDep\"], function(dep1, dep2) {alert('hello world');});});";
+			"   ].concat([]), function(dep1, dep2) {alert('hello world');});});";
 
 		Compiler compiler = new Compiler();
 		Node root = compiler.parse(JSSourceFile.fromCode("file", "name", code));
 		Node array = findRequireDeps(root);
 		JSSource source = new JSSource(code, null);
-		source.appendToArrayLit(array, "insertedDep");
+		source.appendAfterArrayLit(array, ".concat([])");
 		Assert.assertEquals(expected, source.toString());
 	}
 

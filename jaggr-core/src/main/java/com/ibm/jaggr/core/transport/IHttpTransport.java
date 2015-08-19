@@ -236,6 +236,14 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + "ServerExpandLayers";  //$NON-NLS-1$
 
 	/**
+	 * Name of request attribute specifying if source maps should be generated for this
+	 * request.  If true, then the aggregated response will contain the SourceMappingURL
+	 * comment specifying the URL for the source map corresponding to the current request.
+	 */
+	public static final String GENERATESOURCEMAPS_REQATTRNAME = IHttpTransport.class
+			.getName() + "GenerateSourceMap"; //$NON-NLS-1$
+
+	/**
 	 * Supported optimization levels. Module builders are not required to
 	 * support all, or any, of these.
 	 */

@@ -35,6 +35,8 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuildRenderer;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
+import com.ibm.jaggr.core.modulebuilder.SourceMap;
+import com.ibm.jaggr.core.modulebuilder.SourceMappedBuildRenderer;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ErrorModuleReader;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
@@ -43,6 +45,8 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.StringUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+
+import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -282,16 +286,18 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		// If that fails,
 		// then use the locking putIfAbsent
 		CacheEntry existingEntry = null;
+		final MutableObject<SourceMap> sourceMap = new MutableObject<SourceMap>();
 		if (!ignoreCached) {
 			existingEntry = moduleBuilds.get(key);
 			if (existingEntry != null
-					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
+					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request, sourceMap)) != null) {
 				if (isLogLevelFiner) {
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(reader, builder.isScript(request),
 						cacheKeyGenerators, null);
+				mbr.setSourceMap(sourceMap.getValue());
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
@@ -324,13 +330,14 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 				existingEntry = moduleBuilds.putIfAbsent(key, newEntry);
 			}
 			if (existingEntry != null
-					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request)) != null) {
+					&& (reader = existingEntry.tryGetReader(mgr.getCacheDir(), request, sourceMap)) != null) {
 				if (isLogLevelFiner) {
 					log.finer("returning cached module build with cache key: " //$NON-NLS-1$
 							+ key);
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(reader, builder.isScript(request),
 						cacheKeyGenerators, null);
+				mbr.setSourceMap(sourceMap.getValue());
 				processExtraModules(mbr, request, existingEntry);
 				return new CompletedFuture<ModuleBuildReader>(mbr);
 			}
@@ -371,13 +378,14 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 						// sync object.
 						if (!ignoreCached
 								&& (reader = cacheEntry.tryGetReader(mgr
-										.getCacheDir(), request)) != null) {
+										.getCacheDir(), request, sourceMap)) != null) {
 							if (isLogLevelFiner) {
 								log.finer("returning built module with cache key: " //$NON-NLS-1$
 										+ key);
 							}
 							ModuleBuildReader mbr = new ModuleBuildReader(reader, builder.isScript(request),
 									_cacheKeyGenerators, null);
+							mbr.setSourceMap(sourceMap.getValue());
 							processExtraModules(mbr, request, cacheEntry);
 							return mbr;
 						}
@@ -473,9 +481,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 					}
 				}
 				ModuleBuildReader mbr = new ModuleBuildReader(
-						cacheEntry.getReader(mgr.getCacheDir(), request),
+						cacheEntry.getReader(mgr.getCacheDir(), request, sourceMap),
 						builder.isScript(request),
 						newCacheKeyGenerators, null);
+				mbr.setSourceMap(sourceMap.getValue());
 				processExtraModules(mbr, request, cacheEntry);
 				// return a build reader object
 				return mbr;
@@ -707,11 +716,13 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		 *            the location of the cache directory
 		 * @param request
 		 *            the request obect
+		 * @param sourceMap
+		 *            Output - a reference to the source map for the module
 		 * @return A ModuleReader for the build output
 		 * @throws IOException
 		 * @throws FileNotFoundException
 		 */
-		public Reader getReader(File cacheDir, HttpServletRequest request) throws IOException {
+		public Reader getReader(File cacheDir, HttpServletRequest request, MutableObject<SourceMap> sourceMap) throws IOException {
 			Reader reader = null;
 			// Make local copies of volatile instance variables so that we can
 			// check and then use the values without locking. Note that it's important
@@ -732,6 +743,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 					CopyUtil.copy(fileReader, writer);
 					content = writer.toString();
 				}
+				if (sourceMap != null) {
+					sourceMap.setValue(null);
+				}
 				return new StringReader((String)content);
 			} else {
 				if (content == null) {
@@ -750,6 +764,9 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 				}
 				if (content instanceof IModuleBuildRenderer) {
 					reader = new BuildRendererReader((IModuleBuildRenderer)content, request);
+					if (sourceMap != null) {
+						sourceMap.setValue(((BuildRendererReader)reader).getSourceMap());
+					}
 				} else {
 					reader = new StringReader(content.toString());
 				}
@@ -785,14 +802,17 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 		 *         The location of the cache directory on the server
 		 * @param request
 		 *         the request object
+		 * @param sourceMap
+		 *         Output - a reference to the source map for the module associated with
+		 *         the reader.  May be null.
 		 * @return A ModuleReader for the output, or null if no output is
 		 *         available
 		 */
-		Reader tryGetReader(File cacheDir, HttpServletRequest request) {
+		Reader tryGetReader(File cacheDir, HttpServletRequest request, MutableObject<SourceMap> sourceMap) {
 			Reader reader = null;
 			if (content != null || filename != null) {
 				try {
-					reader = getReader(cacheDir, request);
+					reader = getReader(cacheDir, request, sourceMap);
 				} catch (IOException e) {
 					// If we get a FileNotFoundException, continue on and
 					// replace the cached entry
@@ -909,6 +929,19 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 				}
 			}
 			return reader.read(cbuf, off, len);
+		}
+
+		/**
+		 * Returns the source map for the module if one was provided, else null.
+		 *
+		 * @return the source map or null.
+		 */
+		public SourceMap getSourceMap() {
+			SourceMap result = null;
+			if (build instanceof SourceMappedBuildRenderer) {
+				result = ((SourceMappedBuildRenderer)build).getSourceMap();
+			}
+			return result;
 		}
 
 		@Override

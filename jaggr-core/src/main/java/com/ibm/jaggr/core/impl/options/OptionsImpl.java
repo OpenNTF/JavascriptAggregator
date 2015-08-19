@@ -79,6 +79,8 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 
 	private Properties defaultOptions;
 
+	private Map<String, String> defaultOptionsMap;
+
 	private IAggregator aggregator = null;
 
 	private Collection<IServiceRegistration> serviceRegistrations;
@@ -129,6 +131,11 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 	@Override
 	public boolean isDebugMode() {
 		return Boolean.parseBoolean(getOption(DEBUG_MODE));
+	}
+
+	@Override
+	public boolean isSourceMapsEnabled() {
+		return Boolean.parseBoolean(getOption(SOURCE_MAPS));
 	}
 
 	@Override
@@ -219,6 +226,11 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 	@Override
 	public String getName() {
 		return registrationName;
+	}
+
+	@Override
+	public Map<String, String> getDefaultOptionsMap() {
+		return defaultOptionsMap;
 	}
 
 	/**
@@ -455,6 +467,12 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 				loadFromUrl(defaultValues, url);
 			}
 		}
+		Map<String, String> map = new HashMap<String, String>();
+		for (String name : defaultValues.stringPropertyNames()) {
+			map.put(name, (String)defaultValues.getProperty(name));
+		}
+		defaultOptionsMap = Collections.unmodifiableMap(map);
+
 		return defaultValues;
 	}
 

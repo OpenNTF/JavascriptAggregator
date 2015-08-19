@@ -59,6 +59,7 @@ public class Messages extends NLS {
 	public static String CommandProvider_29;
 	public static String CommandProvider_30;
 	public static String CommandProvider_31;
+	public static String CommandProvider_32;
 	public static String ConfigModified;
 	static {
 		// initialize resource bundle

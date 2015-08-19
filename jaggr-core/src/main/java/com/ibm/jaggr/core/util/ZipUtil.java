@@ -15,18 +15,25 @@
  */
 package com.ibm.jaggr.core.util;
 
+import com.ibm.jaggr.core.impl.layer.VariableGZIPOutputStream;
+
 import com.google.common.io.Files;
 
 import org.apache.commons.io.IOUtils;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.Deflater;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -328,6 +335,37 @@ public class ZipUtil {
 		}
 	}
 
+	/**
+	 * Returns a byte array containing the gzipped contents of the input stream
+	 *
+	 * @param in
+	 *            the input stream to zip
+	 * @return the gzipped contents in a byte array
+	 * @throws IOException
+	 */
+	static public byte[] zip(InputStream in) throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		VariableGZIPOutputStream compress = new VariableGZIPOutputStream(bos, 10240);  // is 10k too big?
+		compress.setLevel(Deflater.BEST_COMPRESSION);
+		Writer writer = new OutputStreamWriter(compress, "UTF-8"); //$NON-NLS-1$
+		// Copy the data from the input stream to the output, compressing as we go.
+		CopyUtil.copy(in, writer);
+		return bos.toByteArray();
+	}
+
+	/**
+	 * Returns the unzipped contents of the zipped input stream in a byte array
+	 *
+	 * @param in
+	 *            the input stream to unzip
+	 * @return the unzipped content in a byte array
+	 * @throws IOException
+	 */
+	static public byte[] unzip(InputStream in) throws IOException {
+		ByteArrayOutputStream bos = new ByteArrayOutputStream();
+		CopyUtil.copy(new GZIPInputStream(in), bos);
+		return bos.toByteArray();
+	}
 	private static String joinPaths(String left, String right) {
 		// make sure left ends with a '/' unless it's empty
 		if (left.length() > 0 && left.charAt(left.length()-1) != '/') {

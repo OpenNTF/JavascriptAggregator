@@ -467,7 +467,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	protected void unfoldModules(JSONObject modules, Map<Integer, String> sparseArray) throws IOException, JSONException {
 		final String sourceMethod = "unfoldModules"; //$NON-NLS-1$
 		if (isTraceLogging) {
-			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{modules, Arrays.asList(sparseArray)});
+			log.entering(RequestedModuleNames.class.getName(), sourceMethod, new Object[]{modules, sparseArray});
 		}
 		Iterator<?> it = modules.keys();
 		String[] prefixes = null;
@@ -486,7 +486,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			}
 		}
 		if (isTraceLogging) {
-			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, Arrays.asList(sparseArray));
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, sparseArray);
 		}
 	}
 
@@ -536,7 +536,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			throw new BadRequestException();
 		}
 		if (isTraceLogging) {
-			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, Arrays.asList(modules));
+			log.exiting(RequestedModuleNames.class.getName(), sourceMethod, modules);
 		}
 	}
 

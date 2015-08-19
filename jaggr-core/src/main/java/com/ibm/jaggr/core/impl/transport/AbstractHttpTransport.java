@@ -171,6 +171,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String[] DEPENDENCYEXPANSIONLOGGING_REQPARAMS = {"depExpLog"}; //$NON-NLS-1$
 
+	public static final String[] GENERATESOURCEMAPS_REQPARAMS = {"sourcemaps", "sm"}; //$NON-NLS-1$ //$NON-NLS-2$
+
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 
 	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
@@ -268,6 +270,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		request.setAttribute(ASSERTNONLS_REQATTRNAME, getParameter(request, ASSERTNONLS_REQPARAM));
 
 		request.setAttribute(SERVEREXPANDLAYERS_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SERVEREXPANDLAYERS_REQPARAMS)));
+
+		request.setAttribute(GENERATESOURCEMAPS_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, GENERATESOURCEMAPS_REQPARAMS)));
 
 		if (request.getParameter(CONFIGVARNAME_REQPARAM) != null) {
 			request.setAttribute(CONFIGVARNAME_REQATTRNAME, request.getParameter(CONFIGVARNAME_REQPARAM));
