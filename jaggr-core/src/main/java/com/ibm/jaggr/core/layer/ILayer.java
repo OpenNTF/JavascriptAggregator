@@ -76,7 +76,8 @@ public interface ILayer extends Serializable {
 	 * without the source map path component.  For example, if the aggregator url is
 	 * /foo/aggr, then resource maps would be obtained form /foo/aggr/_sourcemap
 	 */
-	public static final String SOURCEMAP_RESOURSE_PATHCOMP = "_sourcemap"; //$NON-NLS-1$
+	public static final String SOURCEMAP_RESOURCE_PATHCOMP = "_sourcemap"; //$NON-NLS-1$
+	public static final String SOURCEMAP_RESOURCE_PATH = "/" + SOURCEMAP_RESOURCE_PATHCOMP;  //$NON-NLS-1$
 
 	/**
 	 * Returns the {@link InputStream} for the assembled and gzipped layer build

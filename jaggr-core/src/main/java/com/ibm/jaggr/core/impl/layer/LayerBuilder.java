@@ -255,8 +255,8 @@ public class LayerBuilder {
 			// We may be re-building a layer for a source map request where the layer
 			// has been flushed from the cache.  If that's the case, then the context
 			// path will already include the source map path component, so just remove it.
-			if (contextPath.endsWith("/" + ILayer.SOURCEMAP_RESOURSE_PATHCOMP)) { //$NON-NLS-1$
-				contextPath = contextPath.substring(0, contextPath.length()-(ILayer.SOURCEMAP_RESOURSE_PATHCOMP.length()+1));
+			if (contextPath.endsWith(ILayer.SOURCEMAP_RESOURCE_PATH)) {
+				contextPath = contextPath.substring(0, contextPath.length()-(ILayer.SOURCEMAP_RESOURCE_PATHCOMP.length()+1));
 			}
 			// Because we're specifying a relative URL that is relative to the request for the
 			// layer and aggregator paths are assumed to NOT include a trailing '/', then we
@@ -272,7 +272,7 @@ public class LayerBuilder {
 		StringBuffer sb = new StringBuffer();
 		sb.append("//# sourceMappingURL=") //$NON-NLS-1$
 		  .append(root)
-	      .append(ILayer.SOURCEMAP_RESOURSE_PATHCOMP);
+	      .append(ILayer.SOURCEMAP_RESOURCE_PATHCOMP);
 		String queryString = request.getQueryString();
 		if (queryString != null) {
 			sb.append("?").append(queryString); //$NON-NLS-1$
