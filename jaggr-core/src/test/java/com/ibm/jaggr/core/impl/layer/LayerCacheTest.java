@@ -85,6 +85,7 @@ public class LayerCacheTest {
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = Files.createTempDir();
 		TestUtils.createTestFiles(tmpdir);
+		LayerImpl.LAYERBUILD_REMOVE_DELAY_SECONDS = 0;
 	}
 
 	@AfterClass
