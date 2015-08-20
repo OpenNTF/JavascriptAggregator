@@ -50,6 +50,7 @@
           <include>notice.txt</include>
           <include>embed.txt</include>
           <include>WebContent/**</include>
+          <include>aggregator.properties</include>
           <include>META-INF/mime.types</include>
         </includes>
       </resource>
