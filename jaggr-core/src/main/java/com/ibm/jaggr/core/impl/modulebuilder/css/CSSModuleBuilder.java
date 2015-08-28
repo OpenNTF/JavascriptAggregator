@@ -34,6 +34,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.PathUtil;
+import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.google.common.collect.ImmutableMap;
@@ -243,6 +244,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 		s_inlineableImageTypes.add("image/tiff"); //$NON-NLS-1$
 	};
 
+
+
 	public CSSModuleBuilder() {
 		super();
 		init();
@@ -364,7 +367,10 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGens});
 		}
 		Reader result = null;
-		configUpdatingRWL.readLock().lock();	// If a config update is in progress, wait
+		SignalUtil.lock(		// If a config update is in progress, wait
+				configUpdatingRWL.readLock(),
+				sourceClass,
+				sourceMethod);
 		try {
 			String css = readToString(new CommentStrippingReader(resource.getReader()));
 			// in-line @imports
@@ -882,7 +888,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			}
 			// now get the results
 			for (int i = 0; i < scopePoolSize; i++) {
-				Scriptable threadScope = cs.take().get();
+				Scriptable threadScope = SignalUtil.take(cs, sourceClass, sourceMethod).get();
 				// Seal the scopes to prevent changes
 				((ScriptableObject)threadScope).sealObject();
 				threadScopes.add(threadScope);
@@ -1066,7 +1072,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 */
 	@Override
 	public void configLoaded(IConfig conf, long sequence) {
-		configUpdatingRWL.writeLock().lock();	// Block builder threads while we're updating
+		final String sourceMethod = "configLoaded"; //$NON-NLS-1$
+		SignalUtil.lock(		// Block builder threads while we're updating
+				configUpdatingRWL.writeLock(),
+				sourceClass,
+				sourceMethod);
 		try {
 			/** Maximum size of image that can be in-lined */
 			Object obj = conf.getProperty(SIZETHRESHOLD_CONFIGPARAM, null);

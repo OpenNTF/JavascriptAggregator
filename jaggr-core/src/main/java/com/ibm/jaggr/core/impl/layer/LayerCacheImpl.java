@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
@@ -74,6 +75,7 @@ import javax.servlet.http.HttpServletRequest;
  * removed from the layerMap.
  */
 public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCache, Serializable {
+	private static final String sourceClass = LayerCacheImpl.class.getName();
 
 	static final int DEFAULT_MAXLAYERCACHECAPACITY_MB = 500;
 
@@ -120,7 +122,8 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 	 */
 	@Override
 	public void clear() {
-		cloneLock.readLock().lock();
+		final String sourceMethod = "clear"; //$NON-NLS-1$
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			cacheMap.clear();
 			layerBuildMap.clear();
@@ -150,7 +153,8 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 
 	@Override
 	public ILayer getLayer(HttpServletRequest request) {
-		cloneLock.readLock().lock();
+		final String sourceMethod = "getLayer"; //$NON-NLS-1$
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			String key = request
 					.getAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME)
@@ -179,7 +183,8 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 	}
 
 	boolean remove(String key, ILayer layer) {
-		cloneLock.readLock().lock();
+		final String sourceMethod = "remove"; //$NON-NLS-1$
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			return cacheMap.remove(key, layer);
 		} finally {
@@ -322,6 +327,7 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 
 	protected static class SerializationProxy implements Serializable {
 		private static final long serialVersionUID = 1626266857238222300L;
+		private static final String sourceClass = SerializationProxy.class.getName();
 
 		private final int newLayerId;
 		private final int maxCapacity;
@@ -331,7 +337,8 @@ public class LayerCacheImpl extends GenericCacheImpl<ILayer> implements ILayerCa
 		private final Map<String, CacheEntry> layerBuildMap;
 
 		protected SerializationProxy(LayerCacheImpl cache) throws InvalidObjectException {
-			cache.cloneLock.writeLock().lock();
+			final String sourceMethod = "<ctor>"; //$NON-NLS-1$
+			SignalUtil.lock(cache.cloneLock.writeLock(), sourceClass, sourceMethod);
 			try {
 				clazz = cache.getClass();
 				newLayerId = cache.newLayerId.get();

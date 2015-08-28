@@ -24,7 +24,6 @@ public class Messages extends NLS {
 	public static String AbstractHttpTransport_1;
 	public static String AbstractHttpTransport_2;
 	public static String AbstractHttpTransport_3;
-	public static String AbstractHttpTransport_4;
 	public static String DojoHttpTransport_0;
 	public static String DojoHttpTransport_1;
 	public static String DojoHttpTransport_2;

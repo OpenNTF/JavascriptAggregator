@@ -33,6 +33,7 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.CopyUtil;
+import com.ibm.jaggr.core.util.SignalUtil;
 
 import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang3.StringUtils;
@@ -64,10 +65,11 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConfigListener, IDependenciesListener, IOptionsListener {
-
-	private static final Logger log = Logger.getLogger(CacheManagerImpl.class.getName());
+	private static final String sourceClass = CacheManagerImpl.class.getName();
+	private static final Logger log = Logger.getLogger(sourceClass);
 
 	private static final String CACHEDIR_NAME = "cache"; //$NON-NLS-1$
+
 	/**
 	 * Reference the cache with an atomic reference so that we don't need to synchronize
 	 * access to it.  The atomic reference is needed for when we swap the cache out with
@@ -285,6 +287,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 	 */
 	@Override
 	public void serializeCache() {
+		final String sourceMethod = "serializeCache"; //$NON-NLS-1$
 
 		// Queue up the serialization behind any pending cache file creations.
 		Future<Void> future = _aggregator.getExecutors().getFileCreateExecutor().submit(new Callable<Void>() {
@@ -314,7 +317,7 @@ public class CacheManagerImpl implements ICacheManager, IShutdownListener, IConf
 
 		// Wait for the serialization to complete before returning.
 		try {
-			future.get(5, TimeUnit.MINUTES);	// time-out after 5 minutes
+			SignalUtil.get(future, sourceClass, sourceMethod);
 		} catch (Exception e) {
 			if (log.isLoggable(Level.SEVERE))
 				log.log(Level.SEVERE, e.getMessage(), e);

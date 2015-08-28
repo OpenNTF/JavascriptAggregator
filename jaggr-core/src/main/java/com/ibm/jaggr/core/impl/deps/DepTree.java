@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.SignalUtil;
 
 import org.apache.commons.lang3.StringUtils;
 
@@ -71,11 +72,13 @@ import java.util.logging.Logger;
 public class DepTree implements Serializable {
 	private static final long serialVersionUID = -8494644438459736244L;
 
-	static final Logger log = Logger.getLogger(DepTree.class.getName());
+	static final String sourceClass = DepTree.class.getName();
+	static final Logger log = Logger.getLogger(sourceClass);
 
 	static final String TREEBUILDER_TGNAME = "treeBuilder"; //$NON-NLS-1$
 	static final String JSPARSER_TGNAME = "jsParser"; //$NON-NLS-1$
 	static final String THREADNAME = "{0} Thread-{1}";  //$NON-NLS-1$
+
 	/**
 	 * Map of directory names to {@link DepTreeNode} objects. Each
 	 * {@link DepTreeNode} mirrors the associated file directory in terms of the
@@ -136,7 +139,7 @@ public class DepTree implements Serializable {
 		final String sourceMethod = "<ctor>"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(DepTree.class.getName(), sourceMethod, new Object[]{paths, aggregator, stamp, clean, validateDeps});
+			log.entering(sourceClass, sourceMethod, new Object[]{paths, aggregator, stamp, clean, validateDeps});
 		}
 		this.stamp = stamp;
 		IConfig config = aggregator.getConfig();
@@ -330,7 +333,7 @@ public class DepTree implements Serializable {
 		 */
 		while (treeBuilderCount.decrementAndGet() >= 0) {
 			try {
-				DepTreeBuilder.Result result = treeBuilderCs.take().get();
+				DepTreeBuilder.Result result = SignalUtil.take(treeBuilderCs, sourceClass, sourceMethod).get();
 				if (log.isLoggable(Level.INFO)) {
 					log.info(
 							MessageFormat.format(
@@ -397,7 +400,7 @@ public class DepTree implements Serializable {
 			log.info(msg);
 		}
 		if (isTraceLogging) {
-			log.exiting(DepTree.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 	}
 
@@ -505,7 +508,7 @@ public class DepTree implements Serializable {
 		final String sourceMethod = "getNonJSExtensions"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(DepTree.class.getName(), sourceMethod, new Object[]{aggregator});
+			log.entering(sourceClass, sourceMethod, new Object[]{aggregator});
 		}
 		// Build set of non-js file extensions to include in the dependency names
 		Set<String> result = new HashSet<String>(Arrays.asList(IDependencies.defaultNonJSExtensions));
@@ -524,7 +527,7 @@ public class DepTree implements Serializable {
 				}
 			}
 		}
-		log.exiting(DepTree.class.getName(), sourceMethod, result);
+		log.exiting(sourceClass, sourceMethod, result);
 		return result;
 	}
 }

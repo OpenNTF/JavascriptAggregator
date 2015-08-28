@@ -19,6 +19,7 @@ package com.ibm.jaggr.core.impl.deps;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
+import com.ibm.jaggr.core.util.SignalUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -39,8 +40,8 @@ import java.util.logging.Logger;
  * I/O bound.
  */
 final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
-
-	static final Logger log = Logger.getLogger(DepTreeBuilder.class.getName());
+	static final String sourceClass = DepTreeBuilder.class.getName();
+	static final Logger log = Logger.getLogger(sourceClass);
 
 	private final IAggregator aggregator;
 	/**
@@ -112,7 +113,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 	 * @see java.util.concurrent.Callable#call()
 	 */
 	public Result call() throws Exception {
-
+		final String sourceMethod = "call"; //$NON-NLS-1$
 		IResourceVisitor visitor = new IResourceVisitor() {
 			/* (non-Javadoc)
 			 * @see com.ibm.jaggr.service.modules.ResourceVisitor#visitResource(com.ibm.jaggr.service.modules.Resource)
@@ -212,11 +213,10 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 		// until all files have been parsed
 		while (parserCount.decrementAndGet() >= 0) {
 			try {
-				parserCs.take().get();
+				SignalUtil.take(parserCs, sourceClass, sourceMethod).get();
 			} catch (Exception e) {
-				e.printStackTrace();
 				if (log.isLoggable(Level.SEVERE))
-					log.log(Level.SEVERE, e.getMessage(), e);
+					log.logp(Level.SEVERE, sourceClass, sourceMethod, e.getMessage(), e);
 			}
 		}
 

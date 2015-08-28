@@ -38,6 +38,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *            the type of the list element
  */
 public class ConcurrentListBuilder<T> {
+	private static final String sourceClass = ConcurrentListBuilder.class.getName();
+
 	final private AtomicInteger index = new AtomicInteger(0);
 	final private ReentrantReadWriteLock rwl = new ReentrantReadWriteLock();
 	private T[] items;
@@ -71,14 +73,15 @@ public class ConcurrentListBuilder<T> {
 	 *             on attempt to add null to the list
 	 */
 	public int add(T item) {
+		final String sourceMethod = "add"; //$NON-NLS-1$
 		if (item == null) {
 			throw new NullPointerException();
 		}
 		Lock lock = null;
 		int idx = index.getAndIncrement();
+		lock = (idx >= items.length) ? rwl.writeLock() : rwl.readLock();
+		SignalUtil.lock(lock, sourceClass, sourceMethod);
 		try {
-			lock = (idx >= items.length) ? rwl.writeLock() : rwl.readLock();
-			lock.lock();
 			if (idx >= items.length) {
 				int newLength = items.length;
 				while (idx >= newLength) { newLength*=2; }
@@ -109,7 +112,8 @@ public class ConcurrentListBuilder<T> {
 	 * @return a list object for this builder.
 	 */
 	public List<T> toList() {
-		rwl.readLock().lock();
+		final String sourceMethod = "toList"; //$NON-NLS-1$
+		SignalUtil.lock(rwl.readLock(), sourceClass, sourceMethod);
 		List<T> result = null;
 		try {
 			result = Arrays.asList(Arrays.copyOf(items, index.get()));

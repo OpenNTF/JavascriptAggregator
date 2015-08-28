@@ -17,6 +17,7 @@
 package com.ibm.jaggr.core.impl.layer;
 
 import com.ibm.jaggr.core.cache.ICacheManager;
+import com.ibm.jaggr.core.util.SignalUtil;
 
 import java.lang.ref.WeakReference;
 import java.util.Collections;
@@ -41,6 +42,7 @@ import java.util.concurrent.locks.ReadWriteLock;
  * {@link LayerBuildsAccessor#entrySet()}).
  */
 class LayerBuildsAccessor {
+	private static final String sourceClass = LayerBuildsAccessor.class.getName();
 
 	private final ConcurrentMap<String, CacheEntry> map;
 	private final ICacheManager cacheMgr;
@@ -100,8 +102,9 @@ class LayerBuildsAccessor {
 	 * @return true if the value was replace
 	 */
 	public boolean replace(String key, CacheEntry oldValue, CacheEntry newValue) {
+		final String sourceMethod = "replace"; //$NON-NLS-1$
 		boolean replaced = false;
-		cloneLock.readLock().lock();
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			replaced = map.replace(keyPrefix + key, oldValue, newValue);
 			if (replaced && oldValue != newValue) {
@@ -136,10 +139,11 @@ class LayerBuildsAccessor {
 	 *         layer has been evicted
 	 */
 	public CacheEntry putIfAbsent(String key, CacheEntry value, boolean update) {
+		final String sourceMethod = "putIfAbsent"; //$NON-NLS-1$
 		key = keyPrefix + key;
 		CacheEntry existingValue = null;
 		boolean incrementCount = false;
-		cloneLock.readLock().lock();
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			while (true) {
 				if (evictionLatch.isLatched()) {
@@ -200,8 +204,10 @@ class LayerBuildsAccessor {
 	 * @return true if the entry was removed
 	 */
 	public boolean remove(String key, CacheEntry value) {
+		final String sourceMethod = "remove"; //$NON-NLS-1$
+
 		boolean removed = false;
-		cloneLock.readLock().lock();
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			if (key != null && value != null) {
 				removed = map.remove(keyPrefix + key, value);
@@ -244,8 +250,10 @@ class LayerBuildsAccessor {
 	 * @return true if the <code>_evicted</code> flag was set
 	 */
 	public boolean cacheEntryEvicted(CacheEntry cacheEntry) {
+		final String sourceMethod = "cacheEntryEvicted"; //$NON-NLS-1$
+
 		boolean evicted = false;
-		cloneLock.readLock().lock();
+		SignalUtil.lock(cloneLock.readLock(), sourceClass, sourceMethod);
 		try {
 			if (cacheEntry.layerId == layerId) {
 				evicted = evictionLatch.decrement();

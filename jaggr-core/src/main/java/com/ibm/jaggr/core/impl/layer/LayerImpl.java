@@ -41,6 +41,7 @@ import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
+import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.core.util.ZipUtil;
 
@@ -53,7 +54,6 @@ import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.StringReader;
 import java.net.URI;
-import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -69,7 +69,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -103,9 +102,6 @@ public class LayerImpl implements ILayer {
 	static final String DEPSOURCE_EXCLUDES = "URL - excludes";  //$NON-NLS-1$
 
 	static final Pattern nlsPat = Pattern.compile("^.*(^|\\/)nls(\\/|$)"); //$NON-NLS-1$
-
-	static final long CACHEKEYGENMUTEXT_LOG_INTERVAL_SECONDS = 30;	// Log warning messages using this interval
-	static final long CACHEKEYGENMUTEX_ERROR_TIMEOUT_MINUTES = 15;	// Give up after this interval
 
 	protected static final List<ICacheKeyGenerator> s_layerCacheKeyGenerators  = Collections.unmodifiableList(Arrays.asList(new ICacheKeyGenerator[]{
 			new AbstractCacheKeyGenerator() {
@@ -258,20 +254,7 @@ public class LayerImpl implements ILayer {
 				// The cache key generator for this layer hasn't been created yet.  Attempt
 				// to grab the mutex.
 				try {
-					long start = new Date().getTime();
-					while (!_cacheKeyGenMutex.tryAcquire(CACHEKEYGENMUTEXT_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
-						long elapsed = (new Date().getTime() - start)/1000;
-						if (log.isLoggable(Level.WARNING)) {
-							log.logp(Level.WARNING, sourceClass, sourceMethod,
-									MessageFormat.format(
-											Messages.LayerImpl_7,
-											new Object[]{elapsed})
-							);
-						}
-						if (elapsed > CACHEKEYGENMUTEX_ERROR_TIMEOUT_MINUTES * 60) {
-							throw new RuntimeException(new TimeoutException());
-						}
-					}
+					SignalUtil.aquire(_cacheKeyGenMutex, sourceClass, sourceMethod);
 				} catch (InterruptedException e) {
 					throw new RuntimeException(e);
 				}
