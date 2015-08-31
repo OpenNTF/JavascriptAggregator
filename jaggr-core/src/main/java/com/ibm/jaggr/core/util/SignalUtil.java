@@ -1,3 +1,18 @@
+/*
+ * (C) Copyright 2012, IBM Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.ibm.jaggr.core.util;
 
 import java.text.Format;
@@ -29,8 +44,8 @@ public class SignalUtil {
 	private static final String sourceClass = SignalUtil.class.getName();
 	private static final Logger log = Logger.getLogger(sourceClass);
 
-	public static final long LOCK_LOG_INTERVAL_SECONDS = 60;	// 1 minute
-	public static final long LOCK_LOG_QUIESCE_TIMEOUT_MINUTES = 120;	// 2 hours
+	public static final long SIGNAL_LOG_INTERVAL_SECONDS = 60;	// 1 minute
+	public static final long SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES = 120;	// 2 hours
 
 	/**
 	 * Formats the specified string using the specified arguments. If the argument array contains
@@ -61,7 +76,7 @@ public class SignalUtil {
 
 	/**
 	 * Logs a warning message. If the elapsed time is greater than
-	 * {@link #LOCK_LOG_QUIESCE_TIMEOUT_MINUTES} then the log message will indicate that wait
+	 * {@link #SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES} then the log message will indicate that wait
 	 * logging for the thread is being quiesced, and a value of true is returned. Otherwise, false
 	 * is returned.
 	 * <p>
@@ -78,7 +93,7 @@ public class SignalUtil {
 	 *            the time that the wait began
 	 * @param extraArgs
 	 *            caller provided extra arguments
-	 * @return true if the elapsed time is greater than {@link #LOCK_LOG_QUIESCE_TIMEOUT_MINUTES}
+	 * @return true if the elapsed time is greater than {@link #SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES}
 	 */
 	static boolean logWaiting(String callerClass, String callerMethod, Object waitObj, long start, Object... extraArgs) {
 		return logWaiting(log, callerClass, callerMethod, waitObj, start, extraArgs);
@@ -86,7 +101,7 @@ public class SignalUtil {
 
 	/**
 	 * Logs a warning message. If the elapsed time is greater than
-	 * {@link #LOCK_LOG_QUIESCE_TIMEOUT_MINUTES} then the log message will indicate that wait
+	 * {@link #SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES} then the log message will indicate that wait
 	 * logging for the thread is being quiesced, and a value of true is returned. Otherwise, false
 	 * is returned.
 	 *
@@ -102,12 +117,12 @@ public class SignalUtil {
 	 *            the time that the wait began
 	 * @param extraArgs
 	 *            caller provided extra arguments
-	 * @return true if the elapsed time is greater than {@link #LOCK_LOG_QUIESCE_TIMEOUT_MINUTES}
+	 * @return true if the elapsed time is greater than {@link #SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES}
 	 */
 	static boolean logWaiting(Logger log, String callerClass, String callerMethod, Object waitObj, long start, Object... extraArgs) {
 		long elapsed = (System.currentTimeMillis() - start)/1000;
 		boolean quiesced = false;
-		if (elapsed <= LOCK_LOG_QUIESCE_TIMEOUT_MINUTES * 60) {
+		if (elapsed <= SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES * 60) {
 			ArrayList<Object> args = new ArrayList<Object>();
 			args.add(Thread.currentThread().getId());
 			args.add(elapsed);
@@ -176,7 +191,7 @@ public class SignalUtil {
 		long start = System.currentTimeMillis();
 		boolean quiesced = false, logged = false;
 		try {
-			while (!lock.tryLock(LOCK_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
+			while (!lock.tryLock(SIGNAL_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
 				if (!quiesced) {
 					quiesced = logWaiting(callerClass, callerMethod, lock, start, args);
 					logged = true;
@@ -228,7 +243,7 @@ public class SignalUtil {
 		long start = System.currentTimeMillis();
 		boolean quiesced = false, logged = false;
 		Future<T> future = null;
-		while ((future = cs.poll(LOCK_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) == null) {
+		while ((future = cs.poll(SIGNAL_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) == null) {
 			if (!quiesced) {
 				quiesced = logWaiting(callerClass, callerMethod, cs, start, args);
 				logged = true;
@@ -271,7 +286,7 @@ public class SignalUtil {
 		}
 		long start = System.currentTimeMillis();
 		boolean quiesced = false, logged = false;
-		while (!latch.await(SignalUtil.LOCK_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
+		while (!latch.await(SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
 			if (!quiesced) {
 				quiesced = logWaiting(callerClass, callerMethod, latch, start, args);
 				logged = true;
@@ -319,7 +334,7 @@ public class SignalUtil {
 		boolean quiesced = false, logged = false;
 		while (true) {
 			try {
-				result = future.get(SignalUtil.LOCK_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS);
+				result = future.get(SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS);
 				break;
 			} catch (TimeoutException tex) {
 				if (!quiesced) {
@@ -364,7 +379,7 @@ public class SignalUtil {
 		}
 		long start = System.currentTimeMillis();
 		boolean quiesced = false, logged = false;
-		while (!sem.tryAcquire(SignalUtil.LOCK_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
+		while (!sem.tryAcquire(SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS, TimeUnit.SECONDS)) {
 			if (!quiesced) {
 				quiesced = logWaiting(callerClass, callerMethod, sem, start, args);
 				logged = true;

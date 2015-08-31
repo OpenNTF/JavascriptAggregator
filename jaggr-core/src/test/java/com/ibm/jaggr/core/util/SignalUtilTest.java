@@ -1,3 +1,18 @@
+/*
+ * (C) Copyright 2012, IBM Corporation
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.ibm.jaggr.core.util;
 
 import org.easymock.EasyMock;
@@ -61,32 +76,32 @@ public class SignalUtilTest {
 		};
 		EasyMock.replay(mockLogger);
 
-		long start = System.currentTimeMillis() - SignalUtil.LOCK_LOG_INTERVAL_SECONDS * 1000;
+		long start = System.currentTimeMillis() - SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS * 1000;
 		boolean result = SignalUtil.logWaiting(mockLogger, sourceClass, "method1", mockLock, start);
 		String expected = sourceClass + " - " + "method1" + " - " + MessageFormat.format(
 				com.ibm.jaggr.core.util.Messages.SignalUtil_0,
-				new Object[]{Thread.currentThread().getId(), SignalUtil.LOCK_LOG_INTERVAL_SECONDS, mockLock});
+				new Object[]{Thread.currentThread().getId(), SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS, mockLock});
 		System.out.println(logged.get(0));
 		Assert.assertEquals(expected, logged.get(0));
 		Assert.assertFalse(result);
 
 		// Make sure extra parameters not specified in format string are appended to log message
-		start = System.currentTimeMillis() - SignalUtil.LOCK_LOG_INTERVAL_SECONDS * 1000;
+		start = System.currentTimeMillis() - SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS * 1000;
 		result = SignalUtil.logWaiting(mockLogger, sourceClass, "method2", mockLock, start, "extraParam1", 3);
 		expected = sourceClass + " - " + "method2" + " - " + MessageFormat.format(
 				com.ibm.jaggr.core.util.Messages.SignalUtil_0,
-				new Object[]{Thread.currentThread().getId(), SignalUtil.LOCK_LOG_INTERVAL_SECONDS, mockLock})
+				new Object[]{Thread.currentThread().getId(), SignalUtil.SIGNAL_LOG_INTERVAL_SECONDS, mockLock})
 				+ ": extraParam1, 3";
 		System.out.println(logged.get(1));
 		Assert.assertEquals(expected, logged.get(1));
 		Assert.assertFalse(result);
 
 		// Test quiescence
-		start = System.currentTimeMillis() - SignalUtil.LOCK_LOG_QUIESCE_TIMEOUT_MINUTES * 1000 * 61;
+		start = System.currentTimeMillis() - SignalUtil.SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES * 1000 * 61;
 		result = SignalUtil.logWaiting(mockLogger, sourceClass, "method3", mockLock, start);
 		expected = sourceClass + " - " + "method3" + " - " + MessageFormat.format(
 				com.ibm.jaggr.core.util.Messages.SignalUtil_1,
-				new Object[]{Thread.currentThread().getId(), (SignalUtil.LOCK_LOG_QUIESCE_TIMEOUT_MINUTES)*61, mockLock});
+				new Object[]{Thread.currentThread().getId(), (SignalUtil.SIGNAL_LOG_QUIESCE_TIMEOUT_MINUTES)*61, mockLock});
 		System.out.println(logged.get(2));
 		Assert.assertEquals(expected, logged.get(2));
 		Assert.assertTrue(result);
