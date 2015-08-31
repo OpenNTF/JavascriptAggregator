@@ -26,7 +26,6 @@ public class Messages extends NLS {
 	public static String LayerImpl_4;
 	public static String LayerImpl_5;
 	public static String LayerImpl_6;
-	public static String LayerImpl_7;
 	static {
 		// initialize resource bundle
 		NLS.initializeMessages(BUNDLE_NAME, Messages.class);

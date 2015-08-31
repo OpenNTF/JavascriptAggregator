@@ -40,6 +40,7 @@ import com.ibm.jaggr.core.transport.IHttpTransportExtensionPoint;
 import com.ibm.jaggr.core.transport.IRequestedModuleNames;
 import com.ibm.jaggr.core.util.AggregatorUtil;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.codec.binary.Base64;
@@ -89,7 +90,8 @@ import javax.servlet.http.HttpServletRequest;
  * and defines abstract methods that subclasses need to implement
  */
 public abstract class AbstractHttpTransport implements IHttpTransport, IConfigModifier, IShutdownListener, IDependenciesListener {
-	private static final Logger log = Logger.getLogger(AbstractHttpTransport.class.getName());
+	private static final String sourceClass = AbstractHttpTransport.class.getName();
+	private static final Logger log = Logger.getLogger(sourceClass);
 
 	public static final String PATHS_PROPNAME = "paths"; //$NON-NLS-1$
 
@@ -102,7 +104,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String CONSOLE_WARNING_MSG_FMT = "window.console && console.warn(\"{0}\");"; //$NON-NLS-1$
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
-
 
 	/**
 	 * Request param specifying the non-AMD script files to include in an application specified
@@ -175,11 +176,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String CONFIGVARNAME_REQPARAM = "configVarName"; //$NON-NLS-1$
 
-	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = AbstractHttpTransport.class.getName() + ".LayerContributionState"; //$NON-NLS-1$
+	public static final String LAYERCONTRIBUTIONSTATE_REQATTRNAME = sourceClass + ".LayerContributionState"; //$NON-NLS-1$
 	public static final String ENCODED_FEATURE_MAP_REQPARAM = "hasEnc"; //$NON-NLS-1$
 
-	static final String WARN_DEPRECATED_USE_OF_MODULES_QUERYARG = AbstractHttpTransport.class.getName() + ".DEPRECATED_USE_OF_MODULES"; //$NON-NLS-1$
-	static final String WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG = AbstractHttpTransport.class.getName() + ".DEPRECATED_USE_OF_REQUIRED"; //$NON-NLS-1$
+	static final String WARN_DEPRECATED_USE_OF_MODULES_QUERYARG = sourceClass + ".DEPRECATED_USE_OF_MODULES"; //$NON-NLS-1$
+	static final String WARN_DEPRECATED_USE_OF_REQUIRED_QUERYARG = sourceClass + ".DEPRECATED_USE_OF_REQUIRED"; //$NON-NLS-1$
 
 	static final int REQUESTED_MODULES_MAX_COUNT = 10000;
 
@@ -318,7 +319,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "setRequestedModuleNames"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
+			log.entering(sourceClass, sourceMethod, new Object[]{request.getQueryString()});
 		}
 
 		RequestedModuleNames requestedModuleNames = null;
@@ -332,19 +333,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 						throw new ProcessingDependenciesException();
 					}
 				} else {
-					long start = System.currentTimeMillis();
-					while (!depsInitialized.await(60, TimeUnit.SECONDS)) {
-						if (log.isLoggable(Level.WARNING)) {
-							long current = System.currentTimeMillis();
-							long waitSeconds = (current - start) / 1000;
-							log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), sourceMethod,
-									MessageFormat.format(
-											Messages.AbstractHttpTransport_4,
-											new Object[]{Thread.currentThread().getId(), waitSeconds}
-									)
-							);
-						}
-					}
+					SignalUtil.await(depsInitialized, sourceClass, sourceMethod);
 				}
 			} catch (InterruptedException e) {
 				throw new IOException(e);
@@ -353,7 +342,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		request.setAttribute(REQUESTEDMODULENAMES_REQATTRNAME, requestedModuleNames);
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 		return requestedModuleNames;
 	}
@@ -368,7 +357,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getRequestedLocales"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
+			log.entering(sourceClass, sourceMethod, new Object[]{request.getQueryString()});
 		}
 		String[] locales;
 		String sLocales = getParameter(request, REQUESTEDLOCALES_REQPARAMS);
@@ -379,7 +368,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		Collection<String> result = Collections.unmodifiableCollection(Arrays.asList(locales));
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, result);
+			log.exiting(sourceClass, sourceMethod, result);
 		}
 		return result;
 	}
@@ -398,7 +387,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getFeaturesFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request});
+			log.entering(sourceClass, sourceMethod, new Object[]{request});
 		}
 		StringBuffer sb = request.getRequestURL();
 		if (sb != null && request.getQueryString() != null) {
@@ -421,7 +410,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, features);
+			log.exiting(sourceClass, sourceMethod, features);
 		}
 		return features.unmodifiableFeatures();
 	}
@@ -441,7 +430,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getHasConditionsFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request});
+			log.entering(sourceClass, sourceMethod, new Object[]{request});
 		}
 		String ret = null;
 		if (request.getParameter(FEATUREMAPHASH_REQPARAM) != null) {
@@ -481,7 +470,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, ret);
+			log.exiting(sourceClass, sourceMethod, ret);
 		}
 		return ret;
 	}
@@ -500,7 +489,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getParameter"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString(), Arrays.asList(aliases)});
+			log.entering(sourceClass, sourceMethod, new Object[]{request.getQueryString(), Arrays.asList(aliases)});
 		}
 		Map<String, String[]> params = request.getParameterMap();
 		String result = null;
@@ -514,7 +503,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, result);
+			log.exiting(sourceClass, sourceMethod, result);
 		}
 		return result;
 	}
@@ -529,7 +518,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getOptimizationLevelFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request.getQueryString()});
+			log.entering(sourceClass, sourceMethod, new Object[]{request.getQueryString()});
 		}
 		// Get the optimization level specified in the request and set the ComilationLevel
 		String optimize = getParameter(request, OPTIMIZATIONLEVEL_REQPARAMS);
@@ -543,7 +532,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 				level = OptimizationLevel.NONE;
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, level);
+			log.exiting(sourceClass, sourceMethod, level);
 		}
 		return level;
 	}
@@ -562,7 +551,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		Scriptable config = (Scriptable)configObj;
 		try {
 			if (isTraceLogging) {
-				log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{aggregator, Context.toString(config)});
+				log.entering(sourceClass, sourceMethod, new Object[]{aggregator, Context.toString(config)});
 			}
 			Object pathsObj = config.get(PATHS_PROPNAME, config);
 			if (pathsObj == Scriptable.NOT_FOUND) {
@@ -573,7 +562,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			((Scriptable)pathsObj).put(getResourcePathId(), (Scriptable)pathsObj, getComboUri().toString());
 			if (isTraceLogging) {
 				log.finer("modified config = " + Context.toString(config)); //$NON-NLS-1$
-				log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
+				log.exiting(sourceClass, sourceMethod);
 			}
 		} finally {
 			Context.exit();
@@ -718,7 +707,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getLayerContribution"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request, type, arg});
+			log.entering(sourceClass, sourceMethod, new Object[]{request, type, arg});
 		}
 		String result = ""; //$NON-NLS-1$
 		if (type == LayerContributionType.END_RESPONSE) {
@@ -739,7 +728,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, result);
+			log.exiting(sourceClass, sourceMethod, result);
 		}
 		return result;
 	}
@@ -778,7 +767,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "getDynamicLoaderExtensionJavaScript"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod);
+			log.entering(sourceClass, sourceMethod);
 		}
 		StringBuffer sb = new StringBuffer();
 		for (String contribution : getExtensionContributions()) {
@@ -799,7 +788,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		sb.append(clientRegisterSyntheticModules());
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod, sb.toString());
+			log.exiting(sourceClass, sourceMethod, sb.toString());
 		}
 		return sb.toString();
 	}
@@ -823,7 +812,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String sourceMethod = "validateLayerContributionState"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), sourceMethod, new Object[]{request, type, arg});
+			log.entering(sourceClass, sourceMethod, new Object[]{request, type, arg});
 		}
 		LayerContributionType previousType = (LayerContributionType)request.getAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME);
 		if (isTraceLogging) {
@@ -907,7 +896,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		}
 		request.setAttribute(LAYERCONTRIBUTIONSTATE_REQATTRNAME, type);
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), sourceMethod);
+			log.exiting(sourceClass, sourceMethod);
 		}
 	}
 
@@ -934,12 +923,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String methodName = "getFeaturesFromRequestEncoded"; //$NON-NLS-1$
 		boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{request});
+			log.entering(sourceClass, methodName, new Object[]{request});
 		}
 		if (depsInitialized == null) {
 			if (traceLogging) {
 				log.finer("No initialization semphore"); //$NON-NLS-1$
-				log.exiting(AbstractHttpTransport.class.getName(), methodName);
+				log.exiting(sourceClass, methodName);
 			}
 			return null;
 		}
@@ -947,7 +936,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		if (encoded == null) {
 			if (traceLogging) {
 				log.finer(ENCODED_FEATURE_MAP_REQPARAM + " param not specified in request"); //$NON-NLS-1$
-				log.exiting(AbstractHttpTransport.class.getName(), methodName);
+				log.exiting(sourceClass, methodName);
 			}
 			return null;
 		}
@@ -982,7 +971,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			i++;
 		}
 		if (traceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName, result);
+			log.exiting(sourceClass, methodName, result);
 		}
 		return result;
 	}
@@ -998,11 +987,11 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String methodName = "newFeatureMapJSResourceFactory"; //$NON-NLS-1$
 		boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{resourceUri});
+			log.entering(sourceClass, methodName, new Object[]{resourceUri});
 		}
 		FeatureListResourceFactory factory = new FeatureListResourceFactory(resourceUri);
 		if (traceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName);
+			log.exiting(sourceClass, methodName);
 		}
 		return factory;
 	}
@@ -1143,12 +1132,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String methodName = "getSyntheticModuleNames"; //$NON-NLS-1$
 		boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), methodName);
+			log.entering(sourceClass, methodName);
 		}
 		Collection<String> result = new HashSet<String>();
 		result.add(getAggregatorTextPluginName());
 		if (traceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName, result);
+			log.exiting(sourceClass, methodName, result);
 		}
 		return result;
 	}
@@ -1163,7 +1152,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String methodName = "clientRegisterSyntheticModules"; //$NON-NLS-1$
 		boolean traceLogging = log.isLoggable(Level.FINER);
 		if (traceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), methodName);
+			log.entering(sourceClass, methodName);
 		}
 		StringBuffer sb = new StringBuffer();
 		Map<String, Integer> map = getModuleIdMap();
@@ -1190,7 +1179,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			}
 		}
 		if (traceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName, sb.toString());
+			log.exiting(sourceClass, methodName, sb.toString());
 		}
 		return sb.toString();
 	}
@@ -1208,12 +1197,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String methodName = "generateModuleIdMap"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), methodName);
+			log.entering(sourceClass, methodName);
 		}
 		if (getModuleIdRegFunctionName() == null) {
 			if (isTraceLogging) {
 				log.finer("No module id list registration function - returning"); //$NON-NLS-1$
-				log.exiting(AbstractHttpTransport.class.getName(), methodName);
+				log.exiting(sourceClass, methodName);
 			}
 			return;
 		}
@@ -1261,7 +1250,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 			log.info("Module ID List hash = " + TypeUtil.byteArray2String(moduleIdListHash)); //$NON-NLS-1$
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName);
+			log.exiting(sourceClass, methodName);
 		}
 	}
 
@@ -1282,7 +1271,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		final String methodName = "contributeBootLayerDeps"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(AbstractHttpTransport.class.getName(), methodName, new Object[]{sb});
+			log.entering(sourceClass, methodName, new Object[]{sb});
 		}
 		if (request != null) {
 			IRequestedModuleNames modules = (IRequestedModuleNames)request.getAttribute(REQUESTEDMODULENAMES_REQATTRNAME);
@@ -1295,13 +1284,13 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 					sb.append("require.combo.addBootLayerDeps(").append(json).append(");\r\n"); //$NON-NLS-1$ //$NON-NLS-2$
 				}
 			} catch (Exception ex) {
-				log.logp(Level.WARNING, AbstractHttpTransport.class.getName(), methodName, ex.getMessage(), ex);
+				log.logp(Level.WARNING, sourceClass, methodName, ex.getMessage(), ex);
 			}
 		} else if (isTraceLogging) {
-			log.logp(Level.FINER, AbstractHttpTransport.class.getName(), methodName, "null request object"); //$NON-NLS-1$
+			log.logp(Level.FINER, sourceClass, methodName, "null request object"); //$NON-NLS-1$
 		}
 		if (isTraceLogging) {
-			log.exiting(AbstractHttpTransport.class.getName(), methodName, sb);
+			log.exiting(sourceClass, methodName, sb);
 		}
 	}
 

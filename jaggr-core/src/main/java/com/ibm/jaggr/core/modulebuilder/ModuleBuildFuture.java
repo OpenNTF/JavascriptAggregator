@@ -20,6 +20,7 @@ import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
+import com.ibm.jaggr.core.util.SignalUtil;
 
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeoutException;
  * {@link ILayer#BUILDFUTURESQUEUE_REQATTRNAME} request attribute.
  */
 public class ModuleBuildFuture implements Future<ModuleBuildReader> {
+	private static final String sourceClass = ModuleBuildFuture.class.getName();
 
 	private final Future<ModuleBuildReader> future;
 	private final ModuleSpecifier moduleSpecifier;
@@ -62,7 +64,8 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 	@Override
 	public ModuleBuildReader get() throws InterruptedException,
 	ExecutionException {
-		return future.get();
+		final String sourceMethod = "get"; //$NON-NLS-1$
+		return SignalUtil.get(future, sourceClass, sourceMethod, module);
 	}
 
 	@Override
@@ -77,5 +80,10 @@ public class ModuleBuildFuture implements Future<ModuleBuildReader> {
 
 	public IModule getModule() {
 		return module;
+	}
+
+	@Override
+	public String toString() {
+		return module.toString();
 	}
 }

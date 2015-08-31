@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceConverter;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
+import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.io.FileUtils;
@@ -539,7 +540,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			// now get the results
 			for (int i = 0; i < scopePoolSize; i++) {
 				try {
-					threadScopes.add(cs.take().get());
+					threadScopes.add(SignalUtil.take(cs, sourceClass, sourceMethod).get());
 				} catch (Exception e) {
 					if (log.isLoggable(Level.SEVERE)) {
 						log.logp(Level.SEVERE, JsxConverter.class.getName(), sourceMethod, e.getMessage(), e);

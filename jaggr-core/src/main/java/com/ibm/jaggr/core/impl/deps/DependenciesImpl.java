@@ -29,6 +29,7 @@ import com.ibm.jaggr.core.deps.IDependenciesListener;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.ConsoleService;
+import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 
 import java.net.URI;
@@ -51,8 +52,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class DependenciesImpl implements IDependencies, IConfigListener, IOptionsListener, IShutdownListener {
-
-	private static final Logger log = Logger.getLogger(DependenciesImpl.class.getName());
+	private static final String sourceClass = DependenciesImpl.class.getName();
+	private static final Logger log = Logger.getLogger(sourceClass);
 
 	private List<IServiceRegistration> serviceRegistrations = new ArrayList<IServiceRegistration>();
 	private String servletName;
@@ -158,6 +159,8 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	}
 
 	protected synchronized void processDeps(final boolean validate, final boolean clean, final long sequence) {
+		final String sourceMethod = "processDeps"; //$NON-NLS-1$
+
 		if (aggregator.getConfig() == null || processingDeps) {
 			return;
 		}
@@ -168,7 +171,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 		try {
 			executor.execute(new Runnable() {
 				public void run() {
-					rwl.writeLock().lock();
+					SignalUtil.lock(rwl.writeLock(), sourceClass, sourceMethod);
 					processDepsThreadStarted.set(true);
 					// initialize the console service for the worker thread.
 					ConsoleService workerCs = new ConsoleService(cs);
@@ -432,6 +435,7 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 	}
 
 	private void getReadLock() throws InterruptedException, ProcessingDependenciesException {
+		final String sourceMethod = "getReadLock"; //$NON-NLS-1$
 		if (getAggregator().getOptions().isDevelopmentMode()) {
 			if (!initialized.await(1, TimeUnit.SECONDS)) {
 				throw new ProcessingDependenciesException();
@@ -443,11 +447,11 @@ public class DependenciesImpl implements IDependencies, IConfigListener, IOption
 				throw new ProcessingDependenciesException();
 			}
 		} else {
-			initialized.await();
+			SignalUtil.await(initialized, sourceClass, sourceMethod);
 			if (initFailed) {
 				throw new IllegalStateException("Init failed"); //$NON-NLS-1$
 			}
-			rwl.readLock().lock();
+			SignalUtil.lock(rwl.readLock(), sourceClass, sourceMethod);
 		}
 	}
 
