@@ -460,7 +460,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 				setResourceResponseCacheHeaders(req, resp, resolved, isNoCache);
 				String contentType = getContentType(resolved.getPath());
 				resp.setHeader("Content-Type", contentType); //$NON-NLS-1$
-				resp.setDateHeader("Last-Modified", resolved.lastModified()); //$NON-NLS-1$
 
 				InputStream is = null;
 				if (RequestUtil.isGzipEncoding(req) && !contentType.startsWith("image/")) { //$NON-NLS-1$
