@@ -27,3 +27,4 @@ com.ibm.jaggr.core.readers
 com.ibm.jaggr.core.resource
 com.ibm.jaggr.core.transport
 com.ibm.jaggr.core.util
+org.json
