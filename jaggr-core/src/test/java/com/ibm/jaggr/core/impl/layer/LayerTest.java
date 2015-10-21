@@ -48,6 +48,7 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
 
 import com.google.common.io.Files;
+import com.google.common.net.HttpHeaders;
 import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
 
 import org.apache.commons.io.IOUtils;
@@ -76,6 +77,7 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -847,6 +849,7 @@ public class LayerTest extends EasyMock {
 		final byte[] sourceMapBytes = sourceMapContent.getBytes();
 		final MutableObject<String> contentType = new MutableObject<String>();
 		final MutableInt contentLength = new MutableInt();
+		final Map<String, String[]> responseHeaders = new HashMap<String, String[]>();
 
 		mockResponse.setContentType((String)EasyMock.anyObject());
 		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
@@ -856,6 +859,22 @@ public class LayerTest extends EasyMock {
 				return null;
 			}
 		}).anyTimes();
+		mockResponse.addHeader(EasyMock.isA(String.class), EasyMock.isA(String.class));
+		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
+			@Override
+			public Void answer() throws Throwable {
+				String headerName = EasyMock.getCurrentArguments()[0].toString();
+				String[] value = responseHeaders.get(headerName);
+				if (value == null) {
+					value = new String[]{};
+				}
+				List<String> valueList = new ArrayList(Arrays.asList(value));
+				valueList.add(EasyMock.getCurrentArguments()[1].toString());
+				responseHeaders.put(headerName, valueList.toArray(new String[valueList.size()]));
+				return null;
+			}
+		}).anyTimes();
+
 		mockResponse.setContentLength(EasyMock.anyInt());
 		EasyMock.expectLastCall().andAnswer(new IAnswer<Void>() {
 			@Override
@@ -885,8 +904,10 @@ public class LayerTest extends EasyMock {
 		Assert.assertEquals(in, mockInputStream);
 		Assert.assertEquals(100, contentLength.intValue());
 		Assert.assertEquals("application/javascript; charset=utf-8", contentType.getValue());
+		Assert.assertEquals(HttpHeaders.ACCEPT_ENCODING, responseHeaders.get(HttpHeaders.VARY)[0]);
 
 		mockRequest = TestUtils.createMockRequest(mockAggregator);
+		responseHeaders.clear();
 		EasyMock.expect(mockRequest.getPathInfo()).andReturn(ILayer.SOURCEMAP_RESOURCE_PATH).anyTimes();
 		EasyMock.replay(mockRequest);
 		mockRequest.setAttribute(IHttpTransport.GENERATESOURCEMAPS_REQATTRNAME, true);
@@ -896,6 +917,7 @@ public class LayerTest extends EasyMock {
 		Assert.assertEquals(sourceMapContent, IOUtils.toString(in));
 		Assert.assertEquals(sourceMapContent.length(), contentLength.intValue());
 		Assert.assertEquals("application/json; charset=utf-8", contentType.getValue());
+		Assert.assertEquals(HttpHeaders.ACCEPT_ENCODING, responseHeaders.get(HttpHeaders.VARY)[0]);
 
 		EasyMock.reset(mockCacheEntry);
 		EasyMock.expect(mockCacheEntry.getInputStream(EasyMock.isA(HttpServletRequest.class), (MutableObject<byte[]>)EasyMock.anyObject())).andThrow(new IOException()).once();

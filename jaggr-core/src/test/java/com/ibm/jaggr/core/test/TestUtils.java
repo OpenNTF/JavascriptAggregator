@@ -473,7 +473,12 @@ public class TestUtils {
 	}
 
 	public static HttpServletResponse createMockResponse(final Map<String, String> responseAttributes) {
-		HttpServletResponse mockResponse = EasyMock.createNiceMock(HttpServletResponse.class);
+		return createMockResponse(responseAttributes, true);
+	}
+
+	public static HttpServletResponse createMockResponse(final Map<String, String> responseAttributes, boolean isNice) {
+		HttpServletResponse mockResponse = isNice ? EasyMock.createNiceMock(HttpServletResponse.class) :
+			                                        EasyMock.createMock(HttpServletResponse.class);
 		mockResponse.setContentLength(EasyMock.anyInt());
 		EasyMock.expectLastCall().andAnswer(new IAnswer<Object>() {
 			public Object answer() throws Throwable {

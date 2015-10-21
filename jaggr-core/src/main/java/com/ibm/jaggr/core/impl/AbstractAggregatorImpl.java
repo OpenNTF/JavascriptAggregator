@@ -66,6 +66,8 @@ import com.ibm.jaggr.core.util.RequestUtil;
 import com.ibm.jaggr.core.util.SequenceNumberProvider;
 import com.ibm.jaggr.core.util.StringUtil;
 
+import com.google.common.net.HttpHeaders;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -416,6 +418,7 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 					"Cache-Control", //$NON-NLS-1$
 					"public" + (expires > 0 && hasCacheBust ? (", max-age=" + expires) : "") //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 			);
+			resp.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_ENCODING);
 		}
 	}
 
