@@ -17,15 +17,20 @@ package com.ibm.jaggr.core.impl;
 
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.executors.IExecutors;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.test.TestUtils;
+import com.ibm.jaggr.core.transport.IHttpTransport;
 
 import com.google.common.io.Files;
+import com.google.common.net.HttpHeaders;
 
+import org.apache.commons.lang3.mutable.MutableInt;
+import org.apache.commons.lang3.mutable.MutableLong;
 import org.apache.commons.lang3.mutable.MutableObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -365,6 +370,81 @@ public class AbstractAggregatorImplTest {
 
 		testAggregator.processResourceRequest(req, resp, uri, "../file.js");
 		Assert.assertEquals(HttpServletResponse.SC_BAD_REQUEST, resp.getStatus());
+	}
+
+	@Test
+	public void testSetResourceResponseCacheHeaders() {
+		Map<String, String> responseParams = new HashMap<String, String>();
+		IResource mockResource = EasyMock.createMock(IResource.class);
+		final MutableLong lastModified = new MutableLong();
+		EasyMock.expect(mockResource.lastModified()).andAnswer(new IAnswer<Long>() {
+			@Override public Long answer() throws Throwable {
+				return lastModified.getValue();
+			}
+
+		}).anyTimes();
+		final IConfig mockConfig = EasyMock.createMock(IConfig.class);
+		final MutableInt expires = new MutableInt();
+		EasyMock.expect(mockConfig.getExpires()).andAnswer(new IAnswer<Integer>() {
+			@Override public Integer answer() throws Throwable {
+				return expires.getValue();
+			}
+
+		}).anyTimes();
+		AbstractAggregatorImpl testAggregator = new TestAggregatorImpl() {
+			@Override public IConfig getConfig() { return mockConfig; }
+		};
+		HttpServletRequest req = TestUtils.createMockRequest(testAggregator);
+		HttpServletResponse resp = TestUtils.createMockResponse(responseParams, false);
+
+		// Test with last-modified, expires and cachebust (Cache-Control should include max-age)
+		lastModified.setValue(1000);
+		expires.setValue(200);
+		resp.setDateHeader(HttpHeaders.LAST_MODIFIED, 1000);
+		EasyMock.expectLastCall().once();
+		resp.addHeader(HttpHeaders.CACHE_CONTROL, "public, max-age=200");
+		EasyMock.expectLastCall().once();
+		resp.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_ENCODING);
+		EasyMock.expectLastCall().once();
+		EasyMock.replay(req, resp, mockResource, mockConfig);
+		req.setAttribute(IHttpTransport.CACHEBUST_REQATTRNAME, "abc");
+		testAggregator.setResourceResponseCacheHeaders(req, resp, mockResource, false);
+		EasyMock.verify(resp);
+
+		// Test with last-modified, no expires and cachebust (Cache-Control should not include max-age)
+		EasyMock.reset(resp);
+		expires.setValue(0);
+		resp.setDateHeader(HttpHeaders.LAST_MODIFIED, 1000);
+		EasyMock.expectLastCall().once();
+		resp.addHeader(HttpHeaders.CACHE_CONTROL, "public");
+		EasyMock.expectLastCall().once();
+		resp.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_ENCODING);
+		EasyMock.expectLastCall().once();
+		EasyMock.replay(resp);
+		testAggregator.setResourceResponseCacheHeaders(req, resp, mockResource, false);
+		EasyMock.verify(resp);
+
+		// Test with last-modified, expires and no cachebust (Cache-Control should not include max-age)
+		EasyMock.reset(resp);
+		expires.setValue(200);
+		req.removeAttribute(IHttpTransport.CACHEBUST_REQATTRNAME);
+		resp.setDateHeader(HttpHeaders.LAST_MODIFIED, 1000);
+		EasyMock.expectLastCall().once();
+		resp.addHeader(HttpHeaders.CACHE_CONTROL, "public");
+		EasyMock.expectLastCall().once();
+		resp.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_ENCODING);
+		EasyMock.expectLastCall().once();
+		EasyMock.replay(resp);
+		testAggregator.setResourceResponseCacheHeaders(req, resp, mockResource, false);
+		EasyMock.verify(resp);
+
+		// Test with isNoCache=true (Cache-Control should specify no-cache, no-store
+		EasyMock.reset(resp);
+		resp.addHeader(HttpHeaders.CACHE_CONTROL, "no-cache, no-store");
+		EasyMock.expectLastCall().once();
+		EasyMock.replay(resp);
+		testAggregator.setResourceResponseCacheHeaders(req, resp, mockResource, true);
+		EasyMock.verify(resp);
 	}
 
 

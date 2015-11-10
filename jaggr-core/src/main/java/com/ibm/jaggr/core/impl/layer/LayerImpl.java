@@ -45,6 +45,8 @@ import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 import com.ibm.jaggr.core.util.ZipUtil;
 
+import com.google.common.net.HttpHeaders;
+
 import org.apache.commons.io.input.ReaderInputStream;
 import org.apache.commons.lang3.mutable.MutableObject;
 
@@ -1105,6 +1107,7 @@ public class LayerImpl implements ILayer {
 		if (RequestUtil.isGzipEncoding(request)) {
 			response.setHeader("Content-Encoding", "gzip"); //$NON-NLS-1$ //$NON-NLS-2$
 		}
+		response.addHeader(HttpHeaders.VARY, HttpHeaders.ACCEPT_ENCODING);
 
 	}
 }
