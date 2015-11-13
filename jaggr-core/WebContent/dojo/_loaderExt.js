@@ -188,18 +188,16 @@ combo.done = function(load, config, opt_deps) {
 		base64 = require('dojox/encoding/base64');
 	} catch (ignore) {}
 
-	if (!combo.serverOptions.skipHasFiltering) {
-		if (typeof includeUndefinedFeatures == 'undefined') {
-			// Test to determine if we can include features that evaluate to undefined.
-			// If simply querying a feature puts the feature in the cache, then we
-			// can't send features that evaluate to undefined to the server.
-			// (Note: this behavior exists in early versions of dojo 1.7)
-			var test_feature = 'combo-test-for-undefined';
-			config.has(test_feature);
-			includeUndefinedFeatures = !(test_feature in config.has.cache);
-		}
-		hasArg = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
+	if (typeof includeUndefinedFeatures == 'undefined') {
+		// Test to determine if we can include features that evaluate to undefined.
+		// If simply querying a feature puts the feature in the cache, then we
+		// can't send features that evaluate to undefined to the server.
+		// (Note: this behavior exists in early versions of dojo 1.7)
+		var test_feature = 'combo-test-for-undefined';
+		config.has(test_feature);
+		includeUndefinedFeatures = !(test_feature in config.has.cache);
 	}
+	hasArg = computeHasArg(config.has, config.has.cache, includeUndefinedFeatures);
 	
 	// If sending the feature set in a cookie is enabled, then try to 
 	// set the cookie.

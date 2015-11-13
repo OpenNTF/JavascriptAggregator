@@ -26,7 +26,6 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.config.IConfig.Location;
-import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.AggregationResource;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceFactory;
@@ -403,11 +402,9 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		for (String[] alias : getClientConfigAliases()) {
 			sb.append("require.aliases.push([\"" + alias[0] + "\", \"" + alias[1] + "\"]);\r\n"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
-		// Add server option settings that we care about
-		IOptions options = getAggregator().getOptions();
-		sb.append("require.combo.serverOptions={skipHasFiltering:") //$NON-NLS-1$
-		.append(Boolean.toString(options.isDisableHasFiltering()))
-		.append("};\r\n"); //$NON-NLS-1$
+		// Add server option settings that the client cares about (currently, none)
+		sb.append("require.combo.serverOptions={}") //$NON-NLS-1$
+		  .append("};\r\n"); //$NON-NLS-1$
 
 		// add in the super class's contribution
 		sb.append(super.getDynamicLoaderExtensionJavaScript(request));
