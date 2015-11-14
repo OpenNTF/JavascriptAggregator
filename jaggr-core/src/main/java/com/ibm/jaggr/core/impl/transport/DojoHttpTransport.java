@@ -404,7 +404,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		}
 		// Add server option settings that the client cares about (currently, none)
 		sb.append("require.combo.serverOptions={}") //$NON-NLS-1$
-		  .append("};\r\n"); //$NON-NLS-1$
+		  .append(";\r\n"); //$NON-NLS-1$
 
 		// add in the super class's contribution
 		sb.append(super.getDynamicLoaderExtensionJavaScript(request));
