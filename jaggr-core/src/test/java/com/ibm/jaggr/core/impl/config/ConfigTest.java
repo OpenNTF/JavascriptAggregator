@@ -35,7 +35,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Scriptable;
 
 import java.io.File;
@@ -630,6 +629,7 @@ public class ConfigTest {
 		Assert.assertTrue(exceptionCaught);
 	}
 
+	@SuppressWarnings("deprecation")
 	@Test
 	public void testGetDeps() throws Exception {
 		String config = "{}";

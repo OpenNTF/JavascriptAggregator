@@ -73,7 +73,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 			log.entering(PlatformServicesImpl.class.getName(), sourceMethod, new Object[]{clazz, service, properties});
 		}
 		ServiceRegistrationOSGi serviceRegistrationOSGi = null;
-		ServiceRegistration serviceRegistration = null;
+		ServiceRegistration<?> serviceRegistration = null;
 		BundleContext bundleContext = Activator.getBundleContext();
 		if (bundleContext != null) {
 			serviceRegistration = bundleContext.registerService(clazz, service,
@@ -103,7 +103,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		try {
 			BundleContext bundleContext = Activator.getBundleContext();
 			if (bundleContext != null) {
-				ServiceReference[] platformRefs = bundleContext.getServiceReferences(clazz, filter);
+				ServiceReference<?>[] platformRefs = bundleContext.getServiceReferences(clazz, filter);
 				if (platformRefs != null) {
 					refs = new ServiceReferenceOSGi[platformRefs.length];
 					for (int i = 0; i < platformRefs.length; i++) {
@@ -138,7 +138,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		BundleContext bundleContext = Activator.getBundleContext();
 		if (bundleContext != null) {
 			result = bundleContext
-					.getService((ServiceReference) serviceReference.getPlatformObject());
+					.getService((ServiceReference<?>) serviceReference.getPlatformObject());
 		}
 		if (isTraceLogging) {
 			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
@@ -163,7 +163,7 @@ public class PlatformServicesImpl implements IPlatformServices {
 		BundleContext bundleContext = Activator.getBundleContext();
 		if (bundleContext != null) {
 			result = bundleContext
-					.ungetService((ServiceReference) serviceReference.getPlatformObject());
+					.ungetService((ServiceReference<?>) serviceReference.getPlatformObject());
 		}
 		if (isTraceLogging) {
 			log.exiting(PlatformServicesImpl.class.getName(), sourceMethod, result);
@@ -198,7 +198,6 @@ public class PlatformServicesImpl implements IPlatformServices {
 	 *
 	 * @see org.osgi.framework.Bundle#getHeaders()
 	 */
-	@SuppressWarnings("unchecked")
 	@Override
 	public Dictionary<String, String> getHeaders() {
 		final String sourceMethod = "getHeaders"; //$NON-NLS-1$

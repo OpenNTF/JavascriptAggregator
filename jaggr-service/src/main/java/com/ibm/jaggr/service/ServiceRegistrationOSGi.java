@@ -27,9 +27,9 @@ import com.ibm.jaggr.core.IServiceRegistration;
 
 public class ServiceRegistrationOSGi implements IServiceRegistration {
 
-	private org.osgi.framework.ServiceRegistration serviceRegistrationOSGi;
+	private org.osgi.framework.ServiceRegistration<?> serviceRegistrationOSGi;
 
-	public ServiceRegistrationOSGi(org.osgi.framework.ServiceRegistration serviceRegistration){
+	public ServiceRegistrationOSGi(org.osgi.framework.ServiceRegistration<?> serviceRegistration){
 		serviceRegistrationOSGi = serviceRegistration;
 	}
 

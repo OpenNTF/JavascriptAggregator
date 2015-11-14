@@ -79,8 +79,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Hashtable;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -118,8 +120,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	public static final String JAGGR_CACHE_DIRECTORY = "JAGGR-Cache/"; //$NON-NLS-1$
 
 	protected Bundle contributingBundle;
-	private ServiceTracker executorsServiceTracker = null;
-	private ServiceTracker variableResolverServiceTracker = null;
+	private ServiceTracker<IExecutors, ?> executorsServiceTracker = null;
+	private ServiceTracker<IVariableResolver, ?> variableResolverServiceTracker = null;
 	private File workdir = null;
 	private IOptions options = null;
 	private boolean isShuttingDown = false;
@@ -185,7 +187,7 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 				}
 			}
 		}
-		Properties dict = new Properties();
+		Dictionary<String, String> dict = new Hashtable<String, String>();
 		dict.put("name", getName()); //$NON-NLS-1$
 		registrations.add(new ServiceRegistrationOSGi(Activator.getBundleContext().registerService(
 				IAggregator.class.getName(), this, dict)));
@@ -400,8 +402,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	 * @return The opened service tracker
 	 * @throws InvalidSyntaxException
 	 */
-	protected ServiceTracker getOptionsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
-		ServiceTracker tracker = new ServiceTracker(
+	protected ServiceTracker<IOptions, ?> getOptionsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
+		ServiceTracker<IOptions, ?> tracker = new ServiceTracker<IOptions, Object>(
 				bundleContext,
 				bundleContext.createFilter(
 						"(&(" + Constants.OBJECTCLASS + "=" + IOptions.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
@@ -421,8 +423,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 	 * @return The opened service tracker
 	 * @throws InvalidSyntaxException
 	 */
-	protected ServiceTracker getExecutorsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
-		ServiceTracker tracker = new ServiceTracker(
+	protected ServiceTracker<IExecutors, ?> getExecutorsServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
+		ServiceTracker<IExecutors, ?> tracker = new ServiceTracker<IExecutors, Object>(
 				bundleContext,
 				bundleContext.createFilter(
 						"(&(" + Constants.OBJECTCLASS + "=" + IExecutors.class.getName() +  //$NON-NLS-1$ //$NON-NLS-2$
@@ -432,8 +434,8 @@ public class AggregatorImpl extends AbstractAggregatorImpl implements IExecutabl
 		return tracker;
 	}
 
-	protected ServiceTracker getVariableResolverServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
-		ServiceTracker tracker = new ServiceTracker(bundleContext, IVariableResolver.class.getName(), null);
+	protected ServiceTracker<IVariableResolver, ?> getVariableResolverServiceTracker(BundleContext bundleContext) throws InvalidSyntaxException {
+		ServiceTracker<IVariableResolver, ?> tracker = new ServiceTracker<IVariableResolver, Object>(bundleContext, IVariableResolver.class.getName(), null);
 		tracker.open();
 		return tracker;
 	}

@@ -349,6 +349,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.config.IConfig#getDeps()
 	 */
+	@Deprecated
 	@Override
 	public List<String> getDeps() {
 		return deps;

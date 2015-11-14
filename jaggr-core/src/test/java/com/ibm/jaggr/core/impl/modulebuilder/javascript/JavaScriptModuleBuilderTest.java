@@ -757,8 +757,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	@Test
 	public void testModuleNameEncodingIdBeginLayer() throws Exception {
-		List<IModule> modules = new ArrayList<IModule>();
-
 		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
 		Assert.assertEquals("", builder.moduleNameIdEncodingBeginLayer(mockRequest));
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS));
@@ -859,7 +857,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	@Test
 	public void testGenerateModuleIdReg() throws Exception {
-		List<IModule> modules = new ArrayList<IModule>();
 		Map<String, Integer> moduleIdMap = new HashMap<String, Integer>();
 		moduleIdMap.put("dep1", 100);
 		moduleIdMap.put("dep2", 102);

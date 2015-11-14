@@ -33,7 +33,6 @@ import com.ibm.jaggr.core.util.Features;
 
 import org.apache.commons.codec.binary.Base64;
 import org.apache.wink.json4j.JSONArray;
-import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;

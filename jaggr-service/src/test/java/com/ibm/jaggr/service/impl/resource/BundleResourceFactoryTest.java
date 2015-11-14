@@ -35,9 +35,7 @@ import org.osgi.framework.ServiceReference;
 import org.powermock.api.easymock.PowerMock;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.powermock.reflect.Whitebox;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -146,7 +144,8 @@ public class BundleResourceFactoryTest {
 		URL bundleUrl = new URL(null, "bundleresource://25-5/path/name.ext", new DummyStreamHandler());
 		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
 		Bundle mockContributingBundle = EasyMock.createNiceMock(Bundle.class);
-		ServiceReference mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
+		@SuppressWarnings("unchecked")
+		ServiceReference<URLConverter> mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
 		URLConverter mockUrlConverter = EasyMock.createMock(URLConverter.class);
 		PowerMock.mockStatic(Activator.class);
 		EasyMock.expect(Activator.getBundleContext()).andReturn(mockContext).anyTimes();

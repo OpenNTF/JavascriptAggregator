@@ -32,7 +32,7 @@
   <build>
     <resources>
       <resource>
-        <directory>..</directory>
+        <directory>${project.parent.basedir}</directory>
         <includes>
           <include>LICENSE</include>
           <include>NOTICE</include>
@@ -276,13 +276,13 @@
       <artifactId>commons-io</artifactId>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.core.runtime</groupId>
-      <artifactId>compatibility</artifactId>
+      <groupId>org.eclipse.core</groupId>
+      <artifactId>runtime</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>org.osgi</groupId>
-      <artifactId>org.osgi</artifactId>
+      <groupId>org.eclipse</groupId>
+      <artifactId>osgi</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

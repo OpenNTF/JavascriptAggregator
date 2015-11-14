@@ -25,9 +25,9 @@ import org.osgi.framework.ServiceReference;
  */
 public class ServiceReferenceOSGi implements IServiceReference {
 
-	final private ServiceReference ref;
+	final private ServiceReference<?> ref;
 
-	public ServiceReferenceOSGi(ServiceReference ref) {
+	public ServiceReferenceOSGi(ServiceReference<?> ref) {
 		this.ref = ref;
 	}
 

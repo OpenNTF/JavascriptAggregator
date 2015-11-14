@@ -30,6 +30,7 @@ public class LineCountingStringWriterTest {
 
 	@Test
 	public void test() {
+		@SuppressWarnings("resource")
 		LineCountingStringWriter out = new LineCountingStringWriter();
 		// write(int c)
 		out.write('1');

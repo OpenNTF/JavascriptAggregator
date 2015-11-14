@@ -48,7 +48,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	static final Logger log = Logger.getLogger(BundleResourceFactory.class.getName());
 
 	private Bundle contributingBundle;
-	private ServiceReference urlConverterSR;
+	private ServiceReference<?> urlConverterSR;
 	private IBundleResolver bundleResolver;
 
 	public BundleResourceFactory() {
@@ -143,7 +143,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	/*
 	 * Package-private initializer for unit testing
 	 */
-	void setInitializationData(Bundle contributingBundle, ServiceReference urlConverterSR) {
+	void setInitializationData(Bundle contributingBundle, ServiceReference<?> urlConverterSR) {
 		if (this.contributingBundle != null || this.urlConverterSR != null) {
 			throw new IllegalStateException();
 		}

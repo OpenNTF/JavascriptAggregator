@@ -226,6 +226,7 @@ public class ConsoleHttpServletRequest implements HttpServletRequest {
 		return null;
 	}
 
+	@Deprecated
 	@Override
 	public String getRealPath(String path) {
 		return null;
@@ -407,6 +408,7 @@ public class ConsoleHttpServletRequest implements HttpServletRequest {
 		return false;
 	}
 
+	@Deprecated
 	@Override
 	public boolean isRequestedSessionIdFromUrl() {
 		return false;

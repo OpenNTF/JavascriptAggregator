@@ -239,9 +239,9 @@ public class AggregatorCommandProvider implements CommandProvider {
 		// list the registered servlets
 		BundleContext context = getBundleContext();
 		StringBuffer sb = new StringBuffer();
-		ServiceReference[] refs = context.getServiceReferences(IAggregator.class.getName(), null);
+		ServiceReference<?>[] refs = context.getServiceReferences(IAggregator.class.getName(), null);
 		if (refs != null) {
-			for (ServiceReference ref : refs) {
+			for (ServiceReference<?> ref : refs) {
 				IAggregator aggregator = (IAggregator)context.getService(ref);
 				if (aggregator != null) {
 					try {
@@ -260,7 +260,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String reloadconfig(String[] args) throws IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
@@ -290,7 +290,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String validatedeps(String[] args) throws MalformedURLException, IOException, URISyntaxException, InvalidSyntaxException, InterruptedException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		boolean clean = PARAM_CLEAN.equals(args.length > 1 ? args[1] : null);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
@@ -320,7 +320,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 	protected String getdeps(String[] args) throws InvalidSyntaxException, IOException {
 		DependencyList moduleDeps = null;
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 
@@ -370,7 +370,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String clearcache(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
@@ -390,7 +390,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String serializecache(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
@@ -410,7 +410,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String dumpcache(String[] args) throws InvalidSyntaxException, IOException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			String target = args.length > 1 ? args[1] : null;
@@ -464,7 +464,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String getoptions(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			try {
 				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
@@ -489,7 +489,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String getdefaultoptions(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			try {
 				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
@@ -504,7 +504,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String setoption(String args[]) throws IOException, InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			try {
 				IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
@@ -528,7 +528,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String showconfig(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
@@ -542,7 +542,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String setForceError(Object[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(new String[]{(String)args[0]}, sb);
+		ServiceReference<?> ref = getServiceRef(new String[]{(String)args[0]}, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
@@ -557,7 +557,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String processRequestUrl(String[] args) throws InvalidSyntaxException, IOException, ServletException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			try {
 				AggregatorImpl aggregator = (AggregatorImpl)getBundleContext().getService(ref);
@@ -572,7 +572,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String createCacheBundle(String[] args) throws InvalidSyntaxException, IOException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(new String[]{(String)args[0]}, sb);
+		ServiceReference<?> ref = getServiceRef(new String[]{(String)args[0]}, sb);
 		if (ref != null) {
 			AggregatorImpl aggregator = (AggregatorImpl)getBundleContext().getService(ref);
 			String bundleSymbolicName = args.length > 1 ? args[1] : null;
@@ -589,7 +589,7 @@ public class AggregatorCommandProvider implements CommandProvider {
 
 	protected String getServletDir(String[] args) throws InvalidSyntaxException {
 		StringBuffer sb = new StringBuffer();
-		ServiceReference ref = getServiceRef(args, sb);
+		ServiceReference<?> ref = getServiceRef(args, sb);
 		if (ref != null) {
 			IAggregator aggregator = (IAggregator)getBundleContext().getService(ref);
 			try {
@@ -601,17 +601,17 @@ public class AggregatorCommandProvider implements CommandProvider {
 		return sb.toString();
 	}
 
-	protected ServiceReference getServiceRef(String[] args, StringBuffer sb) throws InvalidSyntaxException {
+	protected ServiceReference<?> getServiceRef(String[] args, StringBuffer sb) throws InvalidSyntaxException {
 		if (args.length == 0) {
 			throw new InvalidSyntaxException("servlet name not specified", null); //$NON-NLS-1$
 		}
 		String servletName = args[0];
 		BundleContext context = getBundleContext();
-		ServiceReference[] refs = context.getServiceReferences(
+		ServiceReference<?>[] refs = context.getServiceReferences(
 				IAggregator.class.getName(),
 				"(name="+servletName+")" //$NON-NLS-1$ //$NON-NLS-2$
 				);
-		ServiceReference result = refs != null && refs.length > 0 ? refs[0] : null;
+		ServiceReference<?> result = refs != null && refs.length > 0 ? refs[0] : null;
 		if (result == null) {
 			sb.append(
 					MessageFormat.format(

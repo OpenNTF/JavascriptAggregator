@@ -23,7 +23,6 @@ import org.junit.Test;
 
 import java.text.MessageFormat;
 import java.util.ArrayList;
-import java.util.concurrent.locks.Lock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 

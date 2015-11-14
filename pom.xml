@@ -398,6 +398,16 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>org.apache.felix.gogo.command</artifactId>
         <version>0.10.0</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.core</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.osgi</groupId>
+            <artifactId>org.osgi.compendium</artifactId>
+          </exclusion>
+        </exclusions>
       </dependency>
       <dependency>
         <groupId>com.googlecode.concurrentlinkedhashmap</groupId>
@@ -410,14 +420,14 @@
         <version>3.0.1</version>
       </dependency>
       <dependency>
-        <groupId>org.eclipse.core.runtime</groupId>
-        <artifactId>compatibility</artifactId>
-        <version>3.1.200-v20070502</version>
+        <groupId>org.eclipse.core</groupId>
+        <artifactId>runtime</artifactId>
+        <version>3.10.0-v20140318-2214</version>
       </dependency>
       <dependency>
-        <groupId>org.osgi</groupId>
-        <artifactId>org.osgi</artifactId>
-        <version>3.0.0</version>
+      	<groupId>org.eclipse</groupId>
+      	<artifactId>osgi</artifactId>
+      	<version>3.10.0-v20140606-1445</version>
       </dependency>
       <dependency>
         <groupId>junit</groupId>

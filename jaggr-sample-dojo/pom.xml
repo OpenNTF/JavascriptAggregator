@@ -38,7 +38,7 @@
 	<build>
 		<resources>
 			<resource>
-				<directory>..</directory>
+				<directory>${project.parent.basedir}</directory>
 				<includes>
 					<include>LICENSE</include>
 					<include>NOTICE</include>
@@ -142,8 +142,8 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.eclipse.core.runtime</groupId>
-			<artifactId>compatibility</artifactId>
+			<groupId>org.eclipse</groupId>
+			<artifactId>osgi</artifactId>
 			<scope>provided</scope>
 		</dependency>
 	</dependencies>

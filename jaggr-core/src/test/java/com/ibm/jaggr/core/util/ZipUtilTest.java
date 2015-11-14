@@ -20,10 +20,8 @@ import com.google.common.io.Files;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.File;

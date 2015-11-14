@@ -38,6 +38,7 @@ import java.util.Properties;
 
 public class OptionsImplTest {
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testCtor() throws IOException {
 		IAggregator mockAggregator = EasyMock.createNiceMock(IAggregator.class);

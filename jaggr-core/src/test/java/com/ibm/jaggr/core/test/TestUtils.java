@@ -215,6 +215,7 @@ public class TestUtils {
 
 		return createMockAggregator(null, null, null, null, transport);
 	}
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static IAggregator createMockAggregator(
 			Ref<IConfig> configRef,
 			File workingDirectory,
