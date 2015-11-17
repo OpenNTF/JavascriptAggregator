@@ -153,8 +153,8 @@ public class ModuleImplTest {
 		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
-		Assert.assertEquals("[expn, sexp, js:(has:[conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
-		Assert.assertTrue(module.getKeys().size() == 1 && module.getKeys().containsAll(Arrays.asList(new String[]{"expn:0;sexp:0;js:S:1:0:1;has{foo}"})));
+		Assert.assertEquals("[expn, js:(has:[conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
+		Assert.assertTrue(module.getKeys().size() == 1 && module.getKeys().containsAll(Arrays.asList(new String[]{"expn:0;js:S:1:0:1;has{foo}"})));
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		String compiled = writer.toString();
@@ -167,9 +167,9 @@ public class ModuleImplTest {
 		features.put("foo", false);
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
-		Assert.assertEquals("[expn, sexp, js:(has:[bar, conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
+		Assert.assertEquals("[expn, js:(has:[bar, conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
 		Assert.assertTrue(module.getKeys().size() == 2 && module.getKeys().containsAll(Arrays.asList(
-				new String[]{"expn:0;sexp:0;js:S:1:0:1;has{foo}", "expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}"})));
+				new String[]{"expn:0;js:S:1:0:1;has{foo}", "expn:0;js:S:1:0:1;has{bar,!foo}"})));
 		writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		compiled = writer.toString();
@@ -182,12 +182,12 @@ public class ModuleImplTest {
 		reader = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
 		List<ICacheKeyGenerator> cacheKeyGenerators = module.getCacheKeyGenerators();
-		Assert.assertEquals("[expn, sexp, js:(has:[bar, conditionFalse, conditionTrue, foo, non])]", module.getCacheKeyGenerators().toString());
+		Assert.assertEquals("[expn, js:(has:[bar, conditionFalse, conditionTrue, foo, non])]", module.getCacheKeyGenerators().toString());
 		Assert.assertTrue(module.getKeys().size() == 3 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-						"expn:0;sexp:0;js:S:1:0:1;has{foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;js:S:1:0:1;has{foo}",
+						"expn:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;js:S:1:0:1;has{!bar,!foo}"
 				}
 				)));
 		writer = new StringWriter();
@@ -206,9 +206,9 @@ public class ModuleImplTest {
 		Assert.assertTrue(cacheKeyGenerators == module.getCacheKeyGenerators());
 		Assert.assertTrue(module.getKeys().size() == 3 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-						"expn:0;sexp:0;js:S:1:0:1;has{foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;js:S:1:0:1;has{foo}",
+						"expn:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;js:S:1:0:1;has{!bar,!foo}"
 				}
 				)));
 		writer = new StringWriter();
@@ -226,10 +226,10 @@ public class ModuleImplTest {
 		Assert.assertTrue(cacheKeyGenerators == module.getCacheKeyGenerators());
 		Assert.assertTrue(module.getKeys().size() == 4 && module.getKeys().containsAll(Arrays.asList(
 				new String[]{
-						"expn:0;sexp:0;js:S:1:0:1;has{foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{bar,!foo}",
-						"expn:0;sexp:0;js:S:1:0:1;has{!bar,!foo}"
+						"expn:0;js:S:1:0:1;has{foo}",
+						"expn:0;js:S:1:0:1;has{bar,foo}",
+						"expn:0;js:S:1:0:1;has{bar,!foo}",
+						"expn:0;js:S:1:0:1;has{!bar,!foo}"
 				}
 				)));
 		writer = new StringWriter();
