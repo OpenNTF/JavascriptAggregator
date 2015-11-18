@@ -152,11 +152,13 @@ public class ConsoleHttpServletResponse implements HttpServletResponse {
 		return url;
 	}
 
+	@Deprecated
 	@Override
 	public String encodeUrl(String url) {
 		return url;
 	}
 
+	@Deprecated
 	@Override
 	public String encodeRedirectUrl(String url) {
 		return url;
@@ -221,6 +223,7 @@ public class ConsoleHttpServletResponse implements HttpServletResponse {
 		responseCode = sc;
 	}
 
+	@Deprecated
 	@Override
 	public void setStatus(int sc, String sm) {
 		throw new UnsupportedOperationException("Not implemented"); //$NON-NLS-1$

@@ -39,7 +39,6 @@ import org.mozilla.javascript.Scriptable;
 
 import java.io.File;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;

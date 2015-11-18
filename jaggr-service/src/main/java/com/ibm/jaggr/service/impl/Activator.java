@@ -28,8 +28,9 @@ import org.osgi.framework.ServiceReference;
 import org.osgi.framework.ServiceRegistration;
 
 import java.util.Collection;
+import java.util.Dictionary;
+import java.util.Hashtable;
 import java.util.LinkedList;
-import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -47,7 +48,7 @@ public class Activator extends Plugin implements BundleActivator {
 	public static String BUNDLE_NAME = "com.ibm.jaggr.service"; //$NON-NLS-1$
 	private static BundleContext context = null;
 
-	private Collection<ServiceRegistration> serviceRegistrations;
+	private Collection<ServiceRegistration<?>> serviceRegistrations;
 	private IExecutors executors = null;
 
 	/* (non-Javadoc)
@@ -66,20 +67,20 @@ public class Activator extends Plugin implements BundleActivator {
 		if (!context.getBundle().getSymbolicName().equals(BUNDLE_NAME)) {
 			throw new IllegalStateException();
 		}
-		serviceRegistrations = new LinkedList<ServiceRegistration>();
+		serviceRegistrations = new LinkedList<ServiceRegistration<?>>();
 		Activator.context = context;
-		Properties dict = new Properties();
-		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
+		Dictionary<String, String> dict = new Hashtable<String, String>();
+		dict.put("name", BUNDLE_NAME); //$NON-NLS-1$
 
-		ServiceRegistration commandProviderReg = registerCommandProvider();
+		ServiceRegistration<?> commandProviderReg = registerCommandProvider();
 		if (commandProviderReg != null) {
 			serviceRegistrations.add(commandProviderReg);
 		}
 		// Create the executors provider.  The executors provider is created by the
 		// activator primarily to allow executors to be shared by all of the
 		// aggregators created by this bundle.
-		dict = new Properties();
-		dict.setProperty("name", BUNDLE_NAME); //$NON-NLS-1$
+		dict = new Hashtable<String, String>();
+		dict.put("name", BUNDLE_NAME); //$NON-NLS-1$
 		executors = newExecutors();
 		serviceRegistrations.add(
 				context.registerService(IExecutors.class.getName(), executors, dict));
@@ -101,9 +102,9 @@ public class Activator extends Plugin implements BundleActivator {
 		}
 		super.stop(context);
 		// Shutdown the aggregator instances
-		ServiceReference[] refs = context.getServiceReferences(IAggregator.class.getName(), null);
+		ServiceReference<?>[] refs = context.getServiceReferences(IAggregator.class.getName(), null);
 		if (refs != null) {
-			for (ServiceReference ref : refs) {
+			for (ServiceReference<?> ref : refs) {
 				AggregatorImpl aggr = (AggregatorImpl)context.getService(ref);
 				if (aggr != null) {
 					try {
@@ -117,7 +118,7 @@ public class Activator extends Plugin implements BundleActivator {
 			}
 		}
 
-		for (ServiceRegistration reg : serviceRegistrations) {
+		for (ServiceRegistration<?> reg : serviceRegistrations) {
 			reg.unregister();
 		}
 		if (executors != null) {
@@ -142,26 +143,26 @@ public class Activator extends Plugin implements BundleActivator {
 		return new ExecutorsImpl();
 	}
 
-	protected ServiceRegistration registerCommandProvider() throws InvalidSyntaxException {
+	protected ServiceRegistration<?> registerCommandProvider() throws InvalidSyntaxException {
 		final String sourceMethod = "registerCommandProvider"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(Activator.class.getName(), sourceMethod);
 		}
 
-		ServiceRegistration result = null;
-		Properties dict = new Properties();
+		ServiceRegistration<?> result = null;
+		Dictionary<String, Object> dict = new Hashtable<String, Object>();
 		// If CommandProcessor service is available, then register the felix command processor
 		// Note: must avoid references to felix classes in this module
-		ServiceReference commandProcessorSR =
+		ServiceReference<?> commandProcessorSR =
 				context.getServiceReference("org.apache.felix.service.command.CommandProcessor"); //$NON-NLS-1$
 		if (commandProcessorSR != null) {
 			// See if a command provider is already registered
-			ServiceReference[] refs = context.getServiceReferences(
+			ServiceReference<?>[] refs = context.getServiceReferences(
 					AggregatorCommandProviderGogo.class.getName(),
 					"(osgi.command.scope=aggregator)"); //$NON-NLS-1$
 			if (refs == null || refs.length == 0) {
-				dict = new Properties();
+				dict = new Hashtable<String, Object>();
 				dict.put("osgi.command.scope", "aggregator"); //$NON-NLS-1$ //$NON-NLS-2$
 				dict.put("osgi.command.function", AggregatorCommandProvider.COMMANDS); //$NON-NLS-1$
 				result = context.registerService(
@@ -171,13 +172,13 @@ public class Activator extends Plugin implements BundleActivator {
 			}
 		} else {
 			// See if a command provider is already registered
-			ServiceReference[] refs = context.getServiceReferences(
+			ServiceReference<?>[] refs = context.getServiceReferences(
 					org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
 					"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
 			if (refs == null || refs.length == 0) {
 				// Register the command provider that will handle console commands
-				dict = new Properties();
-				dict.setProperty("name", IAggregator.class.getName()); //$NON-NLS-1$
+				dict = new Hashtable<String, Object>();
+				dict.put("name", IAggregator.class.getName()); //$NON-NLS-1$
 				result =
 						context.registerService(
 								org.eclipse.osgi.framework.console.CommandProvider.class.getName(),

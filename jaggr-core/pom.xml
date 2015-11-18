@@ -72,7 +72,7 @@
   <build>
     <resources>
       <resource>
-        <directory>..</directory>
+        <directory>${project.parent.basedir}</directory>
         <includes>
           <include>LICENSE</include>
           <include>NOTICE</include>

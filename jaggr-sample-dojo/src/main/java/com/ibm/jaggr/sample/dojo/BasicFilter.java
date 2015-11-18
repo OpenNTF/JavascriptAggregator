@@ -34,7 +34,7 @@ public class BasicFilter implements Filter {
 	
 	@Override
 	public void init(FilterConfig filterConfig) throws ServletException {
-		final String method = "init";
+		final String method = "init"; //$NON-NLS-1$
 		LOGGER.entering(CLAZZ, method);
 		
 		LOGGER.exiting(CLAZZ, method);
@@ -42,12 +42,12 @@ public class BasicFilter implements Filter {
 
 	@Override
 	public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-		final String method = "doFilter";
+		final String method = "doFilter"; //$NON-NLS-1$
 		LOGGER.entering(CLAZZ, method);
 		
 		HttpServletResponse resp = (HttpServletResponse)response;
 		// Versioned resource, cache for 1 year.
-		resp.setHeader("Cache-Control", "public, max-age=31536000");
+		resp.setHeader("Cache-Control", "public, max-age=31536000"); //$NON-NLS-1$ //$NON-NLS-2$
 		chain.doFilter(request, response);
 		
 		LOGGER.exiting(CLAZZ, method);
@@ -55,7 +55,7 @@ public class BasicFilter implements Filter {
 
 	@Override
 	public void destroy() {
-		final String method = "destroy";
+		final String method = "destroy"; //$NON-NLS-1$
 		LOGGER.entering(CLAZZ, method);
 		
 		LOGGER.exiting(CLAZZ, method);

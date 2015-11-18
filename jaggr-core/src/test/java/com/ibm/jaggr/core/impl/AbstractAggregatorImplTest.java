@@ -324,6 +324,7 @@ public class AbstractAggregatorImplTest {
 	@Test
 	public void testProcessResourceRequest_invalidAccess() throws Exception {
 		final MutableObject<URI> newResource = new MutableObject<URI>();
+		@SuppressWarnings("serial")
 		AbstractAggregatorImpl testAggregator = new TestAggregatorImpl() {
 			@Override
 			public IResource newResource(URI uri) {
@@ -391,6 +392,7 @@ public class AbstractAggregatorImplTest {
 			}
 
 		}).anyTimes();
+		@SuppressWarnings("serial")
 		AbstractAggregatorImpl testAggregator = new TestAggregatorImpl() {
 			@Override public IConfig getConfig() { return mockConfig; }
 		};

@@ -280,7 +280,6 @@ public class GzipCacheImplTest {
 
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetInputStreamExceptionHandling() throws Exception {
 		final GzipCacheImpl impl = new GzipCacheImpl();
@@ -309,7 +308,7 @@ public class GzipCacheImplTest {
 			@Override
 			public void run() {
 				try {
-					InputStream is = impl.getInputStream("key", tempfile.toURI(), retLength);
+					impl.getInputStream("key", tempfile.toURI(), retLength);
 				} catch (Exception ex) {
 					exceptionCaught.setTrue();
 				}

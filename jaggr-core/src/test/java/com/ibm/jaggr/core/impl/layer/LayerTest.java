@@ -804,6 +804,7 @@ public class LayerTest extends EasyMock {
 
 	@Test
 	public void testCacheKeyGenerator() throws Exception {
+		@SuppressWarnings("serial")
 		LayerImpl impl = new LayerImpl("", 0) {
 			// Increase visibility of methods we need to call
 			@Override
@@ -839,6 +840,7 @@ public class LayerTest extends EasyMock {
 		Assert.assertEquals("sexp:1;sm:1;lyr:1:1:1:1", impl.generateCacheKey(mockRequest, keyGens));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testSetResponse() throws Exception {
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);
@@ -868,7 +870,7 @@ public class LayerTest extends EasyMock {
 				if (value == null) {
 					value = new String[]{};
 				}
-				List<String> valueList = new ArrayList(Arrays.asList(value));
+				List<String> valueList = new ArrayList<String>(Arrays.asList(value));
 				valueList.add(EasyMock.getCurrentArguments()[1].toString());
 				responseHeaders.put(headerName, valueList.toArray(new String[valueList.size()]));
 				return null;
@@ -931,6 +933,7 @@ public class LayerTest extends EasyMock {
 		Assert.assertTrue(exceptionThrown);
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testTrySetResponse() throws Exception {
 		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator);

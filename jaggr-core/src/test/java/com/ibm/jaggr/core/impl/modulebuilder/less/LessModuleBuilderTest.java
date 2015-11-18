@@ -20,14 +20,11 @@ import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.util.CopyUtil;
-
-import junit.framework.Assert;
 
 import org.easymock.EasyMock;
 import org.junit.AfterClass;
@@ -36,13 +33,19 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mozilla.javascript.Scriptable;
 
-import javax.servlet.http.HttpServletRequest;
-
-import java.io.*;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
+import java.io.StringWriter;
 import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import javax.servlet.http.HttpServletRequest;
+
+import junit.framework.Assert;
 
 public class LessModuleBuilderTest extends EasyMock {
 	static File tmpdir;

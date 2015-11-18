@@ -23,12 +23,8 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.util.Features;
 
-import com.google.common.collect.HashMultimap;
-import com.google.javascript.jscomp.CompilationLevel;
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.Compiler.CodeBuilder;
-import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.CustomPassExecutionTime;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
@@ -42,7 +38,6 @@ import org.junit.Test;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -291,8 +286,6 @@ public class RequireExpansionCompilerPassTest extends EasyMock {
 		output = runPass(pass, code);
 
 	}
-
-	private static final List<JSSourceFile> externs = Collections.emptyList();
 
 	@Test
 	public void testRequireDepsExpansion() throws Exception {

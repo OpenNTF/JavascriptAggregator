@@ -103,7 +103,7 @@ public class JsxResourceConverterTest {
 				EasyMock.isA(Dictionary.class))).andAnswer(new IAnswer<IServiceRegistration>() {
 					@Override
 					public IServiceRegistration answer() throws Throwable {
-						Dictionary dict = (Dictionary)EasyMock.getCurrentArguments()[2];
+						Dictionary<String, String> dict = (Dictionary<String, String>)EasyMock.getCurrentArguments()[2];
 						Assert.assertEquals("test", dict.get("name"));
 						listenerWrapper.setValue((ICacheManagerListener)EasyMock.getCurrentArguments()[1]);
 						return mockRegistration;
