@@ -512,7 +512,9 @@ public class DependencyList {
 
 		if (resolved != null && resolved.length() > 0 && !resolved.equals(name)) {
 			name = resolved;
-			if (includeDetails) comment = MessageFormat.format(Messages.DependencyList_5, source) + sb.toString();
+			comment = (dependee == null) ?
+					MessageFormat.format(Messages.DependencyList_5, source) :
+						MessageFormat.format(Messages.DependencyList_4, dependee) + sb.toString();
 			if (recursionCheck.contains(name)) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.warning(MessageFormat.format(
@@ -526,8 +528,8 @@ public class DependencyList {
 		} else {
 			if (includeDetails) {
 				comment = (dependee == null) ?
-						MessageFormat.format(Messages.DependencyList_5, source) + sb.toString() :
-							MessageFormat.format(Messages.DependencyList_4, dependee);
+						MessageFormat.format(Messages.DependencyList_5, source) :
+							MessageFormat.format(Messages.DependencyList_4, dependee) + sb.toString();
 			}
 		}
 		ModuleDepInfo info = callerInfo != null ?
