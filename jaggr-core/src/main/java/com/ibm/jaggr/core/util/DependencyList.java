@@ -510,11 +510,13 @@ public class DependencyList {
 			log.finest("Module name \"" + name + "resolved to \"" + resolved + "\"."); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 		}
 
+		if (includeDetails) {
+			comment = ((dependee == null) ?
+					MessageFormat.format(Messages.DependencyList_5, source) :
+						MessageFormat.format(Messages.DependencyList_4, dependee)) + sb.toString();
+		}
 		if (resolved != null && resolved.length() > 0 && !resolved.equals(name)) {
 			name = resolved;
-			comment = (dependee == null) ?
-					MessageFormat.format(Messages.DependencyList_5, source) :
-						MessageFormat.format(Messages.DependencyList_4, dependee) + sb.toString();
 			if (recursionCheck.contains(name)) {
 				if (log.isLoggable(Level.WARNING)) {
 					log.warning(MessageFormat.format(
@@ -525,12 +527,6 @@ public class DependencyList {
 				return;
 			}
 			recursionCheck.add(name);
-		} else {
-			if (includeDetails) {
-				comment = (dependee == null) ?
-						MessageFormat.format(Messages.DependencyList_5, source) :
-							MessageFormat.format(Messages.DependencyList_4, dependee) + sb.toString();
-			}
 		}
 		ModuleDepInfo info = callerInfo != null ?
 				new ModuleDepInfo(callerInfo, dependee == null ? null : comment) :
