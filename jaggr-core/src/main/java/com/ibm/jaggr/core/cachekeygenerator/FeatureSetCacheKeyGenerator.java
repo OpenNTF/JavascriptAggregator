@@ -38,7 +38,7 @@ import javax.servlet.http.HttpServletRequest;
  * Cache key generator for content that depends on the feature set specified in
  * the request.
  */
-public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
+public final class FeatureSetCacheKeyGenerator extends AbstractCollectionCacheKeyGenerator<String> {
 
 	private static final long serialVersionUID = 8764291680091811800L;
 
@@ -66,7 +66,7 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	 * @param provisional
 	 *            True if this is a provisional cache key generator.
 	 */
-	public FeatureSetCacheKeyGenerator(Set<String> dependentFeatures,
+	public FeatureSetCacheKeyGenerator(Collection<String> dependentFeatures,
 			boolean provisional) {
 		depFeatures = dependentFeatures == null ? null :
 			Collections.unmodifiableSet(new HashSet<String>(dependentFeatures));
@@ -124,34 +124,6 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	/* (non-Javadoc)
-	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#combine(com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator)
-	 */
-	@Override
-	public FeatureSetCacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
-		if (this.equals(otherKeyGen)) {
-			return this;
-		}
-		FeatureSetCacheKeyGenerator other = (FeatureSetCacheKeyGenerator)otherKeyGen;
-		if (provisional && other.provisional) {
-			// should never happen
-			throw new IllegalStateException();
-		}
-		if (provisional) {
-			return other;
-		} else if (other.provisional) {
-			return this;
-		}
-		Set<String> combined = new HashSet<String>();
-		if (depFeatures != null) {
-			combined.addAll(depFeatures);
-		}
-		if (other.depFeatures != null) {
-			combined.addAll(other.depFeatures);
-		}
-		return new FeatureSetCacheKeyGenerator(combined, false);
-	}
-
-	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator#isProvisional()
 	 */
 	@Override
@@ -185,24 +157,14 @@ public final class FeatureSetCacheKeyGenerator implements ICacheKeyGenerator {
 		return depFeatures;
 	}
 
-	@Override
-	public boolean equals(Object other) {
-		return other != null && getClass().equals(other.getClass()) &&
-				provisional == ((FeatureSetCacheKeyGenerator)other).provisional &&
-				(
-						depFeatures != null && depFeatures.equals(((FeatureSetCacheKeyGenerator)other).depFeatures) ||
-						depFeatures == null && ((FeatureSetCacheKeyGenerator)other).depFeatures == null
-						);
 
+	@Override
+	protected Collection<String> getCollection() {
+		return getFeatureSet();
 	}
 
 	@Override
-	public int hashCode() {
-		int result = getClass().hashCode();
-		result = result * 31 + Boolean.valueOf(provisional).hashCode();
-		if (depFeatures != null) {
-			result = result * 31 + depFeatures.hashCode();
-		}
-		return result;
+	protected FeatureSetCacheKeyGenerator newKeyGen(Collection<String> set, boolean isProvisional) {
+		return new FeatureSetCacheKeyGenerator(set, isProvisional);
 	}
 }

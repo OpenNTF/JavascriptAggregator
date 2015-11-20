@@ -182,7 +182,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
-		Assert.assertFalse(s.contains("i18n"));
+		Assert.assertTrue(s.contains("i18n{}"));
 		build = buildIt();
 		output = build.getBuildOutput().toString();
 		System.out.println(output);
@@ -289,7 +289,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 				Arrays.asList(new String[]{"ex-ca-var"}));
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
-		Assert.assertFalse(s.contains("i18n"));
+		Assert.assertTrue(s.contains("i18n{}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(0, build.getExtraModules().size());
@@ -332,7 +332,7 @@ public class I18nModuleBuilderTest extends EasyMock {
 				Arrays.asList(new String[]{"ex"}));
 		s = KeyGenUtil.generateKey(mockRequest, keyGens);
 		System.out.println(s);
-		Assert.assertFalse(s.contains("i18n"));
+		Assert.assertTrue(s.contains("i18n{}"));
 		build = buildIt();
 		Assert.assertEquals(expectedOutput, build.getBuildOutput());
 		Assert.assertEquals(0, build.getExtraModules().size());
