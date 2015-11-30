@@ -63,15 +63,18 @@
           <manifestLocation>META-INF</manifestLocation>
           <instructions>
             <Bundle-Name>jaggr-blueprint</Bundle-Name>
-            <Bundle-SymbolicName>${project.groupId}.core;singleton:=true</Bundle-SymbolicName>
+            <Bundle-SymbolicName>${project.groupId}.blueprint;singleton:=true</Bundle-SymbolicName>
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>  
+            <Require-Bundle>
+            	org.eclipse.core.runtime
+            </Require-Bundle>
             <Export-Package>
               ${project.groupId}.blueprint;version="${project.version}",
             </Export-Package>          
             <Import-Package>
-              org.apache.felix.service.command;resolution,
-              org.apache.karaf.shell.console,
-              org.apache.felix.gogo.commands,
+              org.apache.felix.service.command;resolution:=optional,
+              org.apache.karaf.shell.console;resolution:=optional,
+              org.apache.felix.gogo.commands;resolution:=optional,
               !*
             </Import-Package>
           </instructions>
@@ -160,6 +163,11 @@
     <dependency>
       <groupId>org.eclipse</groupId>
       <artifactId>osgi</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.core</groupId>
+      <artifactId>runtime</artifactId>
       <scope>provided</scope>
     </dependency>
     <dependency>

@@ -45,7 +45,7 @@ public class Activator extends Plugin implements BundleActivator {
 	 * bundle name as a string that can be accessed by other classes in the bundle
 	 * in a static way.  This is used to filter services to bundle scope.
 	 */
-	public static String BUNDLE_NAME = "com.ibm.jaggr.service"; //$NON-NLS-1$
+	public static final String BUNDLE_NAME = "com.ibm.jaggr.service"; //$NON-NLS-1$
 	private static BundleContext context = null;
 
 	private Collection<ServiceRegistration<?>> serviceRegistrations;

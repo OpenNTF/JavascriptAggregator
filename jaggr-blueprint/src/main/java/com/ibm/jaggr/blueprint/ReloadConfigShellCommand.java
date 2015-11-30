@@ -15,12 +15,13 @@
  */
 package com.ibm.jaggr.blueprint;
 
-import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
+import java.util.Arrays;
 
 import org.apache.felix.gogo.commands.Argument;
 import org.apache.felix.gogo.commands.Command;
+import org.eclipse.osgi.framework.console.CommandProvider;
 
-import java.util.Arrays;
+import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
 
 @Command(scope = AggregatorCommandProvider.EYECATCHER, name = AggregatorCommandProvider.CMD_RELOADCONFIG)
 public class ReloadConfigShellCommand extends AbstractOsgiCommandSupport {
@@ -29,7 +30,7 @@ public class ReloadConfigShellCommand extends AbstractOsgiCommandSupport {
     String servlet = null;
 
 	@Override
-	protected void exec(AggregatorCommandProvider provider) throws Exception {
-		provider._aggregator(new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_RELOADCONFIG, servlet)));
+	protected void exec(CommandProvider provider) throws Exception {
+		invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_RELOADCONFIG, servlet)));
 	}
 }

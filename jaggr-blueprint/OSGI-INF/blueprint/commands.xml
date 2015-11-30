@@ -17,55 +17,55 @@
 <blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0">
     <command-bundle xmlns="http://karaf.apache.org/xmlns/shell/v1.0.0">
         <command name="aggregator/clearcache">
-            <action class="com.ibm.jaggr.service.blueprint.ClearCacheShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ClearCacheShellCommand"/>
         </command>
         <command name="aggregator/createcachebundle">
-            <action class="com.ibm.jaggr.service.blueprint.CreateCacheBundleShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.CreateCacheBundleShellCommand"/>
         </command>
         <command name="aggregator/dumpcache">
-            <action class="com.ibm.jaggr.service.blueprint.DumpCacheShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.DumpCacheShellCommand"/>
         </command>
         <command name="aggregator/forceerror">
-            <action class="com.ibm.jaggr.service.blueprint.ForceErrorShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ForceErrorShellCommand"/>
         </command>
         <command name="aggregator/getdefaultoptions">
-            <action class="com.ibm.jaggr.service.blueprint.GetDefaultOptionsShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.GetDefaultOptionsShellCommand"/>
         </command>
         <command name="aggregator/getdeps">
-            <action class="com.ibm.jaggr.service.blueprint.GetDepsShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.GetDepsShellCommand"/>
         </command>
         <command name="aggregator/getdepswithhasbranching">
-            <action class="com.ibm.jaggr.service.blueprint.GetDepsWithHasBranchingShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.GetDepsWithHasBranchingShellCommand"/>
         </command>
         <command name="aggregator/getoptions">
-            <action class="com.ibm.jaggr.service.blueprint.GetOptionsShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.GetOptionsShellCommand"/>
         </command>
         <command name="aggregator/getservletdir">
-            <action class="com.ibm.jaggr.service.blueprint.GetServletDirShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.GetServletDirShellCommand"/>
         </command>
         <command name="aggregator/help">
-            <action class="com.ibm.jaggr.service.blueprint.HelpShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.HelpShellCommand"/>
         </command>
         <command name="aggregator/list">
-            <action class="com.ibm.jaggr.service.blueprint.ListShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ListShellCommand"/>
         </command>
         <command name="aggregator/processrequest">
-            <action class="com.ibm.jaggr.service.blueprint.ProcessRequestShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ProcessRequestShellCommand"/>
         </command>
         <command name="aggregator/reloadconfig">
-            <action class="com.ibm.jaggr.service.blueprint.ReloadConfigShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ReloadConfigShellCommand"/>
         </command>
         <command name="aggregator/serializecache">
-            <action class="com.ibm.jaggr.service.blueprint.SerializeCacheShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.SerializeCacheShellCommand"/>
         </command>
         <command name="aggregator/setoption">
-            <action class="com.ibm.jaggr.service.blueprint.SetOptionShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.SetOptionShellCommand"/>
         </command>
         <command name="aggregator/showconfig">
-            <action class="com.ibm.jaggr.service.blueprint.ShowConfigShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ShowConfigShellCommand"/>
         </command>
         <command name="aggregator/validatedeps">
-            <action class="com.ibm.jaggr.service.blueprint.ValidateDepsShellCommand"/>
+            <action class="com.ibm.jaggr.blueprint.ValidateDepsShellCommand"/>
         </command>
     </command-bundle>
 </blueprint>
