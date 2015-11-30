@@ -27,7 +27,7 @@ import java.util.TreeSet;
 
 import javax.servlet.http.HttpServletRequest;
 
-public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
+public final class I18nCacheKeyGenerator extends AbstractCollectionCacheKeyGenerator<String> {
 	private static final long serialVersionUID = -8488089828754517200L;
 
 	private static final String eyecatcher = "i18n"; //$NON-NLS-1$
@@ -92,37 +92,12 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 				}
 			}
 		}
-		return sb.length() > 0 ? sb.insert(0, eyecatcher+"{").append("}").toString() : ""; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		return sb.insert(0, eyecatcher+"{").append("}").toString(); //$NON-NLS-1$ //$NON-NLS-2$
 	}
 
 	@Override
 	public boolean isProvisional() {
 		return provisional;
-	}
-
-	@Override
-	public ICacheKeyGenerator combine(ICacheKeyGenerator otherKeyGen) {
-		if (this.equals(otherKeyGen)) {
-			return this;
-		}
-		I18nCacheKeyGenerator other = (I18nCacheKeyGenerator)otherKeyGen;
-		if (provisional && other.provisional) {
-			// should never happen
-			throw new IllegalStateException();
-		}
-		if (provisional) {
-			return other;
-		} else if (other.provisional) {
-			return this;
-		}
-		Collection<String> combined = new HashSet<String>();
-		if (availableLocales != null) {
-			combined.addAll(other.availableLocales);
-		}
-		if (other.availableLocales != null) {
-			combined.addAll(other.availableLocales);
-		}
-		return new I18nCacheKeyGenerator(combined, false);
 	}
 
 	@Override
@@ -148,22 +123,13 @@ public final class I18nCacheKeyGenerator implements ICacheKeyGenerator {
 	}
 
 	@Override
-	public boolean equals(Object other) {
-		return other != null && getClass().equals(other.getClass()) &&
-				provisional == ((I18nCacheKeyGenerator)other).provisional &&
-				(
-						availableLocales != null && availableLocales.equals(((I18nCacheKeyGenerator)other).availableLocales) ||
-						availableLocales == null && ((I18nCacheKeyGenerator)other).availableLocales == null
-				);
+	protected Collection<String> getCollection() {
+		return getLocales();
 	}
 
 	@Override
-	public int hashCode() {
-		int result = getClass().hashCode();
-		result = result * 31 + Boolean.valueOf(provisional).hashCode();
-		if (availableLocales != null) {
-			result = result * 31 + availableLocales.hashCode();
-		}
-		return result;
+	protected AbstractCollectionCacheKeyGenerator<String> newKeyGen(Collection<String> set,
+			boolean isProvisional) {
+		return new I18nCacheKeyGenerator(set, isProvisional);
 	}
 }
