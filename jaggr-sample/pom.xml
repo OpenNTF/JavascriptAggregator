@@ -37,7 +37,7 @@
   <build>
   	<resources>
   	   <resource>
-        <directory>${project.parent.basedir}</directory>
+        <directory>${basedir}</directory>
         <includes>
           <include>LICENSE</include>
           <include>NOTICE</include>
@@ -102,6 +102,23 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
+          <execution>
+            <id>unpack</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>com.ibm.jaggr</groupId>
+                  <artifactId>jaggr-core</artifactId>
+                  <includes>LICENSE,NOTICE</includes>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${basedir}</outputDirectory>
+            </configuration>
+          </execution>
           <execution><!-- For testing has feature encoding. -->
             <id>unpack-dojo</id>
             <phase>generate-test-resources</phase>
