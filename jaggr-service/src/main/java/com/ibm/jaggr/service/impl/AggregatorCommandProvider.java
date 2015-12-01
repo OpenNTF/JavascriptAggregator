@@ -55,31 +55,31 @@ import javax.servlet.ServletException;
 
 public class AggregatorCommandProvider implements CommandProvider {
 
-	static final String LOG_DIR = "log"; //$NON-NLS-1$
-	static final String LOGFILE_PREFIX = "cacheDump"; //$NON-NLS-1$
-	static final String LOGFILE_SUFFIX = ".log"; //$NON-NLS-1$
-	static final String EYECATCHER = "aggregator"; //$NON-NLS-1$
-	static final String PARAM_CLEAN = "clean"; //$NON-NLS-1$
-	static final String PARAM_CONSOLE = "con"; //$NON-NLS-1$
-	static final String PARAM_FILE = "file"; //$NON-NLS-1$
-	static final String CMD_HELP = "help"; //$NON-NLS-1$
-	static final String CMD_LIST = "list"; //$NON-NLS-1$
-	static final String CMD_RELOADCONFIG = "reloadconfig"; //$NON-NLS-1$
-	static final String CMD_VALIDATEDEPS = "validatedeps"; //$NON-NLS-1$
-	static final String CMD_GETDEPS = "getdeps"; //$NON-NLS-1$
-	static final String CMD_CLEARCACHE = "clearcache"; //$NON-NLS-1$
-	static final String CMD_SERIALIZECACHE = "serializecache"; //$NON-NLS-1$
-	static final String CMD_DUMPCACHE = "dumpcache"; //$NON-NLS-1$
-	static final String CMD_GETOPTIONS = "getoptions"; //$NON-NLS-1$
-	static final String CMD_GETDEFAULTOPTIONS = "getdefaultoptions"; //$NON-NLS-1$
-	static final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
-	static final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
-	static final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
-	static final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
-	static final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
-	static final String CMD_PROCESSREQUEST = "processrequesturl"; //$NON-NLS-1$
-	static final String CMD_CREATECACHEBUNDLE = "createcachebundle"; //$NON-NLS-1$
-	static final String NEWLINE = "\r\n"; //$NON-NLS-1$
+	static public final String LOG_DIR = "log"; //$NON-NLS-1$
+	static public final String LOGFILE_PREFIX = "cacheDump"; //$NON-NLS-1$
+	static public final String LOGFILE_SUFFIX = ".log"; //$NON-NLS-1$
+	static public final String EYECATCHER = "aggregator"; //$NON-NLS-1$
+	static public final String PARAM_CLEAN = "clean"; //$NON-NLS-1$
+	static public final String PARAM_CONSOLE = "con"; //$NON-NLS-1$
+	static public final String PARAM_FILE = "file"; //$NON-NLS-1$
+	static public final String CMD_HELP = "help"; //$NON-NLS-1$
+	static public final String CMD_LIST = "list"; //$NON-NLS-1$
+	static public final String CMD_RELOADCONFIG = "reloadconfig"; //$NON-NLS-1$
+	static public final String CMD_VALIDATEDEPS = "validatedeps"; //$NON-NLS-1$
+	static public final String CMD_GETDEPS = "getdeps"; //$NON-NLS-1$
+	static public final String CMD_CLEARCACHE = "clearcache"; //$NON-NLS-1$
+	static public final String CMD_SERIALIZECACHE = "serializecache"; //$NON-NLS-1$
+	static public final String CMD_DUMPCACHE = "dumpcache"; //$NON-NLS-1$
+	static public final String CMD_GETOPTIONS = "getoptions"; //$NON-NLS-1$
+	static public final String CMD_GETDEFAULTOPTIONS = "getdefaultoptions"; //$NON-NLS-1$
+	static public final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
+	static public final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
+	static public final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
+	static public final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
+	static public final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
+	static public final String CMD_PROCESSREQUEST = "processrequesturl"; //$NON-NLS-1$
+	static public final String CMD_CREATECACHEBUNDLE = "createcachebundle"; //$NON-NLS-1$
+	static public final String NEWLINE = "\r\n"; //$NON-NLS-1$
 
 	static final String[] COMMANDS = new String[] {
 		CMD_HELP,

@@ -92,6 +92,10 @@
           <groupId>com.ibm.jaggr</groupId>
           <artifactId>jaggr-sample-dojo</artifactId>
         </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr-blueprint</artifactId>
+        </dependency>
       </dependencies>
     </profile>
   </profiles>
