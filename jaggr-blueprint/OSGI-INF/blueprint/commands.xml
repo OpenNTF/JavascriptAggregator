@@ -34,9 +34,6 @@
         <command name="aggregator/getdeps">
             <action class="com.ibm.jaggr.blueprint.GetDepsShellCommand"/>
         </command>
-        <command name="aggregator/getdepswithhasbranching">
-            <action class="com.ibm.jaggr.blueprint.GetDepsWithHasBranchingShellCommand"/>
-        </command>
         <command name="aggregator/getoptions">
             <action class="com.ibm.jaggr.blueprint.GetOptionsShellCommand"/>
         </command>

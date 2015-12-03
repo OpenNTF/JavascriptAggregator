@@ -74,7 +74,6 @@ public class AggregatorCommandProvider implements CommandProvider {
 	static public final String CMD_GETDEFAULTOPTIONS = "getdefaultoptions"; //$NON-NLS-1$
 	static public final String CMD_SETOPTION = "setoption"; //$NON-NLS-1$
 	static public final String CMD_SHOWCONFIG = "showconfig"; //$NON-NLS-1$
-	static public final String CMD_GETDEPSWITHHASBRANCHING = "getdepswithhasbranching"; //$NON-NLS-1$
 	static public final String CMD_GETSERVLETDIR = "getservletdir"; //$NON-NLS-1$
 	static public final String CMD_FORCEERROR = "forceerror"; //$NON-NLS-1$
 	static public final String CMD_PROCESSREQUEST = "processrequesturl"; //$NON-NLS-1$
@@ -95,7 +94,6 @@ public class AggregatorCommandProvider implements CommandProvider {
 		CMD_SETOPTION,
 		CMD_SHOWCONFIG,
 		CMD_GETSERVLETDIR,
-		CMD_GETDEPSWITHHASBRANCHING,
 		CMD_FORCEERROR,
 		CMD_PROCESSREQUEST,
 		CMD_CREATECACHEBUNDLE
@@ -136,9 +134,6 @@ public class AggregatorCommandProvider implements CommandProvider {
 				.append(MessageFormat.format(
 						Messages.CommandProvider_5,
 						new Object[]{EYECATCHER, scopeSep, CMD_GETDEPS})).append(newline)
-				.append(MessageFormat.format(
-						Messages.CommandProvider_16,
-						new Object[]{EYECATCHER, scopeSep, CMD_GETDEPSWITHHASBRANCHING, CMD_GETDEPS})).append(newline)
 				.append(MessageFormat.format(
 						Messages.CommandProvider_6,
 						new Object[]{EYECATCHER, scopeSep, CMD_CLEARCACHE})).append(newline)
