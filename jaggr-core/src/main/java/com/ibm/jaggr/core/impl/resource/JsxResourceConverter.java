@@ -35,6 +35,7 @@ import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;
@@ -497,6 +498,10 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			// Initialize the rhino properties used by the converter
 			ArrayList<URI> modulePaths = new ArrayList<URI>(1);
 			modulePaths.add(xformer);
+
+			// Get the module name from the transformerPath (use to require the module)
+			final String xformerModuleName = FilenameUtils.getBaseName(xformer.getPath());
+
 			// make a require builder and initialize scope
 			final RequireBuilder builder = new RequireBuilder();
 			builder.setModuleScriptProvider(new SoftCachingModuleScriptProvider(
@@ -527,7 +532,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 							threadScope.setParentScope(null);
 							// require in the transformer and extract the transform function
 							Require require = builder.createRequire(ctx, threadScope);
-							Scriptable jsxTransformInstance = require.requireMain(ctx, JSXTRANSFORMER_NAME);
+							Scriptable jsxTransformInstance = require.requireMain(ctx, xformerModuleName);
 							// Save the instance in the scope
 							threadScope.put(JSXTRANSFORM_INSTANCE, threadScope, jsxTransformInstance);
 							return threadScope;
