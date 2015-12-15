@@ -15,6 +15,11 @@
  */
 package com.ibm.jaggr.core.impl.resource;
 
+import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.resource.IResource;
+
+import org.easymock.EasyMock;
+import org.easymock.IAnswer;
 import org.junit.Test;
 
 import java.io.File;
@@ -31,6 +36,23 @@ public class FileResourceTest {
 			Assert.assertEquals("\\\\server\\path\\name.ext", res.file.getAbsolutePath());
 			Assert.assertEquals("file://server/path/name.ext", res.getURI().toString());
 		}
+	}
+
+	@Test
+	public void testAsResourceVisitor() throws Exception {
+		IAggregator mockAggregator = EasyMock.createMock(IAggregator.class);
+		EasyMock.expect(mockAggregator.runConverters(EasyMock.isA(FileResource.class))).andAnswer(new IAnswer<IResource>() {
+			@Override
+			public IResource answer() throws Throwable {
+				return (IResource)EasyMock.getCurrentArguments()[0];
+			}
+		}).once();
+		EasyMock.replay(mockAggregator);
+		FileResource res = new FileResource(URI.create("file://foo/bar.js"));
+		FileResource.VisitorResource visitorRes = res.asVisitorResource();
+		IResource res2 = visitorRes.newResource(mockAggregator);
+		EasyMock.verify(mockAggregator);
+		Assert.assertEquals("file://foo/bar.js", res2.getURI().toString());
 	}
 
 }
