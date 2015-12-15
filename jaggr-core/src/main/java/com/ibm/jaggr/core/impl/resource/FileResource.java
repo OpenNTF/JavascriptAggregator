@@ -142,7 +142,7 @@ public class FileResource extends AbstractResourceBase {
 	 */
 	@Override
 	public VisitorResource asVisitorResource() {
-		return new VisitorResource(file, file.lastModified(), null);
+		return new VisitorResource(file, file.lastModified(), ""); //$NON-NLS-1$
 	}
 
 	@Override
@@ -194,6 +194,9 @@ public class FileResource extends AbstractResourceBase {
 			this.file = file;
 			this.lastModified = lastModified;
 			this.relpath = relpath;
+			if (relpath == null) {
+				throw new NullPointerException();
+			}
 		}
 
 		/*
@@ -237,9 +240,6 @@ public class FileResource extends AbstractResourceBase {
 		 */
 		@Override
 		public IResource newResource(IAggregator aggregator) {
-			if (relpath == null) {
-				throw new UnsupportedOperationException();
-			}
 			FileResource result = newInstance(getURI());
 			if (!FileResource.this.getURI().equals(FileResource.this.getReferenceURI())) {
 				result.setReferenceURI(FileResource.this.resolve(relpath));
