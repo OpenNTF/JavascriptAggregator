@@ -228,6 +228,7 @@
                   <groupId>org.lesscss</groupId>
                   <artifactId>lesscss</artifactId>
                   <includes>**/less-rhino*.js</includes>
+                  <overWrite>true</overWrite>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${project.build.directory}/lesscss</outputDirectory>
