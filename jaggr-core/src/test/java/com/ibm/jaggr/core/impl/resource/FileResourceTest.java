@@ -48,11 +48,17 @@ public class FileResourceTest {
 			}
 		}).once();
 		EasyMock.replay(mockAggregator);
-		FileResource res = new FileResource(URI.create("file://foo/bar.js"));
+		FileResource res = new FileResource(URI.create("file:/foo/bar.js"));
 		FileResource.VisitorResource visitorRes = res.asVisitorResource();
 		IResource res2 = visitorRes.newResource(mockAggregator);
 		EasyMock.verify(mockAggregator);
-		Assert.assertEquals("file://foo/bar.js", res2.getURI().toString());
+		Assert.assertEquals("file", res2.getURI().getScheme());
+		String path = res2.getURI().getPath();
+		int idx = path.indexOf(":");
+		if (idx != -1) {
+			path = path.substring(idx+1);
+		}
+		Assert.assertEquals("/foo/bar.js", path);
 	}
 
 }
