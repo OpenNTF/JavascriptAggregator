@@ -113,17 +113,19 @@ public interface IModule extends Serializable {
 	public URI getURI();
 
 	/**
-	 * This method is provided so that the module can function as a runtime cache
-	 * for the {@link IResource} object associated with the module URI that was
-	 * used to construct this instance.
+	 * This method is provided so that the module can function as a runtime cache for the
+	 * {@link IResource} object associated with the module URI that was used to construct this
+	 * instance.
 	 * <p>
-	 * Note that instances of {@code IModule} are both Serializable
-	 * and Cloneable, yet instances of {@code IResource} are neither, so the module
-	 * must not attempt to save the cached {@code IResource} object to its
-	 * persistent state, nor to object clones.
-
-	 * @param aggregator the aggregator.  The module may use the {@link IAggregator#newResource(URI)}
-	 * method to obtain a new instance of the {@code IResource}.
+	 * Note that instances of {@code IModule} are both Serializable and Cloneable, yet instances of
+	 * {@code IResource} are neither, so the module must not attempt to save the cached
+	 * {@code IResource} object to its persistent state, nor to object clones.
+	 *
+	 * @param aggregator
+	 *            the aggregator. The module may use the {@link IAggregator#newResource(URI)} method
+	 *            to obtain a new instance of the {@code IResource}. If {@code aggregator} is null,
+	 *            then the (possibly null) cached value of the resource is returned.
+	 *
 	 * @return the {@code IResource} object for this module's URI.
 	 */
 	public IResource getResource(IAggregator aggregator);
