@@ -98,17 +98,28 @@
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
-            <id>unpack</id>
+            <id>copy-license-notice</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>unpack</goal>
+              <goal>copy</goal>
             </goals>
             <configuration>
               <artifactItems>
                 <artifactItem>
                   <groupId>com.ibm.jaggr</groupId>
-                  <artifactId>jaggr-core</artifactId>
-                  <includes>LICENSE,NOTICE</includes>
+                  <artifactId>jaggr</artifactId>
+                  <classifier>LICENSE</classifier>
+                  <type>txt</type>
+                  <destFileName>LICENSE</destFileName>
+                  <overWrite>true</overWrite>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.ibm.jaggr</groupId>
+                  <artifactId>jaggr</artifactId>
+                  <classifier>NOTICE</classifier>
+                  <type>txt</type>
+                  <destFileName>NOTICE</destFileName>
+                  <overWrite>true</overWrite>
                 </artifactItem>
               </artifactItems>
               <outputDirectory>${basedir}</outputDirectory>
@@ -138,6 +149,7 @@
     								<versionRange>[2.4,)</versionRange>
     								<goals>
     									<goal>unpack</goal>
+    									<goal>copy</goal>
     								</goals>
     							</pluginExecutionFilter>
     							<action>
@@ -152,6 +164,18 @@
     </pluginManagement>
   </build>
   <dependencies>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr</artifactId>
+      <classifier>LICENSE</classifier>
+      <type>txt</type>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr</artifactId>
+      <classifier>NOTICE</classifier>
+      <type>txt</type>
+    </dependency>
     <dependency>
       <groupId>com.ibm.jaggr</groupId>
       <artifactId>jaggr-core</artifactId>
