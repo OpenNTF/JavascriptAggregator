@@ -19,6 +19,7 @@ import com.ibm.jaggr.service.IBundleResolver;
 
 import org.eclipse.core.runtime.Platform;
 import org.osgi.framework.Bundle;
+import org.osgi.framework.BundleContext;
 import org.osgi.framework.wiring.FrameworkWiring;
 
 import java.lang.reflect.Method;
@@ -62,7 +63,8 @@ public class FrameworkWiringBundleResolver implements IBundleResolver {
 			log.entering(FrameworkWiringBundleResolver.class.getName(), sourceMethod, new Object[]{contributingBundle});
 		}
 		this.contributingBundle = contributingBundle;
-		Bundle systemBundle = contributingBundle.getBundleContext().getBundle(0);
+		final BundleContext bundleContext = contributingBundle.getBundleContext();
+		final Bundle systemBundle = bundleContext.getBundle(0);
 		try {
 			/*
 			 * Get the Method object for Bundle.adapt() method using Java reflection.
