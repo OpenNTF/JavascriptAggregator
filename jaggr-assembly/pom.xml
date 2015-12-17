@@ -36,29 +36,6 @@
         <plugins>
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>unpack</id>
-                <phase>process-resources</phase>
-                <goals>
-                  <goal>unpack</goal>
-                </goals>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>com.ibm.jaggr</groupId>
-                      <artifactId>jaggr-core</artifactId>
-                      <includes>LICENSE,NOTICE</includes>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${project.build.directory}</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
             <configuration>
                <finalName>${project.groupId}-${project.version}</finalName>
@@ -79,6 +56,18 @@
         </plugins>
       </build>
       <dependencies>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr</artifactId>
+          <classifier>LICENSE</classifier>
+          <type>txt</type>
+        </dependency>
+        <dependency>
+          <groupId>com.ibm.jaggr</groupId>
+          <artifactId>jaggr</artifactId>
+          <classifier>NOTICE</classifier>
+          <type>txt</type>
+        </dependency>
         <dependency>
           <groupId>com.ibm.jaggr</groupId>
           <artifactId>jaggr-core</artifactId>
