@@ -118,6 +118,7 @@
                     <versionRange>[2.4,)</versionRange>
                     <goals><goal>copy-dependencies</goal>
                       <goal>unpack</goal>
+                      <goal>copy</goal>
                     </goals>
                   </pluginExecutionFilter>
                   <action><ignore /></action>
@@ -207,6 +208,34 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
+          <execution>
+            <id>copy-license-notice</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>com.ibm.jaggr</groupId>
+                  <artifactId>jaggr</artifactId>
+                  <classifier>LICENSE</classifier>
+                  <type>txt</type>
+                  <destFileName>LICENSE</destFileName>
+                  <overWrite>true</overWrite>
+                </artifactItem>
+                <artifactItem>
+                  <groupId>com.ibm.jaggr</groupId>
+                  <artifactId>jaggr</artifactId>
+                  <classifier>NOTICE</classifier>
+                  <type>txt</type>
+                  <destFileName>NOTICE</destFileName>
+                  <overWrite>true</overWrite>
+                </artifactItem>
+              </artifactItems>
+              <outputDirectory>${basedir}</outputDirectory>
+            </configuration>
+          </execution>
           <!-- This is so that eclipse will be able to resolve the bundle. -->
           <execution>
             <id>copy-dependencies</id>
@@ -365,6 +394,18 @@
     </plugins>
   </build>
   <dependencies>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr</artifactId>
+      <classifier>LICENSE</classifier>
+      <type>txt</type>
+    </dependency>
+    <dependency>
+      <groupId>com.ibm.jaggr</groupId>
+      <artifactId>jaggr</artifactId>
+      <classifier>NOTICE</classifier>
+      <type>txt</type>
+    </dependency>
     <dependency>
       <groupId>org.apache.wink</groupId>
       <artifactId>wink-json4j</artifactId>
