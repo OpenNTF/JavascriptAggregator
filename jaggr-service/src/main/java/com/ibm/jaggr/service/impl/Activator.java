@@ -157,7 +157,7 @@ public class Activator extends Plugin implements BundleActivator {
 		ServiceReference<?> commandProcessorSR =
 				context.getServiceReference("org.apache.felix.service.command.CommandProcessor"); //$NON-NLS-1$
 		if (commandProcessorSR != null) {
-			// See if a command provider is already registered
+			// See if a command processor is already registered
 			ServiceReference<?>[] refs = context.getServiceReferences(
 					AggregatorCommandProviderGogo.class.getName(),
 					"(osgi.command.scope=aggregator)"); //$NON-NLS-1$
@@ -170,20 +170,19 @@ public class Activator extends Plugin implements BundleActivator {
 						new AggregatorCommandProviderGogo(context),
 						dict);
 			}
-		} else {
-			// See if a command provider is already registered
-			ServiceReference<?>[] refs = context.getServiceReferences(
-					org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
-					"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
-			if (refs == null || refs.length == 0) {
-				// Register the command provider that will handle console commands
-				dict = new Hashtable<String, Object>();
-				dict.put("name", IAggregator.class.getName()); //$NON-NLS-1$
-				result =
-						context.registerService(
-								org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
-								new AggregatorCommandProvider(context), dict);
-			}
+		}
+		// See if a command provider is already registered
+		ServiceReference<?>[] refs = context.getServiceReferences(
+				org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
+				"(name=" + IAggregator.class.getName() + ")"); //$NON-NLS-1$ //$NON-NLS-2$
+		if (refs == null || refs.length == 0) {
+			// Register the command provider that will handle console commands
+			dict = new Hashtable<String, Object>();
+			dict.put("name", IAggregator.class.getName()); //$NON-NLS-1$
+			result =
+					context.registerService(
+							org.eclipse.osgi.framework.console.CommandProvider.class.getName(),
+							new AggregatorCommandProvider(context), dict);
 		}
 		if (isTraceLogging) {
 			log.exiting(Activator.class.getName(), sourceMethod, result);
