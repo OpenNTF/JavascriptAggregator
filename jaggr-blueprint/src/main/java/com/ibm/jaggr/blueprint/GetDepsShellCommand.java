@@ -37,7 +37,7 @@ public class GetDepsShellCommand extends AbstractOsgiCommandSupport {
 	String features = null;
 
 	@Override
-	protected void exec(CommandProvider provider) throws Exception {
-		invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_GETDEPS, servlet, module, features)));
+	protected String exec(CommandProvider provider) throws Exception {
+		return invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_GETDEPS, servlet, module, features)));
 	}
 }

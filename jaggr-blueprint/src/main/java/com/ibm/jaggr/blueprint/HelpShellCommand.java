@@ -26,7 +26,7 @@ import com.ibm.jaggr.service.impl.AggregatorCommandProvider;
 @Command(scope = AggregatorCommandProvider.EYECATCHER, name = AggregatorCommandProvider.CMD_HELP)
 public class HelpShellCommand extends AbstractOsgiCommandSupport {
 	@Override
-	protected void exec(CommandProvider provider) throws Exception {
-		invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_HELP)));
+	protected String exec(CommandProvider provider) throws Exception {
+		return invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_HELP)));
 	}
 }
