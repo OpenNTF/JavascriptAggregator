@@ -43,7 +43,7 @@ public class ForceErrorShellCommand extends AbstractOsgiCommandSupport {
 	String respfile = null;
 
 	@Override
-	protected String exec(CommandProvider provider) throws Exception {
-		return invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_FORCEERROR, servlet, status, count, skip, respfile)));
+	protected void exec(CommandProvider provider) throws Exception {
+		invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_FORCEERROR, servlet, status, count, skip, respfile)));
 	}
 }

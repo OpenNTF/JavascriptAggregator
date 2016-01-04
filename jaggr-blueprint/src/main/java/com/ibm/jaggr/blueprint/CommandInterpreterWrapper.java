@@ -16,49 +16,37 @@
 
 package com.ibm.jaggr.blueprint;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import org.eclipse.osgi.framework.console.CommandInterpreter;
+import org.osgi.framework.Bundle;
+
 import java.util.ArrayList;
 import java.util.Dictionary;
 import java.util.Iterator;
 import java.util.List;
 
-import org.eclipse.osgi.framework.console.CommandInterpreter;
-import org.osgi.framework.Bundle;
-
 public class CommandInterpreterWrapper implements CommandInterpreter {
 
-	private final Iterator<String> iter;
-	private final StringWriter writer;
-	private final PrintWriter out;
+	private Iterator<String> iter;
 
 	public CommandInterpreterWrapper(List<String> _args) {
 		List<String> args = new ArrayList<String>(_args);
 		args.add(null);		// add terminator
 		iter = args.iterator();
-		writer = new StringWriter();
-		out = new PrintWriter(writer);
-		
 	}
 
-	public String getOutput() {
-	  out.flush();
-	  return writer.toString();
-	}
-	
 	@Override
 	public void println(Object arg) {
-	  out.println(arg == null ? "null" : arg.toString());
+		System.out.println(arg);
 	}
 
 	@Override
 	public void println() {
-		out.println();
+		System.out.println();
 	}
 
 	@Override
 	public void printStackTrace(Throwable t) {
-		t.printStackTrace(out);
+		t.printStackTrace(System.out);
 	}
 
 	@Override
@@ -73,7 +61,7 @@ public class CommandInterpreterWrapper implements CommandInterpreter {
 
 	@Override
 	public void print(Object arg) {
-		out.print(arg);
+		System.out.print(arg);
 	}
 
 	@Override
