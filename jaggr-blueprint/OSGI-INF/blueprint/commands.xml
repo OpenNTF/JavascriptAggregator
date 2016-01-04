@@ -46,7 +46,7 @@
         <command name="aggregator/list">
             <action class="com.ibm.jaggr.blueprint.ListShellCommand"/>
         </command>
-        <command name="aggregator/processrequest">
+        <command name="aggregator/processrequesturl">
             <action class="com.ibm.jaggr.blueprint.ProcessRequestShellCommand"/>
         </command>
         <command name="aggregator/reloadconfig">

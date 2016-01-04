@@ -30,7 +30,7 @@ public class ReloadConfigShellCommand extends AbstractOsgiCommandSupport {
     String servlet = null;
 
 	@Override
-	protected void exec(CommandProvider provider) throws Exception {
-		invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_RELOADCONFIG, servlet)));
+	protected String exec(CommandProvider provider) throws Exception {
+		return invoke(provider, new CommandInterpreterWrapper(Arrays.asList(AggregatorCommandProvider.CMD_RELOADCONFIG, servlet)));
 	}
 }

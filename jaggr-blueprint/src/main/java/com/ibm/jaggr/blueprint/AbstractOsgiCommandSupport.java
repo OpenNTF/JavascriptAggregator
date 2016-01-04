@@ -16,6 +16,8 @@
 
 package com.ibm.jaggr.blueprint;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.Method;
 
 import org.apache.karaf.shell.console.OsgiCommandSupport;
@@ -34,6 +36,7 @@ public abstract class AbstractOsgiCommandSupport extends OsgiCommandSupport {
 	@Override
 	protected Object doExecute() throws Exception {
 		Bundle bundle = Platform.getBundle(com.ibm.jaggr.service.impl.Activator.BUNDLE_NAME);
+		String result;
 		if (bundle != null && bundle.getState() == Bundle.ACTIVE) {
 			BundleContext context = bundle.getBundleContext();
 			ServiceReference<?>[] refs = context.getServiceReferences(CommandProvider.class.getName(),
@@ -42,18 +45,25 @@ public abstract class AbstractOsgiCommandSupport extends OsgiCommandSupport {
 			if (refs != null && refs.length > 0) {
 				CommandProvider provider = (CommandProvider)context.getService(refs[0]);
 				try {
-					exec(provider);
+					result = exec(provider);
+				} catch (Throwable t) {
+					StringWriter sw = new StringWriter();
+					PrintWriter pw = new PrintWriter(sw);
+					t.printStackTrace(pw);
+					result = sw.toString();
 				} finally {
 					context.ungetService(refs[0]);
 				}
+			} else { 
+				result = "CommandProvider service for aggregator is not registered"; //$NON-NLS-1$
 			}
 		} else {
-			System.err.println("Bundle " + com.ibm.jaggr.service.impl.Activator.BUNDLE_NAME + " is not started."); //$NON-NLS-1$ //$NON-NLS-2$
+		  result = "Bundle " + com.ibm.jaggr.service.impl.Activator.BUNDLE_NAME + " is not started."; //$NON-NLS-1$ //$NON-NLS-2$
 		}
-		return null;
+		return result;
 	}
 
-	protected abstract void exec(CommandProvider provider) throws Exception;
+	protected abstract String exec(CommandProvider provider) throws Exception;
 	
 	/**
 	 * Invokes the aggregator command processor using reflection in order avoid framework dependencies
@@ -61,10 +71,12 @@ public abstract class AbstractOsgiCommandSupport extends OsgiCommandSupport {
 	 * 
 	 * @param provider an instance of the aggregator command processor
 	 * @param interpreter the command interpreter
+	 * @return the command response
 	 * @throws Exception
 	 */
-	protected void invoke(CommandProvider provider, CommandInterpreter interpreter) throws Exception {
+	protected String invoke(CommandProvider provider, CommandInterpreterWrapper interpreter) throws Exception {
 		Method method = provider.getClass().getMethod("_aggregator", new Class[]{CommandInterpreter.class}); //$NON-NLS-1$
 		method.invoke(provider, new Object[]{interpreter});
+		return interpreter.getOutput();
 	}
 }
