@@ -69,6 +69,15 @@ public class ModuleCacheImpl extends GenericCacheImpl<IModule> implements IModul
 			// add it to the module cache if not already there
 			if (!RequestUtil.isIgnoreCached(request)) {
 				cachedModule = cacheMap.putIfAbsent(cacheKey, module);
+				if (cachedModule != null && aggr.getOptions().isDevelopmentMode()) {
+					// If the uri for the source resource has changed (can happen with resource converters)
+					// discard the cached module and use the new one.
+					IResource cachedResource = cachedModule.getResource(null);
+					if (cachedResource != null && !cachedResource.getURI().equals(resource.getURI())) {
+						cacheMap.replace(cacheKey, module);
+						cachedModule = null;
+					}
+				}
 			}
 			if (moduleCacheInfo != null) {
 				moduleCacheInfo.put(cacheKey, (cachedModule != null) ? "hit" : "add"); //$NON-NLS-1$ //$NON-NLS-2$

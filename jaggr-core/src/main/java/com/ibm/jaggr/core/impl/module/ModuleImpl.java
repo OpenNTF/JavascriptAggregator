@@ -158,7 +158,7 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 
 	@Override
 	public IResource getResource(IAggregator aggregator) {
-		if (resource == null) {
+		if (resource == null && aggregator != null) {
 			resource = aggregator.newResource(uri);
 		}
 		return resource;
