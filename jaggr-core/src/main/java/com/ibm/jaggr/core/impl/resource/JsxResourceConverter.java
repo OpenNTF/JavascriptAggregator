@@ -590,7 +590,9 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				}
 				Scriptable transformInstance = (Scriptable)scope.get(JSXTRANSFORM_INSTANCE, scope);
 				Function transformFunction = (Function) transformInstance.get("transform", scope); //$NON-NLS-1$
-				NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, transformInstance, new String[]{jsx});
+				//Create a native JS object with the desired JSX options
+				Object jsxOptions = ctx.evaluateString(scope, "(function () { return {harmony: true}; })()", "opt", 1, null);
+				NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, transformInstance, new Object[]{jsx, jsxOptions});
 				jsstring = convertedJSX.get("code").toString();  //$NON-NLS-1$
 			} catch (JavaScriptException e) {
 				// Add module info
