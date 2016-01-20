@@ -97,10 +97,14 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	private static final int INITIALIZER_THREAD_POOL_SIZE = 4;
 	private static final int SCOPE_POOL_TIMEOUT_SECONDS = 60;
 	private static final String SCOPE_POOL_SIZE_INITPARAM = "scope-pool-size"; //$NON-NLS-1$
+	private static final String DEFAULT_JSX_OPTIONS = "{}"; //$NON-NLS-1$
+	private static final String JSX_OPTIONS_INITPARAM = "options"; //$NON-NLS-1$
+
 
 	private IAggregator aggregator;
 	private IServiceRegistration cacheMgrListenerReg;
 	private int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
+	private String jsxOptions = DEFAULT_JSX_OPTIONS;
 	private IResource xformerRes;
 
 	/* (non-Javadoc)
@@ -140,6 +144,11 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		// Get the configured scope pool size
 		if (extension != null) {
 			scopePoolSize = TypeUtil.asInt(extension.getInitParams().getValue(SCOPE_POOL_SIZE_INITPARAM), DEFAULT_SCOPE_POOL_SIZE);
+			// If jsx options have been specified, use them
+			String options = extension.getInitParams().getValue(JSX_OPTIONS_INITPARAM);
+			if (options != null && options.length() > 0) {
+				jsxOptions = options;
+			}
 		}
 
 		if (isTraceLogging) {
@@ -235,7 +244,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 	}
 
 	protected JsxConverter newConverter(URI xformer) {
-		return new JsxConverter(xformer, scopePoolSize);
+		return new JsxConverter(xformer, scopePoolSize, jsxOptions);
 	}
 
 	protected IResourceConverterCache newCache(IConverter converter, String prefix, String suffix) {
@@ -471,13 +480,15 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		private transient BlockingQueue<Scriptable> threadScopes;
 		private transient boolean initialized;
 		final private int scopePoolSize;
+		final private String jsxOptions;
 		final private URI xformer;
 
 		protected JsxConverter(URI xformer) {
-			this(xformer, JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE);
+			this(xformer, JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE, DEFAULT_JSX_OPTIONS);
 		}
-		protected JsxConverter(URI xformer, int scopePoolSize) {
+		protected JsxConverter(URI xformer, int scopePoolSize, String jsxOptions) {
 			this.scopePoolSize = scopePoolSize;
+			this.jsxOptions = jsxOptions;
 			this.xformer = xformer;
 		}
 
@@ -590,7 +601,9 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 				}
 				Scriptable transformInstance = (Scriptable)scope.get(JSXTRANSFORM_INSTANCE, scope);
 				Function transformFunction = (Function) transformInstance.get("transform", scope); //$NON-NLS-1$
-				NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, transformInstance, new String[]{jsx});
+				//Create a native JS object with the desired JSX options
+				Object jsxArgs = ctx.evaluateString(scope, "(function () { return " + jsxOptions + "; })()", "opt", 1, null);
+				NativeObject convertedJSX = (NativeObject) transformFunction.call(ctx, scope, transformInstance, new Object[]{jsx, jsxArgs});
 				jsstring = convertedJSX.get("code").toString();  //$NON-NLS-1$
 			} catch (JavaScriptException e) {
 				// Add module info
