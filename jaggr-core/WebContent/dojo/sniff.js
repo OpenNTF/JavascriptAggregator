@@ -37,7 +37,13 @@ define(["dojo/has", "dojo/_base/sniff"], function(has) {
 		"ff",
 		"quirks",
 		"ios",
-		"android"
+		"android",
+		"msapp",
+		"bb",
+		"trident",
+		"svg",
+		"wii"
+		
 	]; 
 	
 	for (var i = 0; i < baseFeatures.length; i++) {
