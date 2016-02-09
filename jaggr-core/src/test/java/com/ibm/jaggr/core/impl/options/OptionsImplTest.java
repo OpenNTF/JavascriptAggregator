@@ -184,7 +184,7 @@ public class OptionsImplTest {
 	@Test
 	public void testPropsFileUpdateNotify() throws Exception {
 		final File propsFile = new File("test.properties");
-		final OptionsImpl options = new OptionsImpl(false, null) {
+		final OptionsImpl options = new OptionsImpl(true, null) {
 			@Override public File getPropsFile() { return propsFile; }
 			@Override public void saveProps(Properties props) { }
 		};

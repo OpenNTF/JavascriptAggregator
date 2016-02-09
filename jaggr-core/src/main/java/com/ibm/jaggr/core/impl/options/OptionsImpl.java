@@ -85,9 +85,12 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 
 	private Collection<IServiceRegistration> serviceRegistrations;
 
+	private final boolean loadFromPropertiesFile;
+
 	public OptionsImpl(boolean loadFromPropertiesFile, IAggregator aggregator) {
 		this.aggregator = aggregator;
 		this.registrationName = aggregator != null ? aggregator.getName() : ""; //$NON-NLS-1$
+		this.loadFromPropertiesFile = loadFromPropertiesFile;
 		defaultOptions = new Properties(initDefaultOptions());
 		if (loadFromPropertiesFile) {
 			setProps(loadProps(defaultOptions));
@@ -293,14 +296,17 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 	 * @throws IOException
 	 */
 	protected void saveProps(Properties props) throws IOException {
-		// Persist the change to the properties file.
-		File file = getPropsFile();
-		if (file != null) {
-			FileWriter writer = new FileWriter(file);
-			try {
-				props.store(writer, null);
-			} finally {
-				writer.close();
+
+		if (loadFromPropertiesFile) {
+			// Persist the change to the properties file.
+			File file = getPropsFile();
+			if (file != null) {
+				FileWriter writer = new FileWriter(file);
+				try {
+					props.store(writer, null);
+				} finally {
+					writer.close();
+				}
 			}
 		}
 	}
@@ -383,7 +389,9 @@ public class OptionsImpl  implements IOptions, IShutdownListener {
 	 *            the update sequence number
 	 */
 	protected void propsFileUpdateNotify(Properties updatedProps, long sequence) {
-		if(aggregator == null || aggregator.getPlatformServices() == null) return;	// unit tests?
+		if(aggregator == null || aggregator.getPlatformServices() == null // unit tests?
+				|| !loadFromPropertiesFile) return;
+
 		IPlatformServices platformServices = aggregator.getPlatformServices();
 		try {
 			IServiceReference[] refs = platformServices.getServiceReferences(OptionsImpl.class.getName(),
