@@ -29,6 +29,7 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
+import com.ibm.jaggr.core.util.HasFunction;
 import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
@@ -1706,53 +1707,6 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 				}
 			}
 			return result;
-		}
-	}
-
-
-	/**
-	 * This class implements the JavaScript has function object used by the Rhino interpreter when
-	 * evaluating regular expressions in config aliases.
-	 * <p>
-	 * In addition to providing the has function, this class also keeps track of which features
-	 * has is called for by the JavaScript in {@code dependentFeatures}
-	 */
-	static private class HasFunction extends FunctionObject {
-		private static final long serialVersionUID = -399399681025813075L;
-		private final Features features;
-		private final Set<String> dependentFeatures;
-
-		static Method hasMethod;
-
-		static {
-			try {
-				hasMethod = HasFunction.class.getMethod("has", Context.class, Scriptable.class, Object[].class, Function.class); //$NON-NLS-1$
-			} catch (SecurityException e) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			} catch (NoSuchMethodException e) {
-				log.log(Level.SEVERE, e.getMessage(), e);
-			}
-		}
-
-		HasFunction(Scriptable scope, Features features) {
-			super("has", hasMethod, scope); //$NON-NLS-1$
-			this.features = features;
-			this.dependentFeatures = new HashSet<String>();
-		}
-		@SuppressWarnings("unused")
-		public static Object has(Context cx, Scriptable thisObj, Object[] args, Function funObj) {
-			Object result = Context.getUndefinedValue();
-			HasFunction javaThis = (HasFunction)funObj;
-			String feature = (String)args[0];
-			javaThis.dependentFeatures.add(feature);
-			if (javaThis.features.contains(feature)) {
-				result = Boolean.valueOf(javaThis.features.isFeature(feature));
-			}
-			return result;
-		}
-
-		public Set<String> getDependentFeatures() {
-			return dependentFeatures;
 		}
 	}
 

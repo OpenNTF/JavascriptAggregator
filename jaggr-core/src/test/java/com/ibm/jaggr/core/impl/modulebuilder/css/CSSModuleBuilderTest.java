@@ -32,6 +32,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
 
 import org.apache.commons.codec.binary.Base64;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -83,7 +84,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 				String mid,
 				IResource resource,
 				HttpServletRequest request,
-				List<ICacheKeyGenerator> keyGens)
+				MutableObject<List<ICacheKeyGenerator>> keyGens)
 						throws IOException {
 			return super.getContentReader(mid, resource, request, keyGens);
 		}
@@ -635,7 +636,7 @@ public class CSSModuleBuilderTest extends EasyMock {
 	}
 
 	private String buildCss(IResource css) throws Exception {
-		Reader reader = builder.getContentReader("test", css, mockRequest, keyGens);
+		Reader reader = builder.getContentReader("test", css, mockRequest, new MutableObject<List<ICacheKeyGenerator>>(keyGens));
 		StringWriter writer = new StringWriter();
 		CopyUtil.copy(reader, writer);
 		String output = writer.toString();

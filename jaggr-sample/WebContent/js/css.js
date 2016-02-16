@@ -340,6 +340,11 @@ define([
 			 * @param  {String} lessText The LESS text to compile.
 			 */
 			function processLess(lessText) {
+				var additionalData;
+				var lessGlobals = window.require.lessGlobals || window.dojoConfig && window.dojoConfig.lessGlobals;
+				if (lessGlobals) {
+					additionalData = {globalVars: lessGlobals};
+				}
 				var pathParts = url.split('?').shift().split('/');
 				require(['lesspp'], function (lesspp) {
 					var parser = new lesspp.Parser({
@@ -353,7 +358,7 @@ define([
 							return load.error(err);
 						}
 						processCss(tree.toCSS());
-					});
+					}, additionalData);
 				});
 			}
 

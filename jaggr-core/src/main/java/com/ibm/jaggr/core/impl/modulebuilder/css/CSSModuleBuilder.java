@@ -43,6 +43,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Function;
@@ -100,7 +101,7 @@ import javax.servlet.http.HttpServletRequest;
  * </ul>
  * This module works by extending TextModuleBuilder and processing the text stream
  * associated with the Reader that is returned by the overridden method
- * {@link #getContentReader(String, com.ibm.jaggr.core.resource.IResource, javax.servlet.http.HttpServletRequest, java.util.List)}.
+ * {@link #getContentReader(String, com.ibm.jaggr.core.resource.IResource, javax.servlet.http.HttpServletRequest, MutableObject)}.
  * <h2>Comment removal</h2>
  * <p>
  * Removes comments identified by /* ... *&#047; comment tags
@@ -359,12 +360,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			String mid,
 			IResource resource,
 			HttpServletRequest request,
-			List<ICacheKeyGenerator> keyGens)
+			MutableObject<List<ICacheKeyGenerator>> keyGensRef)
 			throws IOException {
 		final String sourceMethod = "getContentReader"; //$NON-NLS-1$
 		final boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGens});
+			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGensRef});
 		}
 		Reader result = null;
 		SignalUtil.lock(		// If a config update is in progress, wait
@@ -1018,7 +1019,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilder#getCacheKeyGenerator(com.ibm.jaggr.service.IAggregator)
 	 */
-	@Override	public final List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
+	@Override	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		return s_cacheKeyGenerators;
 	}
 
