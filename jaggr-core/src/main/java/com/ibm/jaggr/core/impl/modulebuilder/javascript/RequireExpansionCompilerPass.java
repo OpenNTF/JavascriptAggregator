@@ -26,9 +26,9 @@ import com.ibm.jaggr.core.util.BooleanTerm;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.JSSource;
-import com.ibm.jaggr.core.util.NodeUtil;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.StringUtil;
+import com.ibm.jaggr.core.util.rhino.NodeUtil;
 
 import com.google.javascript.jscomp.CompilerPass;
 import com.google.javascript.rhino.Node;

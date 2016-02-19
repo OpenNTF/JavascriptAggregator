@@ -29,10 +29,10 @@ import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.options.IOptionsListener;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.HasFunction;
 import com.ibm.jaggr.core.util.HasNode;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.rhino.HasFunction;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.ContextFactory;

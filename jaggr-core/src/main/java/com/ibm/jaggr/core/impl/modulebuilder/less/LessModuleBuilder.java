@@ -28,9 +28,10 @@ import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.Features;
-import com.ibm.jaggr.core.util.HasFunction;
+import com.ibm.jaggr.core.util.rhino.HasFunction;
+import com.ibm.jaggr.core.util.rhino.ReadFileExtFunction;
 
-import com.google.javascript.rhino.head.Undefined;
+import com.google.common.collect.ImmutableList;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -40,6 +41,7 @@ import org.mozilla.javascript.JavaScriptException;
 import org.mozilla.javascript.Script;
 import org.mozilla.javascript.Scriptable;
 import org.mozilla.javascript.ScriptableObject;
+import org.mozilla.javascript.Undefined;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -64,13 +66,18 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 	static final String sourceClass = LessModuleBuilder.class.getName();
 	static final Logger log = Logger.getLogger(sourceClass);
 
-	private static final String LESS_JS_RES = "less-rhino-1.7.0.js"; //$NON-NLS-1$
+	private static final ImmutableList<String> LESS_JS_RES = new ImmutableList.Builder<String>()
+		.add("less-rhino-1.7.0.js") //$NON-NLS-1$
+		.add("lessFileLoader.js") //$NON-NLS-1$
+		.build();
 
 	private static final String LESS_COMPILER_VAR = "lessCompiler"; //$NON-NLS-1$
 
 	private static final Pattern HANDLES_PATTERN = Pattern.compile("\\.(css)|(less)$"); //$NON-NLS-1$
 
 	private static final String GLOBAL_VARS = "globalVars"; //$NON-NLS-1$
+
+	private static final String LESS_SUFFIX = ".less"; //$NON-NLS-1$
 
 	private static final String compilerString = new StringBuffer()
 		.append("var ").append(LESS_COMPILER_VAR).append(" = function(input, options, additionalData) {") //$NON-NLS-1$ //$NON-NLS-2$
@@ -86,7 +93,7 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 	private static final ThreadLocal<HttpServletRequest> threadLocalRequest = new ThreadLocal<HttpServletRequest>();
 	private static final ThreadLocal<Set<String>> threadLocalDependentFeatures = new ThreadLocal<Set<String>>();
 
-	Script lessJsScript = null;
+	ArrayList<Script> lessJsScript = new ArrayList<Script>();
 	Script compilerScript = null;
 	Object lessGlobals = null;
 	boolean isFeatureDependent = false;
@@ -111,12 +118,14 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 		Context cx = Context.enter();
 		try {
 			cx.setOptimizationLevel(9);
-			InputStream in = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(LESS_JS_RES);
-			if (in == null) {
-				throw new NotFoundException(LESS_JS_RES);
+			for (String fname : LESS_JS_RES) {
+				InputStream in = CSSModuleBuilder.class.getClassLoader().getResourceAsStream(fname);
+				if (in == null) {
+					throw new NotFoundException(fname);
+				}
+				String source = IOUtils.toString(in);
+				lessJsScript.add(cx.compileString(source,  fname, 1, null));
 			}
-			String lessJsSource = IOUtils.toString(in);
-			lessJsScript = cx.compileString(lessJsSource,  LESS_JS_RES, 1, null);
 			compilerScript = cx.compileString(compilerString, BLANK, 1, null);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -167,8 +176,13 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 			log.entering(sourceClass, sourceMethod, new Object[]{cx, protoScope});
 		}
 		Scriptable threadScope = super.createThreadScope(cx, protoScope);
-		lessJsScript.exec(cx, threadScope);
+		for (Script script : lessJsScript) {
+			script.exec(cx, threadScope);
+		};
 		compilerScript.exec(cx, threadScope);
+		ReadFileExtFunction readFileFn = new ReadFileExtFunction(threadScope, getAggregator());
+		ScriptableObject.putProperty(threadScope, ReadFileExtFunction.FUNCTION_NAME, readFileFn);
+
 
 		if (isTraceLogging) {
 			log.exiting(sourceMethod, sourceMethod, threadScope);
@@ -177,19 +191,65 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 	}
 
 	/* (non-Javadoc)
+	 * @see com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder#inlineImports(javax.servlet.http.HttpServletRequest, java.lang.String, com.ibm.jaggr.core.resource.IResource, java.lang.String)
+	 */
+	@Override
+	protected String inlineImports(HttpServletRequest req, String css, IResource res, String path)
+			throws IOException {
+		/*
+		 * For the LESS builder, we want the LESS compiler to process &#64imports so that variable
+		 * substitution in import names can take place.  We override this method and do nothing because
+		 * the CSS module builder calls it before the LESS compiler runs.  Instead, we inline imports
+		 * that weren't processed by the LESS compiler (i.e. CSS imports) after compiling by calling
+		 * _inlineImports().
+		 */
+		if (!res.getPath().toLowerCase().endsWith(LESS_SUFFIX)) {
+			css = super.inlineImports(req, css, res, path);
+		}
+		return css;
+	}
+
+	/**
+	 * Called by our <code>postcss</code> method to inline imports not processed by the LESS compiler
+	 * (i.e. CSS imports) <b>after</b> the LESS compiler has processed the input.
+	 *
+	 * @param req
+	 *            The request associated with the call.
+	 * @param css
+	 *            The current CSS containing &#064;import statements to be
+	 *            processed
+	 * @param res
+	 *            The resource for the CSS file.
+	 * @param path
+	 *            The path, as specified in the &#064;import statement used to
+	 *            import the current CSS, or null if this is the top level CSS.
+	 *
+	 * @return The input CSS with &#064;import statements replaced with the
+	 *         contents of the imported files.
+	 *
+	 * @throws IOException
+	 */
+	protected String _inlineImports(HttpServletRequest req, String css, IResource res, String path) throws IOException {
+		return super.inlineImports(req, css, res, path);
+	}
+
+	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder#postcss(java.lang.String, com.ibm.jaggr.core.resource.IResource)
 	 */
 	@Override
-	protected String postcss(String css, IResource resource) throws IOException {
+	protected String postcss(HttpServletRequest request, String css, IResource resource) throws IOException {
 		final String sourceMethod = "postcss"; //$NON-NLS-1$
 		final boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
 			log.entering(sourceClass, sourceMethod, new Object[]{css, resource});
 		}
-		if (resource.getPath().endsWith(".less")) { //$NON-NLS-1$
+		if (resource.getPath().toLowerCase().endsWith(LESS_SUFFIX)) {
 			css = processLess(resource.getURI().toString(), css);
+			if (inlineImports) {
+				css = _inlineImports(request, css, resource, ""); //$NON-NLS-1$
+			}
 		}
-		css = super.postcss(css, resource);
+		css = super.postcss(request, css, resource);
 
 		if (isTraceLogging) {
 			log.exiting(sourceMethod, sourceMethod, css);
@@ -236,9 +296,12 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 		// Call super class implementation and determine if we need to update the cache key generators
 		Reader result = super.getContentReader(mid, resource, request, keyGensRef);
 		if (isFeatureDependent) {
-			Set<String> dependentFeatures = threadLocalDependentFeatures.get();
-			if (dependentFeatures != null) {
-				List<ICacheKeyGenerator> keyGens = keyGensRef.getValue();
+			List<ICacheKeyGenerator> keyGens = keyGensRef.getValue();
+			if (resource.getPath().toLowerCase().endsWith(LESS_SUFFIX)) {
+				Set<String> dependentFeatures = threadLocalDependentFeatures.get();
+				if (keyGens == null) {
+					keyGens = getCacheKeyGenerators(getAggregator());
+				}
 				FeatureSetCacheKeyGenerator fsKeyGen = (FeatureSetCacheKeyGenerator)keyGens.get(2);
 				// Cache key generators need to be updated if existing one is provisional or if there are new dependent features
 				if (fsKeyGen.isProvisional() || !fsKeyGen.getFeatureSet().containsAll(dependentFeatures)) {
@@ -251,6 +314,11 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 					if (isTraceLogging) {
 						log.logp(Level.FINER, sourceClass, sourceMethod, "Key generators updated: " + KeyGenUtil.toString(newKeyGens)); //$NON-NLS-1$
 					}
+				}
+			} else {
+				// We're processing a CSS file.  See if we need to provide key gens
+				if (keyGens == null) {
+					keyGensRef.setValue(super.getCacheKeyGenerators(getAggregator()));
 				}
 			}
 		}

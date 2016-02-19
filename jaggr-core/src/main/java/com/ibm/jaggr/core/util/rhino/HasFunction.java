@@ -13,7 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.ibm.jaggr.core.util;
+package com.ibm.jaggr.core.util.rhino;
+
+import com.ibm.jaggr.core.util.Features;
 
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.Function;

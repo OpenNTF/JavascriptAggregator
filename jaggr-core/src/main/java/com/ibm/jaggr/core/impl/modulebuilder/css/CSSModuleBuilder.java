@@ -379,7 +379,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				css = inlineImports(request, css, resource, BLANK);
 			}
 			// PostCSS
-			css = postcss(css, resource);
+			css = postcss(request, css, resource);
 
 			// Inline images
 			css = inlineImageUrls(request, css, resource);
@@ -718,12 +718,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * Runs given CSS through PostCSS processor for minification and any other processing
 	 * by configured plugins
 	 * .
+	 * @param request
 	 * @param css
 	 * @param res
 	 * @return The processed CSS.
 	 * @throws IOException
 	 */
-	protected String postcss(String css, IResource res) throws IOException {
+	protected String postcss(HttpServletRequest request, String css, IResource res) throws IOException {
 		if (threadScopes == null) {
 			return css;
 		}
@@ -1153,5 +1154,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			return result.substring(1, result.length()-1);
 		}
 		return result;
+	}
+
+	protected IAggregator getAggregator() {
+		return aggregator;
 	}
 }

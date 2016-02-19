@@ -17,6 +17,8 @@
 package com.ibm.jaggr.core.impl.modulebuilder.less;
 
 import com.ibm.jaggr.core.IAggregator;
+import com.ibm.jaggr.core.IPlatformServices;
+import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.config.IConfig;
@@ -38,7 +40,9 @@ import org.mozilla.javascript.Scriptable;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.net.URI;
+import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +54,13 @@ import junit.framework.Assert;
 public class LessModuleBuilderTest extends EasyMock {
 	static File tmpdir;
 	static File testdir;
-	public static final String LESS = "@import \"colors.less\";\n\nbody{\n  " +
+	public static final String LESS_STATIC_IMPORT = "@import \"colors.less\";\n\nbody{\n  " +
+            "background: @mainColor;\n}";
+
+	public static final String LESS_VAR_IMPORT1 = "@mixin: 'colors';\n@import \"@{mixin}.less\";\n\nbody{\n  " +
+            "background: @mainColor;\n}";
+
+	public static final String LESS_VAR_IMPORT2 = "@import \"@{mixin}.less\";\n\nbody{\n  " +
             "background: @mainColor;\n}";
 
 	public static final String LESS_GLOBAL_VAR = "body{@{bidiLeft}:10px;}";
@@ -84,8 +94,11 @@ public class LessModuleBuilderTest extends EasyMock {
 		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator,
 				requestAttributes, requestParams, null, null);
-		replay(mockRequest);
-		replay(mockAggregator);
+		IPlatformServices mockPlatformServices = EasyMock.createNiceMock(IPlatformServices.class);
+		EasyMock.expect(mockAggregator.getPlatformServices()).andReturn(mockPlatformServices).anyTimes();
+		IServiceRegistration mockRegistration = EasyMock.createNiceMock(IServiceRegistration.class);
+		EasyMock.expect(mockPlatformServices.registerService(EasyMock.isA(String.class), EasyMock.anyObject(), EasyMock.isA(Dictionary.class))).andReturn(mockRegistration).anyTimes();
+		replay(mockRequest, mockAggregator, mockPlatformServices, mockRegistration);
 	}
 
 	@Test
@@ -97,8 +110,24 @@ public class LessModuleBuilderTest extends EasyMock {
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
-		URI resUri = new File(testdir, "colors.less").toURI();
-		ModuleBuild mb = builder.build("colors.less", new StringResource(LESS, resUri), mockRequest, keyGens);
+		URI resUri = new File(testdir, "test.less").toURI();
+		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_STATIC_IMPORT, resUri), mockRequest, keyGens);
+		String output = (String)mb.getBuildOutput();
+		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
+	}
+
+	@Test
+	public void testLessCompilationWithVarImport() throws Exception {
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
+		configRef.set(cfg);
+		configScript = (Scriptable)cfg.getRawConfig();
+		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
+		builder.configLoaded(cfg, seq++);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
+				(mockAggregator);
+		URI resUri = new File(testdir, "test.less").toURI();
+		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT1, resUri), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
 		Assert.assertEquals("define('body{background:#ff0000}');", output);
 		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
@@ -151,4 +180,55 @@ public class LessModuleBuilderTest extends EasyMock {
 		Assert.assertEquals("txt:0:0;css:0:0:0;has{!RtlLanguage}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
 	}
 
+	@Test
+	public void testLessCompilationWithGlobalVarImport() throws Exception {
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'colors'}}");
+		configRef.set(cfg);
+		configScript = (Scriptable)cfg.getRawConfig();
+		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
+		builder.configLoaded(cfg, seq++);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
+				(mockAggregator);
+		URI resUri = new File(testdir, "test.less").toURI();
+		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT2, resUri), mockRequest, keyGens);
+		String output = (String)mb.getBuildOutput();
+		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
+	}
+
+	@Test
+	public void testLessCompilationWithAMDImport() throws Exception {
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'\"pkg/colors\"'},packages:[{name:'pkg', location:'" + testdir.toURI().toString() + "'}],cssEnableAMDIncludePaths:true}");
+		configRef.set(cfg);
+		configScript = (Scriptable)cfg.getRawConfig();
+		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
+		builder.configLoaded(cfg, seq++);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
+				(mockAggregator);
+		URI resUri = new File(testdir, "test.less").toURI();
+		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT2, resUri), mockRequest, keyGens);
+		String output = (String)mb.getBuildOutput();
+		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
+	}
+
+	@Test
+	public void testLessCompilationWithNotFoundImport() throws Exception {
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'foo'}}");
+		configRef.set(cfg);
+		configScript = (Scriptable)cfg.getRawConfig();
+		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
+		builder.configLoaded(cfg, seq++);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
+				(mockAggregator);
+		URI resUri = new File(testdir, "test.less").toURI();
+		String exceptionMessage = null;
+		try {
+			builder.build("test.less", new StringResource(LESS_VAR_IMPORT2, resUri), mockRequest, keyGens);
+		} catch (IOException e) {
+			exceptionMessage = e.getMessage();
+		}
+		Assert.assertNotNull(exceptionMessage);
+		Assert.assertTrue(exceptionMessage.contains("foo.less"));
+	}
 }
