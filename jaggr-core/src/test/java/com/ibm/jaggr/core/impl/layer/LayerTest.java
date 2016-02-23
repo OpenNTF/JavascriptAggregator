@@ -348,55 +348,6 @@ public class LayerTest extends EasyMock {
 		assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 
-		// rename one of the source files and make sure it busts the cache
-		new File(tmpdir, "p1/a.js").renameTo(new File(tmpdir, "p1/a.js.save"));
-		requestAttributes.clear();
-		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
-		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
-		in = layer.getInputStream(mockRequest, mockResponse);
-		writer = new StringWriter();
-		CopyUtil.copy(in, writer);
-		result = writer.toString();
-		System.out.println(result);
-		assertEquals("[update_lastmod2, error_noaction]", layerCacheInfo.toString());
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
-		assertEquals("remove", moduleCacheInfo.get("p1/a"));
-		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
-		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
-		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
-		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
-		URI uri = new File(tmpdir, "p1/a.js").toURI();
-		NotFoundModule nfm = new NotFoundModule("p1/a.js", uri);
-		Reader rdr = nfm.getBuild(mockRequest).get();
-		writer = new StringWriter();
-		CopyUtil.copy(rdr, writer);
-		assertTrue(result.contains(writer.toString()));
-		assertTrue(result.contains("\"hello from b.js\""));
-		assertTrue(result.contains("Hello world text"));
-
-		// now rename it back
-		new File(tmpdir, "p1/a.js.save").renameTo(new File(tmpdir, "p1/a.js"));
-		requestAttributes.clear();
-		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
-		requestAttributes.put(IHttpTransport.SHOWFILENAMES_REQATTRNAME, Boolean.TRUE);
-		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
-		in = layer.getInputStream(mockRequest, mockResponse);
-		writer = new StringWriter();
-		CopyUtil.copy(in, writer);
-		result = writer.toString();
-		System.out.println(result);
-		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
-		assertEquals("[update_keygen, update_key, update_hit]", layerCacheInfo.toString());
-		assertEquals("add", moduleCacheInfo.get("p1/a"));
-		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
-		assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
-		assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
-		assertEquals(saveResult, result);
 
 		Thread.sleep(1500L);   // Wait long enough for systems with coarse grain last-mod
 		// times to recognize that the file has changed.
@@ -440,6 +391,7 @@ public class LayerTest extends EasyMock {
 		assertTrue("missing cache file", file.exists());
 
 		// Test required request parameter
+		layer = newLayerImpl(modules.toString(), mockAggregator);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
@@ -460,6 +412,7 @@ public class LayerTest extends EasyMock {
 		assertTrue(p.matcher(result).find());
 
 		// Ensure that package name in require list get's translated to package main module
+		layer = newLayerImpl(modules.toString(), mockAggregator);
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
