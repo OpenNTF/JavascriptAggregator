@@ -15,6 +15,8 @@
  */
 package com.ibm.jaggr.core.util;
 
+import com.ibm.jaggr.core.util.rhino.NodeUtil;
+
 import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;

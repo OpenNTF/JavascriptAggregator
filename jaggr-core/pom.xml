@@ -303,7 +303,7 @@
               <directory>.</directory>
               <includes>
                 <include>lib/**</include>
-                <include>src/main/resources/less*.js</include>
+                <include>src/main/resources/less-rhino-*.js</include>
               </includes>
               <followSymlinks>false</followSymlinks>
             </fileset>

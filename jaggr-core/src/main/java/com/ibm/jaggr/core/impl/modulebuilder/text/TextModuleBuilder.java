@@ -29,6 +29,8 @@ import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.google.common.collect.ImmutableList;
 
+import org.apache.commons.lang3.mutable.MutableObject;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringWriter;
@@ -83,18 +85,19 @@ public class TextModuleBuilder implements IModuleBuilder {
 			sb.append("define('"); //$NON-NLS-1$
 		}
 		StringWriter writer = new StringWriter();
+		MutableObject<List<ICacheKeyGenerator>> keyGensRef = new MutableObject<List<ICacheKeyGenerator>>(keyGens);
 		CopyUtil.copy(
 				new JavaScriptEscapingReader(
-						getContentReader(mid, resource, request, keyGens)
+						getContentReader(mid, resource, request, keyGensRef)
 						),
 						writer
 				);
 		sb.append(writer.toString());
 		sb.append(noTextAdorn ? "'" : "');"); //$NON-NLS-1$ //$NON-NLS-2$
-		return new ModuleBuild(sb.toString(), keyGens, null);
+		return new ModuleBuild(sb.toString(), keyGensRef.getValue(), null);
 	}
 
-	protected Reader getContentReader(String mid,	IResource resource,	HttpServletRequest request,	List<ICacheKeyGenerator> keyGens)	throws IOException {
+	protected Reader getContentReader(String mid,	IResource resource,	HttpServletRequest request,	MutableObject<List<ICacheKeyGenerator>> keyGensRef)	throws IOException {
 		return resource.getReader();
 	}
 

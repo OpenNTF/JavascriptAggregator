@@ -43,6 +43,7 @@ import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableObject;
 import org.mozilla.javascript.Context;
 import org.mozilla.javascript.EvaluatorException;
 import org.mozilla.javascript.Function;
@@ -100,7 +101,7 @@ import javax.servlet.http.HttpServletRequest;
  * </ul>
  * This module works by extending TextModuleBuilder and processing the text stream
  * associated with the Reader that is returned by the overridden method
- * {@link #getContentReader(String, com.ibm.jaggr.core.resource.IResource, javax.servlet.http.HttpServletRequest, java.util.List)}.
+ * {@link #getContentReader(String, com.ibm.jaggr.core.resource.IResource, javax.servlet.http.HttpServletRequest, MutableObject)}.
  * <h2>Comment removal</h2>
  * <p>
  * Removes comments identified by /* ... *&#047; comment tags
@@ -359,12 +360,12 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			String mid,
 			IResource resource,
 			HttpServletRequest request,
-			List<ICacheKeyGenerator> keyGens)
+			MutableObject<List<ICacheKeyGenerator>> keyGensRef)
 			throws IOException {
 		final String sourceMethod = "getContentReader"; //$NON-NLS-1$
 		final boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGens});
+			log.entering(sourceClass, sourceMethod, new Object[]{mid, resource, request, keyGensRef});
 		}
 		Reader result = null;
 		SignalUtil.lock(		// If a config update is in progress, wait
@@ -378,7 +379,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 				css = inlineImports(request, css, resource, BLANK);
 			}
 			// PostCSS
-			css = postcss(css, resource);
+			css = postcss(request, css, resource);
 
 			// Inline images
 			css = inlineImageUrls(request, css, resource);
@@ -717,12 +718,13 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	 * Runs given CSS through PostCSS processor for minification and any other processing
 	 * by configured plugins
 	 * .
+	 * @param request
 	 * @param css
 	 * @param res
 	 * @return The processed CSS.
 	 * @throws IOException
 	 */
-	protected String postcss(String css, IResource res) throws IOException {
+	protected String postcss(HttpServletRequest request, String css, IResource res) throws IOException {
 		if (threadScopes == null) {
 			return css;
 		}
@@ -1018,7 +1020,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.service.modulebuilder.IModuleBuilder#getCacheKeyGenerator(com.ibm.jaggr.service.IAggregator)
 	 */
-	@Override	public final List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
+	@Override	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
 		return s_cacheKeyGenerators;
 	}
 
@@ -1152,5 +1154,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			return result.substring(1, result.length()-1);
 		}
 		return result;
+	}
+
+	protected IAggregator getAggregator() {
+		return aggregator;
 	}
 }
