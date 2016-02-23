@@ -243,7 +243,10 @@ public class LayerImpl implements ILayer {
 						if (cacheInfoReport != null) {
 							cacheInfoReport.add("update_lastmod2"); //$NON-NLS-1$
 						}
-						_lastModified = lastModified;
+						if (lastModified != Long.MAX_VALUE) {
+							// max value means missing requested source
+							_lastModified = lastModified;
+						}
 						_cacheKeyGenerators = null;
 					}
 				}
@@ -1026,6 +1029,9 @@ public class LayerImpl implements ILayer {
 		for (ModuleList.ModuleListEntry entry : modules) {
 			IResource resource = entry.getModule().getResource(aggregator);
 			long lastMod = resource.lastModified();
+			if (lastMod == 0 && !resource.exists()) {
+				lastMod = Long.MAX_VALUE;
+			}
 			result = Math.max(result, lastMod);
 		}
 		return result;
