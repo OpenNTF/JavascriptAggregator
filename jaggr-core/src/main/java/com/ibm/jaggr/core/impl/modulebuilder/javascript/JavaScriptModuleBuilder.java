@@ -26,6 +26,8 @@ import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.cachekeygenerator.ExportNamesCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.FeatureSetCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
+import com.ibm.jaggr.core.config.IConfigListener;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
@@ -90,11 +92,11 @@ import javax.servlet.http.HttpServletRequest;
  * This class minifies a javacript module.  The modules is assumed to use the AMD
  * loader format.  Modules are minified sing the Google Closure compiler,
  * and module builds differ according to the requested compilation level and has-filtering
- * condiftions.  The requested compilation level and has-filtering conditions are
+ * conditions.  The requested compilation level and has-filtering conditions are
  * specified as attributes in the http request when calling {@link #build}.
  *
  */
-public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, ILayerListener, IShutdownListener {
+public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitializer, ILayerListener, IShutdownListener, IConfigListener {
 	private static final Logger log = Logger.getLogger(JavaScriptModuleBuilder.class.getName());
 
 	private static final List<JSSourceFile> externs = Collections.emptyList();
@@ -142,6 +144,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	private List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 
+	private CompilerOptions configCompilerOptions = CompilerUtil.getDefaultOptions();
+
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
 		CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
 		IAggregator aggregator = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
@@ -169,6 +173,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
 		registrations.add(aggregator.getPlatformServices().registerService(IShutdownListener.class.getName(), this, props));
+		props = new Hashtable<String,String>();
+		props.put("name", aggregator.getName()); //$NON-NLS-1$
+		registrations.add(aggregator.getPlatformServices().registerService(IConfigListener.class.getName(), this, props));
 	}
 
 	@Override
@@ -282,6 +289,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	}
 
 	@Override
+	public void configLoaded(IConfig config, long sequence) {
+		CompilerOptions options = CompilerUtil.getDefaultOptions();
+		CompilerUtil.addCompilerOptionsFromConfig(options, config);
+		configCompilerOptions = options;
+	}
+
+	@Override
 	public ModuleBuild build(
 			String mid,
 			IResource resource,
@@ -337,7 +351,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		String output = null;
 
 		Compiler compiler = new Compiler();
-		CompilerOptions compiler_options = CompilerUtil.getDefaultOptions();
+		CompilerOptions compiler_options = (CompilerOptions) configCompilerOptions.clone();
 		compiler_options.customPasses = HashMultimap.create();
 		if (isHasFiltering && (level != null || keyGens == null)) {
 			// Run has filtering compiler pass if we are doing has filtering, or if this
