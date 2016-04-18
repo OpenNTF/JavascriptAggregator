@@ -32,8 +32,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
-import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.AccessibleObject;
 import java.net.URI;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public class CompilerUtilTest {
@@ -59,6 +62,7 @@ public class CompilerUtilTest {
 	}
 	@Test
 	public void testAddCompilerOptionsFromConfig() throws Exception {
+		Map<AccessibleObject, List<Object>> map = new HashMap<AccessibleObject, List<Object>>();
 		// Test simple boolean setter
 		String config = "{compilerOptions:{acceptConstKeyword:true}}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
@@ -66,7 +70,9 @@ public class CompilerUtilTest {
 		mockOptions.setAcceptConstKeyword(true);
 		EasyMock.expectLastCall().once();
 		EasyMock.replay(mockOptions);
-		int numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
+		int numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
 		EasyMock.verify(mockOptions);
 		Assert.assertEquals(0,  numFailed);
 
@@ -77,7 +83,9 @@ public class CompilerUtilTest {
 		mockOptions.setDefineToBooleanLiteral("defineName", true);
 		EasyMock.expectLastCall().once();
 		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
 		EasyMock.verify(mockOptions);
 		Assert.assertEquals(0,  numFailed);
 
@@ -88,7 +96,9 @@ public class CompilerUtilTest {
 		mockOptions.setCheckGlobalThisLevel(CheckLevel.WARNING);
 		EasyMock.expectLastCall().once();
 		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
 		EasyMock.verify(mockOptions);
 		Assert.assertEquals(0,  numFailed);
 
@@ -108,7 +118,9 @@ public class CompilerUtilTest {
 			}
 		}).once();
 		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
 		EasyMock.verify(mockOptions);
 		Assert.assertEquals(0,  numFailed);
 
@@ -121,26 +133,22 @@ public class CompilerUtilTest {
 		mockOptions.setAliasExternals(true);
 		EasyMock.expectLastCall().once();
 		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
 		EasyMock.verify(mockOptions);
 		Assert.assertEquals(0,  numFailed);
 
 		// Test setting non-existant property
 		config = "{compilerOptions:{noExist:true}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		mockOptions = EasyMock.createMock(CompilerOptions.class);
-		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
-		EasyMock.verify(mockOptions);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
 		Assert.assertEquals(1,  numFailed);
 
 		// Test setting an existing property with wrong parameter type
 		config = "{compilerOptions:{acceptConstKeyword:'foo'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		mockOptions = EasyMock.createMock(CompilerOptions.class);
-		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
-		EasyMock.verify(mockOptions);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
 		Assert.assertEquals(1,  numFailed);
 
 		// Test with one failed and one successful property
@@ -150,9 +158,11 @@ public class CompilerUtilTest {
 		mockOptions.setCheckGlobalThisLevel(CheckLevel.WARNING);
 		EasyMock.expectLastCall().once();
 		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
-		EasyMock.verify(mockOptions);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
 		Assert.assertEquals(1,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
+		EasyMock.verify(mockOptions);
+		Assert.assertEquals(0,  numFailed);
 
 		// Throw exception from setter
 		config = "{compilerOptions:{checkGlobalThisLevel:'WARNING'}}";
@@ -161,9 +171,21 @@ public class CompilerUtilTest {
 		mockOptions.setCheckGlobalThisLevel(CheckLevel.WARNING);
 		EasyMock.expectLastCall().andThrow(new RuntimeException());
 		EasyMock.replay(mockOptions);
-		numFailed = CompilerUtil.addCompilerOptionsFromConfig(mockOptions, cfg);
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
 		EasyMock.verify(mockOptions);
 		Assert.assertEquals(1,  numFailed);
+
+		// Test prop field setter
+		config = "{compilerOptions:{checkSuspiciousCode:true}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		CompilerOptions options = new CompilerOptions();
+		numFailed = CompilerUtil.compilerOptionsMapFromConfig(cfg, map, true);
+		Assert.assertEquals(0,  numFailed);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(options, map);
+		Assert.assertEquals(0,  numFailed);
+		Assert.assertTrue(options.checkSuspiciousCode);
 
 
 	}

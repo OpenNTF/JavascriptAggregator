@@ -23,6 +23,7 @@ import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.text.MessageFormat;
@@ -97,9 +98,10 @@ public class CompilerUtil {
 	}
 
 	/**
-	 * Adds the compiler options specified by the <code>compilerOptions</code> config property to
-	 * the specified {@link CompilerOptions} instance. Returns the number unsuccessful attempts to
-	 * set an option.
+	 * Builds a map of accessor/value pairs that can be used to quickly apply the compiler options
+	 * specified in the config to a {$link CompilerOptions} object using
+	 * {@link #applyCompilerOptionsFromMap(CompilerOptions, Map)}.  Returns the number of config
+	 * properties that could not be mapped to a compiler option.
 	 * <p>
 	 * Compiler config options are specified using {@link CompilerOptions} defined property
 	 * name/value pairs. The names can be any property which is either declared as a public field or
@@ -137,25 +139,50 @@ public class CompilerUtil {
 	 * the Enum named constants, then the matching constant value will be used</li>
 	 * </ul>
 	 * <p>
+	 *
 	 * <pre>
 	 * compilerOptions: {
 	 *    checkGlobalThisLevel:'WARNING'    // This invokes setCheckGlobalThisLevel(CheckLevel.WARNING);
 	 * }
 	 * </pre>
 	 *
-	 * @param options
-	 *            the {@link CompilerOptions} instance to modify
 	 * @param config
 	 *            the server-side AMD config object
-	 * @return the number of failed attempts to set a config property (primarily for unit testing)
+	 * @param resultMap
+	 *            Output map. The keys are Method or Field objects and the values are the properties.
+	 *            This map may be passed to {@link #applyCompilerOptionsFromMap(CompilerOptions, Map)}
+	 *            to apply the compiler options defined in the config to a given CompilerOptions instance.
+	 * @return the number of failed attempts to map a config property (primarily for unit testing)
 	 */
-	public static int addCompilerOptionsFromConfig(CompilerOptions options, IConfig config) {
+	public static int compilerOptionsMapFromConfig(IConfig config, Map<AccessibleObject, List<Object>> resultMap) {
+		return compilerOptionsMapFromConfig(config, resultMap, false);
+	}
+
+
+	/**
+	 * @see #compilerOptionsMapFromConfig(IConfig, Map)
+	 *
+	 * @param config
+	 *            the server-side AMD config object
+	 * @param resultMap
+	 *            Output map. The keys are Method or Field objects and the values are the properties.
+	 *            This map may be passed to {@link #applyCompilerOptionsFromMap(CompilerOptions, Map)}
+	 *            to apply the compiler options defined in the config to a given CompilerOptions instance.
+	 * @param propFieldsOnly
+	 *            if true, property setters will be ignored and field assignments will be used
+	 *            exclusively (for use by unit tests).
+	 * @return the number of failed attempts to map a config property (for use by unit tests)
+	 */
+	static int compilerOptionsMapFromConfig(IConfig config, Map<AccessibleObject, List<Object>> resultMap, boolean propFieldsOnly /* for unit testing */) {
 		final String sourceMethod = "addCompilerOptionsFromConfig"; //$NON-NLS-1$
 		final boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(sourceClass, sourceMethod, new Object[]{options, config});
+			log.entering(sourceClass, sourceMethod, new Object[]{config});
 		}
 		int numFailed = 0;
+		CompilerOptions test_options = new CompilerOptions();
+		Map<AccessibleObject, List<Object>> test_map = new HashMap<AccessibleObject, List<Object>>();
+		resultMap.clear();
 		Map<?,?> optionsParam = (Map<?,?>)config.getProperty(COMPILEROPTIONS_CONFIGPARAM, Map.class);
 		if (optionsParam != null) {
 			for (Map.Entry<?, ?> entry : optionsParam.entrySet()) {
@@ -175,43 +202,17 @@ public class CompilerUtil {
 				// find a matching setter in the CompilerOptions class
 				String setterMethodName = "set" + key.substring(0,1).toUpperCase() + key.substring(1); //$NON-NLS-1$
 				Method setterMethod = findSetterMethod(setterMethodName, args);
-				if (setterMethod != null) {
-					try {
-						if (isTraceLogging) {
-							log.logp(Level.FINER, sourceClass, sourceMethod, "Invoking " + formatForDisplay(setterMethodName, args)); //$NON-NLS-1$
-						}
-						setterMethod.invoke(options, args.toArray());
-					} catch (Exception e) {
-						numFailed++;
-						if (log.isLoggable(Level.WARNING)) {
-							log.logp(Level.WARNING, sourceClass, sourceMethod,
-								MessageFormat.format(
-									Messages.CompilerUtil_0, new Object[]{
-										formatForDisplay(setterMethodName, args)
-									}
-								), e
-							);
-						}
-					}
+				test_map.clear();
+				if (setterMethod != null && !propFieldsOnly) {
+					test_map.put(setterMethod, args);
 				} else if (args.size() == 1){
 					// See if there is a public property with the matching name and type
 					MutableObject<Object> valueHolder = new MutableObject<Object>(args.get(0));
 					Field field = findField(key, valueHolder);
 					if (field != null) {
-						try {
-							field.set(options, valueHolder.getValue());
-						} catch (Exception e) {
-							numFailed++;
-							if (log.isLoggable(Level.WARNING)) {
-								log.logp(Level.WARNING, sourceClass, sourceMethod,
-									MessageFormat.format(
-										Messages.CompilerUtil_1, new Object[]{
-											key + "=" + value //$NON-NLS-1$
-										}
-									), e
-								);
-							}
-						}
+						args = new ArrayList<Object>(1);
+						args.add(valueHolder.getValue());
+						test_map.put(field, args);
 					} else {
 						numFailed++;
 						if (log.isLoggable(Level.WARNING)) {
@@ -223,6 +224,79 @@ public class CompilerUtil {
 								)
 							);
 						}
+					}
+				}
+				if (!test_map.isEmpty()) {
+					// Apply the option to a test instance to make sure it works
+					if (applyCompilerOptionsFromMap(test_options, test_map) == 0) {
+						// option was successfully applied.  Add the option to the result map
+						resultMap.putAll(test_map);
+					} else {
+						++numFailed;
+					}
+				}
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceMethod, sourceMethod, numFailed);
+		}
+		return numFailed;
+	}
+
+	/**
+	 * Applies the config specified compiler options to a given {@link CompilerOptions} instance.
+	 * The options to be applied are specified by <code>map</code> which was obtained by calling
+	 * {@link #compilerOptionsMapFromConfig(IConfig, Map)}.
+	 *
+	 * @param options
+	 *            the {@link CompilerOptions} object to apply the options to
+	 * @param map
+	 *            a map obtained from a previous call to
+	 *            {@link #compilerOptionsMapFromConfig(IConfig, Map)}. The keys are instances of
+	 *            {@link Method} or {@link Field}. The values are the method parameters (if the key
+	 *            is a Method) or the value to assign to the field (if the key is a Field).
+	 *
+	 * @return the number of failed attempts to apply the config options
+	 */
+	public static int applyCompilerOptionsFromMap(CompilerOptions options, Map<AccessibleObject, List<Object>> map) {
+		final String sourceMethod = "applyCompilerOptionsFromMap"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{options, map});
+		}
+		int numFailed = 0;
+		for (Map.Entry<AccessibleObject, List<Object>> entry : map.entrySet()) {
+			if (entry.getKey() instanceof Method) {
+				Method method = (Method)entry.getKey();
+				Object[] args = entry.getValue().toArray();
+				try {
+					method.invoke(options, args);
+				} catch (Exception e) {
+					++numFailed;
+					if (log.isLoggable(Level.WARNING)) {
+						log.logp(Level.WARNING, sourceClass, sourceMethod,
+							MessageFormat.format(
+								Messages.CompilerUtil_0, new Object[]{
+									formatForDisplay(method.getName(), entry.getValue())
+								}
+							), e
+						);
+					}
+				}
+			} else {
+				Field field = (Field)entry.getKey();
+				try {
+					field.set(options, entry.getValue().get(0));
+				} catch (Exception e) {
+					++numFailed;
+					if (log.isLoggable(Level.WARNING)) {
+						log.logp(Level.WARNING, sourceClass, sourceMethod,
+							MessageFormat.format(
+								Messages.CompilerUtil_1, new Object[]{
+									field.getName() + "=" + entry.getValue().get(0) //$NON-NLS-1$
+								}
+							), e
+						);
 					}
 				}
 			}

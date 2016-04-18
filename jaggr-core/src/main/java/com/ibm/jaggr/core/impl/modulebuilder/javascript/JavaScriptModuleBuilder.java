@@ -68,11 +68,13 @@ import org.apache.commons.lang3.mutable.MutableBoolean;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
+import java.lang.reflect.AccessibleObject;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Dictionary;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.LinkedHashSet;
@@ -144,7 +146,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	private List<IServiceRegistration> registrations = new LinkedList<IServiceRegistration>();
 
-	private CompilerOptions configCompilerOptions = CompilerUtil.getDefaultOptions();
+	private Map<AccessibleObject, List<Object>> compilerOptionsMap = new HashMap<AccessibleObject, List<Object>>();
 
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
 		CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
@@ -290,9 +292,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public void configLoaded(IConfig config, long sequence) {
-		CompilerOptions options = CompilerUtil.getDefaultOptions();
-		CompilerUtil.addCompilerOptionsFromConfig(options, config);
-		configCompilerOptions = options;
+		Map<AccessibleObject, List<Object>> map = new HashMap<AccessibleObject, List<Object>>();
+		CompilerUtil.compilerOptionsMapFromConfig(config, map);
+		compilerOptionsMap = map;
 	}
 
 	@Override
@@ -351,7 +353,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		String output = null;
 
 		Compiler compiler = new Compiler();
-		CompilerOptions compiler_options = (CompilerOptions) configCompilerOptions.clone();
+		CompilerOptions compiler_options = CompilerUtil.getDefaultOptions();
+		CompilerUtil.applyCompilerOptionsFromMap(compiler_options, compilerOptionsMap);
 		compiler_options.customPasses = HashMultimap.create();
 		if (isHasFiltering && (level != null || keyGens == null)) {
 			// Run has filtering compiler pass if we are doing has filtering, or if this
