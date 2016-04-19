@@ -17,6 +17,7 @@ package com.ibm.jaggr.core.util;
 
 import com.ibm.jaggr.core.config.IConfig;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
@@ -476,13 +477,9 @@ public class CompilerUtil {
 	 * @return the formatted string
 	 */
 	private static String formatForDisplay(String setterMethodName, List<Object> args) {
-		StringBuffer sb = new StringBuffer(CompilerOptions.class.getName());
+		StringBuilder sb = new StringBuilder(CompilerOptions.class.getName());
 		sb.append(".").append(setterMethodName).append("("); //$NON-NLS-1$ //$NON-NLS-2$
-		int i = 0;
-		for (Object arg : args) {
-			sb.append(i++ > 0 ? ", " : "").append(arg.toString()); //$NON-NLS-1$ //$NON-NLS-2$
-		}
-		sb.append(")"); //$NON-NLS-1$
+		Joiner.on(",").appendTo(sb, args).append(")"); //$NON-NLS-1$ //$NON-NLS-2$
 		return sb.toString();
 	}
 }
