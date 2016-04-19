@@ -27,6 +27,9 @@ public class Messages extends NLS {
 	public static String SignalUtil_0;
 	public static String SignalUtil_1;
 	public static String SignalUtil_2;
+	public static String CompilerUtil_0;
+	public static String CompilerUtil_1;
+	public static String CompilerUtil_2;
 
 	static {
 		// initialize resource bundle
