@@ -184,8 +184,9 @@ public class CompilerUtil {
 		CompilerOptions test_options = new CompilerOptions();
 		Map<AccessibleObject, List<Object>> test_map = new HashMap<AccessibleObject, List<Object>>();
 		resultMap.clear();
-		Map<?,?> optionsParam = (Map<?,?>)config.getProperty(COMPILEROPTIONS_CONFIGPARAM, Map.class);
-		if (optionsParam != null) {
+		Object optionsParamObj = config.getProperty(COMPILEROPTIONS_CONFIGPARAM, Map.class);
+		if (optionsParamObj != null && optionsParamObj instanceof Map) {
+			Map<?,?> optionsParam = (Map<?,?>)optionsParamObj;
 			for (Map.Entry<?, ?> entry : optionsParam.entrySet()) {
 				String key = entry.getKey().toString();
 				Object value = entry.getValue();
