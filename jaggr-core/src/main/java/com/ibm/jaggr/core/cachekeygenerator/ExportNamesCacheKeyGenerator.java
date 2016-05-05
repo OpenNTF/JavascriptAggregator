@@ -16,8 +16,7 @@
 
 package com.ibm.jaggr.core.cachekeygenerator;
 
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.RequestUtil;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -30,13 +29,22 @@ public final class ExportNamesCacheKeyGenerator extends AbstractCacheKeyGenerato
 
 	private static final String eyecatcher = "expn"; //$NON-NLS-1$
 
+	private final String mid;
+
+	public ExportNamesCacheKeyGenerator() {
+		this.mid = null;
+	}
+
+	public ExportNamesCacheKeyGenerator(String mid) {
+		this.mid = mid;
+	}
+
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.cachekeygenerator.AbstractCacheKeyGenerator#generateKey(javax.servlet.http.HttpServletRequest)
 	 */
 	@Override
 	public String generateKey(HttpServletRequest request) {
-		boolean exportNames = TypeUtil.asBoolean(request
-				.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
+		boolean exportNames = RequestUtil.isExportModuleName(mid, request);
 		return eyecatcher + ":" + (exportNames ? "1" : "0"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
 	}
 

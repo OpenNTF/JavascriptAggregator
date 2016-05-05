@@ -28,6 +28,7 @@ import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuildFuture;
 import com.ibm.jaggr.core.modulebuilder.SourceMap;
 import com.ibm.jaggr.core.options.IOptions;
@@ -145,6 +146,15 @@ public class LayerBuilder {
 			throw new IllegalStateException();
 		}
 		built = true;
+
+		// Build the buildSources map and add to the request
+		Map<String, ModuleSpecifier> buildSources = new HashMap<String, ModuleSpecifier>();
+		for(ModuleList.ModuleListEntry moduleListEntry : moduleList) {
+			String key = moduleListEntry.getModule().getModuleId();
+			ModuleSpecifier value = moduleListEntry.getSource();
+			buildSources.put(key, value);
+		}
+		request.setAttribute(ILayer.BUILD_SOURCES_REQATTRNAME, buildSources);
 
 		Map<String, String> moduleCacheInfo = null;
 		if (request.getAttribute(LayerImpl.LAYERCACHEINFO_PROPNAME) != null) {

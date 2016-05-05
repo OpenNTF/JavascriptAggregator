@@ -34,8 +34,10 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder.CacheKeyGenerator;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
+import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.modulebuilder.SourceMap;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.readers.ModuleBuildReader;
@@ -50,7 +52,6 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 import com.ibm.jaggr.core.util.RequestUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.google.common.io.Files;
 
@@ -505,17 +506,41 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
 		assertEquals("expn:0;js:W:1:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		Set<String> hasConditionals = new HashSet<String>();
-		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, true);
 		assertEquals("expn:0;js:W:1:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("foo");
-		keyGens = builder.getCacheKeyGenerators(hasConditionals, true);
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, true);
 		assertEquals("expn:0;js:W:1:0:1;has{foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("bar");
-		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, false);
 		assertEquals("expn:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
 		hasConditionals.add("undefined");
-		keyGens = builder.getCacheKeyGenerators(hasConditionals, false);
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, false);
 		assertEquals("expn:0;js:W:0:0:1;has{!bar,foo}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, true);
+		hasConditionals.clear();
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, false);
+		assertEquals("expn:1;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, false);
+		requestAttributes.put(IHttpTransport.EXPORTREQUESTEDMODULENAMES_REQATTRNAME, true);
+		hasConditionals.clear();
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, false);
+		assertEquals("expn:1;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		keyGens = builder.getCacheKeyGenerators("test/mid", hasConditionals, false);
+		assertEquals("expn:1;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		Map<String, ModuleSpecifier> buildSources = new HashMap<String, ModuleSpecifier>();
+		requestAttributes.put(ILayer.BUILD_SOURCES_REQATTRNAME, buildSources);
+		assertEquals("expn:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		buildSources.put("test/mid", ModuleSpecifier.MODULES);
+		assertEquals("expn:1;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		buildSources.put("test/mid", ModuleSpecifier.LAYER);
+		assertEquals("expn:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		buildSources.put("test/mid", ModuleSpecifier.SCRIPTS);
+		assertEquals("expn:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		buildSources.put("test/mid", ModuleSpecifier.BUILD_ADDED);
+		assertEquals("expn:0;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
+		keyGens = builder.getCacheKeyGenerators(null, hasConditionals, false);
+		assertEquals("expn:1;js:W:0:0:1;has{}", KeyGenUtil.generateKey(mockRequest, keyGens));
 	}
 
 
@@ -549,18 +574,71 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	}
 
 	@Test
-	public void testLayerBeginEndNotifier_disableExportModuleNames() throws Exception {
-		List<IModule> modules = new ArrayList<IModule>();
-		Set<String> dependentFeatures = new HashSet<String>();
-		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
-		mockRequest.setAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, Boolean.TRUE);
-		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
-		Assert.assertEquals("", result);
-		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
-	}
+	public void testExportModuleName() throws Exception {
+		TestUtils.createTestFiles(tmpdir);
+		JsModuleTester p1 = new JsModuleTester("p1/p1", new File(tmpdir, "p1/p1.js").toURI());
+		Future<ModuleBuildReader> future = p1.getBuild(mockRequest);
+		Reader reader = future.get();
+		StringWriter writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		String compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define([\"p1/a\","));
+
+		requestAttributes.put(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME, true);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define(\"p1/p1\",[\"p1/a\","));
+
+		requestAttributes.remove(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME);
+		requestAttributes.put(IHttpTransport.EXPORTREQUESTEDMODULENAMES_REQATTRNAME, true);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define(\"p1/p1\",[\"p1/a\","));
+
+		Map<String, ModuleSpecifier> buildSources = new HashMap<String, ModuleSpecifier>();
+		requestAttributes.put(ILayer.BUILD_SOURCES_REQATTRNAME, buildSources);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define([\"p1/a\","));
+
+		buildSources.put("p1/p1", ModuleSpecifier.MODULES);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define(\"p1/p1\",[\"p1/a\","));
+
+		buildSources.put("p1/p1", ModuleSpecifier.SCRIPTS);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define([\"p1/a\","));
+
+		buildSources.put("p1/p1", ModuleSpecifier.LAYER);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define([\"p1/a\","));
+
+		buildSources.put("p1/p1", ModuleSpecifier.BUILD_ADDED);
+		reader = p1.getBuild(mockRequest).get();
+		writer = new StringWriter();
+		CopyUtil.copy(reader, writer);
+		compiled = writer.toString();
+		Assert.assertTrue(compiled.startsWith("define([\"p1/a\","));
+
+}
 
 	@Test
-	public void testLayerBeginEndNotifier_exportModuleNames() throws Exception {
+	public void testLayerBeginEndNotifier() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
 		Set<String> dependentFeatures = new HashSet<String>();
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
@@ -649,7 +727,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	exclude (exclude detail)\\r\\n	excludedep (excludedep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
 	@Test
-	public void testLayerBeginEndNotifier_exportModuleNamesWithDetails() throws Exception {
+	public void testLayerBeginEndNotifierWithDetails() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
 		Set<String> dependentFeatures = new HashSet<String>();
 		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
@@ -1002,9 +1080,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	public class TestJavaScriptModuleBuilder extends JavaScriptModuleBuilder {
 		@Override
-		public List<ICacheKeyGenerator> getCacheKeyGenerators(
+		public List<ICacheKeyGenerator> getCacheKeyGenerators(String mid,
 				Set<String> dependentFeatures, boolean hasExpandableRequires) {
-			return super.getCacheKeyGenerators(dependentFeatures, hasExpandableRequires);
+			return super.getCacheKeyGenerators(mid, dependentFeatures, hasExpandableRequires);
 		}
 		@Override
 		public String moduleNameIdEncodingBeginLayer(HttpServletRequest request) {

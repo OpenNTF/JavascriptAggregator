@@ -79,12 +79,21 @@ public interface IHttpTransport extends IExtensionInitializer {
 			.getName() + ".ExpandRequireLists"; //$NON-NLS-1$
 
 	/**
-	 * Name of the request attribute specifying the Boolean flag indicating if
-	 * the aggregator should export the name of the requested module in the
-	 * define() functions of anonymous modules.
+	 * Name of the request attribute specifying the Boolean flag indicating if the aggregator should
+	 * export the name of modules in the define() functions of anonymous modules.
 	 */
 	public static final String EXPORTMODULENAMES_REQATTRNAME = IHttpTransport.class
 			.getName() + ".ExportModuleNames"; //$NON-NLS-1$
+
+	/**
+	 * Name of the request attribute specifying the Boolean flag indicating if the aggregator should
+	 * export the name of the requested module in the define() functions of anonymous modules, but
+	 * only for modules that are explicitly requested (i.e. not modules that are server expanded and
+	 * not modules specified by the preloads query arg).  From the point of view of the loader, the
+	 * excluded modules are those that are added to the loader's module cache by the response.
+	 */
+	public static final String EXPORTREQUESTEDMODULENAMES_REQATTRNAME = IHttpTransport.class
+			.getName() + ".ExportRequestedModuleNames"; //$NON-NLS-1$
 
 	/**
 	 * Name of the request attribute specifying a {@code Collection;&lt;String&gt;}

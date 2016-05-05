@@ -254,8 +254,12 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 		boolean exportModuleNamesDefault = requestedModuleNames.getPreloads().isEmpty() &&
 				                           requestedModuleNames.getDeps().isEmpty();
-		request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, EXPORTMODULENAMES_REQPARAMS), exportModuleNamesDefault));
-
+		String enParam = getParameter(request, EXPORTMODULENAMES_REQPARAMS);
+		if ("2".equals(enParam)) { //$NON-NLS-1$
+			request.setAttribute(EXPORTREQUESTEDMODULENAMES_REQATTRNAME, true);
+		} else {
+			request.setAttribute(EXPORTMODULENAMES_REQATTRNAME, TypeUtil.asBoolean(enParam, exportModuleNamesDefault));
+		}
 		request.setAttribute(SHOWFILENAMES_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, SHOWFILENAMES_REQPARAMS)));
 
 		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));

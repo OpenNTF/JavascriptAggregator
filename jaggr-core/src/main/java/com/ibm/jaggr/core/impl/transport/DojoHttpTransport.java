@@ -223,7 +223,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		if (!info.isScript()) {
 			// Text module.  Wrap in AMD define function call
 			sb.append("define("); //$NON-NLS-1$
-			if (RequestUtil.isExportModuleName(request)) {
+			if (RequestUtil.isExportModuleName(info.getModuleId(), request)) {
 				sb.append("'").append(info.getModuleId()).append("',"); //$NON-NLS-1$ //$NON-NLS-2$
 			}
 		}

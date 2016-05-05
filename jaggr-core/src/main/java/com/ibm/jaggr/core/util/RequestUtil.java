@@ -19,8 +19,11 @@ package com.ibm.jaggr.core.util;
 import com.ibm.jaggr.core.IAggregator;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.transport.IHttpTransport;
+
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -125,8 +128,37 @@ public class RequestUtil {
 	 * @return True if module names should be exported in the response
 	 */
 	public static boolean isExportModuleName(HttpServletRequest request) {
-		return TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
+		return isExportModuleName(null, request);
 	}
+
+	/**
+	 * @param mid the module id
+	 * @param request
+	 * @return True if module names should be exported in the response
+	 */
+	public static boolean isExportModuleName(String mid, HttpServletRequest request) {
+		boolean result = false;
+		if (TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME))) {
+			result = true;
+		} else if (TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTREQUESTEDMODULENAMES_REQATTRNAME))) {
+			if (mid == null) {
+				result = true;
+			} else {
+				@SuppressWarnings("unchecked")
+				Map<String, ModuleSpecifier> buildSources = (Map<String, ModuleSpecifier>)request.getAttribute(ILayer.BUILD_SOURCES_REQATTRNAME);
+				if (buildSources != null) {
+					ModuleSpecifier source = buildSources.get(mid);
+					if (source == ModuleSpecifier.MODULES) {
+						result = true;
+					}
+				} else {
+					result = true;
+				}
+			}
+		}
+		return result;
+	}
+
 
 	/**
 	 * @param request

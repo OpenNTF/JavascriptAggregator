@@ -113,7 +113,7 @@ public class LessModuleBuilderTest extends EasyMock {
 		URI resUri = new File(testdir, "test.less").toURI();
 		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_STATIC_IMPORT, resUri), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("'body{background:#ff0000}'", output);
 		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
 	}
 
@@ -129,7 +129,7 @@ public class LessModuleBuilderTest extends EasyMock {
 		URI resUri = new File(testdir, "test.less").toURI();
 		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT1, resUri), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("'body{background:#ff0000}'", output);
 		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
 	}
 
@@ -144,7 +144,7 @@ public class LessModuleBuilderTest extends EasyMock {
 				(mockAggregator);
 		ModuleBuild mb = builder.build("res.less", new StringResource(LESS_GLOBAL_VAR, URI.create("res.less")), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{left:10px}');", output);
+		Assert.assertEquals("'body{left:10px}'", output);
 		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
 	}
 
@@ -161,23 +161,23 @@ public class LessModuleBuilderTest extends EasyMock {
 				(mockAggregator);
 		ModuleBuild mb = builder.build("res.less", new StringResource(LESS_GLOBAL_VAR, URI.create("res.less")), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{left:10px}');", output);
+		Assert.assertEquals("'body{left:10px}'", output);
 		Assert.assertEquals("txt;css;has:[RtlLanguage]", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
-		Assert.assertEquals("txt:0:0;css:0:0:0;has{}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
+		Assert.assertEquals("txt:0;css:0:0:0;has{}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
 
 		features.put("RtlLanguage", true);
 		mb = builder.build("res.less", new StringResource(LESS_GLOBAL_VAR, URI.create("res.less")), mockRequest, keyGens);
 		output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{right:10px}');", output);
+		Assert.assertEquals("'body{right:10px}'", output);
 		Assert.assertEquals("txt;css;has:[RtlLanguage]", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
-		Assert.assertEquals("txt:0:0;css:0:0:0;has{RtlLanguage}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
+		Assert.assertEquals("txt:0;css:0:0:0;has{RtlLanguage}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
 
 		features.put("RtlLanguage", false);
 		mb = builder.build("res.less", new StringResource(LESS_GLOBAL_VAR, URI.create("res.less")), mockRequest, keyGens);
 		output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{left:10px}');", output);
+		Assert.assertEquals("'body{left:10px}'", output);
 		Assert.assertEquals("txt;css;has:[RtlLanguage]", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
-		Assert.assertEquals("txt:0:0;css:0:0:0;has{!RtlLanguage}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
+		Assert.assertEquals("txt:0;css:0:0:0;has{!RtlLanguage}", KeyGenUtil.generateKey(mockRequest, mb.getCacheKeyGenerators()));
 	}
 
 	@Test
@@ -192,7 +192,7 @@ public class LessModuleBuilderTest extends EasyMock {
 		URI resUri = new File(testdir, "test.less").toURI();
 		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT2, resUri), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("'body{background:#ff0000}'", output);
 		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
 	}
 
@@ -208,7 +208,7 @@ public class LessModuleBuilderTest extends EasyMock {
 		URI resUri = new File(testdir, "test.less").toURI();
 		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT2, resUri), mockRequest, keyGens);
 		String output = (String)mb.getBuildOutput();
-		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("'body{background:#ff0000}'", output);
 		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
 	}
 

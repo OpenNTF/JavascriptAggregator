@@ -135,9 +135,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	static final Pattern hasPluginPattern = Pattern.compile("(^|\\/)has!(.*)$"); //$NON-NLS-1$
 
-	private static final ICacheKeyGenerator exportNamesCacheKeyGenerator =
-			new ExportNamesCacheKeyGenerator();
-
 	static {
 		Logger.getLogger("com.google.javascript.jscomp.Compiler").setLevel(Level.WARNING); //$NON-NLS-1$
 		Logger.getLogger("com.google.javascript.jscomp.PhaseOptimizer").setLevel(Level.WARNING); //$NON-NLS-1$
@@ -405,7 +402,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				reqNames.getExcludes();
 			}
 		}
-		if (RequestUtil.isExportModuleName(request)) {
+		if (RequestUtil.isExportModuleName(mid, request)) {
 			compiler_options.customPasses.put(
 					CustomPassExecutionTime.BEFORE_CHECKS,
 					new ExportModuleNameCompilerPass(source)
@@ -511,7 +508,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return new ModuleBuild(
 				build,
 				createNewKeyGen ?
-						getCacheKeyGenerators(discoveredHasConditionals, hasExpandableRequires.getValue()) :
+						getCacheKeyGenerators(mid, discoveredHasConditionals, hasExpandableRequires.getValue()) :
 							keyGens,
 							null);
 	}
@@ -543,7 +540,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public List<ICacheKeyGenerator> getCacheKeyGenerators(IAggregator aggregator) {
-		return getCacheKeyGenerators((Set<String>)null, true);
+		return getCacheKeyGenerators(null, (Set<String>)null, true);
 	}
 
 	@Override
@@ -551,9 +548,9 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return resource.getPath().endsWith(".js"); //$NON-NLS-1$
 	}
 
-	protected List<ICacheKeyGenerator> getCacheKeyGenerators(Set<String> dependentFeatures, boolean hasExpandableRequires) {
+	protected List<ICacheKeyGenerator> getCacheKeyGenerators(String mid, Set<String> dependentFeatures, boolean hasExpandableRequires) {
 		ArrayList<ICacheKeyGenerator> keyGens = new ArrayList<ICacheKeyGenerator>();
-		keyGens.add(exportNamesCacheKeyGenerator);
+		keyGens.add(new ExportNamesCacheKeyGenerator(mid));
 		keyGens.add(new CacheKeyGenerator(dependentFeatures, hasExpandableRequires, dependentFeatures == null));
 		return keyGens;
 	}
