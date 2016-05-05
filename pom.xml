@@ -24,7 +24,7 @@
   
   <groupId>com.ibm.jaggr</groupId>
   <artifactId>jaggr</artifactId>
-  <version>1.3.6-SNAPSHOT</version>
+  <version>1.3.7-SNAPSHOT</version>
   <packaging>pom</packaging>
   
   <modules>
@@ -381,69 +381,69 @@
         <artifactId>jaggr</artifactId>
         <classifier>LICENSE</classifier>
         <type>txt</type>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr</artifactId>
         <classifier>NOTICE</classifier>
         <type>txt</type>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
         <classifier>javadoc</classifier>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
         <classifier>sources</classifier>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-core</artifactId>
         <classifier>tests</classifier>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-service</artifactId>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-service</artifactId>
         <classifier>javadoc</classifier>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-service</artifactId>
         <classifier>sources</classifier>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-sample</artifactId>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-sample-dojo</artifactId>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>com.ibm.jaggr</groupId>
         <artifactId>jaggr-blueprint</artifactId>
-        <version>1.3.6-SNAPSHOT</version>
+        <version>1.3.7-SNAPSHOT</version>
       </dependency>
       <dependency>
         <groupId>org.apache.wink</groupId>
