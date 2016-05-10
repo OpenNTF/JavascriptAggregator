@@ -235,6 +235,8 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	@Override
 	public void decorateRequest(HttpServletRequest request) throws IOException {
 
+		request.setAttribute(CACHEBUST_REQATTRNAME, getParameter(request, CACHEBUST_REQPARAMS));
+
 		// Get module lists from request
 		RequestedModuleNames requestedModuleNames = setRequestedModuleNames(request);
 
@@ -261,8 +263,6 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		request.setAttribute(NOCACHE_REQATTRNAME, TypeUtil.asBoolean(getParameter(request, NOCACHE_REQPARAMS)));
 
 		request.setAttribute(REQUESTEDLOCALES_REQATTRNAME, getRequestedLocales(request));
-
-		request.setAttribute(CACHEBUST_REQATTRNAME, getParameter(request, CACHEBUST_REQPARAMS));
 
 		request.setAttribute(INCLUDEREQUIREDEPS_REQATTRNAME, getParameter(request, INCLUDEREQUIREDEPS_REQPARAM));
 
