@@ -60,6 +60,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	private static final Pattern REQUOTE_JSON = Pattern.compile("([{,:])([^{},:\"]+)([},:])"); //$NON-NLS-1$
 
 	protected static final String CONFIGPROP_IDLISTHASHERRMODULE = "idListHashErrorModule"; //$NON-NLS-1$
+	protected static final String CONFIGPROP_CACHEBUSTERRMODULE = "cacheBustErrorModule"; //$NON-NLS-1$
 
 	private List<String> modules = null;
 	private List<String> excludesEncoded = null;
@@ -119,48 +120,68 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				if (countParam == null) {
 					throw new BadRequestException(request.getQueryString());
 				}
-				// Decode the id list so we can validate the id list hash
+				// Decode the id list so we can validate the id list hash.  Note that the module list may be
+				// empty but the query still provided in order to supply the hash.
 				base64decodedIdList = Base64.decodeBase64(moduleIdsQueryArg);
 				if (isTraceLogging) {
 					log.finer("decoded = " + TypeUtil.byteArray2String(base64decodedIdList)); //$NON-NLS-1$
 				}
+			}
 
-				// Strip off hash code so we can validate
+			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+			Object errModule = aggr.getConfig().getProperty(CONFIGPROP_IDLISTHASHERRMODULE, String.class);
+			String versionErrorHandler = (errModule instanceof String) ? errModule.toString() : null;
+			boolean versionError = false;
+
+			if (base64decodedIdList != null) {
+				// Strip off hash code so we can validate the id list hash
 				byte[] hash = Arrays.copyOf(base64decodedIdList, idListHash.length);
 				if (!Arrays.equals(hash, idListHash)) {
+					/*
+					 * The hash in the request doesn't match the current hash, probably due to the request
+					 * being sent by stale cached javascript.
+					 */
+					versionError = true;
 					if (isTraceLogging) {
 						log.finer("Invalid hash in request" + TypeUtil.byteArray2String(hash)); //$NON-NLS-1$
 					}
-					/*
-					 * The hash in the request doesn't match the current hash, probably due to the request
-					 * being sent by stale cached javascript.  See if config specifies a module to return in
-					 * this case.  If not, the just throw BadRequestException.
-					 */
-					IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
-					Object errModule = aggr.getConfig().getProperty(CONFIGPROP_IDLISTHASHERRMODULE, String.class);
-					if (errModule instanceof String) {
-						// Config specifies a module to return as the response (should be non-AMD).  Set
-						// the nocache attribute and set the specified module as the requested module.
-						// We use the 'scripts' property instead of 'modules' to ensure that any require
-						// list expansion done for the response will be done in line, avoiding use of the
-						// module id table.  This ensures that we won't get another id list hash error
-						// if the error module calls require() (after cleaning up loader state to
-						// account for requested modules that won't arrive) in order to load additional
-						// resources such as nls strings.
-						request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
-						modules = Collections.emptyList();
-						scripts = Arrays.asList(new String[]{errModule.toString()});
-						count = 0;;
-						strRep = "scripts:" + scripts.toString(); //$NON-NLS-1$
-						if (log.isLoggable(Level.FINER)) {
-							log.exiting(RequestedModuleNames.class.getName(), sourceMethod, this);
-						}
-						return;
-					}
-					// No handler specified.  Throw an exception.
-					throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
 				}
-
+			}
+			if (!versionError) {
+				errModule = aggr.getConfig().getProperty(CONFIGPROP_CACHEBUSTERRMODULE, String.class);
+				versionErrorHandler = (errModule instanceof String) ? errModule.toString() : null;
+				// validate cache bust if version error handler provided
+				String reqCb = (String)request.getAttribute(AbstractHttpTransport.CACHEBUST_REQATTRNAME);
+				String configCb = aggr.getConfig().getCacheBust();
+				if (versionErrorHandler != null && reqCb != null && configCb != null && !reqCb.equals(configCb)) {
+					versionError = true;
+					if (isTraceLogging) {
+						log.finer("cache bust version error: " + reqCb + ", " + configCb); //$NON-NLS-1$ //$NON-NLS-2$
+					}
+				}
+			}
+			if (versionError) {
+				if (versionErrorHandler != null) {
+					// Config specifies a module to return as the response (should be non-AMD).  Set
+					// the nocache attribute and set the specified module as the requested module.
+					// We use the 'scripts' property instead of 'modules' to ensure that any require
+					// list expansion done for the response will be done in line, avoiding use of the
+					// module id table.  This ensures that we won't get another id list hash error
+					// if the error module calls require() (after cleaning up loader state to
+					// account for requested modules that won't arrive) in order to load additional
+					// resources such as nls strings.
+					request.setAttribute(ILayer.NOCACHE_RESPONSE_REQATTRNAME, Boolean.TRUE);
+					modules = Collections.emptyList();
+					scripts = Arrays.asList(new String[]{versionErrorHandler});
+					count = 0;;
+					strRep = "scripts:" + scripts.toString(); //$NON-NLS-1$
+					if (log.isLoggable(Level.FINER)) {
+						log.exiting(RequestedModuleNames.class.getName(), sourceMethod, this);
+					}
+					return;
+				}
+				// No handler specified.  Throw an exception.
+				throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
 			}
 
 			if (moduleQueryArg.length() > 0) {
@@ -208,7 +229,6 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				scripts = Collections.unmodifiableList(Arrays.asList(moduleQueryArg.split("\\s*,\\s*", 0))); //$NON-NLS-1$
 				modules = Collections.emptyList();
 				// Set request attribute to warn about use of deprecated param
-				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 				if (aggr.getOptions().isDebugMode() || aggr.getOptions().isDevelopmentMode()) {
 					request.setAttribute(AbstractHttpTransport.WARN_DEPRECATED_USE_OF_MODULES_QUERYARG, Boolean.TRUE);
 				}
