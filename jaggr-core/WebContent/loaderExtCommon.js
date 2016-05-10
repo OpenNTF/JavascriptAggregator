@@ -334,7 +334,7 @@ var params = {
 		var oFolded = {},
 		    oPrefixes = {},
 		    ids = [],
-		    hash = argNames[1] === 'moduleIds' && moduleIdMap["**idListHash**"];
+		    hash = moduleIdMap["**idListHash**"];
 
 		for (var i = 0, dep; !!(dep = opt_deps[i]); i++) {
 			// This list of invalid chars should be the same as the list used
@@ -346,14 +346,10 @@ var params = {
 				addFoldedModuleName(dep, i, oFolded, oPrefixes);
 			}
 		}
-		url +=(argNames[0] === 'modules' ? ((url.indexOf("?") === -1 ? "?" : "&") + "count=" + i) : "" ) + 
-		      (sizeofObject(oFolded) ? ("&"+argNames[0]+"="+encodeURIComponent(encodeModules(oFolded))):"");
+		return url + (argNames[0] === 'modules' ? ((url.indexOf("?") === -1 ? "?" : "&") + "count=" + i) : "" ) + 
+		             (sizeofObject(oFolded) ? ("&"+argNames[0]+"="+encodeURIComponent(encodeModules(oFolded))):"") + 
+		             (ids.length ? ("&"+argNames[1]+"=" + base64EncodeModuleIds(ids, base64Encoder, argNames[0] === 'modules' && hash)):"");
 		
-		if (ids.length || hash) {
-			// There are encoded module ids or we need to provide the  hash
-			url += "&"+argNames[1]+"=" + base64EncodeModuleIds(ids, base64Encoder, hash);
-		}
-		return url;
 	},
 
 	/**

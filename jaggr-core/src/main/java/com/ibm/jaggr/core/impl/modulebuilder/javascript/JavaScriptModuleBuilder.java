@@ -618,7 +618,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			expDepsBuilder = new ConcurrentListBuilder<String[]>();
 		}
 		// Add boot layer deps to module id list
-		boolean noAMD = false;
 		if (requestedModules != null) {
 			try {
 				if (!requestedModules.getDeps().isEmpty()) {
@@ -632,9 +631,6 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 					// in the exclude list on subsequent requests.
 					expDepsBuilder.add(requestedModules.getModules().toArray(new String[requestedModules.getModules().size()]));
 				}
-				noAMD = requestedModules.getDeps().isEmpty() && requestedModules.getPreloads().isEmpty() &&
-				        requestedModules.getModules().isEmpty();
-
 			} catch (IOException ignore) {
 				// Won't happen because the requestedModules object is already initialized
 				// but the language requires us to provide an exception handler.
@@ -666,9 +662,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			  .append(");"); //$NON-NLS-1$
 		}
 		// Finally, close the scoping function and invoke it.
-		if (!noAMD) {
-			sb.append("})();"); //$NON-NLS-1$
-		}
+		sb.append("})();"); //$NON-NLS-1$
 		result = sb.toString();
 		return result;
 	}

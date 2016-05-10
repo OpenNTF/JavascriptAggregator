@@ -931,15 +931,6 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
 		System.out.println(result);
 		Assert.assertEquals("require.combo.reg([[bootLayerDep][bootLayerPreload][module1, module2]]);})();", result);
-
-		// Make sure nothing is added if we are only requesting script modules
-		mockRequest.removeAttribute(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS);
-		reqNames = new MockRequestedModuleNames();
-		reqNames.setScripts(Arrays.asList("script1"));
-		mockRequest.setAttribute(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, reqNames);
-		result = builder.moduleNameIdEncodingEndLayer(mockRequest, modules);
-		Assert.assertEquals("", result);
-
 	}
 
 	@Test
