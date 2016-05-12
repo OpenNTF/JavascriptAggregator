@@ -241,7 +241,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 		RequestedModuleNames requestedModuleNames = setRequestedModuleNames(request);
 
 		// Get the feature list, if any
-		request.setAttribute(FEATUREMAP_REQATTRNAME, getFeaturesFromRequest(request));
+		request.setAttribute(FEATUREMAP_REQATTRNAME, getFeaturesFromRequest(request, requestedModuleNames.isVersionError()));
 
 		request.setAttribute(OPTIMIZATIONLEVEL_REQATTRNAME, getOptimizationLevelFromRequest(request));
 
@@ -384,17 +384,34 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 	 * @throws IOException
 	 */
 	protected Features getFeaturesFromRequest(HttpServletRequest request) throws IOException {
+		return getFeaturesFromRequest(request, false);
+	}
+
+	/**
+	 * Returns a map containing the has-condition/value pairs specified in the request
+	 *
+	 * @param request
+	 *            The http request object
+	 * @param versionError
+	 *            True if a version error was detected.
+	 * @return The map containing the has-condition/value pairs.
+	 * @throws IOException
+	 */
+	protected Features getFeaturesFromRequest(HttpServletRequest request, boolean versionError) throws IOException {
 		final String sourceMethod = "getFeaturesFromRequest"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(sourceClass, sourceMethod, new Object[]{request});
+			log.entering(sourceClass, sourceMethod, new Object[]{request, versionError});
 		}
 		StringBuffer sb = request.getRequestURL();
 		if (sb != null && request.getQueryString() != null) {
 			sb.append("?").append(request.getQueryString()); //$NON-NLS-1$
 		}
 		Features defaultFeatures = getAggregator().getConfig().getDefaultFeatures(sb != null ? sb.toString() : null);
-		Features features = getFeaturesFromRequestEncoded(request, defaultFeatures);
+		Features features = null;
+		if (!versionError) {		// don't trust feature encoding if version changed
+			features = getFeaturesFromRequestEncoded(request, defaultFeatures);
+		}
 		if (features == null) {
 			features = new Features(defaultFeatures);
 			String has  = getHasConditionsFromRequest(request);
