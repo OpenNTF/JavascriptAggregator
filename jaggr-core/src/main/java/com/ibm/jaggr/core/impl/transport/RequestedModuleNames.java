@@ -78,6 +78,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	private int count = 0;
 	// Instance of this object live only for the duration of a request, so ok to query trace logging flag in constructor
 	private final boolean isTraceLogging = log.isLoggable(Level.FINER);
+	private boolean versionError = false;
 
 	/**
 	 * @param request
@@ -131,7 +132,6 @@ class RequestedModuleNames implements IRequestedModuleNames {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			Object errModule = aggr.getConfig().getProperty(CONFIGPROP_IDLISTHASHERRMODULE, String.class);
 			String versionErrorHandler = (errModule instanceof String) ? errModule.toString() : null;
-			boolean versionError = false;
 
 			if (base64decodedIdList != null) {
 				// Strip off hash code so we can validate the id list hash
@@ -699,6 +699,10 @@ class RequestedModuleNames implements IRequestedModuleNames {
 	@Override
 	public String toString() {
 		return toString(false);
+	}
+
+	public boolean isVersionError() {
+		return versionError;
 	}
 
 	/**
