@@ -347,8 +347,9 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testUnfoldModules() throws Exception {
-		HttpServletRequest request = TestUtils.createMockRequest(null);
-		EasyMock.replay(request);
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator);
+		EasyMock.replay(request, mockAggregator);
 		RequestedModuleNames requestedNames = new RequestedModuleNames(request, null, null);
 		// basic folded paths  with no plugin prefixes
 		JSONObject obj = new JSONObject("{foo:{bar:'0', baz:{xxx:'2', yyy:'1'}}, dir:'3'}");
@@ -371,8 +372,9 @@ public class RequestedModuleNamesTest {
 
 	@Test
 	public void testDecodeMopdules() throws Exception {
-		HttpServletRequest request = TestUtils.createMockRequest(null);
-		EasyMock.replay(request);
+		IAggregator mockAggregator = TestUtils.createMockAggregator();
+		HttpServletRequest request = TestUtils.createMockRequest(mockAggregator);
+		EasyMock.replay(request, mockAggregator);
 		RequestedModuleNames requestedNames = new RequestedModuleNames(request, null, null);
 		JSONObject decoded = requestedNames.decodeModules("(foo!(bar!0*baz!(<|xxx>!2*yyy!1))*dir!3)");
 		Assert.assertEquals(new JSONObject("{foo:{bar:'0',baz:{'(!xxx)':'2',yyy:'1'}},dir:'3'}"), decoded);
@@ -482,6 +484,67 @@ public class RequestedModuleNamesTest {
 		requestedModules = new RequestedModuleNames(mockRequest, Arrays.asList(idList), hash);
 		Assert.assertEquals("scripts:[errModule]", requestedModules.toString());
 
+	}
+
+	@Test
+	public void testVersionErrorHandling() throws Exception {
+		Ref<IConfig> configRef = new Ref<IConfig>(null);
+		File tmpDir = new File(System.getProperty("user.dir"));
+		IAggregator mockAggregator = TestUtils.createMockAggregator(configRef, tmpDir);
+		Map<String, Object> requestAttributes = new HashMap<String, Object>();
+		Map<String, String[]> requestParameters = new HashMap<String, String[]>();
+		HttpServletRequest mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParameters, null, null);
+		EasyMock.replay(mockAggregator, mockRequest);
+		String encModules = "(foo!(bar!0*baz!(xxx!2*yyy!1))*dir!3)";
+		List<String> expected = Arrays.asList(new String[]{"foo/bar", "foo/baz/yyy", "foo/baz/xxx", "dir"});
+		requestParameters.put("modules", new String[]{encModules});
+		requestParameters.put("count", new String[]{"4"});
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{cacheBust:'12345',cacheBustErrorModule:'cbError'}"));
+		requestAttributes.put(AbstractHttpTransport.CACHEBUST_REQATTRNAME, "54321");
+		// verify error module as script is only module
+		RequestedModuleNames requestedNames = new RequestedModuleNames(mockRequest, null, null);
+		assertEquals(Arrays.asList("cbError"), requestedNames.getScripts());
+		assertTrue(requestedNames.getModules().isEmpty());
+
+		requestAttributes.put(AbstractHttpTransport.CACHEBUST_REQATTRNAME, "12345");
+		// cache busts match.  Requested modules are there and no error module
+		requestedNames = new RequestedModuleNames(mockRequest, null, null);
+		assertEquals(expected, requestedNames.getModules());
+		assertTrue(requestedNames.getScripts().isEmpty());
+
+		requestAttributes.put(AbstractHttpTransport.CACHEBUST_REQATTRNAME, "54321");
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{cacheBust:'12345'}"));
+		requestAttributes.put(AbstractHttpTransport.CACHEBUST_REQATTRNAME, "12345");
+		// cache busts don't match, but no handler provided.  Requested modules are there and no error module
+		requestedNames = new RequestedModuleNames(mockRequest, null, null);
+		assertEquals(expected, requestedNames.getModules());
+		assertTrue(requestedNames.getScripts().isEmpty());
+
+		// Test id list hash validation
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{idListHashErrorModule:'idError'}"));
+		byte[] hash1 = new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15},
+		       hash2 = new byte[]{0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,0};
+		String encodedHash = Base64.encodeBase64URLSafeString(ArrayUtils.addAll(hash1, new byte[]{0} /*size byte*/));
+		requestParameters.put(AbstractHttpTransport.REQUESTEDMODULEIDS_REQPARAM, new String[]{encodedHash});
+		// id list hash values match.  Requested modules are there and no error module
+		requestedNames = new RequestedModuleNames(mockRequest, Collections.<String>emptyList(), hash1);
+		assertEquals(expected, requestedNames.getModules());
+		assertTrue(requestedNames.getScripts().isEmpty());
+
+		// id list hash values don't match.  Requested module is error module
+		requestedNames = new RequestedModuleNames(mockRequest, Collections.<String>emptyList(), hash2);
+		assertEquals(Arrays.asList("idError"), requestedNames.getScripts());
+		assertTrue(requestedNames.getModules().isEmpty());
+
+		// id list hash values don't match and no error handler provided.  Exception thrown.
+		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
+		boolean exceptionThrown = false;
+		try {
+			requestedNames = new RequestedModuleNames(mockRequest, Collections.<String>emptyList(), hash2);
+		} catch (BadRequestException ex) {
+			exceptionThrown = true;
+		}
+		assertTrue(exceptionThrown);
 	}
 
 }
