@@ -126,11 +126,23 @@ public class LayerBuilderTest {
 							Assert.assertNull(arg);
 							return "]";
 						case BEGIN_MODULES:
-							Assert.assertNull(arg);
-							return "(";
+						{
+							StringBuffer sb = new StringBuffer("(`");
+							int i = 0;
+							for (String mid : (Set<String>)arg) {
+								sb.append(i++ == 0 ? "" : ",").append(mid);
+							}
+							return sb.append("`").toString();
+						}
 						case END_MODULES:
-							Assert.assertNull(arg);
-							return ")";
+						{
+							StringBuffer sb = new StringBuffer("'");
+							int i = 0;
+							for (String mid : (Set<String>)arg) {
+								sb.append(i++ == 0 ? "" : ",").append(mid);
+							}
+							return sb.append("')").toString();
+						}
 						case BEFORE_FIRST_MODULE:
 							return "\"<"+((ModuleInfo)arg).getModuleId()+">";
 						case BEFORE_SUBSEQUENT_MODULE:
@@ -187,7 +199,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
 		System.out.println(output);
-		Assert.assertEquals("[(\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[(`m1`\"<m1>foo<m1>\"'m1')]", output);
 
 		// Two modules specified with 'modules' query arg
 
@@ -198,7 +210,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
 		System.out.println(output);
-		Assert.assertEquals("[(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
+		Assert.assertEquals("[(`m1,m2`\"<m1>foo<m1>\",\"<m2>bar<m2>\"'m1,m2')]", output);
 
 		// two scripts and two modules
 		moduleList = new ModuleList(Arrays.asList(new ModuleListEntry[] {
@@ -210,7 +222,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
 		System.out.println(output);
-		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]", output);
+		Assert.assertEquals("[script1script2(`m1,m2`\"<m1>foo<m1>\",\"<m2>bar<m2>\"'m1,m2')]", output);
 
 		// Test developmentMode and showFilenames
 		IOptions options = mockAggregator.getOptions();
@@ -222,7 +234,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
 		Assert.assertEquals(
-				"/* " + Messages.LayerImpl_1 + " */\r\n[("+String.format(AggregatorLayerListener.PREAMBLEFMT, "file:/c:/m1.js") + "\"<m1>foo<m1>\")]",
+				"/* " + Messages.LayerImpl_1 + " */\r\n[(`m1`"+String.format(AggregatorLayerListener.PREAMBLEFMT, "file:/c:/m1.js") + "\"<m1>foo<m1>\"'m1')]",
 				output);
 		System.out.println(output);
 
@@ -232,7 +244,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
 		Assert.assertEquals(
-				"/* " + Messages.LayerImpl_2 + " */\r\n[("+String.format(AggregatorLayerListener.PREAMBLEFMT, "file:/c:/m1.js") + "\"<m1>foo<m1>\")]",
+				"/* " + Messages.LayerImpl_2 + " */\r\n[(`m1`"+String.format(AggregatorLayerListener.PREAMBLEFMT, "file:/c:/m1.js") + "\"<m1>foo<m1>\"'m1')]",
 				output);
 		System.out.println(output);
 
@@ -240,7 +252,7 @@ public class LayerBuilderTest {
 		options.setOption("debugMode", Boolean.FALSE);
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
-		Assert.assertEquals("[(\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[(`m1`\"<m1>foo<m1>\"'m1')]", output);
 		System.out.println(output);
 
 		// debugMode only (no filenames output)
@@ -249,7 +261,7 @@ public class LayerBuilderTest {
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
 		Assert.assertEquals(
-				"/* " + Messages.LayerImpl_2 + " */\r\n[(\"<m1>foo<m1>\")]",
+				"/* " + Messages.LayerImpl_2 + " */\r\n[(`m1`\"<m1>foo<m1>\"'m1')]",
 				output);
 		System.out.println(output);
 
@@ -283,7 +295,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m2"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
-		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](`m1`\"<m1>foo<m1>\"'m1')]", output);
 		System.out.println(output);
 
 		// one required module followed by one module
@@ -294,7 +306,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
-		Assert.assertEquals("[[m1]{'<m1>foo<m1>'}[m1](\"<m2>bar<m2>\")]", output);
+		Assert.assertEquals("[[m1]{'<m1>foo<m1>'}[m1](`m2`\"<m2>bar<m2>\"'m2')]", output);
 		System.out.println(output);
 
 		// one script, one module and one layer module
@@ -307,7 +319,7 @@ public class LayerBuilderTest {
 		moduleList.setRequiredModules(new HashSet<String>(Arrays.asList(new String[]{"m1"})));
 		builder = new TestLayerBuilder(mockRequest, keyGens, moduleList, content);
 		output = builder.build();
-		Assert.assertEquals("[script1[m1]{'<m1>foo<m1>'}[m1](\"<m2>bar<m2>\")]", output);
+		Assert.assertEquals("[script1[m1]{'<m1>foo<m1>'}[m1](`m2`\"<m2>bar<m2>\"'m2')]", output);
 		System.out.println(output);
 
 
@@ -363,7 +375,7 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[[]{'<mExtra>bar<mExtra>'}[](\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[[]{'<mExtra>bar<mExtra>'}[](`m1`\"<m1>foo<m1>\"'m1')]", output);
 		System.out.println(output);
 
 		// Make sure cache key generators are added to the keygen list
@@ -411,7 +423,7 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[[m2]{'<mExtra1>extra1<mExtra1>','<m2>bar<m2>','<mExtra2>extra2<mExtra2>'}[m2](\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[[m2]{'<mExtra1>extra1<mExtra1>','<m2>bar<m2>','<mExtra2>extra2<mExtra2>'}[m2](`m1`\"<m1>foo<m1>\"'m1')]", output);
 		System.out.println(output);
 
 		// Make sure NOADDMODULES request attribute disables extra module expansion
@@ -448,7 +460,7 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](\"<m1>foo<m1>\")]", output);
+		Assert.assertEquals("[[m2]{'<m2>bar<m2>'}[m2](`m1`\"<m1>foo<m1>\"'m1')]", output);
 		System.out.println(output);
 
 
@@ -488,7 +500,7 @@ public class LayerBuilderTest {
 			}
 		};
 		output = builder.build();
-		Assert.assertEquals("prologue[AMD(interlude file:/c:/m1.js\"<m1>foo<m1>\"interlude file:/c:/m2.js,\"<m2>bar<m2>\")epilogue]", output);
+		Assert.assertEquals("prologue[AMD(`m1,m2`interlude file:/c:/m1.js\"<m1>foo<m1>\"interlude file:/c:/m2.js,\"<m2>bar<m2>\"'m1,m2')epilogue]", output);
 		Assert.assertEquals(
 				(Set<String>)new HashSet<String>(Arrays.asList(new String[]{
 						"prologueFeature", "AMDFeature", "interludeFeature", "processReader", "epilogueFeature"
@@ -531,7 +543,7 @@ public class LayerBuilderTest {
 		System.out.println(output);
 		Assert.assertEquals(Arrays.asList("sourceMap1", "sourceMap2"), maps);
 		System.out.println(builder.getSourceMap());
-		Assert.assertEquals("[script1script2(\"<m1>foo<m1>\",\"<m2>bar<m2>\")]\n//# sourceMappingURL="+ILayer.SOURCEMAP_RESOURCE_PATHCOMP, output);
+		Assert.assertEquals("[script1script2(`m1,m2`\"<m1>foo<m1>\",\"<m2>bar<m2>\"'m1,m2')]\n//# sourceMappingURL="+ILayer.SOURCEMAP_RESOURCE_PATHCOMP, output);
 		Assert.assertEquals(
 				new JSONObject("{\"sourcesContent\":[\"script1\",\"script2\"],\"sources\":[\"s1\",\"s2\"]}"),
 				new JSONObject(builder.getSourceMap().substring(LayerBuilder.SOURCEMAP_XSSI_PREAMBLE.length())));

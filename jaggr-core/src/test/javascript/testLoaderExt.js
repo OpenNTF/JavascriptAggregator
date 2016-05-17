@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
+
 define(["dojo/_base/lang"], function(lang) {
 	function processUrl(url, deps) {
 		for (i = 0; i < urlProcessors.length; i++) {
@@ -20,6 +22,21 @@ define(["dojo/_base/lang"], function(lang) {
 		}
 		return url;
 	}
+
+	var testDefineIntercept;
+	(function() {	// make sure we are accessing global define
+		var originalDefine = this.define;
+		this.define = function() {
+			(testDefineIntercept||originalDefine).apply(this, arguments);
+		};
+	})();
+	
+	var config = {
+		has: function() { return false; },
+		cache: {}
+	};
+	config.has.cache = {};
+	
 	describe("test getLocalesUrlProcessor", function() {
 		beforeEach(function() {
 			require.combo.serverExpandLayers = 0;
@@ -47,5 +64,174 @@ define(["dojo/_base/lang"], function(lang) {
 			expect(processUrl("/server.com?count=1&locs=foo", [{name:"app/nls/foo", prefix:"combo/i18n"}])).not.toContain("en_US");
 			expect(processUrl("/server.com?locs=foo&count=1", [{name:"app/nls/foo", prefix:"combo/i18n"}])).not.toContain("en_US");
 		});
-	});	
+	});
+	
+	describe("test beginDefs/endDefs", function() {
+		// Tests that module defines are processed in request order
+		
+		var originalServerExpandedLayers;
+		var originalComboDisabled;
+		beforeEach(function() {
+			originalServerExpandedLayers = require.combo.serverExpandedLayers;
+			originalComboDisabled = require.combo.disabled;
+			require.combo.serverExpandLayers = true;
+			require.combo.disabled = false;
+			require(require.combo);
+			require.combo.resetExcludeList();
+		});
+		
+		afterEach(function() {
+			testDefineIntercept = null;
+			require.combo.serverExpandLayers = originalServerExpandedLayers;
+			require.combo.disabled = originalComboDisabled;
+			require(require.combo);
+		});
+		
+		it("should not intercept define calls 1", function() {
+			// single require/load.  Not define intercepts 
+			var loadMids;
+			require.combo.add("", "foo", "/foo.js", config);
+			require.combo.add("", "bar", "/bar.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids = mids;
+			}, config);
+			expect(loadMids).toEqual(['foo', 'bar']);
+			require.combo.beginDefs(loadMids);
+			var definedMids = [];
+			testDefineIntercept = function(mid) {
+				definedMids.push(mid);
+			};
+			define("foo");
+			define("bar");
+			require.combo.endDefs();
+			expect(definedMids).toEqual(loadMids);
+		});
+		it("should not intercept define calls 2", function() {
+			// module loads occur in require order
+			// i.e. require1 -> require2
+			var loadMids1, loadMids2;
+			require.combo.add("", "foo", "/foo.js", config);
+			require.combo.add("", "bar", "/bar.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids1 = mids;
+			}, config);
+			require.combo.add("", "fee", "/fee.js", config);
+			require.combo.add("", "fie", "/fie.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids2 = mids;
+			}, config);
+			expect(loadMids1).toEqual(['foo', 'bar']);
+			expect(loadMids2).toEqual(['fee', 'fie']);
+			require.combo.beginDefs(loadMids1);
+			var definedMids1 = [], definedMids2 = [];
+			testDefineIntercept = function(mid) {
+				definedMids1.push(mid);
+			};
+			define("foo");
+			define("bar");
+			require.combo.endDefs();
+			expect(definedMids1).toEqual(loadMids1);
+			
+			require.combo.beginDefs(loadMids2);
+			testDefineIntercept = function(mid) {
+				definedMids2.push(mid);
+			};
+			define("fee");
+			define("fie");
+			require.combo.endDefs();
+			expect(definedMids2).toEqual(loadMids2);
+			
+		});
+		it("should intercept define calls", function() {
+			// module loads do not occur in require order
+			// i.e. require2 -> require1
+			// defines are intercepted and played back in require order
+			var loadMids1, loadMids2;
+			require.combo.add("", "foo", "/foo.js", config);
+			require.combo.add("", "bar", "/bar.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids1 = mids;
+			}, config);
+			require.combo.add("", "fee", "/fee.js", config);
+			require.combo.add("", "fie", "/fie.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids2 = mids;
+			}, config);
+			expect(loadMids1).toEqual(['foo', 'bar']);
+			expect(loadMids2).toEqual(['fee', 'fie']);
+			require.combo.beginDefs(loadMids2);
+			var definedMids = [];
+			testDefineIntercept = function(mid) {
+				definedMids.push(mid);
+			};
+			define("fee");
+			define("fie");
+			require.combo.endDefs();
+			expect(definedMids).toEqual([]);
+			
+			require.combo.beginDefs(loadMids1);
+			testDefineIntercept = function(mid) {
+				definedMids.push(mid);
+			};
+			define("foo");
+			define("bar");
+			expect(definedMids).toEqual([]);
+			require.combo.endDefs();
+			expect(loadMids1).toEqual(["foo", "bar", "fee", "fie"]);
+			expect(definedMids).toEqual(loadMids1);
+			
+		});
+
+		it("should intercept some define calls but not others", function() {
+			// module loads partially occur in require order
+			// i.e. require3 -> require1 -> require2
+			// require1 modules are defined when require1 load occurs, but 
+			// require2 and require3 modules are defined together
+			// when require2 load occurs
+			var loadMids1, loadMids2, loadMids3;
+			require.combo.add("", "foo", "/foo.js", config);
+			require.combo.add("", "bar", "/bar.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids1 = mids;
+			}, config);
+			require.combo.add("", "fee", "/fee.js", config);
+			require.combo.add("", "fie", "/fie.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids2 = mids;
+			}, config);
+			require.combo.add("", "foe", "/foe.js", config);
+			require.combo.add("", "fum", "/fum.js", config);
+			require.combo.done(function(mids, url) {
+				loadMids3 = mids;
+			}, config);
+			expect(loadMids1).toEqual(['foo', 'bar']);
+			expect(loadMids2).toEqual(['fee', 'fie']);
+			expect(loadMids3).toEqual(['foe', 'fum']);
+			require.combo.beginDefs(loadMids3);
+			var definedMids = [];
+			testDefineIntercept = function(mid) {
+				definedMids.push(mid);
+			};
+			define("foe");
+			define("fum");
+			require.combo.endDefs();
+			expect(definedMids).toEqual([]);
+			
+			require.combo.beginDefs(loadMids1);
+			define("foo");
+			define("bar");
+			require.combo.endDefs();
+			expect(definedMids).toEqual(["foo", "bar"]);
+			expect(loadMids1).toEqual(definedMids);
+			definedMids = [];
+
+			require.combo.beginDefs(loadMids2);
+			define("fee");
+			define("fie");
+			require.combo.endDefs();
+			expect(definedMids).toEqual(["fee", "fie", "foe", "fum"]);
+			expect(loadMids2).toEqual(definedMids);
+
+		});
+	});
 });

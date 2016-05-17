@@ -55,6 +55,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -196,7 +197,11 @@ public class LayerBuilder {
 
 			// Now add the loader requested modules
 			if (sorted.getModules().size() > 0) {
-				addTransportContribution(LayerContributionType.BEGIN_MODULES, null);
+				Set<String> mids = new LinkedHashSet<String>();
+				for (IModule module : sorted.getModules().keySet()) {
+					mids.add(module.getModuleId());
+				}
+				addTransportContribution(LayerContributionType.BEGIN_MODULES, mids);
 				int i = 0;
 				for (Map.Entry<IModule, ModuleBuildReader> entry : sorted.getModules().entrySet()) {
 					writer.append(notifyLayerListeners(EventType.BEGIN_MODULE, request, entry.getKey()));
@@ -206,7 +211,7 @@ public class LayerBuilder {
 					processReader(entry.getKey(), entry.getValue());
 					addTransportContribution(LayerContributionType.AFTER_MODULE, info);
 				}
-				addTransportContribution(LayerContributionType.END_MODULES, null);
+				addTransportContribution(LayerContributionType.END_MODULES, mids);
 			}
 		}
  		writer.append(notifyLayerListeners(EventType.END_LAYER, request, null));
