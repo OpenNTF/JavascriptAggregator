@@ -75,7 +75,7 @@ var depmap = {},
     originalDefine,
     
     // Query arg from window.location
-    windowArgs = parseQueryArgs(window.location.href) || {},
+    windowArgs = parseQueryArgs(window.location.search) || {};
     
     // Query arg from script tag used to load this code
     scriptArgs = combo.scriptId && parseQueryArgs((document.getElementById(combo.scriptId)||{}).src) || {},
