@@ -20,7 +20,7 @@
 		<groupId>com.ibm.jaggr</groupId>
 		<artifactId>jaggr</artifactId>
 		<relativePath>../pom.xml</relativePath>
-		<version>1.3.7</version>
+		<version>1.3.8-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>jaggr-sample-dojo</artifactId>
