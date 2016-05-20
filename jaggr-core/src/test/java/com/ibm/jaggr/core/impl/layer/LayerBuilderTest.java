@@ -52,6 +52,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport.ModuleInfo;
 import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.RequestUtil;
 
+import com.google.common.base.Joiner;
 import com.google.debugging.sourcemap.SourceMapGeneratorV3;
 
 import org.apache.commons.lang3.mutable.MutableObject;
@@ -126,23 +127,13 @@ public class LayerBuilderTest {
 							Assert.assertNull(arg);
 							return "]";
 						case BEGIN_MODULES:
-						{
-							StringBuffer sb = new StringBuffer("(`");
-							int i = 0;
-							for (String mid : (Set<String>)arg) {
-								sb.append(i++ == 0 ? "" : ",").append(mid);
-							}
-							return sb.append("`").toString();
-						}
+							return new StringBuffer("(`")
+								.append(Joiner.on(",").join((Set<String>)arg))
+								.append("`").toString();
 						case END_MODULES:
-						{
-							StringBuffer sb = new StringBuffer("'");
-							int i = 0;
-							for (String mid : (Set<String>)arg) {
-								sb.append(i++ == 0 ? "" : ",").append(mid);
-							}
-							return sb.append("')").toString();
-						}
+							return new StringBuffer("'")
+								.append(Joiner.on(",").join((Set<String>)arg))
+						        .append("')").toString();
 						case BEFORE_FIRST_MODULE:
 							return "\"<"+((ModuleInfo)arg).getModuleId()+">";
 						case BEFORE_SUBSEQUENT_MODULE:

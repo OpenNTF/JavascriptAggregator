@@ -23,14 +23,6 @@ define(["dojo/_base/lang"], function(lang) {
 		return url;
 	}
 
-	var testDefineIntercept;
-	(function() {	// make sure we are accessing global define
-		var originalDefine = this.define;
-		this.define = function() {
-			(testDefineIntercept||originalDefine).apply(this, arguments);
-		};
-	})();
-	
 	var config = {
 		has: function() { return false; },
 		cache: {}
@@ -66,7 +58,7 @@ define(["dojo/_base/lang"], function(lang) {
 		});
 	});
 	
-	describe("test beginDefs/endDefs", function() {
+	describe("Modules are defined in request order", function() {
 		// Tests that module defines are processed in request order
 		
 		var originalServerExpandedLayers;
@@ -81,14 +73,13 @@ define(["dojo/_base/lang"], function(lang) {
 		});
 		
 		afterEach(function() {
-			testDefineIntercept = null;
 			require.combo.serverExpandLayers = originalServerExpandedLayers;
 			require.combo.disabled = originalComboDisabled;
 			require(require.combo);
 		});
 		
-		it("should not intercept define calls 1", function() {
-			// single require/load.  Not define intercepts 
+		it("should define modules in request order 1", function() {
+			// single require/load.
 			var loadMids;
 			require.combo.add("", "foo", "/foo.js", config);
 			require.combo.add("", "bar", "/bar.js", config);
@@ -96,17 +87,13 @@ define(["dojo/_base/lang"], function(lang) {
 				loadMids = mids;
 			}, config);
 			expect(loadMids).toEqual(['foo', 'bar']);
-			require.combo.beginDefs(loadMids);
-			var definedMids = [];
-			testDefineIntercept = function(mid) {
-				definedMids.push(mid);
-			};
-			define("foo");
-			define("bar");
-			require.combo.endDefs();
+			var definedMids;
+			require.combo.defineModules(loadMids, function() {
+				definedMids = loadMids;
+			});
 			expect(definedMids).toEqual(loadMids);
 		});
-		it("should not intercept define calls 2", function() {
+		it("should define modules in request order 2", function() {
 			// module loads occur in require order
 			// i.e. require1 -> require2
 			var loadMids1, loadMids2;
@@ -122,30 +109,23 @@ define(["dojo/_base/lang"], function(lang) {
 			}, config);
 			expect(loadMids1).toEqual(['foo', 'bar']);
 			expect(loadMids2).toEqual(['fee', 'fie']);
-			require.combo.beginDefs(loadMids1);
-			var definedMids1 = [], definedMids2 = [];
-			testDefineIntercept = function(mid) {
-				definedMids1.push(mid);
-			};
-			define("foo");
-			define("bar");
-			require.combo.endDefs();
-			expect(definedMids1).toEqual(loadMids1);
+			var definedMids = [];
+			require.combo.defineModules(loadMids1, function() {
+				definedMids = definedMids.concat(loadMids1);
+			});
+			expect(definedMids).toEqual(loadMids1);
 			
-			require.combo.beginDefs(loadMids2);
-			testDefineIntercept = function(mid) {
-				definedMids2.push(mid);
-			};
-			define("fee");
-			define("fie");
-			require.combo.endDefs();
-			expect(definedMids2).toEqual(loadMids2);
+			require.combo.defineModules(loadMids2, function() {
+				definedMids = definedMids.concat(loadMids2);
+			});
+			expect(loadMids1).toEqual(['foo', 'bar']);
+			expect(loadMids2).toEqual(['fee', 'fie']);
+			expect(definedMids).toEqual(['foo', 'bar', 'fee', 'fie']);
 			
 		});
-		it("should intercept define calls", function() {
+		it("should define modules in request order 3", function() {
 			// module loads do not occur in require order
 			// i.e. require2 -> require1
-			// defines are intercepted and played back in require order
 			var loadMids1, loadMids2;
 			require.combo.add("", "foo", "/foo.js", config);
 			require.combo.add("", "bar", "/bar.js", config);
@@ -159,35 +139,23 @@ define(["dojo/_base/lang"], function(lang) {
 			}, config);
 			expect(loadMids1).toEqual(['foo', 'bar']);
 			expect(loadMids2).toEqual(['fee', 'fie']);
-			require.combo.beginDefs(loadMids2);
 			var definedMids = [];
-			testDefineIntercept = function(mid) {
-				definedMids.push(mid);
-			};
-			define("fee");
-			define("fie");
-			require.combo.endDefs();
+			require.combo.defineModules(loadMids2, function() {
+				definedMids = definedMids.concat("fee", "fie");
+			});
 			expect(definedMids).toEqual([]);
 			
-			require.combo.beginDefs(loadMids1);
-			testDefineIntercept = function(mid) {
-				definedMids.push(mid);
-			};
-			define("foo");
-			define("bar");
-			expect(definedMids).toEqual([]);
-			require.combo.endDefs();
+			require.combo.defineModules(loadMids1, function() {
+				definedMids = definedMids.concat("foo", "bar");
+			});
 			expect(loadMids1).toEqual(["foo", "bar", "fee", "fie"]);
 			expect(definedMids).toEqual(loadMids1);
 			
 		});
 
-		it("should intercept some define calls but not others", function() {
+		it("should define modules in request order 4", function() {
 			// module loads partially occur in require order
 			// i.e. require3 -> require1 -> require2
-			// require1 modules are defined when require1 load occurs, but 
-			// require2 and require3 modules are defined together
-			// when require2 load occurs
 			var loadMids1, loadMids2, loadMids3;
 			require.combo.add("", "foo", "/foo.js", config);
 			require.combo.add("", "bar", "/bar.js", config);
@@ -207,28 +175,22 @@ define(["dojo/_base/lang"], function(lang) {
 			expect(loadMids1).toEqual(['foo', 'bar']);
 			expect(loadMids2).toEqual(['fee', 'fie']);
 			expect(loadMids3).toEqual(['foe', 'fum']);
-			require.combo.beginDefs(loadMids3);
 			var definedMids = [];
-			testDefineIntercept = function(mid) {
-				definedMids.push(mid);
-			};
-			define("foe");
-			define("fum");
-			require.combo.endDefs();
+			require.combo.defineModules(loadMids3, function() {
+				definedMids = definedMids.concat(['foe', "fum"]);
+			});
 			expect(definedMids).toEqual([]);
 			
-			require.combo.beginDefs(loadMids1);
-			define("foo");
-			define("bar");
-			require.combo.endDefs();
+			require.combo.defineModules(loadMids1, function() {
+				definedMids = definedMids.concat(['foo', 'bar']);
+			});
 			expect(definedMids).toEqual(["foo", "bar"]);
 			expect(loadMids1).toEqual(definedMids);
 			definedMids = [];
 
-			require.combo.beginDefs(loadMids2);
-			define("fee");
-			define("fie");
-			require.combo.endDefs();
+			require.combo.defineModules(loadMids2, function() {
+				definedMids = definedMids.concat('fee', 'fie');
+			});
 			expect(definedMids).toEqual(["fee", "fie", "foe", "fum"]);
 			expect(loadMids2).toEqual(definedMids);
 

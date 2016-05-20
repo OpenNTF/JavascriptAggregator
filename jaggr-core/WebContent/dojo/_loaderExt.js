@@ -56,15 +56,10 @@ var depmap = {},
     // cumulative exclude modules
     excludes = [],
     
-    // Property map of pending loads.  The keys are the stringified mid list that was provided
-    // to the combo.done() load callback.  The values are {mids:xxx, cb:xxx} objects where
+    // Array of pending loads.   The values are {mids:xxx, cb:xxx} objects where
     // mids is the same module list use to make the key and cb is a function that when called
     // will define the modules in the layer.
-    pendingLoads = {},
-    
-    // Array of keys for entries in pendingLoads, in load request order (i.e. the order in 
-    // which the corresponding combo.done() load callback was invoked).
-    pendingLoadKeys = [],
+    pendingLoads = [],
     
     // Query arg from window.location
     windowArgs = parseQueryArgs(window.location.search) || {},
@@ -186,9 +181,7 @@ combo.done = function(load, config, opt_deps) {
 					excludes = excludes.concat(deps);
 					// Create pending load entries for this load request so that we can manage the order in 
 					// which the modules are defined independent of the order in which the responses arrive.
-					var key = mids.join(',');
-					pendingLoadKeys.push(key);
-					pendingLoads[key] = {mids:mids};
+					pendingLoads.push({mids:mids});
 				}
 				if (deps === opt_deps) {
 					// we have not split the module list to trim url size, so we can clear this safely.
@@ -199,7 +192,7 @@ combo.done = function(load, config, opt_deps) {
 				load(mids, url);
 			}
 	    };
-	    
+
 	// Get base64 decoder
 	try {
 		base64 = require('dojox/encoding/base64');
@@ -325,41 +318,79 @@ combo.isDefined = function(name) {
 };
 
 /*
- * Called by JAGGR responses before modules in the response will be defined.  <code>modules</code>
- * is the array of module ids that will be defined before combo.endDefs is called, in define order.
+ * Called by JAGGR responses to define modules when doing server expanded layers.  <code>modules</code>
+ * is the array of module ids to be defined and <code>callback</code> is the function that, when called,
+ * will define the modules in the order specified by <code>modules</code>.
  * 
- * The goal here is to ensure that modules are defined in request order.  This is necessary in order 
- * to avoid the situation where additional, loader generated requests are generated to load unresolved
- * module dependencies that can result from out of order responses.  The order dependency comes from the
- * cumulative exclude list used to exclude previously requested modules.
+ * This callback approach to defining modules is used so as to ensure that modules are defined in 
+ * request order, even when the responses arrive out-of-order.  This avoids the situation where additional 
+ * loader generated requests are sent to load unresolved module dependencies that can result from out of
+ * order responses.  The order dependency comes from the cumulative exclude list used to exclude previously 
+ * requested modules.
  */
-combo.moduleDefines = function(modules, callback) {
-	var key = modules.join(',');
-	var index = pendingLoadKeys.indexOf(key);
-	if (index == -1) {
-		// Can happen when JAGGR returns something different than what was asked for,
-		// for example, a version error module. 
-		return;
-	}
-	pendingLoads[key].cb = callback;
-	if (index === 0) {
-		var callbacks = [callback];
-		var mids = pendingLoads[key].mids;
-		delete pendingLoads[key];
-		pendingLoadKeys.shift();
-		while (pendingLoadKeys.length) {
-			var pendingLoad = pendingLoads[pendingLoadKeys[0]];
-			if (!pendingLoads.cb) {
-				break;
-			}
-			Array.prototype.push.apply(mids, pendingLoad.mids);	// add to existing array
-			callbacks.push(pendingLoad.cb);
-			delete pendingLoads[pendingLoadKeys[0]];
-			pendingLoadKeys.shift();
+combo.defineModules = function(modules, callback) {
+  
+	// Returns true if ary1 and ary2 contain the same elements
+	var arraysEqual = function(ary1, ary2) {
+		if (ary1.length !== ary2.length) return false;
+		for (var i = 0; i < ary1.length; i++) {
+			if (ary1[i] !== ary2[i]) return false;
 		}
-		for (var i = 0; i < callbacks.length; i++) {
+		return true;
+	};
+
+	var index = -1, pendingLoad;
+	
+	// Find the index of the pending load for the specified modules
+	for (var i = 0; i < pendingLoads.length; i++) {
+		if (arraysEqual(pendingLoads[i].mids, modules)) {
+			index = i;
+			break;
+		}
+	}
+	if (index === -1) {
+		// Shouldn't ever happen.  Log an error and invoke the callback.
+		var msg = "Unexpected aggregator respone identifer: " + modules.join(',') + "\r\n";
+		msg += "Expected one of:\r\n";
+		for (i = 0; i < pendingLoads.length; i++) {
+			msg += "\t" + pendingLoads[i].mids.join(',') + "\r\n";
+		}
+		console.error(msg);
+		callback();
+		
+	} else if (index === 0) {
+		// This response is for the request at the head of the queue, so invoke the define
+		// modules callback for this response, plus all adjacent responses in the queue that
+		// have already completed.
+		var callbacks = [callback];     // array of define modules callbacks to run
+		var mids = pendingLoads[0].mids;
+		pendingLoads.shift();           // Remove head from list
+		while (pendingLoads.length) {  // gather up adjacent completed responses
+			pendingLoad = pendingLoads[0];
+			if (!pendingLoad.cb) {      // if the response is not completed...
+				break;                  //   then we're done gathering
+			}
+			// Add the module ids for the queued response to the mids array for the response that
+			// just completed.  Note that we depend on the implementation detail in the Dojo
+			// loader that allows us to modify the array we passed to the combo.done() load 
+			// callback after the fact and the loader will use the updated array to identify
+			// the modules that are about to be defined.
+			Array.prototype.push.apply(mids, pendingLoad.mids);
+			// Add the define modules callback for the queued response to the list
+			callbacks.push(pendingLoad.cb);
+			pendingLoads.shift(); // remove head from the queue
+		}
+		// Now define the modules
+		for (i = 0; i < callbacks.length; i++) {
 			callbacks[i]();
 		}
+	} else {
+		// The current response is not at the head of the queue.  Save the define modules callback 
+		// to the corresponding entry in the queue for later so that we can define the modules
+		// in request order.
+		pendingLoad = pendingLoads[index];
+		pendingLoad.cb = callback;
+		pendingLoad.mids = pendingLoad.mids.splice(0, pendingLoad.mids.length);
 	}
 };
 
