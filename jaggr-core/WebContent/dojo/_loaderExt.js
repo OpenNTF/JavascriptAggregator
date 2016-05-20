@@ -56,37 +56,21 @@ var depmap = {},
     // cumulative exclude modules
     excludes = [],
     
-    // The current key into the pendingLoads map.  Non-null when defining modules between
-    // combo.beginDefs() and combo.endDefs() invocations.
-    currentLoadKey = null,
-    
     // Property map of pending loads.  The keys are the stringified mid list that was provided
-    // to the combo.done() load callback.  The values are {mids:xxx, defs:xxx} objects where
-    // mids is the same module list use to make the key and defs is the array of define() 
-    // function call arguments.  There is a one-to-one correspondence between the elements
-    // in mids and the elements in defs.
+    // to the combo.done() load callback.  The values are {mids:xxx, cb:xxx} objects where
+    // mids is the same module list use to make the key and cb is a function that when called
+    // will define the modules in the layer.
     pendingLoads = {},
     
     // Array of keys for entries in pendingLoads, in load request order (i.e. the order in 
     // which the corresponding combo.done() load callback was invoked).
     pendingLoadKeys = [],
     
-    // The original global define() function before we re-mapped it to our comboDefine function.
-    originalDefine,
-    
     // Query arg from window.location
-    windowArgs = parseQueryArgs(window.location.search) || {};
+    windowArgs = parseQueryArgs(window.location.search) || {},
     
     // Query arg from script tag used to load this code
-    scriptArgs = combo.scriptId && parseQueryArgs((document.getElementById(combo.scriptId)||{}).src) || {},
-    
-    comboDefine = function() {
-    	if (currentLoadKey) {
-    		pendingLoads[currentLoadKey].defArgs.push(arguments);
-    	} else {
-    		originalDefine.apply(this, arguments);
-    	}
-    };
+    scriptArgs = combo.scriptId && parseQueryArgs((document.getElementById(combo.scriptId)||{}).src) || {};
     
 
 // Copy config params from the combo config property
@@ -204,7 +188,7 @@ combo.done = function(load, config, opt_deps) {
 					// which the modules are defined independent of the order in which the responses arrive.
 					var key = mids.join(',');
 					pendingLoadKeys.push(key);
-					pendingLoads[key] = {mids:mids, defs:null};
+					pendingLoads[key] = {mids:mids};
 				}
 				if (deps === opt_deps) {
 					// we have not split the module list to trim url size, so we can clear this safely.
@@ -216,14 +200,6 @@ combo.done = function(load, config, opt_deps) {
 			}
 	    };
 	    
-	if (!originalDefine) {
-		// Replace the global define() function with our own and save the original
-		(function() {
-			originalDefine = this.define;
-			this.define = comboDefine;
-		})();
-	}
-	
 	// Get base64 decoder
 	try {
 		base64 = require('dojox/encoding/base64');
@@ -334,7 +310,7 @@ combo.addBootLayerDeps = function(deps) {
 combo.resetExcludeList = function() {
 	// used for unit testing
 	excludes = [];
-}
+};
 
 /*
  * Returns true if the specified module is defined, false otherwise
@@ -357,10 +333,7 @@ combo.isDefined = function(name) {
  * module dependencies that can result from out of order responses.  The order dependency comes from the
  * cumulative exclude list used to exclude previously requested modules.
  */
-combo.beginDefs = function(modules) {
-	if (!!currentLoadKey) {
-		throw new Error("Invalid state in combo.beginDefs");
-	}
+combo.moduleDefines = function(modules, callback) {
 	var key = modules.join(',');
 	var index = pendingLoadKeys.indexOf(key);
 	if (index == -1) {
@@ -368,61 +341,24 @@ combo.beginDefs = function(modules) {
 		// for example, a version error module. 
 		return;
 	}
-	if (index === 0 && (pendingLoadKeys.length === 1 || 
-			pendingLoadKeys.every(function(pendingLoadKey) {
-				return !pendingLoads[pendingLoadKey].defArgs;
-			})
-	)) {
-		// There are no out-of-order pending requests, so just clean up the entries for this response
-		// and return.
+	pendingLoads[key].cb = callback;
+	if (index === 0) {
+		var callbacks = [callback];
+		var mids = pendingLoads[key].mids;
 		delete pendingLoads[key];
 		pendingLoadKeys.shift();
-		return;
-	}
-	// Set the pending load key and defs array for this request.  define() function calls will be 
-	// intercepted and the function arguments queued to the defs array for later play back.
-	currentLoadKey = key;
-	pendingLoads[key].defArgs = [];
-};
-
-/*
- * Called by JAGGR responses after the modules in the response have been defined (i.e. our define()
- * function intercept has been called).  If the current response is for the pending load at the 
- * head of the queue, then gather up all the adjacent completed responses and play back the define
- * function invocations for the combined modules to the original define function.
- * 
- * Note: this code depends on an implementation detail of the dojo loader which allows us to modify
- * the contents of the mid list that we provided to the combo.done() load callback after its been 
- * called but before the modules are defined.
- */
-combo.endDefs = function() {
-	if (currentLoadKey) {
-		var key = currentLoadKey;
-		currentLoadKey = null;		// clear the current key
-		var index = pendingLoadKeys.indexOf(key);
-		if (index === 0) {
-			// Head request has completed.  Gather up adjacent requests that have completed into 
-			// corresponding arrays.  Note that for the mids array, we are modifying the array 
-			// that was originally passed to the loader via the combo.done() load callback.  We 
-			// need to do this because the loader expects the modules to be defined in the order
-			// that they are listed in the array.
-			var mids = pendingLoads[key].mids;
-			var defArgs = pendingLoads[key].defArgs;
-			pendingLoadKeys.shift();
-			delete pendingLoads[key];
-			while (pendingLoadKeys.length && pendingLoads[pendingLoadKeys[0]].defArgs) {
-				var pendingLoad = pendingLoads[pendingLoadKeys[0]];
-				Array.prototype.push.apply(mids, pendingLoad.mids);	// add to existing array
-				defArgs = defArgs.concat(pendingLoad.defArgs);
-				// remove items from queues
-				delete pendingLoads[pendingLoadKeys[0]];
-				pendingLoadKeys.shift();
+		while (pendingLoadKeys.length) {
+			var pendingLoad = pendingLoads[pendingLoadKeys[0]];
+			if (!pendingLoads.cb) {
+				break;
 			}
-			// Now invoke the original define function using the saved arguments for the 
-			// combined modules.
-			defArgs.forEach(function(args) {
-				originalDefine.apply(this, args);
-			});
+			Array.prototype.push.apply(mids, pendingLoad.mids);	// add to existing array
+			callbacks.push(pendingLoad.cb);
+			delete pendingLoads[pendingLoadKeys[0]];
+			pendingLoadKeys.shift();
+		}
+		for (var i = 0; i < callbacks.length; i++) {
+			callbacks[i]();
 		}
 	}
 };

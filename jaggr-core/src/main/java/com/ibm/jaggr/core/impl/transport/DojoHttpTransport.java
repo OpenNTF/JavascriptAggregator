@@ -345,12 +345,12 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 				request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM) != null) {  // it's a loader generated request
 			@SuppressWarnings("unchecked")
 			Set<String> modules = (Set<String>)arg;
-			sb.append("require.combo.beginDefs && require.combo.beginDefs(["); //$NON-NLS-1$
+			sb.append("require.combo.moduleDefines(["); //$NON-NLS-1$
 			int i = 0;
 			for (String module : modules) {
 				sb.append(i++ > 0 ? "," : "").append("'").append(module).append("'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
 			}
-			sb.append("]);\r\n"); //$NON-NLS-1$
+			sb.append("], function(){\r\n"); //$NON-NLS-1$
 		}
 		return sb.toString();
 	}
@@ -359,7 +359,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		String result = ""; //$NON-NLS-1$
 		if (RequestUtil.isServerExpandedLayers(request) &&
 				request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM) != null) { // it's a loader generated request
-			result = "require.combo.endDefs && require.combo.endDefs();\r\n"; //$NON-NLS-1$
+			result = "});\r\n"; //$NON-NLS-1$
 		}
 		return result;
 	}
