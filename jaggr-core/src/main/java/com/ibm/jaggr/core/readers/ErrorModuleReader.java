@@ -16,8 +16,7 @@
 
 package com.ibm.jaggr.core.readers;
 
-import com.ibm.jaggr.core.transport.IHttpTransport;
-import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.RequestUtil;
 
 import java.io.StringReader;
 
@@ -35,7 +34,7 @@ public class ErrorModuleReader extends AggregationReader {
 	}
 
 	public ErrorModuleReader(ConsoleMethod method, String msg, String mid, HttpServletRequest request) {
-		super(String.format(getFormat(request), method.name(), mid),
+		super(String.format(getFormat(mid, request), method.name(), mid),
 				new StringReader(msg),
 				epilogue);
 	}
@@ -44,8 +43,8 @@ public class ErrorModuleReader extends AggregationReader {
 		this(ConsoleMethod.error, msg, mid, request);
 	}
 
-	private static String getFormat(HttpServletRequest request) {
-		Boolean exportMid = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
+	private static String getFormat(String mid, HttpServletRequest request) {
+		Boolean exportMid = RequestUtil.isExportModuleName(mid, request);
 		return exportMid ? prologueFmt : prologueFmtAnon;
 	}
 }

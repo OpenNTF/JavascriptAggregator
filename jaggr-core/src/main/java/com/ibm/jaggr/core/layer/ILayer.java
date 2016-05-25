@@ -18,6 +18,7 @@ package com.ibm.jaggr.core.layer;
 
 import com.ibm.jaggr.core.cache.ICache;
 import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.ModuleSpecifier;
 import com.ibm.jaggr.core.transport.IHttpTransport;
 
 import java.io.IOException;
@@ -69,6 +70,14 @@ public interface ILayer extends Serializable {
 	 * such as module builders.
 	 */
 	public static final String DEPENDENT_FEATURES = ILayer.class.getName() + ".dependentFeatures"; //$NON-NLS-1$
+
+	/**
+	 * Map of module id to {@link ModuleSpecifier} objects. This is provided so that module builders
+	 * can discover the build source of the module. The list does not contain
+	 * {@link ModuleSpecifier#BUILD_ADDED} entries. The keys are the module id returned by
+	 * {@link IModule#getModuleId()}.
+	 */
+	public static final String BUILD_SOURCES_REQATTRNAME = ILayer.class.getName() + ".buildSources"; //$NON-NLS-1$
 
 	/**
 	 * Path component for source map resources.  This path component follows the aggregator

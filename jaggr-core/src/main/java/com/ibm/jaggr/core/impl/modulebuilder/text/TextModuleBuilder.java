@@ -23,9 +23,7 @@ import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.readers.JavaScriptEscapingReader;
 import com.ibm.jaggr.core.resource.IResource;
-import com.ibm.jaggr.core.transport.IHttpTransport;
 import com.ibm.jaggr.core.util.CopyUtil;
-import com.ibm.jaggr.core.util.TypeUtil;
 
 import com.google.common.collect.ImmutableList;
 
@@ -50,11 +48,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 		private final String eyecatcher = "txt"; //$NON-NLS-1$
 		@Override
 		public String generateKey(HttpServletRequest request) {
-			boolean noTextAdorn = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
-			boolean exportNames = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
-			StringBuffer sb = new StringBuffer(eyecatcher)
-			.append(noTextAdorn ? ":1" : ":0") //$NON-NLS-1$ //$NON-NLS-2$
-			.append(noTextAdorn ? ":0" : (exportNames ? ":1" : ":0")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+			StringBuffer sb = new StringBuffer(eyecatcher).append(":0"); //$NON-NLS-1$
 			return sb.toString();
 		}
 		@Override
@@ -75,15 +69,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 	@Override
 	public ModuleBuild build(String mid, IResource resource, HttpServletRequest request, List<ICacheKeyGenerator> keyGens) throws Exception {
 		StringBuffer sb = new StringBuffer();
-		Boolean exportMid = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME));
-		Boolean noTextAdorn = TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
-		if (noTextAdorn) {
-			sb.append("'"); //$NON-NLS-1$
-		} else if (exportMid != null && exportMid.booleanValue()) {
-			sb.append("define(\"").append(mid).append("\",'"); //$NON-NLS-1$ //$NON-NLS-2$
-		} else {
-			sb.append("define('"); //$NON-NLS-1$
-		}
+		sb.append("'"); //$NON-NLS-1$
 		StringWriter writer = new StringWriter();
 		MutableObject<List<ICacheKeyGenerator>> keyGensRef = new MutableObject<List<ICacheKeyGenerator>>(keyGens);
 		CopyUtil.copy(
@@ -93,7 +79,7 @@ public class TextModuleBuilder implements IModuleBuilder {
 						writer
 				);
 		sb.append(writer.toString());
-		sb.append(noTextAdorn ? "'" : "');"); //$NON-NLS-1$ //$NON-NLS-2$
+		sb.append("'"); //$NON-NLS-1$
 		return new ModuleBuild(sb.toString(), keyGensRef.getValue(), null);
 	}
 
@@ -113,6 +99,6 @@ public class TextModuleBuilder implements IModuleBuilder {
 
 	@Override
 	public boolean isScript(HttpServletRequest request) {
-		return  !TypeUtil.asBoolean(request.getAttribute(IHttpTransport.NOTEXTADORN_REQATTRNAME));
+		return  false;
 	}
 }
