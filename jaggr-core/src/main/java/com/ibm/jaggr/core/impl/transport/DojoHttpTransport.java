@@ -159,11 +159,15 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 			return beforeLayerModule(request, (ModuleInfo)arg);
 		case BEFORE_SUBSEQUENT_LAYER_MODULE:
 			return "," + beforeLayerModule(request, (ModuleInfo)arg); //$NON-NLS-1$
+		case BEGIN_MODULES:
+			return beginModules(request, arg);
 		case BEFORE_FIRST_MODULE:
 		case BEFORE_SUBSEQUENT_MODULE:
 			return beforeModule(request, (ModuleInfo)arg);
 		case AFTER_MODULE:
 			return afterModule(request, (ModuleInfo)arg);
+		case END_MODULES:
+			return endModules(request, arg);
 		case AFTER_LAYER_MODULE:
 			return afterLayerModule(request, (ModuleInfo)arg);
 		case END_LAYER_MODULES:
@@ -315,6 +319,87 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 		// Save module list in request attribute for processing during {@code END_RESPONSE}
 		request.setAttribute(ADD_REQUIRE_DEPS_REQATTRNAME, arg);
 		return "}});require({cache:{}});"; //$NON-NLS-1$
+	}
+
+
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEGIN_MODULES}
+	 * layer listener event.
+	 * <p>
+	 * When doing server expanded layers, the loader extension JavaScript needs to be in control of
+	 * determining when explicitly requested modules are defined so that it can ensure the modules are
+	 * defined in request order.  This prevents the loader from issuing unnecessary, additional, requests
+	 * for unresolved modules when responses arrive out-of-order.
+	 * <p>
+	 * The markup emitted by this method, together with the {@link #endModules(HttpServletRequest, Object)}
+	 * method, wraps the module definitions within the <code>require.combo.defineModules</code> function
+	 * call as follows:
+	 * <pre>
+	 * require.combo.defineModules(['mid1', 'mid2', ...], function() {
+	 *    define([...], function(...) {
+	 *    	...
+	 *    });
+	 *    define([...], function(...) {
+	 *    	...
+	 *    });
+	 *    ...
+	 * });
+	 * </pre>
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param arg
+	 *            the set of module names.  The iteration order of the set is guaranteed to be
+	 *            the same as the order of the subsequent
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_FIRST_MODULE},
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_SUBSEQUENT_MODULE},
+	 *            and
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#AFTER_MODULE}
+	 *            events.
+	 * @return the layer contribution
+	 */
+	protected String beginModules(HttpServletRequest request, Object arg) {
+		StringBuffer sb = new StringBuffer();
+		if (RequestUtil.isServerExpandedLayers(request) &&
+				request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM) != null) {  // it's a loader generated request
+			@SuppressWarnings("unchecked")
+			Set<String> modules = (Set<String>)arg;
+			sb.append("require.combo.defineModules(["); //$NON-NLS-1$
+			int i = 0;
+			for (String module : modules) {
+				sb.append(i++ > 0 ? "," : "").append("'").append(module).append("'"); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$
+			}
+			sb.append("], function(){\r\n"); //$NON-NLS-1$
+		}
+		return sb.toString();
+	}
+
+	/**
+	 * Handles the
+	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#END_MODULES}
+	 * layer listener event.
+	 * @see {@link #beginModules(HttpServletRequest, Object)}
+	 *
+	 * @param request
+	 *            the http request object
+	 * @param arg
+	 *            the set of module names.  The iteration order of the set is guaranteed to be
+	 *            the same as the order of the preceding
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_FIRST_MODULE},
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#BEFORE_SUBSEQUENT_MODULE},
+	 *            and
+	 *            {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#AFTER_MODULE}
+	 *            events.
+	 * @return the layer contribution
+	 */
+	protected String endModules(HttpServletRequest request, Object arg) {
+		String result = ""; //$NON-NLS-1$
+		if (RequestUtil.isServerExpandedLayers(request) &&
+				request.getParameter(REQUESTEDMODULESCOUNT_REQPARAM) != null) { // it's a loader generated request
+			result = "});\r\n"; //$NON-NLS-1$
+		}
+		return result;
 	}
 
 	/**

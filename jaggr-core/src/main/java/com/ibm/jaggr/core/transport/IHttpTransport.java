@@ -398,6 +398,14 @@ public interface IHttpTransport extends IExtensionInitializer {
 	 *            <li>{@link LayerContributionType#BEGIN_LAYER_MODULES}</li>
 	 *            <li>{@link LayerContributionType#END_LAYER_MODULES}</li>
 	 *            </ul>
+	 *            For the following values of {@code type}, {@code arg} specifies
+	 *            a {@code Set<String>} of modules that were explicitly requested
+	 *            by the loader (i.e. the modules specified in the {@code modules}
+	 *            or {@code moduleIds} request parameter.
+	 *            <ul>
+	 *            <li>{@link LayerContributionType#BEGIN_MODULES}</li>
+	 *            <li>{@link LayerContributionType#END_MODULES}</li>
+	 *            </ul>
 	 *            For all other values of {@code type}, {@code mid} is null.
 	 *
 	 * @return A string value that is to be added to the layer in the location
