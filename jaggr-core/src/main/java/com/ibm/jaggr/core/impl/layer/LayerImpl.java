@@ -57,7 +57,6 @@ import java.io.ObjectInputStream;
 import java.io.StringReader;
 import java.net.URI;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -947,9 +946,9 @@ public class LayerImpl implements ILayer {
 								name = name.substring(idx+1);
 							}
 						}
-						Collection<String> prefixes = info.getHasPluginPrefixes();
-						if (prefixes == null ||		// condition is TRUE
-								RequestUtil.isIncludeUndefinedFeatureDeps(request) && !prefixes.isEmpty()) {
+						Boolean includeStatus = info.getIncludeStatus();
+						if (includeStatus == Boolean.TRUE ||		// condition is TRUE
+								RequestUtil.isIncludeUndefinedFeatureDeps(request) && includeStatus == null) {
 							IModule module = newModule(request, name);
 							if (!explicit.containsKey(name) && aggr.getResourceFactory(new MutableObject<URI>(module.getURI())) == null) {
 								// Module is server-expanded and it's not a server resource type that we

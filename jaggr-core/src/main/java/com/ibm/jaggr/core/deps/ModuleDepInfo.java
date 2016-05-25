@@ -201,6 +201,24 @@ public class ModuleDepInfo implements Serializable {
 	}
 
 	/**
+	 * Returns a Boolean value indicating the value of the formula expression, or null if
+	 * the formula expression contains undefined features.  The formula is NOT simplified
+	 * prior to returning the result for performance reasons, so some expressions that may
+	 * simplify to TRUE can return a null value.
+	 *
+	 * @return the value of the formula or null.
+	 */
+	public Boolean getIncludeStatus() {
+		if (formula.isTrue()) {
+			return Boolean.TRUE;
+		} else if (formula.isFalse()) {
+			return Boolean.FALSE;
+		}
+		return null;
+	}
+
+
+	/**
 	 * Returns true if the specified term is logically included by the formula
 	 * for this object.
 	 * <p>
