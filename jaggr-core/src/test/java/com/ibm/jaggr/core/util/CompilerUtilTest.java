@@ -23,6 +23,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 import com.google.common.io.Files;
 import com.google.javascript.jscomp.CheckLevel;
 import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.DiagnosticGroups;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
@@ -187,6 +188,18 @@ public class CompilerUtilTest {
 		Assert.assertEquals(0,  numFailed);
 		Assert.assertTrue(options.checkSuspiciousCode);
 
+		// Test setting warning level with named DiagnosticGroup
+		config = "{compilerOptions:{warningLevel:['UNDEFINED_VARIABLES', 'WARNING']}}";
+		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
+		CompilerUtil.compilerOptionsMapFromConfig(cfg, map);
+		Assert.assertEquals(0,  numFailed);
+		mockOptions = EasyMock.createMock(CompilerOptions.class);
+		mockOptions.setWarningLevel(EasyMock.eq(DiagnosticGroups.UNDEFINED_VARIABLES), EasyMock.eq(CheckLevel.WARNING));
+		EasyMock.expectLastCall().once();
+		EasyMock.replay(mockOptions);
+		numFailed = CompilerUtil.applyCompilerOptionsFromMap(mockOptions, map);
+		Assert.assertEquals(0, numFailed);
+		EasyMock.verify(mockOptions);
 
 	}
 }
