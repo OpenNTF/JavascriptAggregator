@@ -21,12 +21,15 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableMap;
 import com.google.javascript.jscomp.CompilerOptions;
 import com.google.javascript.jscomp.CompilerOptions.LanguageMode;
+import com.google.javascript.jscomp.DiagnosticGroup;
+import com.google.javascript.jscomp.DiagnosticGroups;
 
 import org.apache.commons.lang3.mutable.MutableObject;
 
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -432,6 +435,10 @@ public class CompilerUtil {
 				if (enumValue != null) {
 					result = enumValue;
 				}
+			} else if (declaredType.isAssignableFrom(DiagnosticGroup.class) && argType.equals(String.class)) {
+				// If the arg value matches a statically defined DiagnosticGroup in DiagnosticGroups, then
+				// return that.
+				result = findNamedDiagnosticGroup(value.toString());
 			}
 		} else {
 			result = value;
@@ -482,5 +489,45 @@ public class CompilerUtil {
 		sb.append(".").append(setterMethodName).append("("); //$NON-NLS-1$ //$NON-NLS-2$
 		Joiner.on(",").appendTo(sb, args).append(")"); //$NON-NLS-1$ //$NON-NLS-2$
 		return sb.toString();
+	}
+
+	/**
+	 * Tries to match the provided name with a named Diagnostic group defined in the
+	 * DiagnosticGroups class.
+	 *
+	 * @param name
+	 *            the name to match
+	 * @return The matching named DiagnosticGroup static instance or null
+	 */
+	private static DiagnosticGroup findNamedDiagnosticGroup(String name) {
+		final String sourceMethod = "findNamedDiagnosticGroup"; //$NON-NLS-1$
+		final boolean isTraceLogging = log.isLoggable(Level.FINER);
+		if (isTraceLogging) {
+			log.entering(sourceClass, sourceMethod, new Object[]{name});
+		}
+		DiagnosticGroup result = null;
+		Class<DiagnosticGroups> clazz = DiagnosticGroups.class;
+		// iterate through the public static fields looking for a match
+		Field[] fields = clazz.getDeclaredFields();
+		for (Field field : fields) {
+			int modifier = field.getModifiers();
+			if (field.getType().isAssignableFrom(DiagnosticGroup.class) &&
+					(modifier & Modifier.STATIC) != 0 && (modifier & Modifier.PUBLIC) != 0 &&
+					field.getName().equals(name)) {
+				try {
+					result = (DiagnosticGroup)field.get(null);
+					break;
+				} catch (Exception e) {
+					// Shouldn't ever happen with public static fields
+					if (log.isLoggable(Level.WARNING)) {
+						log.logp(Level.WARNING, sourceClass, sourceMethod, e.getMessage(), e);
+					}
+				}
+			}
+		}
+		if (isTraceLogging) {
+			log.exiting(sourceMethod, sourceMethod, result);
+		}
+		return result;
 	}
 }
