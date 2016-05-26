@@ -352,7 +352,21 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Set<String> hasFiltDiscoveredHasConditionals = new HashSet<String>();
 		String output = null;
 
-		Compiler compiler = new Compiler();
+		Compiler compiler = new Compiler() {
+			@Override
+			public void report(JSError error) {
+				/*
+				 * Silence Non-JSDoc parser errors.  These are mis-reported by the compiler as a JavaScript
+				 * parser error and are not filterable by the NON_STANDARD_JSDOC DiagnosticGroup.
+				 */
+				if ("JSC_PARSE_ERROR".equals(error.getType().key)) { //$NON-NLS-1$
+					if (error.description != null && error.description.contains("Non-JSDoc")) { //$NON-NLS-1$
+						return;
+					}
+				}
+				super.report(error);
+			}
+		};
 		CompilerOptions compiler_options = CompilerUtil.getDefaultOptions();
 		CompilerUtil.applyCompilerOptionsFromMap(compiler_options, compilerOptionsMap);
 		compiler_options.customPasses = HashMultimap.create();
