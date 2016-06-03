@@ -222,9 +222,9 @@ public class AbstractDojoHttpTransportTest {
 		Assert.assertEquals("define(", result);
 		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
 		result = transport.beforeModule(mockRequest, new ModuleInfo("module", true));
-		Assert.assertEquals("!require.combo.isDefined('module')&&", result);
+		Assert.assertEquals("", result);
 		result = transport.beforeModule(mockRequest, new ModuleInfo("textModule", false));
-		Assert.assertEquals("!require.combo.isDefined('textModule')&&define(", result);
+		Assert.assertEquals("define(", result);
 	}
 
 	@Test
