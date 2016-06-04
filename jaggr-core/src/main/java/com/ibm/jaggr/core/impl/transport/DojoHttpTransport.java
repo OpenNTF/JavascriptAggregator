@@ -217,6 +217,13 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 */
 	protected String beforeModule(HttpServletRequest request, ModuleInfo info) {
 		StringBuffer sb = new StringBuffer();
+		if (RequestUtil.isServerExpandedLayers(request)) {
+			// If doing server expansion of required modules, then need to add check to see if
+			// module is already defined to avoid potential for multiple define module errors.
+			sb.append("!require.combo.isDefined('") //$NON-NLS-1$
+			  .append(info.getModuleId())
+			  .append("')&&"); //$NON-NLS-1$
+		}
 		if (!info.isScript()) {
 			// Text module.  Wrap in AMD define function call
 			sb.append("define("); //$NON-NLS-1$
@@ -372,8 +379,7 @@ public class DojoHttpTransport extends AbstractHttpTransport implements IHttpTra
 	 * Handles the
 	 * {@link com.ibm.jaggr.core.transport.IHttpTransport.LayerContributionType#END_MODULES}
 	 * layer listener event.
-	 * <p>
-	 * See {@link #beginModules(HttpServletRequest, Object)}
+	 * @see {@link #beginModules(HttpServletRequest, Object)}
 	 *
 	 * @param request
 	 *            the http request object
