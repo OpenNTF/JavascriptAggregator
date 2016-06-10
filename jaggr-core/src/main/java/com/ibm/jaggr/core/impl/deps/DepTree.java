@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.util.AggregatorUtil;
+import com.ibm.jaggr.core.util.CompilerUtil;
 import com.ibm.jaggr.core.util.ConsoleService;
 import com.ibm.jaggr.core.util.SignalUtil;
 
@@ -35,13 +36,16 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.lang.reflect.AccessibleObject;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -289,6 +293,10 @@ public class DepTree implements Serializable {
 		CompletionService<DepTreeBuilder.Result> treeBuilderCs = new ExecutorCompletionService<DepTreeBuilder.Result>(
 				treeBuilderExc);
 
+		// Load compiler options from config to specify when parsing
+		Map<AccessibleObject, List<Object>> compilerOptionsMap = new HashMap<AccessibleObject, List<Object>>();
+		CompilerUtil.compilerOptionsMapFromConfig(config, compilerOptionsMap);
+
 		Set<String> nonJSExtensions = Collections.unmodifiableSet(getNonJSExtensions(aggregator));
 		// Start the tree builder threads to process the paths
 		for (final URI path : paths) {
@@ -321,7 +329,7 @@ public class DepTree implements Serializable {
 			depMap.put(path, root);
 
 			treeBuilderCount.incrementAndGet();
-			treeBuilderCs.submit(new DepTreeBuilder(aggregator, parserCs, path, root, cachedNode, nonJSExtensions));
+			treeBuilderCs.submit(new DepTreeBuilder(aggregator, parserCs, path, root, cachedNode, nonJSExtensions, compilerOptionsMap));
 		}
 
 		// List of parser exceptions
