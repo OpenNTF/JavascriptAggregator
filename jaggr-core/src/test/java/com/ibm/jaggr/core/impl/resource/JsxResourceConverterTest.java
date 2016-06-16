@@ -288,7 +288,7 @@ public class JsxResourceConverterTest {
 		File tmpdir = Files.createTempDir();
 		File cacheFile = new File(tmpdir, "test.js");
 		JsxResourceConverter.JsxConverter jsxConverter = new JsxResourceConverter.JsxConverter(converterUri);
-		jsxConverter.initialize();
+		jsxConverter.initialize(converterUri);
 		IResource res = new StringResource(jsxSource, new URI("test.jsx"));
 		jsxConverter.generateCacheContent(res, cacheFile);
 		Assert.assertEquals(transpiledJs, FileUtils.readFileToString(cacheFile));
@@ -300,6 +300,7 @@ public class JsxResourceConverterTest {
 		os.close();
 		ObjectInputStream is = new ObjectInputStream(new FileInputStream(file));
 		jsxConverter = (JsxResourceConverter.JsxConverter)is.readObject();
+		jsxConverter.initialize(converterUri);
 		is.close();
 		jsxConverter.generateCacheContent(res, cacheFile);
 		Assert.assertEquals(transpiledJs, FileUtils.readFileToString(cacheFile));
