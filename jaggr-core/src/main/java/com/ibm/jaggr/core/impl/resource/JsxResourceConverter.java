@@ -50,8 +50,6 @@ import org.mozilla.javascript.commonjs.module.provider.UrlModuleSourceProvider;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InvalidObjectException;
-import java.io.ObjectInputStream;
 import java.io.Reader;
 import java.io.Serializable;
 import java.net.URI;
@@ -164,22 +162,21 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		final String sourceMethod = "initialized"; //$NON-NLS-1$
 		final boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {
-			log.entering(sourceMethod, sourceMethod);
+			log.entering(sourceClass, sourceMethod);
 		}
 		// Cache manager is initialized.  De-register the listener and add our named cache
 		cacheMgrListenerReg.unregister();
-		JsxConverter converter = newConverter(xformerRes.getURI());
+		JsxConverter converter = newConverter();
 		IGenericCache cache = newCache(converter, "jsx.", ""); //$NON-NLS-1$ //$NON-NLS-2$
 		cache.setAggregator(aggregator);
-		IResourceConverterCache oldCache = (IResourceConverterCache)cacheManager.getCache().putIfAbsent(JSX_CACHE_NAME, cache);
-		if (oldCache == null) {
-			// initialize the converter since we're going to use it.  The converter is not initialized when it
-			// is constructed so as to avoid the overhead of creating the rhino thread scopes if we're not
-			// going to use is because a cache instance already exists.
-			converter.initialize();
-		} else {
-			cache = oldCache;
+		ResourceConverterCacheImpl oldCache = (ResourceConverterCacheImpl)cacheManager.getCache().putIfAbsent(JSX_CACHE_NAME, cache);
+		if (oldCache != null) {
+			converter = (JsxConverter)oldCache.getConverter();
 		}
+		if (isTraceLogging) {
+			log.logp(Level.FINER, sourceClass, sourceMethod, "Initializing resource converter" + (oldCache != null ? " from cache." : ".")); //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$
+		}
+		converter.initialize(xformerRes.getURI());
 
 		if (isTraceLogging) {
 			log.exiting(sourceClass, sourceMethod);
@@ -243,8 +240,8 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		return result;
 	}
 
-	protected JsxConverter newConverter(URI xformer) {
-		return new JsxConverter(xformer, scopePoolSize, jsxOptions);
+	protected JsxConverter newConverter() {
+		return new JsxConverter(scopePoolSize, jsxOptions);
 	}
 
 	protected IResourceConverterCache newCache(IConverter converter, String prefix, String suffix) {
@@ -481,31 +478,31 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 		private transient boolean initialized;
 		final private int scopePoolSize;
 		final private String jsxOptions;
-		final private URI xformer;
 
 		protected JsxConverter(URI xformer) {
-			this(xformer, JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE, DEFAULT_JSX_OPTIONS);
+			this(JsxResourceConverter.DEFAULT_SCOPE_POOL_SIZE, DEFAULT_JSX_OPTIONS);
 		}
-		protected JsxConverter(URI xformer, int scopePoolSize, String jsxOptions) {
+		protected JsxConverter(int scopePoolSize, String jsxOptions) {
 			this.scopePoolSize = scopePoolSize;
 			this.jsxOptions = jsxOptions;
-			this.xformer = xformer;
 		}
 
 		/**
-		 * The rhino properties are not serializable and so must be initialized every time
-		 * this class is instantiated or de-serialized.
+		 * The rhino properties are not serializable and so must be initialized every time this class is
+		 * instantiated or de-serialized.
+		 *
+		 * @param xformer
+		 *          the URI for the transformer resource
 		 */
-		public void initialize() {
+		public void initialize(URI xformer) {
 			final String sourceMethod = "initialize"; //$NON-NLS-1$
 			final boolean isTraceLogging = log.isLoggable(Level.FINER);
 			if (initialized) {
-				return;
+				throw new IllegalStateException();
 			}
 			if (isTraceLogging) {
 				log.entering(JsxConverter.class.getName(), sourceMethod);
 			}
-			initialized = true;
 			// Initialize the rhino properties used by the converter
 			ArrayList<URI> modulePaths = new ArrayList<URI>(1);
 			modulePaths.add(xformer);
@@ -544,9 +541,17 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 							// require in the transformer and extract the transform function
 							Require require = builder.createRequire(ctx, threadScope);
 							Scriptable jsxTransformInstance = require.requireMain(ctx, xformerModuleName);
+							if (jsxTransformInstance == null) {
+								throw new NotFoundException(xformerModuleName);
+							}
 							// Save the instance in the scope
 							threadScope.put(JSXTRANSFORM_INSTANCE, threadScope, jsxTransformInstance);
 							return threadScope;
+						} catch (Exception ex){
+							if (log.isLoggable(Level.SEVERE)) {
+								log.logp(Level.SEVERE, sourceClass, sourceMethod, ex.getMessage(), ex);
+							}
+							throw ex;
 						} finally {
 							Context.exit();
 						}
@@ -566,6 +571,7 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			}
 			// Shut down the executor and release the threads
 			es.shutdown();
+			initialized = true;
 
 			if (isTraceLogging) {
 				log.exiting(JsxConverter.class.getName(), sourceMethod);
@@ -581,6 +587,9 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			final boolean isTraceLogging = log.isLoggable(Level.FINER);
 			if (isTraceLogging) {
 				log.entering(JsxConverter.class.getName(), sourceMethod, new Object[]{source, cacheFile});
+			}
+			if (!initialized) {
+				throw new IllegalStateException();
 			}
 			// read the contents of the jsx file and convert it
 			InputStream is = source.getInputStream();
@@ -622,21 +631,6 @@ public class JsxResourceConverter implements IResourceConverter, IExtensionIniti
 			if (isTraceLogging) {
 				log.exiting(JsxConverter.class.getName(), sourceMethod);
 			}
-		}
-
-		/**
-		 * Called when this object is de-serialized.
-		 *
-		 * @param stream the serialization input stream
-		 * @throws InvalidObjectException
-		 */
-		private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-			/*
-			 * We have no serializable properties, but we need to initialize the transient
-			 * properties each time this object is de-serialized.
-			 */
-			stream.defaultReadObject();
-			initialize();
 		}
 	}
 
