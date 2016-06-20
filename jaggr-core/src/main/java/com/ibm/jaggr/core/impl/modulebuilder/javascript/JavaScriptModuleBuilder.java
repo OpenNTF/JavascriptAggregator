@@ -477,6 +477,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			if (level == null) {
 				output = source.toString()+ "\r\n"; //$NON-NLS-1$
+				if (isSourceMaps) {
+					IdentitySourceMapGenerator gen = new IdentitySourceMapGenerator(mid, output, compiler_options);
+					sourceMap = gen.generateSourceMap();
+				}
 			} else {
 				// Get the compiler output and set the data in the ModuleBuild
 				output = compiler.toSource();
