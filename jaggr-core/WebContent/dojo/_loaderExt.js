@@ -94,9 +94,9 @@ userConfig.has['dojo-combo-api'] = 1;
  * url processor for handling cache bust query arg
  */
 urlProcessors.push(function(url) {
-	cb = windowArgs.cachebust ||
+	cb = combo.cacheBust || windowArgs.cachebust ||
 	     scriptArgs.cachebust || scriptArgs.cb ||
-	     combo.cacheBust || dojo.config.cacheBust;
+	     dojo.config.cacheBust;
 	if (cb) {
 		url += ('&cb=' + cb);
 	}
