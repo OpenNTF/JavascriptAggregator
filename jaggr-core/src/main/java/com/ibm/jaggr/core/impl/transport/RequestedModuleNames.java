@@ -147,13 +147,14 @@ class RequestedModuleNames implements IRequestedModuleNames {
 					}
 				}
 			}
+			boolean failOnVersionError = TypeUtil.asBoolean(request.getParameter(AbstractHttpTransport.FAILONVERSIONERR_REQPARAM));
 			if (!versionError) {
 				errModule = aggr.getConfig().getProperty(CONFIGPROP_CACHEBUSTERRMODULE, String.class);
 				versionErrorHandler = (errModule instanceof String) ? errModule.toString() : null;
 				// validate cache bust if version error handler provided
 				String reqCb = (String)request.getAttribute(AbstractHttpTransport.CACHEBUST_REQATTRNAME);
 				String configCb = aggr.getConfig().getCacheBust();
-				if (versionErrorHandler != null && reqCb != null && configCb != null && !reqCb.equals(configCb)) {
+				if ((versionErrorHandler != null || failOnVersionError) && reqCb != null && configCb != null && !reqCb.equals(configCb)) {
 					versionError = true;
 					if (isTraceLogging) {
 						log.finer("cache bust version error: " + reqCb + ", " + configCb); //$NON-NLS-1$ //$NON-NLS-2$
@@ -161,7 +162,7 @@ class RequestedModuleNames implements IRequestedModuleNames {
 				}
 			}
 			if (versionError) {
-				if (versionErrorHandler != null) {
+				if (versionErrorHandler != null && !failOnVersionError) {
 					// Config specifies a module to return as the response (should be non-AMD).  Set
 					// the nocache attribute and set the specified module as the requested module.
 					// We use the 'scripts' property instead of 'modules' to ensure that any require
@@ -180,8 +181,8 @@ class RequestedModuleNames implements IRequestedModuleNames {
 					}
 					return;
 				}
-				// No handler specified.  Throw an exception.
-				throw new BadRequestException("Invalid mid list hash"); //$NON-NLS-1$
+				// No handler specified or error response requested.  Throw an exception.
+				throw new BadRequestException("Version Error"); //$NON-NLS-1$
 			}
 
 			if (moduleQueryArg.length() > 0) {
