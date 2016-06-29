@@ -506,6 +506,17 @@ public class RequestedModuleNamesTest {
 		assertEquals(Arrays.asList("cbError"), requestedNames.getScripts());
 		assertTrue(requestedNames.getModules().isEmpty());
 
+		// Verify exception is thrown if failOnVerErr request parameter is specified
+		requestParameters.put(AbstractHttpTransport.FAILONVERSIONERR_REQPARAM, new String[]{"1"});
+		boolean exceptionThrown = false;
+		try {
+			new RequestedModuleNames(mockRequest, null, null);
+		} catch (BadRequestException ex) {
+			exceptionThrown = true;
+		}
+		Assert.assertTrue(exceptionThrown);
+		requestParameters.remove(AbstractHttpTransport.FAILONVERSIONERR_REQPARAM);
+
 		requestAttributes.put(AbstractHttpTransport.CACHEBUST_REQATTRNAME, "12345");
 		// cache busts match.  Requested modules are there and no error module
 		requestedNames = new RequestedModuleNames(mockRequest, null, null);
@@ -538,7 +549,7 @@ public class RequestedModuleNamesTest {
 
 		// id list hash values don't match and no error handler provided.  Exception thrown.
 		configRef.set(new ConfigImpl(mockAggregator, URI.create(tmpDir.toURI().toString()), "{}"));
-		boolean exceptionThrown = false;
+		exceptionThrown = false;
 		try {
 			requestedNames = new RequestedModuleNames(mockRequest, Collections.<String>emptyList(), hash2);
 		} catch (BadRequestException ex) {

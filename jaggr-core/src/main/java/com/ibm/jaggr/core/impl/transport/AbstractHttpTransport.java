@@ -145,6 +145,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String FEATUREMAP_REQPARAM = "has"; //$NON-NLS-1$
 	public static final String FEATUREMAPHASH_REQPARAM = "hashash"; //$NON-NLS-1$
+	public static final String FAILONVERSIONERR_REQPARAM = "failOnVerErr"; //$NON-NLS-1$
 
 	public static final String[] INCLUDEREQUIREDEPS_REQPARAM = {"includeRequireDeps", "ird"};  //$NON-NLS-1$ //$NON-NLS-2$
 
