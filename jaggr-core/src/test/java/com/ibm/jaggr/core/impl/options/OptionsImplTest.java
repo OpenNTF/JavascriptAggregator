@@ -112,12 +112,12 @@ public class OptionsImplTest {
 
 			@Override
 			protected void updateNotify(long seq) {
-				Assert.assertEquals(startSeq[0]+1, seq);
+				Assert.assertTrue(seq > startSeq[0]);
 				callCounts[1]++;
 			}
 			@Override
 			protected void propsFileUpdateNotify(Properties props, long seq) {
-				Assert.assertEquals(startSeq[0]+1, seq);
+				Assert.assertTrue(seq > startSeq[0]);
 				callCounts[2]++;
 			}
 		};
