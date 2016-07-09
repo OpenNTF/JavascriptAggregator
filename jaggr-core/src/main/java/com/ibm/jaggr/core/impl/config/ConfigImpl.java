@@ -467,7 +467,7 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 	 * @see com.ibm.jaggr.service.config.IConfig#locateModuleResource(java.lang.String)
 	 */
 	@Override
-	public URI locateModuleResource(String mid) {
+	public URI locateModuleResource(String mid, boolean isJavaScript) {
 		Location location = null;
 		String remainder = null;
 
@@ -524,18 +524,22 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 		}
 		URI result = null;
 		try {
-			URI override = toResourceUri(location.getOverride(), remainder);
+			URI override = toResourceUri(location.getOverride(), remainder, isJavaScript);
 			result = (override != null && aggregator.newResource(override).exists()) ?
-					override : toResourceUri(location.getPrimary(), remainder);
+					override : toResourceUri(location.getPrimary(), remainder, isJavaScript);
+
 		} catch (URISyntaxException e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, e.getMessage(), e);
 			}
 		}
+
 		return result;
 	}
 
-	protected URI toResourceUri(URI uri, String remainder) throws URISyntaxException {
+
+
+	protected URI toResourceUri(URI uri, String remainder, boolean isJavaScript) throws URISyntaxException {
 		if (uri == null) {
 			return null;
 		}
@@ -547,14 +551,9 @@ public class ConfigImpl implements IConfig, IShutdownListener, IOptionsListener 
 			}
 			uri = uri.resolve(remainder);
 		}
-
-		// add .js extension if resource uri has no extension
-		String path = uri.getPath();
-		int idx = path.lastIndexOf("/"); //$NON-NLS-1$
-		String fname = (idx != -1) ? path.substring(idx+1) : path;
-		if (!fname.contains(".")) { //$NON-NLS-1$
-			uri = new URI(uri.getScheme(), uri.getAuthority(),
-					path + ".js", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
+		if (isJavaScript && !uri.getPath().endsWith(".js")) { //$NON-NLS-1$
+				uri =  new URI(uri.getScheme(), uri.getAuthority(),
+						uri.getPath() + ".js", uri.getQuery(), uri.getFragment()); //$NON-NLS-1$
 		}
 		return uri;
 

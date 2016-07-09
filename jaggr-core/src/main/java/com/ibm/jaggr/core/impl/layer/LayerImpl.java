@@ -25,6 +25,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.SourceMapsCacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -1006,8 +1007,12 @@ public class LayerImpl implements ILayer {
 			mid = mid.substring(0, mid.length() - 2);
 		}
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IConfig config = aggr.getConfig();
 
-		URI uri = aggr.getConfig().locateModuleResource(new ModuleIdentifier(mid).getModuleName());
+		ModuleIdentifier ident = new ModuleIdentifier(mid);
+		String pluginName = ident.getPluginName();
+		boolean isJavaScript = pluginName == null || config.getJsPluginDelegators().contains(pluginName);
+		URI uri = config.locateModuleResource(ident.getModuleName(), isJavaScript);
 
 		return aggr.newModule(mid, uri);
 	}

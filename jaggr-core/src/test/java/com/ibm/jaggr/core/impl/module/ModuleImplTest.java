@@ -147,7 +147,7 @@ public class ModuleImplTest {
 		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
 
-		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
+		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1", true));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
 		Assert.assertEquals("[expn, js:(has:[conditionFalse, conditionTrue, foo])]", module.getCacheKeyGenerators().toString());
@@ -265,7 +265,7 @@ public class ModuleImplTest {
 		requestAttributes.put(ILayer.DEPENDENT_FEATURES, new HashSet<String>());
 		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
-		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1"));
+		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1", true));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
 		StringWriter writer = new StringWriter();

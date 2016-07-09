@@ -303,9 +303,12 @@ public interface IConfig {
 	 *
 	 * @param mid
 	 *            The module id
+	 * @param isJavaScript
+	 *            True if {@code mid} specifies a JavaScript resource (.js will be
+	 *            appended to the module name if not already specified).
 	 * @return The URI for the module.
 	 */
-	public URI locateModuleResource(String mid);
+	public URI locateModuleResource(String mid, boolean isJavaScript);
 
 	/**
 	 * Returns an ordered mapping of module ids to resource locations for all of the

@@ -498,68 +498,72 @@ public class ConfigTest {
 		// Test path without override
 		String config = "{paths:{foo:'fooPath'}}";
 		ConfigImpl cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		URI uri = cfg.locateModuleResource("fooPath/foo");
+		URI uri = cfg.locateModuleResource("fooPath/foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
 
 
 		config = "{baseUrl:['.', '" + tmpDir.resolve("override") + "']}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		uri = cfg.locateModuleResource("fooPath/foo");
+		uri = cfg.locateModuleResource("fooPath/foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
 		TestUtils.createTestFile(new File(tmpFile, "override/fooPath"), "foo.js", "/**/");
 		try {
-			uri = cfg.locateModuleResource("fooPath/foo");
+			uri = cfg.locateModuleResource("fooPath/foo", true);
 			Assert.assertEquals(tmpDir.resolve("override/fooPath/foo.js"), uri);
 			config = "{paths:{'foo':['fooPath/foo', 'override/fooPath/foo']}}";
 
 			cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-			uri = cfg.locateModuleResource("foo");
+			uri = cfg.locateModuleResource("foo", true);
 			Assert.assertEquals(tmpDir.resolve("override/fooPath/foo.js"), uri);
 		} finally {
 			TestUtils.deleteRecursively(tmpFile);
 		}
-		uri = cfg.locateModuleResource("foo");
+		uri = cfg.locateModuleResource("foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/foo.js"), uri);
 
 		// test that path definitions override package locations
 		config = "{packages:[{name:'foo', location:'fooPath1'}], paths:{foo:'fooPath2'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		uri = cfg.locateModuleResource("foo/bar");
+		uri = cfg.locateModuleResource("foo/bar", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath2/bar.js"), uri);
-		uri = cfg.locateModuleResource("foo");
+		uri = cfg.locateModuleResource("foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath2.js"), uri);
 
 		config = "{packages:[{name:'foo', location:'fooPath'}], paths:{bar:'barPath'}}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		uri = cfg.locateModuleResource("foo/bar");
+		uri = cfg.locateModuleResource("foo/bar", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/bar.js"), uri);
-		uri = cfg.locateModuleResource("foo");
+		uri = cfg.locateModuleResource("foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/main.js"), uri);
-		uri = cfg.locateModuleResource("bar");
+		uri = cfg.locateModuleResource("bar", true);
 		Assert.assertEquals(tmpDir.resolve("barPath.js"), uri);
-		uri = cfg.locateModuleResource("bar/bar");
+		uri = cfg.locateModuleResource("bar/bar", true);
 		Assert.assertEquals(tmpDir.resolve("barPath/bar.js"), uri);
+		uri = cfg.locateModuleResource("bar/bar.dev", true);
+		Assert.assertEquals(tmpDir.resolve("barPath/bar.dev.js"), uri);
+		uri = cfg.locateModuleResource("bar/bar.dev", false);
+		Assert.assertEquals(tmpDir.resolve("barPath/bar.dev"), uri);
 
 		config = "{packages:[{name:'foo', location:['fooPath', 'fooPathOverride']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
-		uri = cfg.locateModuleResource("foo/bar");
+		uri = cfg.locateModuleResource("foo/bar", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/bar.js"), uri);
-		uri = cfg.locateModuleResource("foo");
+		uri = cfg.locateModuleResource("foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPath/main.js"), uri);
 		TestUtils.createTestFile(new File(tmpFile, "fooPathOverride"), "bar.js", "/**/");
 		TestUtils.createTestFile(new File(tmpFile, "fooPathOverride"), "main.js", "/**/");
-		uri = cfg.locateModuleResource("foo/bar");
+		uri = cfg.locateModuleResource("foo/bar", true);
 		Assert.assertEquals(tmpDir.resolve("fooPathOverride/bar.js"), uri);
-		uri = cfg.locateModuleResource("foo");
+		uri = cfg.locateModuleResource("foo", true);
 		Assert.assertEquals(tmpDir.resolve("fooPathOverride/main.js"), uri);
 
 		config = "{baseUrl:['.', 'overrides'], packages:[{name:'foo', location:['fooPath', 'fooPathOverride']}]}";
 		cfg = new ConfigImpl(mockAggregator, tmpDir, config);
 		TestUtils.createTestFile(new File(tmpFile, "overrides/fooPathOverride"), "bar.js", "/**/");
 		TestUtils.createTestFile(new File(tmpFile, "overrides/fooPathOverride"), "main.js", "/**/");
-		uri = cfg.locateModuleResource("foo/bar");
+		uri = cfg.locateModuleResource("foo/bar", true);
 		Assert.assertEquals(tmpDir.resolve("overrides/fooPathOverride/bar.js"), uri);
-		uri = cfg.locateModuleResource("foo");
+		uri = cfg.locateModuleResource("foo", true);
 		Assert.assertEquals(tmpDir.resolve("overrides/fooPathOverride/main.js"), uri);
 	}
 

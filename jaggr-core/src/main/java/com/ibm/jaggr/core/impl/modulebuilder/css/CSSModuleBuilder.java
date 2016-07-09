@@ -494,7 +494,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			} else if (includeAMDPaths && importNameMatch.contains("/") && !importNameMatch.startsWith(".")) { //$NON-NLS-1$ //$NON-NLS-2$
 				// Resource not found using relative path to res.  If path is not relative (starts with .)
 				// then try to find the resource using config paths and packages.
-				uri = aggregator.getConfig().locateModuleResource(importNameMatch);
+				uri = aggregator.getConfig().locateModuleResource(importNameMatch, false);
 				if (uri != null) {
 					importRes = aggregator.newResource(uri);
 					uri = importRes.getURI();
@@ -839,7 +839,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 							}
 							Function initializer = (Function)initializerObj;
 							if (!uri.isAbsolute()) {
-								uri = config.locateModuleResource(location);
+								uri = config.locateModuleResource(location, true);
 							}
 							InputStream is = aggregator.newResource(uri).getInputStream();
 
