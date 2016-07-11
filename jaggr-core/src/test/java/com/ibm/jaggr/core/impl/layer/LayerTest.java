@@ -283,7 +283,7 @@ public class LayerTest extends EasyMock {
 		// Add a text resource
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		modules.setModules(Arrays.asList(new String[]{"p1/b","p1/a","p1/hello.txt"}));
+		modules.setModules(Arrays.asList(new String[]{"p1/b","p1/a","combo/text!p1/hello.txt"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(modules.toString(), mockAggregator);
@@ -296,7 +296,7 @@ public class LayerTest extends EasyMock {
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("add", moduleCacheInfo.get("p1/hello.txt"));
+		assertEquals("add", moduleCacheInfo.get("combo/text!p1/hello.txt"));
 		assertTrue(result.contains("\"hello from a.js\""));
 		assertTrue(result.contains("\"hello from b.js\""));
 		assertTrue(result.contains("Hello world text"));
@@ -321,7 +321,7 @@ public class LayerTest extends EasyMock {
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
+		assertEquals("hit", moduleCacheInfo.get("combo/text!p1/hello.txt"));
 		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
 		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
 		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
@@ -367,7 +367,7 @@ public class LayerTest extends EasyMock {
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
+		assertEquals("hit", moduleCacheInfo.get("combo/text!p1/hello.txt"));
 		assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		assertEquals(saveResult, result);
@@ -511,7 +511,7 @@ public class LayerTest extends EasyMock {
 	public void testGetResourceURI() throws IOException {
 		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}],jsPluginDelegators:['foo']}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 
 		TestLayerImpl impl = new TestLayerImpl("");
@@ -521,7 +521,7 @@ public class LayerTest extends EasyMock {
 		assertEquals(uri, impl.newModule(mockRequest, "p1/a/.").getURI());
 		assertEquals(uri, impl.newModule(mockRequest, "foo!p1/a/.").getURI());
 		uri = new File(tmpdir, "p1/hello.txt").toURI();
-		assertEquals(uri, impl.newModule(mockRequest, "p1/hello.txt").getURI());
+		assertEquals(uri, impl.newModule(mockRequest, "combo/text!p1/hello.txt").getURI());
 
 	}
 

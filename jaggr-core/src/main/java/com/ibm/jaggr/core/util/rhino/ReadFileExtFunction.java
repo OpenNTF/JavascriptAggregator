@@ -150,7 +150,7 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 		URI fileUri = null;
 		IResource res = null;
 		if (javaThis.isIncludeAMDPaths && !NON_AMD_PATH_PAT.matcher(file).find()) {
-			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file);
+			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file, false);
 			if (fileUri != null) {
 				res = javaThis.aggregator.newResource(fileUri);
 			}
