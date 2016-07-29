@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2014, IBM Corporation
+ * (C) Copyright IBM Corp. 2014, 2016
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,7 +16,7 @@
 
 /*
  * Implementation of less parser fileLoader function used to load files by @import
- * statements.  Calls the global readFileExt function implemented in Java by 
+ * statements.  Calls the global readFileExt function implemented in Java by
  * JAGGR.
  */
 less.Parser.fileLoader = function (file, currentFileInfo, callback, env) {
@@ -25,7 +25,7 @@ less.Parser.fileLoader = function (file, currentFileInfo, callback, env) {
     	file: file,
     	ref: currentFileInfo.filename
     };
-    
+
     var data = null;
     try {
     	/*

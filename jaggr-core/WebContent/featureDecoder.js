@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,16 @@
  * limitations under the License.
  */
 define([
-        "dojo/has!dojo-combo-api?combo/featureList"     // not a physical module.  Resolved by JAGGR 
-        //  to return array of dependent features 
+        "dojo/has!dojo-combo-api?combo/featureList"     // not a physical module.  Resolved by JAGGR
+        //  to return array of dependent features
 ], function(featureList) {
 
 	/**
 	 * The functionality provided by this module is not used by the aggregator for normal
-	 * operation because request decoding is normally done by the server.  This module is 
+	 * operation because request decoding is normally done by the server.  This module is
 	 * provided for unit testing and client side diagnostic purposes.
 	 */
-	
+
 	return {
 		decode: function(encoded, base64decoder) {
 			var base64decoded = base64decoder.decode(encoded.replace(/[_-]/g, function(c) {

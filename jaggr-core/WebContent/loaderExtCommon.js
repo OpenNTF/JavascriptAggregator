@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,58 +21,58 @@
 // Map of default properties.  Keys are property names, values are
 // array of value/query-arg pairs.
 var params = {
-		// True if the aggregator should expand the dependency list in 
+		// True if the aggregator should expand the dependency list in
 		//  require calls to include nested dependencies
 		expandRequire: [null, "re"],
-	
+
 		// True if aggregator should add module name to parameter list of define()
 		// call for anonymous modules.
 		exportNames: [true, "en"],
-	
+
 		// optimize can equal "none" | "whitespace" | "simple"(default)
 		optimize: ["simple", "opt"],
-	
+
 		// show filenames in responses
 		showFilenames: [null, "fn"],
-	
+
 		// ignore cache files on client and on server
 		noCache: [null, "nc"],
-		
+
 		// perform has branching in require list expansion
 		hasBranching: [null, "hb"],
-		
-		// True if the aggregator should include expanded dependencies of 
-		// requested modules in the response.  Takes precedence over 
+
+		// True if the aggregator should include expanded dependencies of
+		// requested modules in the response.  Takes precedence over
 		// expandRequire if both are specified
 		serverExpandLayers: [false, "sel"],
-		
+
 		// Enable requests for source maps
 		sourceMaps: [null, "sm"],
-		
+
 		// True if the aggregator should output dependency expansion
 		// logging to the browser console
 		depExpLog: [null, "depExpLog"]
 	},
 
 	extraArgs = {},
-	
+
 	/**
 	 * Default feature filter allows all features
-	 * 
+	 *
 	 * @return true if the specified feature should be included
 	 *         in the list of features sent to the aggregator
 	 */
 	featureFilter = function(feature) {return true;},
-	
+
 	/**
 	 * Array of functions that process a url, returning the new,
-	 * updated url.  When building the URL to the aggregator 
+	 * updated url.  When building the URL to the aggregator
 	 * servlet, the transport will call each of the functions
-	 * in this array, in turn, to add their contribution to the 
+	 * in this array, in turn, to add their contribution to the
 	 * URL.
 	 */
 	urlProcessors = [],
-	
+
 	/**
 	 * Name of folded path json property used to identify the names of loader
 	 * plugin prefixes and their ordinals used in the folded path.  This must
@@ -90,19 +90,19 @@ var params = {
 		}
 		return size;
 	},
-	
+
 	/**
 	 * Adds the module specified by dep to the list of folded module names
-	 * in oFolded.  
-	 * 
+	 * in oFolded.
+	 *
 	 * @param dep
 	 *            object containing the module information
 	 * @param position
 	 *            the position in the requested modules list for the module
 	 * @param oFolded
 	 *            the folded module as an object of the form {dir1:{foo:0, bar:[1,0]}}
-	 *            where the obect nesting is representative of the module path hierarchy 
-	 *            and an ordinal value represents the position of the module in the 
+	 *            where the obect nesting is representative of the module path hierarchy
+	 *            and an ordinal value represents the position of the module in the
 	 *            module list and an ordinal pair array value represents the list position
 	 *            and plugin ordinal (in oPrefixes) for modules that specify a plugin.
 	 * @param oPrefixes
@@ -115,7 +115,7 @@ var params = {
 		    segments = name.split('/'),
 		    len = segments.length,
 		    oChild = oFolded;
-		
+
 		for (var i = 0; i < len; i++) {
 			var segment = segments[i];
 			if (i == len - 1) {
@@ -148,10 +148,10 @@ var params = {
 			}
 		}
 	},
-	
+
 	/**
 	 * Adds the module specified by dep to the encoded module id list at the specified
-	 * list position.  The encoded module id list uses the mapping of module name to 
+	 * list position.  The encoded module id list uses the mapping of module name to
 	 * unique ids provided by the server in moduleIdMap.  The encoded id list consists
 	 * of a sequence of segments, with each segment having the form:
 	 * <p><code>[position][count][moduleid-1][moduleid-2]...[moduleid-(count-1)]</code>
@@ -159,17 +159,17 @@ var params = {
 	 * where position specifies the position in the module list of the first module
 	 * in the segment, count specifies the number of modules in the segment who's positions
 	 * contiguously follow the start position, and
-	 * the module ids specify the ids for the modules from the id map.  Position and 
+	 * the module ids specify the ids for the modules from the id map.  Position and
 	 * count are 16-bit numbers, and the module ids are specified as follows:
 	 * <p><code>[id]|[0][plugin id][id]</code>
 	 * <p>
-	 * If the module name doesn't specify a loader plugin, then it is represented by 
+	 * If the module name doesn't specify a loader plugin, then it is represented by
 	 * the id for the module name.  If the module name specifies a loader plugin, then
 	 * it is represetned by a zero, followed by the id for the loader plugin, followed
-	 * by the id for the module name without the loader plugin.  All values are 16-bit 
-	 * numbers.  If an id is greater than what can be represented in a 16-bit number, 
+	 * by the id for the module name without the loader plugin.  All values are 16-bit
+	 * numbers.  If an id is greater than what can be represented in a 16-bit number,
 	 * then the module is not added to the encoded list.
-	 * 
+	 *
 	 * @param dep
 	 *            object containing the module information
 	 * @param position
@@ -183,13 +183,13 @@ var params = {
 	 * @return true if the module was added to the encoded list
 	 */
 	addModuleIdEncoded = function(dep, position, encodedIds, moduleIdMap) {
-		
+
 		var nameId = moduleIdMap[dep.name], result = false,
 			pluginNameId = dep.prefix ? moduleIdMap[dep.prefix] : 0;
-			
+
 		// validate ids
-		if (nameId && (dep.prefix && pluginNameId || !dep.prefix)) {				
-			// encodedIds.segStartIdx holds the index in the array for the start of 
+		if (nameId && (dep.prefix && pluginNameId || !dep.prefix)) {
+			// encodedIds.segStartIdx holds the index in the array for the start of
 			// the current segment.
 			if (!encodedIds.length) {
 				encodedIds.segStartIdx = 0;
@@ -197,7 +197,7 @@ var params = {
 				encodedIds.push(1);
 			} else {
 				// We have an existing segment.  Determine if the current module
-				// can be added to the existing segment or if we need to start 
+				// can be added to the existing segment or if we need to start
 				// a new one.
 				var segStartIdx = encodedIds.segStartIdx,
 				    start = encodedIds[segStartIdx],
@@ -227,13 +227,13 @@ var params = {
 	 *  Encode JSON object for url transport.
 	 *	Enforces ordering of object keys and mangles JSON format to prevent encoding of frequently used characters.
 	 *	Assumes that keynames and values are valid filenames, and do not contain illegal filename chars.
-	 *	See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.  
+	 *	See http://www.w3.org/Addressing/rfc1738.txt for small set of safe chars.
 	 */
 	encodeModules = function(object) {
 		var asEnc = [], n = 0;
 		var recurse = function(parent) {
 			asEnc[n++] = '(';
-			
+
 			// We sort the children here so that they always appear in the same order for each request.
 			// js does not enforce an order on iterating through map keys, so we make sure we do it the same way all the time.
 			var children = [], i = 0;
@@ -265,13 +265,13 @@ var params = {
 			asEnc[n++] = ')';
 		};
 		recurse(object);
-		
+
 		return asEnc.join('');
 	},
-	
+
 	/**
 	 * Performs base64 encoding of the encoded module id list
-	 * 
+	 *
 	 * @param ids
 	 *            the encoded module id list as a 32-bit or 16-bit number array.
 	 * @param encoder
@@ -307,16 +307,16 @@ var params = {
 			return (c=='+')?'-':((c=='/')?'_':'');
 		});
 	},
-	
+
 	/**
-	 * Adds the list of modules specified in opt_deps to the request as 
+	 * Adds the list of modules specified in opt_deps to the request as
 	 * request URL query args.  For each module in the list, we will try
-	 * to add it to the encoded module id list first because that consumes 
+	 * to add it to the encoded module id list first because that consumes
 	 * less URL space per module.  If we can't do that because we don't
 	 * have a number id for the module, then we add it to the folded module
-	 * list.  The module list is re-assembled from these two lists on 
+	 * list.  The module list is re-assembled from these two lists on
 	 * the server.
-	 * 
+	 *
 	 * @param url
 	 *             the URL to add the requested modules to
 	 * @param argNames
@@ -346,9 +346,9 @@ var params = {
 				addFoldedModuleName(dep, i, oFolded, oPrefixes);
 			}
 		}
-		url +=(argNames[0] === 'modules' ? ((url.indexOf("?") === -1 ? "?" : "&") + "count=" + i) : "" ) + 
+		url +=(argNames[0] === 'modules' ? ((url.indexOf("?") === -1 ? "?" : "&") + "count=" + i) : "" ) +
 		      (sizeofObject(oFolded) ? ("&"+argNames[0]+"="+encodeURIComponent(encodeModules(oFolded))):"");
-		
+
 		if (ids.length || hash) {
 			// There are encoded module ids or we need to provide the  hash
 			url += "&"+argNames[1]+"=" + base64EncodeModuleIds(ids, base64Encoder, hash);
@@ -358,7 +358,7 @@ var params = {
 
 	/**
 	 * Builds the has argument to put in a URL.  In the case that we have dojo/cookie and dojox's MD5 module, it
-	 * will place the has-list in a cookie and put the hash of the has-list in the url. 
+	 * will place the has-list in a cookie and put the hash of the has-list in the url.
 	 */
 	computeHasArg = function(has, cache, includeUndefined) {
 		var hasArr = [], n = 0;
@@ -379,10 +379,10 @@ var params = {
 			}
 		}
 		hasArr.sort();  // All has args must be represented in the same order for every request.
-		
+
 		return (hasArr.length ? ('has='+hasArr.join("*")): "");
 	},
-	
+
 	moduleIdsFromHasLoaderExpression = function(expression, moduleIds) {
 		var tokens = expression.match(/[\?:]|[^:\?]*/g), i = 0,
 		    get = function(){
@@ -398,11 +398,11 @@ var params = {
 			};
 		return get();
 	},
-	
+
 	registerModuleNameIds = function(ary, moduleIdMap) {
 		// registers module-name/[module-numeric-id pairs provided by the server
 		// This function is called directly by aggregator responses.
-		// ary is a two element array of the form 
+		// ary is a two element array of the form
 		// [[[module-names],[module-names]...],[[numeric-ids],[numeric-ids]...]]]
 		var nameAry = ary[0];
 		var idAry = ary[1],
@@ -440,12 +440,12 @@ var params = {
 			}
 		}
 	},
-	
+
 	/**
 	 * Parses the provided href and returns an object map of the query args in the href.
-	 * This routine does not support multivalued query args.  If a query arg appears more 
-	 * than once, the value of the last instance will be represented in the map.  
-	 * 
+	 * This routine does not support multivalued query args.  If a query arg appears more
+	 * than once, the value of the last instance will be represented in the map.
+	 *
 	 * The names of query args are converted to lower case in the property map.
 	 */
 	parseQueryArgs = function(href) {

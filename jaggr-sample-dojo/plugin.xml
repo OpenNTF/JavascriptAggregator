@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <?eclipse version="3.2"?>
 <!--
-   (C) Copyright 2012, IBM Corporation
+   (C) Copyright IBM Corp. 2012, 2016
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -21,11 +21,11 @@
       <resource-mapping path="/WebContent" />
     </httpcontext>
   </extension>
-  
+
   <extension point="org.eclipse.equinox.http.registry.filters">
     <filter alias="/test/dojo-1.8.0/*" class="com.ibm.jaggr.sample.dojo.BasicFilter" httpcontextId="resources" />
   </extension>
-  
+
   <extension point="org.eclipse.equinox.http.registry.resources">
     <resource alias="/test/dojo-1.8.0/dojo" base-name="/source_1.8.0-20120830-IBM_dojo/dojo" httpcontextId="resources" />
     <resource alias="/test/dojo-1.8.0/dijit" base-name="/source_1.8.0-20120830-IBM_dojo/dijit" httpcontextId="resources" />

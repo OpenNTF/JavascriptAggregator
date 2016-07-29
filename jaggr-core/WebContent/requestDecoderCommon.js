@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,15 +15,15 @@
  */
 define([
     "combo/moduleDecoder",
-    "combo/featureDecoder" 
+    "combo/featureDecoder"
 ], function(moduleDecoder, featureDecoder) {
-	
+
 	/**
 	 * The functionality provided by this module is not used by the aggregator for normal
-	 * operation because request decoding is normally done by the server.  This module is 
+	 * operation because request decoding is normally done by the server.  This module is
 	 * provided for unit testing and client side diagnostic purposes.
 	 */
-	
+
 	return {
 		decodeRequest: function(url, base64decoder) {
 			var argsArray = url.split("?"),
@@ -87,8 +87,8 @@ define([
 				if ("excludes" in args) {
 					result.excludes = args.excludes.split(/[,\s]/);
 				}
-			}			
-			
+			}
+
 			// Decode feature list
 			if ("hasEnc" in args) {
 				result.features = featureDecoder.decode(args.hasEnc, base64decoder);
