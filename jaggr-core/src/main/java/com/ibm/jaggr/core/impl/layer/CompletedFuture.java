@@ -29,9 +29,16 @@ import java.util.concurrent.TimeoutException;
 public class CompletedFuture<T> implements Future<T> {
 
 	private final T _t;
+	private final ExecutionException _error;
 
 	public CompletedFuture(T t) {
 		_t = t;
+		_error = null;
+	}
+
+	public CompletedFuture(ExecutionException error) {
+		_t = null;
+		_error = error;
 	}
 
 	/* (non-Javadoc)
@@ -47,6 +54,9 @@ public class CompletedFuture<T> implements Future<T> {
 	 */
 	@Override
 	public T get() throws InterruptedException, ExecutionException {
+		if (_error != null) {
+			throw _error;
+		}
 		return _t;
 	}
 
@@ -56,6 +66,9 @@ public class CompletedFuture<T> implements Future<T> {
 	@Override
 	public T get(long timeout, TimeUnit unit) throws InterruptedException,
 	ExecutionException, TimeoutException {
+		if (_error != null) {
+			throw _error;
+		}
 		return _t;
 	}
 

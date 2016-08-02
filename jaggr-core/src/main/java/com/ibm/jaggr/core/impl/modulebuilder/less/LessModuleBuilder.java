@@ -51,6 +51,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
@@ -104,8 +105,8 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 	}
 
 	// for unit tests
-	protected LessModuleBuilder(IAggregator aggregator) {
-		super(aggregator);
+	protected LessModuleBuilder(IAggregator aggregator, ExecutorService es, int scopePoolSize) {
+		super(aggregator, es, scopePoolSize);
 		init();
 	}
 

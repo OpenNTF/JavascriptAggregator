@@ -15,13 +15,12 @@
  */
 package com.ibm.jaggr.core.util;
 
+import org.junit.Assert;
 import org.junit.Test;
 import org.powermock.reflect.Whitebox;
 
 import java.util.Arrays;
 import java.util.List;
-
-import junit.framework.Assert;
 
 public class ConcurrentAddOnlyListTest {
 

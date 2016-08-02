@@ -25,6 +25,9 @@ import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptBuildRenderer;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
 import com.ibm.jaggr.core.layer.ILayer;
+import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
+import com.ibm.jaggr.core.resource.IResource;
+import com.ibm.jaggr.core.test.MockAggregatorWrapper;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -39,13 +42,10 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.easymock.PowerMock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.io.Reader;
@@ -61,10 +61,6 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(JavaScriptModuleBuilder.class)
 public class ModuleImplTest {
 
 	static File tmpdir = null;
@@ -239,33 +235,32 @@ public class ModuleImplTest {
 	@SuppressWarnings("unchecked")
 	@Test
 	public void testBuildRendererDependentFeatures() throws Exception {
-
-		PowerMock.expectNew(JavaScriptBuildRenderer.class, EasyMock.isA(String.class), EasyMock.isA(String.class), EasyMock.isA(List.class), EasyMock.eq(false)).andAnswer(new IAnswer<JavaScriptBuildRenderer>() {
-			@SuppressWarnings("serial")
+		IAggregator wrappedAggr = new MockAggregatorWrapper(mockAggregator) {
 			@Override
-			public JavaScriptBuildRenderer answer() throws Throwable {
-				String mid = (String)EasyMock.getCurrentArguments()[0];
-				String content = (String)EasyMock.getCurrentArguments()[1];
-				List<ModuleDeps> depList = (List<ModuleDeps>)EasyMock.getCurrentArguments()[2];
-				Boolean isLogging = (Boolean)EasyMock.getCurrentArguments()[3];
-				return new JavaScriptBuildRenderer(mid, content, depList, isLogging) {
+			public IModuleBuilder getModuleBuilder(String mid, IResource res) {
+				return new JavaScriptModuleBuilder() {
+					@SuppressWarnings("serial")
 					@Override
-					public String renderBuild(HttpServletRequest request, Set<String> dependentFeatures) {
-						dependentFeatures.add("feature1");
-						return super.renderBuild(request, dependentFeatures);
+					protected JavaScriptBuildRenderer newJavaScriptBuildRenderer(String mid, String content, List<ModuleDeps> depsList, boolean isReqExpLogging) {
+						return new JavaScriptBuildRenderer(mid, content, depsList, isReqExpLogging) {
+							@Override
+							public String renderBuild(HttpServletRequest request, Set<String> dependentFeatures) {
+								dependentFeatures.add("feature1");
+								return super.renderBuild(request, dependentFeatures);
+							}
+						};
 					}
 				};
 			}
-
-		}).anyTimes();
-		PowerMock.replay(JavaScriptBuildRenderer.class);
+		};
+		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, wrappedAggr);
 		requestAttributes.put(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, Boolean.TRUE);
-		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}"));
+		configRef.set(new ConfigImpl(wrappedAggr, tmpdir.toURI(), "{}"));
 		requestAttributes.put(IHttpTransport.FEATUREMAP_REQATTRNAME, new Features());
 		requestAttributes.put(ILayer.DEPENDENT_FEATURES, new HashSet<String>());
 		ConcurrentListBuilder<String[]> expDeps = new ConcurrentListBuilder<String[]>();
 		requestAttributes.put(JavaScriptModuleBuilder.MODULE_EXPANDED_DEPS, expDeps);
-		ModuleImpl module = (ModuleImpl)mockAggregator.newModule("p1/p1", mockAggregator.getConfig().locateModuleResource("p1/p1", true));
+		ModuleImpl module = (ModuleImpl)wrappedAggr.newModule("p1/p1", wrappedAggr.getConfig().locateModuleResource("p1/p1", true));
 		Reader reader  = module.getBuild(mockRequest).get();
 		System.out.println(module.toString());
 		StringWriter writer = new StringWriter();

@@ -40,6 +40,7 @@ import com.googlecode.concurrentlinkedhashmap.Weighers;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -60,8 +61,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import junit.framework.Assert;
 
 public class LayerCacheTest {
 

@@ -24,6 +24,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 import com.google.common.io.Files;
 
 import org.easymock.EasyMock;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,8 +36,6 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.regex.Pattern;
-
-import junit.framework.Assert;
 
 public class CacheManagerImplTest {
 

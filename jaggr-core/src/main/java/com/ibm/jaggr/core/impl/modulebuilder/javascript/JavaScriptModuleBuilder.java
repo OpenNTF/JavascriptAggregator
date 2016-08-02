@@ -208,7 +208,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-				DependencyList excludeList = new DependencyList(
+				DependencyList excludeList = newDependencyList(
 						DEPSOURCE_REQEXPEXCLUDES,
 						excludeIds,
 						aggr,
@@ -216,7 +216,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						true,	// resolveAliases
 						isReqExpLogging);
 
-				DependencyList layerDepList = new DependencyList(
+				DependencyList layerDepList = newDependencyList(
 						DEPSOURCE_LAYER,
 						moduleIds,
 						aggr,
@@ -516,7 +516,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 		}
 		Object build = expandedDepsList == null || expandedDepsList.size() == 0 ?
-				output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging);
+				output : newJavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging);
 
 		if (isSourceMaps && sourceMap != null && !(build instanceof IModuleBuilder)) {
 			// If we need to include a source map in the build output, then return an
@@ -774,6 +774,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return sb.toString();
 	}
 
+	protected DependencyList newDependencyList(String source, Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails) {
+		return new DependencyList(source, names, aggr, features, resolveAliases, includeDetails);
+	}
+
+	protected JavaScriptBuildRenderer newJavaScriptBuildRenderer(String mid, String content, List<ModuleDeps> depsList, boolean isReqExpLogging) {
+		return new JavaScriptBuildRenderer(mid, content, depsList, isReqExpLogging);
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.modulebuilder.IModuleBuilder#isScript(javax.servlet.http.HttpServletRequest)

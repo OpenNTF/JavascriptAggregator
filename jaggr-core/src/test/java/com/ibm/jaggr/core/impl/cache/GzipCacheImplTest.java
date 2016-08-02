@@ -255,7 +255,7 @@ public class GzipCacheImplTest {
 		cacheEntry = impl.get("key");
 		// validate the data
 		Assert.assertEquals(newTestData2, unzipInputStream(is, retLength.getValue()));
-		Assert.assertEquals(tempfile.lastModified(), Whitebox.getInternalState(cacheEntry, "lastModified"));
+		Assert.assertEquals(tempfile.lastModified(), ((Long)Whitebox.getInternalState(cacheEntry, "lastModified")).longValue());
 
 		// now write the cache file to disk
 		// now release the cache file writer thread and wait for it to complete

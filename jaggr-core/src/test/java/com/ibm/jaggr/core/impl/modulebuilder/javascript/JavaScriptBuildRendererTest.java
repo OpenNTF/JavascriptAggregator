@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.util.ConcurrentListBuilder;
 
 import org.easymock.EasyMock;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -32,8 +33,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
 
 public class JavaScriptBuildRendererTest {
 	static final String content = "define([],function() {require([\"foo\"].concat(" +

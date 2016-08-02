@@ -17,27 +17,18 @@
 package com.ibm.jaggr.core.impl.modulebuilder.javascript;
 
 import com.ibm.jaggr.core.util.CompilerUtil;
-import com.ibm.jaggr.core.util.JSSource;
 
 import com.google.debugging.sourcemap.SourceMapConsumerV3;
 import com.google.debugging.sourcemap.proto.Mapping.OriginalMapping;
-import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.CompilerOptions;
-import com.google.javascript.jscomp.JSSourceFile;
 
+import org.junit.Assert;
 import org.junit.Test;
 
-import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-
-import junit.framework.Assert;
 
 public class IdentitySourceMapGeneratorTest {
-	private static final List<JSSourceFile> externs = Collections.emptyList();
-
 	static final String source =
 			"/**\n" +
 			" * Comment\n" +

@@ -238,7 +238,7 @@ public class TestUtils {
 		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new TestDojoHttpTransport() : transport);
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(
 				new SynchronousExecutor(),
-				null,
+				new SynchronousExecutor(),
 				new SynchronousScheduledExecutor(),
 				new SynchronousScheduledExecutor()));
 		final File workdir = workingDirectory;

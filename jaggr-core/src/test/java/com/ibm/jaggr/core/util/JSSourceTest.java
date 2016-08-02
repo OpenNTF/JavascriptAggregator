@@ -21,11 +21,10 @@ import com.google.javascript.jscomp.Compiler;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;
-
-import junit.framework.Assert;
 
 public class JSSourceTest {
 

@@ -25,6 +25,7 @@ import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.resource.StringResource;
+import com.ibm.jaggr.core.test.SynchronousExecutor;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -33,6 +34,7 @@ import com.ibm.jaggr.core.util.Features;
 
 import org.easymock.EasyMock;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,11 +51,17 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.Assert;
-
 public class LessModuleBuilderTest extends EasyMock {
 	static File tmpdir;
 	static File testdir;
+	static Map<String, String[]> requestParams = new HashMap<String, String[]>();
+	static Map<String, Object> requestAttributes = new HashMap<String, Object>();
+	static Scriptable configScript;
+	static IAggregator mockAggregator;
+	static Ref<IConfig> configRef;
+	static HttpServletRequest mockRequest;
+	static LessModuleBuilder builder;
+
 	public static final String LESS_STATIC_IMPORT = "@import \"colors.less\";\n\nbody{\n  " +
             "background: @mainColor;\n}";
 
@@ -65,14 +73,9 @@ public class LessModuleBuilderTest extends EasyMock {
 
 	public static final String LESS_GLOBAL_VAR = "body{@{bidiLeft}:10px;}";
 
-	Map<String, String[]> requestParams = new HashMap<String, String[]>();
-	Map<String, Object> requestAttributes = new HashMap<String, Object>();
-	Scriptable configScript;
-	IAggregator mockAggregator;
-	Ref<IConfig> configRef;
-	HttpServletRequest mockRequest;
 	long seq = 1;
 
+	@SuppressWarnings("unchecked")
 	@BeforeClass
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = new File(System.getProperty("java.io.tmpdir"));
@@ -81,15 +84,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		// create file to import
 		CopyUtil.copy("@mainColor: #FF0000;", new FileWriter(new File(testdir,
 				"colors.less")));
-	}
-
-	@AfterClass
-	public static void tearDownAfterClass() throws Exception {
-		TestUtils.deleteRecursively(testdir);
-	}
-
-	@Before
-	public void setUp() throws Exception {
 		configRef = new Ref<IConfig>(null);
 		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
 		mockRequest = TestUtils.createMockRequest(mockAggregator,
@@ -99,6 +93,17 @@ public class LessModuleBuilderTest extends EasyMock {
 		IServiceRegistration mockRegistration = EasyMock.createNiceMock(IServiceRegistration.class);
 		EasyMock.expect(mockPlatformServices.registerService(EasyMock.isA(String.class), EasyMock.anyObject(), EasyMock.isA(Dictionary.class))).andReturn(mockRegistration).anyTimes();
 		replay(mockRequest, mockAggregator, mockPlatformServices, mockRegistration);
+		builder = new LessModuleBuilder(mockAggregator, new SynchronousExecutor(), 1);
+
+	}
+
+	@AfterClass
+	public static void tearDownAfterClass() throws Exception {
+		TestUtils.deleteRecursively(testdir);
+	}
+
+	@Before
+	public void setUp() throws Exception {
 	}
 
 	@Test
@@ -106,7 +111,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
@@ -122,7 +126,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
@@ -138,7 +141,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{bidiLeft:'left'}}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
@@ -155,7 +157,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		configScript = (Scriptable)cfg.getRawConfig();
 		Features features = new Features();
 		mockRequest.setAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME, features);
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
@@ -185,7 +186,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'colors'}}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
@@ -201,7 +201,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'\"pkg/colors\"'},packages:[{name:'pkg', location:'" + testdir.toURI().toString() + "'}],cssEnableAMDIncludePaths:true}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);
@@ -217,7 +216,6 @@ public class LessModuleBuilderTest extends EasyMock {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'foo'}}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		LessModuleBuilder builder = new LessModuleBuilder(mockAggregator);
 		builder.configLoaded(cfg, seq++);
 		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
 				(mockAggregator);

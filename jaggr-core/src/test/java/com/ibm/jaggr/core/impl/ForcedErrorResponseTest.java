@@ -15,12 +15,11 @@
  */
 package com.ibm.jaggr.core.impl;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
-import junit.framework.Assert;
 
 public class ForcedErrorResponseTest {
 

@@ -24,16 +24,15 @@ import com.ibm.jaggr.core.util.HasNode;
 import org.easymock.Capture;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.HashSet;
 
-import junit.framework.Assert;
-
 public class HasNodeTest extends EasyMock {
-	Capture<String> containsFeature = new Capture<String>();
-	Capture<String> isFeature = new Capture<String>();
+	Capture<String> containsFeature = EasyMock.newCapture();
+	Capture<String> isFeature = EasyMock.newCapture();
 	Features chooser = createMock(Features.class);
 	HashSet<String> depFeatures;
 

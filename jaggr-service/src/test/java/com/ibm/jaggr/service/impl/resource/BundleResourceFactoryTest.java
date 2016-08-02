@@ -20,21 +20,18 @@ import static org.junit.Assert.assertEquals;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
 import com.ibm.jaggr.core.resource.IResource;
 
-import com.ibm.jaggr.service.impl.Activator;
-
 import com.google.common.collect.ImmutableList;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.powermock.api.easymock.PowerMock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -49,10 +46,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import junit.framework.Assert;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(Activator.class)
 public class BundleResourceFactoryTest {
 
 	static private Map<String, Bundle> bundleNameMap = new HashMap<String, Bundle>();
@@ -72,7 +65,7 @@ public class BundleResourceFactoryTest {
 		}
 	}
 
-	private BundleResourceFactory factory = new TestBundleResourceFactory();
+	private BundleResourceFactory factory;
 
 	static class TestBundleResourceFactory extends BundleResourceFactory {
 		/**
@@ -80,6 +73,10 @@ public class BundleResourceFactoryTest {
 		 * so that we can convert URI's to URL's when OSGi isn't
 		 * available.
 		 */
+		private BundleContext context;
+		public TestBundleResourceFactory(BundleContext bundleContext) {
+			context = bundleContext;
+		}
 		@Override
 		protected URL toURL(URI uri) throws IOException {
 			return new URL(null, uri.toString(), new DummyStreamHandler());
@@ -88,7 +85,20 @@ public class BundleResourceFactoryTest {
 		protected Bundle getBundle(String bundleName) {
 			return bundleNameMap.get(bundleName);
 		}
+
+		@Override
+		protected BundleContext getBundleContext() {
+			return context;
+		}
 	}
+
+	@Before
+	public void setup() {
+		BundleContext mockContext = EasyMock.createMock(BundleContext.class);
+		EasyMock.replay(mockContext);
+		factory = new TestBundleResourceFactory(mockContext);
+	}
+
 
 	@Test
 	public void getNBRBundleName() {
@@ -147,18 +157,16 @@ public class BundleResourceFactoryTest {
 		@SuppressWarnings("unchecked")
 		ServiceReference<URLConverter> mockUrlConverterSR = EasyMock.createMock(ServiceReference.class);
 		URLConverter mockUrlConverter = EasyMock.createMock(URLConverter.class);
-		PowerMock.mockStatic(Activator.class);
-		EasyMock.expect(Activator.getBundleContext()).andReturn(mockContext).anyTimes();
 
 		/*
 		 * Test when URLConverter.toFileUrl returns a value
 		 */
-		factory = new TestBundleResourceFactory();
+		factory = new TestBundleResourceFactory(mockContext);
 		factory.setInitializationData(mockContributingBundle, mockUrlConverterSR);
 		EasyMock.expect(mockContext.getService(mockUrlConverterSR)).andReturn(mockUrlConverter).once();
 		EasyMock.expect(mockContext.ungetService(mockUrlConverterSR)).andReturn(true).once();
 		EasyMock.expect(mockUrlConverter.toFileURL(bundleUrl)).andReturn(fileUrl);
-		PowerMock.replay(Activator.class, mockContributingBundle, mockContext, mockUrlConverterSR, mockUrlConverter);
+		EasyMock.replay(mockContributingBundle, mockContext, mockUrlConverterSR, mockUrlConverter);
 		IResource res = factory.newResource(bundleUrl.toURI());
 		EasyMock.verify(mockContext, mockUrlConverter);
 		Assert.assertEquals(bundleUrl.toURI(), res.getReferenceURI());
@@ -265,7 +273,7 @@ public class BundleResourceFactoryTest {
 	@Test
 	public void testgetNIOResource() throws IllegalArgumentException, IllegalAccessException, InvocationTargetException {
 		// sanity check for the reflection method.
-		factory = new TestBundleResourceFactory();
+		factory = new TestBundleResourceFactory(null);
 		Method m = PowerMock.method(BundleResourceFactory.class, "getNIOFileResourceConstructor", Class[].class);
 		Constructor<?> cons = (Constructor<?>)m.invoke(factory, new Object[]{new Class[]{URI.class}});
 		Assert.assertNotNull(cons);

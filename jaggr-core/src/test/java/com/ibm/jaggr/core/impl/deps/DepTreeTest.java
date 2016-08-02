@@ -30,6 +30,7 @@ import com.ibm.jaggr.core.test.TestUtils;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
@@ -41,8 +42,6 @@ import java.util.Properties;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
 
 public class DepTreeTest {
 

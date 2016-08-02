@@ -61,6 +61,7 @@ public class CompilerUtilTest {
 			tmpFile = null;
 		}
 	}
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testAddCompilerOptionsFromConfig() throws Exception {
 		Map<AccessibleObject, List<Object>> map = new HashMap<AccessibleObject, List<Object>>();
