@@ -264,11 +264,11 @@
               <licenseFamilyName>IBM Copyright</licenseFamilyName>
               <notes></notes>
               <patterns>
-                <pattern>Copyright IBM Corp. 2016</pattern>
-                <pattern>Copyright IBM Corp. 2015, 2016</pattern>
-                <pattern>Copyright IBM Corp. 2014, 2016</pattern>
-                <pattern>Copyright IBM Corp. 2013, 2016</pattern>
-                <pattern>Copyright IBM Corp. 2012, 2016</pattern>
+                <pattern>Copyright IBM Corp. 2016 All Rights Reserved.</pattern>
+                <pattern>Copyright IBM Corp. 2015, 2016 All Rights Reserved.</pattern>
+                <pattern>Copyright IBM Corp. 2014, 2016 All Rights Reserved.</pattern>
+                <pattern>Copyright IBM Corp. 2013, 2016 All Rights Reserved.</pattern>
+                <pattern>Copyright IBM Corp. 2012, 2016 All Rights Reserved.</pattern>
               </patterns>
             </license>
           </licenses>
