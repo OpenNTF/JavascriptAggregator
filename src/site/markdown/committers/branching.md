@@ -1,5 +1,5 @@
 <!--
-   (C) Copyright 2012, IBM Corporation
+   (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -15,22 +15,22 @@
 -->
 ##Branching For Older Releases##
 
-I recently had to create a branch for an older release in order to issue 
+I recently had to create a branch for an older release in order to issue
 fixes for it (jaggr-1.1.8).  We had moved on since to `jaggr-1.2.0-SNAPSHOT`
-so I had to figure out the best way to do it.  These are the steps that 
+so I had to figure out the best way to do it.  These are the steps that
 worked for me at the time.
 
 First, I created a branch called `staging-jaggr-1.1.x` from the `jaggr-1.1.8`
-tag to stage the change. For some reason this process wouldn't work if I 
+tag to stage the change. For some reason this process wouldn't work if I
 simply checked out the tag.
-   
+
 ```    
-    git checkout -b staging-jaggr-1.1.x jaggr-1.1.8 
+    git checkout -b staging-jaggr-1.1.x jaggr-1.1.8
 ```
 
-Next, I used maven to create the `jaggr-1.1.x` branch following 
+Next, I used maven to create the `jaggr-1.1.x` branch following
 [these maven:release instructions](http://maven.apache.org/maven-release/maven-release-plugin/examples/branch.html).
-       
+
 ```
     mvn release:branch -DbranchName=jaggr-1.1.x -DupdateBranchVersions=true -DupdateWorkingCopyVersions=false
 ```
