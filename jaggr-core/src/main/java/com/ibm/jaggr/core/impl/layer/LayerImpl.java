@@ -835,7 +835,7 @@ public class LayerImpl implements ILayer {
 						}
 					}
 					if (RequestUtil.isServerExpandedLayers(request)) {
-						moduleList = new DependencyList(
+						moduleList = newDependencyList(
 								DEPSOURCE_MODULEDEPS,
 								requestedModuleNames.getModules(),
 								aggr,
@@ -877,7 +877,7 @@ public class LayerImpl implements ILayer {
 
 					// If there's a required module, then add it and its dependencies
 					// to the module list.
-					requiredList = new DependencyList(
+					requiredList = newDependencyList(
 							DEPSOURCE_REQDEPS,
 							requestedModuleNames.getDeps(),
 							aggr,
@@ -895,7 +895,7 @@ public class LayerImpl implements ILayer {
 					combined.addAll(requiredList.getExpandedDeps());
 				}
 				if (!requestedModuleNames.getPreloads().isEmpty()) {
-					preloadList = new DependencyList(
+					preloadList = newDependencyList(
 							DEPSOURCE_REQPRELOADS,
 							requestedModuleNames.getPreloads(),
 							aggr,
@@ -911,7 +911,7 @@ public class LayerImpl implements ILayer {
 					combined.addAll(preloadList.getExpandedDeps());
 				}
 				if (!requestedModuleNames.getExcludes().isEmpty()) {
-					excludeList = new DependencyList(
+					excludeList = newDependencyList(
 							DEPSOURCE_EXCLUDES,
 							requestedModuleNames.getExcludes(),
 							aggr,
@@ -1054,6 +1054,19 @@ public class LayerImpl implements ILayer {
 		return result;
 
 	}
+
+	protected DependencyList newDependencyList(
+		String source,
+		Iterable<String> names,
+		IAggregator aggr,
+		Features features,
+		boolean resolveAliases,
+		boolean includeDetails,
+		boolean includeRequireDeps
+	) {
+		return new DependencyList(source, names, aggr, features, resolveAliases, includeDetails, includeRequireDeps);
+	}
+
 
 	/**
 	 * Called by the layer cache manager when a layer build is evicted from the

@@ -16,11 +16,11 @@
 
 package com.ibm.jaggr.core.deps;
 
-import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.util.BooleanTerm;
 
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -28,8 +28,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
-
-import junit.framework.Assert;
 
 
 public class ModuleDepInfoTest {

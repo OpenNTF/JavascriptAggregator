@@ -26,6 +26,7 @@ import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
+import com.ibm.jaggr.core.test.SynchronousExecutor;
 import com.ibm.jaggr.core.test.TestUtils;
 import com.ibm.jaggr.core.test.TestUtils.Ref;
 import com.ibm.jaggr.core.transport.IHttpTransport;
@@ -36,6 +37,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.easymock.EasyMock;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -54,30 +56,29 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
 
 public class CSSModuleBuilderTest extends EasyMock {
 	static File tmpdir;
 	static File testdir;
 	static final String base64PngData = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAASCAYAAACaV7S8AAAAAXNSR0IArs4c6QAAACNJREFUCNdj+P///0cmBgaGJ0wMDAyPsbAgXIb////zMZACAIj0DUFA3QqvAAAAAElFTkSuQmCC";
+	static Map<String, String[]> requestParams = new HashMap<String, String[]>();
+	static Map<String, Object> requestAttributes = new HashMap<String, Object>();
+	static Scriptable configScript;
+	static IAggregator mockAggregator;
+	static Ref<IConfig> configRef;
+	static HttpServletRequest mockRequest;
+	static CSSModuleBuilderTester builder;
 
-	Map<String, String[]> requestParams = new HashMap<String, String[]>();
-	Map<String, Object> requestAttributes = new HashMap<String, Object>();
-	Scriptable configScript;
-	IAggregator mockAggregator;
-	Ref<IConfig> configRef;
-	HttpServletRequest mockRequest;
-	CSSModuleBuilderTester builder;
 	List<ICacheKeyGenerator> keyGens;
 	long seq = 1;
 
-	class CSSModuleBuilderTester extends CSSModuleBuilder {
-		public CSSModuleBuilderTester(IAggregator aggr) {
-			super(aggr);
+	static class CSSModuleBuilderTester extends CSSModuleBuilder {
+		public CSSModuleBuilderTester(IAggregator aggr, ExecutorService es, int scopePoolSize) {
+			super(aggr, es, scopePoolSize);
 		}
 		@Override
 		protected Reader getContentReader(
@@ -93,6 +94,12 @@ public class CSSModuleBuilderTest extends EasyMock {
 	public static void setUpBeforeClass() throws Exception {
 		tmpdir = new File(System.getProperty("java.io.tmpdir"));
 		testdir = new File(tmpdir, "CSSModuleBuilderTest");
+		configRef = new Ref<IConfig>(null);
+		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
+		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
+		replay(mockRequest);
+		replay(mockAggregator);
+		builder = new CSSModuleBuilderTester(mockAggregator, new SynchronousExecutor(), 1);
 	}
 
 	@AfterClass
@@ -102,15 +109,9 @@ public class CSSModuleBuilderTest extends EasyMock {
 
 	@Before
 	public void setUp() throws Exception {
-		configRef = new Ref<IConfig>(null);
-		mockAggregator = TestUtils.createMockAggregator(configRef, testdir);
-		mockRequest = TestUtils.createMockRequest(mockAggregator, requestAttributes, requestParams, null, null);
-		replay(mockRequest);
-		replay(mockAggregator);
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{}");
 		configRef.set(cfg);
 		configScript = (Scriptable)cfg.getRawConfig();
-		builder = new CSSModuleBuilderTester(mockAggregator);
 		builder.configLoaded(cfg, 1);
 		keyGens = builder.getCacheKeyGenerators(mockAggregator);
 	}

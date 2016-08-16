@@ -25,6 +25,7 @@ import com.ibm.jaggr.core.transport.IHttpTransport;
 
 import org.easymock.EasyMock;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.net.URI;
@@ -34,8 +35,6 @@ import java.util.List;
 import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
 
 public class SortedReadersTest {
 

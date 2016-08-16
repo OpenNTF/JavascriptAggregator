@@ -21,9 +21,8 @@ import com.ibm.jaggr.core.options.IOptions;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
+import org.junit.Assert;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class AggregatorUtilTest {
 

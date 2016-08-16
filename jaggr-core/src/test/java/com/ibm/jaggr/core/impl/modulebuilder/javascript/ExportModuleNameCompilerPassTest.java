@@ -23,9 +23,8 @@ import com.google.javascript.jscomp.Compiler.CodeBuilder;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
+import org.junit.Assert;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class ExportModuleNameCompilerPassTest {
 

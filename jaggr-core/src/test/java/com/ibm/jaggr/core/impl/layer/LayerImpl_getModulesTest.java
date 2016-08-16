@@ -43,17 +43,11 @@ import com.ibm.jaggr.core.util.DependencyList;
 import com.ibm.jaggr.core.util.Features;
 
 import org.easymock.EasyMock;
-import org.easymock.IAnswer;
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.easymock.PowerMock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -61,13 +55,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Future;
 
 import javax.servlet.http.HttpServletRequest;
 
-@RunWith(PowerMockRunner.class)
-@PrepareForTest({LayerImpl.class})
 public class LayerImpl_getModulesTest {
 
 	private IAggregator mockAggregator;
@@ -141,7 +132,9 @@ public class LayerImpl_getModulesTest {
 
 	@Test
 	public void testGetModules_moduleList_with_serverExpandLayers() throws Exception {
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+			.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+			.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		names.setModules(Arrays.asList(new String[]{"module/a"}));
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
@@ -151,19 +144,18 @@ public class LayerImpl_getModulesTest {
 		depsExplicitDeps.add("module/a", new ModuleDepInfo());
 		depsExpandedDeps.add("dep/moduledep", new ModuleDepInfo());
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature")));
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_MODULEDEPS),
 				EasyMock.eq(Arrays.asList(new String[]{"module/a"})),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 		ModuleList modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		assertEquals(new HashSet<String>(Arrays.asList("feature")), modules.getDependentFeatures());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		List<IModule> expected = makeModuleList("module/a", "dep/moduledep");
@@ -182,7 +174,9 @@ public class LayerImpl_getModulesTest {
 
 	@Test
 	public void testGetModules_deps() throws Exception {
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+				.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setDeps(Arrays.asList(new String[]{"dep/a"}));
@@ -191,20 +185,19 @@ public class LayerImpl_getModulesTest {
 		depsExplicitDeps.add("dep/a", new ModuleDepInfo());
 		depsExpandedDeps.add("dep/adep", new ModuleDepInfo());
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature")));
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList(new String[]{"dep/a"})),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 
 		ModuleList modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep");
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
@@ -217,7 +210,9 @@ public class LayerImpl_getModulesTest {
 
 	@Test
 	public void testGetModules_depsAndPreloads() throws Exception {
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+				.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setDeps(Arrays.asList("dep/a"));
@@ -234,31 +229,29 @@ public class LayerImpl_getModulesTest {
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature1")));
 		DependencyList preloadsDependencies = new DependencyList(preloadsExplicitDeps, preloadsExpandedDeps, new HashSet<String>(Arrays.asList("feature2")));
 
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList("dep/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
 
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
 				EasyMock.eq(Arrays.asList("preload/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(preloadsDependencies).once();
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 
 		ModuleList modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep", "preload/a", "preload/adep");
 		assertEquals(expected, modules.getModules());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
@@ -281,7 +274,9 @@ public class LayerImpl_getModulesTest {
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), "{textPluginDelegators:['js/css', 'dojo/text'], jsPluginDelegators:['dojo/i18n']}", true));
 		mockRequest.setAttribute(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
 
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+				.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setDeps(Arrays.asList("dep/a"));
@@ -300,31 +295,29 @@ public class LayerImpl_getModulesTest {
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature1")));
 		DependencyList preloadsDependencies = new DependencyList(preloadsExplicitDeps, preloadsExpandedDeps, new HashSet<String>(Arrays.asList("feature2")));
 
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList("dep/a")),
 				EasyMock.isA(IAggregator.class),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
 
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
 				EasyMock.eq(Arrays.asList("preload/a")),
 				EasyMock.isA(IAggregator.class),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(preloadsDependencies).once();
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 
 		ModuleList modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		List<IModule> expected = makeModuleList("dep/a", "combo/text!dep/adep", "preload/a", "combo/text!preload/adep", "preload/nls/adep");
 		assertEquals(expected, modules.getModules());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
@@ -339,7 +332,9 @@ public class LayerImpl_getModulesTest {
 
 	@Test
 	public void testGetModules_depsAndPreloadsWithReqExpLogging() throws Exception {
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+				.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		mockRequest.setAttribute(AbstractHttpTransport.ASSERTNONLS_REQATTRNAME, true);
@@ -357,50 +352,33 @@ public class LayerImpl_getModulesTest {
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature1")));
 		DependencyList preloadsDependencies = new DependencyList(preloadsExplicitDeps, preloadsExpandedDeps, new HashSet<String>(Arrays.asList("feature2")));
 
-		// Save original constructor so we can reused it in the mock
-		final Constructor<DependencyList> ctor = DependencyList.class.getConstructor(new Class[]{ModuleDeps.class, ModuleDeps.class, Set.class});
-
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList("dep/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(true),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
 
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
 				EasyMock.eq(Arrays.asList("preload/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(true),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(preloadsDependencies).once();
 
-		// Mock this version of the constructor to use the original ctor
-		PowerMock.expectNew(
-				DependencyList.class,
-				EasyMock.isA(ModuleDeps.class),
-				EasyMock.isA(ModuleDeps.class),
-				EasyMock.isA(Set.class)).andAnswer(new IAnswer<DependencyList>() {
-					@Override
-					public DependencyList answer() throws Throwable {
-						return (DependencyList)ctor.newInstance(EasyMock.getCurrentArguments());
-					}
-				}).once();
-
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 		mockRequest.setAttribute(IHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME, true);
 		mockRequest.setAttribute(IHttpTransport.DEPENDENCYEXPANSIONLOGGING_REQATTRNAME, true);
 		mockAggregator.getOptions().setOption("developmentMode", "true");
 
 		ModuleList modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep", "preload/a", "preload/adep");
 		assertEquals(expected, modules.getModules());
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
@@ -430,7 +408,9 @@ public class LayerImpl_getModulesTest {
 	 */
 	@Test (expected=BadRequestException.class)
 	public void testGetModules_depsAndPreloadsWithReqExpLogging_failNoNLS() throws Exception {
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+				.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		mockRequest.setAttribute(AbstractHttpTransport.ASSERTNONLS_REQATTRNAME, true);
@@ -448,50 +428,36 @@ public class LayerImpl_getModulesTest {
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature1")));
 		DependencyList preloadsDependencies = new DependencyList(preloadsExplicitDeps, preloadsExpandedDeps, new HashSet<String>(Arrays.asList("feature2")));
 
-		// Save original constructor so we can reused it in the mock
-		final Constructor<DependencyList> ctor = DependencyList.class.getConstructor(new Class[]{ModuleDeps.class, ModuleDeps.class, Set.class});
-
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList("dep/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
 
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQPRELOADS),
 				EasyMock.eq(Arrays.asList("preload/a")),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(preloadsDependencies).once();
 
-		// Mock this version of the constructor to use the original ctor
-		PowerMock.expectNew(
-				DependencyList.class,
-				EasyMock.isA(ModuleDeps.class),
-				EasyMock.isA(ModuleDeps.class),
-				EasyMock.isA(Set.class)).andAnswer(new IAnswer<DependencyList>() {
-					@Override
-					public DependencyList answer() throws Throwable {
-						return (DependencyList)ctor.newInstance(EasyMock.getCurrentArguments());
-					}
-				}).once();
-
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 		layer.getModules(mockRequest);
+		EasyMock.verify(layer);
 	}
 
 	@Test
 	public void testGetModules_includeUndefinedFeatureDeps() throws Exception {
-		LayerImpl layer = new TestLayerImpl();
+		LayerImpl layer = EasyMock.createMockBuilder(TestLayerImpl.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class, boolean.class)
+				.createMock();
 		MockRequestedModuleNames names = new MockRequestedModuleNames();
 		mockRequest.setAttribute(AbstractHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, names);
 		names.setDeps(Arrays.asList(new String[]{"dep/a"}));
@@ -502,20 +468,19 @@ public class LayerImpl_getModulesTest {
 		depsExpandedDeps.add("foo", new ModuleDepInfo("has", new BooleanTerm("feature"), null));
 		depsExpandedDeps.add("bar", new ModuleDepInfo("has", new BooleanTerm("!feature"), null));
 		DependencyList depsDependencies = new DependencyList(depsExplicitDeps, depsExpandedDeps, new HashSet<String>(Arrays.asList("feature")));
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList(new String[]{"dep/a"})),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 
 		ModuleList modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		List<IModule> expected = makeModuleList("dep/a", "dep/adep");
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));
@@ -525,23 +490,22 @@ public class LayerImpl_getModulesTest {
 		assertEquals(ModuleSpecifier.LAYER, modules.get(0).getSource());
 		assertEquals(ModuleSpecifier.LAYER, modules.get(1).getSource());
 
-		PowerMock.reset(DependencyList.class);
-		PowerMock.expectNew(
-				DependencyList.class,
+		EasyMock.reset(layer);
+		EasyMock.expect(layer.newDependencyList(
 				EasyMock.eq(LayerImpl.DEPSOURCE_REQDEPS),
 				EasyMock.eq(Arrays.asList(new String[]{"dep/a"})),
 				EasyMock.eq(mockAggregator),
 				EasyMock.eq(features),
 				EasyMock.eq(true),
 				EasyMock.eq(false),
-				EasyMock.eq(false))
+				EasyMock.eq(false)))
 			.andReturn(depsDependencies).once();
 
-		PowerMock.replay(DependencyList.class);
+		EasyMock.replay(layer);
 		mockRequest.removeAttribute(LayerImpl.MODULE_FILES_PROPNAME);
 		mockRequest.setAttribute(IHttpTransport.INCLUDEUNDEFINEDFEATUREDEPS_REQATTRNAME, true);
 		modules = layer.getModules(mockRequest);
-		PowerMock.verify(DependencyList.class);
+		EasyMock.verify(layer);
 		expected = makeModuleList("dep/a", "dep/adep", "foo", "bar");
 		assertSame(modules, requestAttributes.get(LayerImpl.MODULE_FILES_PROPNAME));
 		assertNull(requestAttributes.get(LayerImpl.EXPANDEDDEPS_PROPNAME));

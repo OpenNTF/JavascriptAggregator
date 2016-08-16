@@ -20,12 +20,11 @@ import com.ibm.jaggr.core.resource.IResource;
 
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
+import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.File;
 import java.net.URI;
-
-import junit.framework.Assert;
 
 public class FileResourceTest {
 

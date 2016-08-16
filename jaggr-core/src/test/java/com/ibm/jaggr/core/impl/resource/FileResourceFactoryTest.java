@@ -19,14 +19,13 @@ import com.google.common.collect.ImmutableList;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.List;
-
-import junit.framework.Assert;
 
 public class FileResourceFactoryTest {
 	private IMocksControl control;
