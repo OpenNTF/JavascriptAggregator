@@ -20,21 +20,21 @@
 	// make sure we use the global require object
 	this.require = {
 		async: true,
-		baseUrl: '../aggr',
+		baseUrl: '..',
 		packages: [
 				{
 					name: 'dojo',
-					location: 'app/dojo-1.11.2/dojo',
+					location: 'aggr/app/dojo-1.11.2/dojo',
 					lib: '.'
 				},
 				{
 					name: 'dijit',
-					location: 'app/dojo-1.11.2/dijit',
+					location: 'aggr/app/dojo-1.11.2/dijit',
 					lib: '.'
 				},
 				{
 					name: 'dojox',
-					location: 'app/Wdojo-1.11.2/dojox',
+					location: 'aggr/app/Wdojo-1.11.2/dojox',
 					lib: '.'
 				}
 			],
