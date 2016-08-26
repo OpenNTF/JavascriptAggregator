@@ -248,6 +248,23 @@
   									<ignore />
   								</action>
   							</pluginExecution>
+  							<pluginExecution>
+  								<pluginExecutionFilter>
+  									<groupId>org.apache.rat</groupId>
+  									<artifactId>
+  										apache-rat-plugin
+  									</artifactId>
+  									<versionRange>
+  										[0.8,)
+  									</versionRange>
+  									<goals>
+  										<goal>check</goal>
+  									</goals>
+  								</pluginExecutionFilter>
+  								<action>
+  									<ignore></ignore>
+  								</action>
+  							</pluginExecution>
   						</pluginExecutions>
   					</lifecycleMappingMetadata>
   				</configuration>
