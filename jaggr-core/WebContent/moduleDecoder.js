@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,10 @@
  */
 define([
 ], function() {
-	
+
 	/**
 	 * The functionality provided by this module is not used by the aggregator for normal
-	 * operation because request decoding is normally done by the server.  This module is 
+	 * operation because request decoding is normally done by the server.  This module is
 	 * provided for unit testing and client side diagnostic purposes.
 	 */
 
@@ -40,7 +40,7 @@ define([
 			}
 		}
 	};
-	
+
 	return {
 		decodeModuleIdList: function(encoded, base64decoder, resultArray, hasHash) {
 			encoded = encoded.replace(/[-_]/g, function(c) {
@@ -54,14 +54,14 @@ define([
 			    use32BitEncoding = hasHash ? decoded[hashLen] : 0,
 			    idList = [], length, j, i,
 			    elemLen = use32BitEncoding ? 4 : 2;
-			
+
 			if (hasHash) {
 				if (hash.join(",") != moduleIdMap["**idListHash**"].join(",")) {
 					throw new Error("Invalid module id list hash!");
 				}
 				decoded = decoded.slice(hashLen+1);
 			}
-			
+
 			for (i = 0; i < decoded.length/elemLen; i++) {
 				j = i * elemLen;
 				if (use32BitEncoding) {
@@ -71,7 +71,7 @@ define([
 					idList.push( ((decoded[j]&0xFF) << 8) + (decoded[j+1]&0xFF) );
 				}
 			}
-			
+
 			for (var s in moduleIdMap) {
 				if (moduleIdMap.hasOwnProperty(s) && s !== "**idListHash**") {
 					idModuleMap[moduleIdMap[s]] = s;
@@ -106,7 +106,7 @@ define([
 					resultArray[position+j] = (pluginName ? (pluginName + "!") : "") + moduleName;
 				}
 				position = -1;
-			}	
+			}
 		},
 
 		unfoldModuleNames: function(encoded, resultArray) {
@@ -130,7 +130,7 @@ define([
 					throw new Error("Invalid token " + $1 + ": " + $0);
 				}
 			});
-			
+
 			json = json.replace(/([{,:])([^{},:"]+)([},:])/g, '$1"$2"$3');	// matches all keys
 			json = json.replace(/([{,:])([^{},:"]+)([},:])/g, '$1"$2"$3'); // matches all values
 			var folded = JSON.parse(json);

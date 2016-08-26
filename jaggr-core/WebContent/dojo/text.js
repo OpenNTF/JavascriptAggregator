@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,8 @@
  */
 
 /*
- * Note: __original_text_plugin and __aggregator_text_plugin are aliased in the 
- * loader config by the http transport to the actual names so that the strings 
+ * Note: __original_text_plugin and __aggregator_text_plugin are aliased in the
+ * loader config by the http transport to the actual names so that the strings
  * can be static in this file.
  */
 define(["dojo/_base/lang", "__original_text_plugin"], function(lang, original_text_plugin) {
@@ -33,7 +33,7 @@ define(["dojo/_base/lang", "__original_text_plugin"], function(lang, original_te
 					require.cache[requireCacheUrl] = text;
 					load(text);
 				});
-			}			
+			}
 		}
 	});
 });

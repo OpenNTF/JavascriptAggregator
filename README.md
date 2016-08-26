@@ -1,5 +1,5 @@
 <!--
-   (C) Copyright 2012, IBM Corporation
+   (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.
@@ -45,10 +45,10 @@ reports, discussions, feature requests and reviews are subject to the
 [OpenNTF Terms of Use](http://openntf.org/Internal/home.nsf/dx/Terms_of_Use).
 
 ###HELP###
-For help with this project, please visit the 
+For help with this project, please visit the
 [discussion forum](https://groups.google.com/forum/?fromgroups#!forum/jaggr) or
-ask a question on [Stack Overflow](http://stackoverflow.com/) with the tag 
-`jaggr`. *Remember to check the 
+ask a question on [Stack Overflow](http://stackoverflow.com/) with the tag
+`jaggr`. *Remember to check the
 [wiki](https://github.com/OpenNTF/JavascriptAggregator/wiki).*
 
 ###UPGRADING###
@@ -65,20 +65,20 @@ run using the new interfaces.
 This is a major upgrade.  [Read what it brings](https://github.com/OpenNTF/JavascriptAggregator/wiki/What%27s-new-in-Version-1.2).
 
 We've created a new bundle, `jaggr-core`, to house all non-osgi specific code.
-This is now where the vast majority of jaggr code is located. Bundle 
+This is now where the vast majority of jaggr code is located. Bundle
 dependencies may need to be updated.
 
 Besides the name changes, there are some interface changes affecting aggregator
 extensions.  Extensions developed for previous versions of the aggregator won't
 run on 1.2 without changes.
 
-Developers running from within eclipse should use a java7 jre/jdk for 
-development and running the bundles out of the eclipse workspace. Maven will 
+Developers running from within eclipse should use a java7 jre/jdk for
+development and running the bundles out of the eclipse workspace. Maven will
 generate java6 compatible jars from the command line.  
 
 ####1.1.8####
 The changes described below don't affect casual users. Only implementors of
-JAGGR extensions that deal with calculation of expanded dependencies are 
+JAGGR extensions that deal with calculation of expanded dependencies are
 affected:
 
 * com.ibm.jaggr.service.deps.IDependencies.getExpandedDependencies() has been
@@ -86,10 +86,9 @@ affected:
 * com.ibm.jaggr.service.util.DependencyList constructor arguments have changed.
 
 ####1.1.1####
-* Resources defined in the server-side amd config file that use a 
+* Resources defined in the server-side amd config file that use a
   "namedbundleresource" scheme url should leave the authority section of the
-  uri blank and have the bundle name be the first segment in the path. 
+  uri blank and have the bundle name be the first segment in the path.
   (ex: namedbundleresource:///bundle.name/path/to/file)
-* Interface change in IResource (added IResource resolve(String relative);) 
+* Interface change in IResource (added IResource resolve(String relative);)
   will affect any third-party resource providers.
-
