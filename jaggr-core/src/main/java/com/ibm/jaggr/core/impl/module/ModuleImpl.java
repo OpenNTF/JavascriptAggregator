@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -513,7 +513,10 @@ public class ModuleImpl extends ModuleIdentifier implements IModule {
 			IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 			IConfig config = aggr.getConfig();
 			for (String mid : cacheEntry.getExtraModules()) {
-				URI uri = config.locateModuleResource(mid);
+				ModuleIdentifier ident = new ModuleIdentifier(mid);
+				String pluginName = ident.getPluginName();
+				boolean isJavaScript = pluginName == null || config.getJsPluginDelegators().contains(pluginName);
+				URI uri = config.locateModuleResource(ident.getModuleName(), isJavaScript);
 				IModule module = aggr.newModule(mid, uri);
 				Future<ModuleBuildReader> future = aggr.getCacheManager().getCache().getModules().getBuild(request, module);
 				ModuleBuildFuture mbf = new ModuleBuildFuture(

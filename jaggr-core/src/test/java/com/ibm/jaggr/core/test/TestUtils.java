@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -238,7 +238,7 @@ public class TestUtils {
 		final Ref<IHttpTransport> transportRef = new Ref<IHttpTransport>(transport == null ? new TestDojoHttpTransport() : transport);
 		final Ref<IExecutors> executorsRef = new Ref<IExecutors>(new ExecutorsImpl(
 				new SynchronousExecutor(),
-				null,
+				new SynchronousExecutor(),
 				new SynchronousScheduledExecutor(),
 				new SynchronousScheduledExecutor()));
 		final File workdir = workingDirectory;

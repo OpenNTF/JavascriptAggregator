@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -112,12 +112,12 @@ public class OptionsImplTest {
 
 			@Override
 			protected void updateNotify(long seq) {
-				Assert.assertEquals(startSeq[0]+1, seq);
+				Assert.assertTrue(seq > startSeq[0]);
 				callCounts[1]++;
 			}
 			@Override
 			protected void propsFileUpdateNotify(Properties props, long seq) {
-				Assert.assertEquals(startSeq[0]+1, seq);
+				Assert.assertTrue(seq > startSeq[0]);
 				callCounts[2]++;
 			}
 		};

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -303,9 +303,12 @@ public interface IConfig {
 	 *
 	 * @param mid
 	 *            The module id
+	 * @param isJavaScript
+	 *            True if {@code mid} specifies a JavaScript resource (.js will be
+	 *            appended to the module name if not already specified).
 	 * @return The URI for the module.
 	 */
-	public URI locateModuleResource(String mid);
+	public URI locateModuleResource(String mid, boolean isJavaScript);
 
 	/**
 	 * Returns an ordered mapping of module ids to resource locations for all of the

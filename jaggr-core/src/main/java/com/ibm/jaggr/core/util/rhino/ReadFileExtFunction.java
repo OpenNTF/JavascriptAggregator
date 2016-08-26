@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2014, IBM Corporation
+ * (C) Copyright IBM Corp. 2014, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -150,7 +150,7 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 		URI fileUri = null;
 		IResource res = null;
 		if (javaThis.isIncludeAMDPaths && !NON_AMD_PATH_PAT.matcher(file).find()) {
-			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file);
+			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file, false);
 			if (fileUri != null) {
 				res = javaThis.aggregator.newResource(fileUri);
 			}

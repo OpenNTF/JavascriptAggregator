@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -253,9 +253,11 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	}
 
 	// for unit tests
-	protected CSSModuleBuilder(IAggregator aggregator) {
+	protected CSSModuleBuilder(IAggregator aggregator, ExecutorService es, int scopePoolSize) {
 		super();
 		this.aggregator = aggregator;
+		this.es = es;
+		this.ctorScopePoolSize = scopePoolSize;
 		init();
 	}
 
@@ -347,6 +349,8 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 	private List<PluginInfo> pluginInfoList;
 	private Scriptable postcssOptions;
 	private BlockingQueue<Scriptable> threadScopes;
+	private ExecutorService es;
+	private int ctorScopePoolSize = 0;
 
 	private ReadWriteLock configUpdatingRWL = new ReentrantReadWriteLock();
 	private boolean initialized = false;
@@ -494,7 +498,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			} else if (includeAMDPaths && importNameMatch.contains("/") && !importNameMatch.startsWith(".")) { //$NON-NLS-1$ //$NON-NLS-2$
 				// Resource not found using relative path to res.  If path is not relative (starts with .)
 				// then try to find the resource using config paths and packages.
-				uri = aggregator.getConfig().locateModuleResource(importNameMatch);
+				uri = aggregator.getConfig().locateModuleResource(importNameMatch, false);
 				if (uri != null) {
 					importRes = aggregator.newResource(uri);
 					uri = importRes.getURI();
@@ -786,12 +790,15 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			final Scriptable configScope = (Scriptable)config.getConfigScope();
 
 			int scopePoolSize = DEFAULT_SCOPE_POOL_SIZE;
-			// Read the scope pool size if specified
-			Object scopePoolSizeConfig = configScript.get(SCOPEPOOLSIZE_CONFIGPARAM, configScript);
-			if (scopePoolSizeConfig != Scriptable.NOT_FOUND) {
-				scopePoolSize = ((Number)scopePoolSizeConfig).intValue();
+			if (ctorScopePoolSize != 0) {
+				scopePoolSize = ctorScopePoolSize;
+			} else {
+				// Read the scope pool size if specified
+				Object scopePoolSizeConfig = configScript.get(SCOPEPOOLSIZE_CONFIGPARAM, configScript);
+				if (scopePoolSizeConfig != Scriptable.NOT_FOUND) {
+					scopePoolSize = ((Number)scopePoolSizeConfig).intValue();
+				}
 			}
-
 			// Create a new scope to evaluate the minifier initialization code because configScope is sealed.
 			Scriptable scope = cx.newObject(configScope);
 			scope.setParentScope(configScope);
@@ -839,7 +846,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 							}
 							Function initializer = (Function)initializerObj;
 							if (!uri.isAbsolute()) {
-								uri = config.locateModuleResource(location);
+								uri = config.locateModuleResource(location, true);
 							}
 							InputStream is = aggregator.newResource(uri).getInputStream();
 
@@ -873,7 +880,9 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 			// Now create the thread scope pool.  We use a thread pool executor service to
 			// create the scope pool in order to take advantage of parallel processing
 			// capabilities on multi-core processors.
-			ExecutorService es = Executors.newFixedThreadPool(INITIALIZER_THREAD_POOL_SIZE);
+			if (es == null) {
+				es = Executors.newFixedThreadPool(INITIALIZER_THREAD_POOL_SIZE);
+			}
 			final CompletionService<Scriptable> cs = new ExecutorCompletionService<Scriptable>(es);
 			for (int i = 0; i < scopePoolSize; i++) {
 				cs.submit(new Callable<Scriptable>() {

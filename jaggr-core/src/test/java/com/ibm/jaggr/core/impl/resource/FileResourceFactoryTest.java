@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,14 +19,13 @@ import com.google.common.collect.ImmutableList;
 
 import org.easymock.EasyMock;
 import org.easymock.IMocksControl;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.lang.reflect.Constructor;
 import java.net.URI;
 import java.util.List;
-
-import junit.framework.Assert;
 
 public class FileResourceFactoryTest {
 	private IMocksControl control;

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -65,7 +65,7 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 
 	@Override
 	public IResource newResource(URI uri) {
-		BundleContext context = Activator.getBundleContext();
+		BundleContext context = getBundleContext();
 		IResource result = null;
 		String scheme = uri.getScheme();
 		if ("bundleresource".equals(scheme) || "bundleentry".equals(scheme)) { //$NON-NLS-1$ //$NON-NLS-2$
@@ -220,5 +220,9 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	 */
 	protected Bundle getBundle(String bundleName) {
 		return bundleResolver.getBundle(bundleName);
+	}
+
+	protected BundleContext getBundleContext() {
+		return Activator.getBundleContext();
 	}
 }

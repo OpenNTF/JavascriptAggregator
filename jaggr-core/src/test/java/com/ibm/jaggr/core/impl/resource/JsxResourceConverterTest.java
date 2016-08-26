@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.resource.IResourceVisitor.Resource;
 import com.ibm.jaggr.core.resource.StringResource;
+import com.ibm.jaggr.core.test.SynchronousExecutor;
 import com.ibm.jaggr.core.test.TestUtils;
 
 import com.google.common.io.Files;
@@ -41,6 +42,7 @@ import org.apache.commons.lang3.mutable.MutableObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.lesscss.deps.org.apache.commons.io.FileUtils;
@@ -59,8 +61,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Dictionary;
 import java.util.List;
-
-import junit.framework.Assert;
 
 public class JsxResourceConverterTest {
 
@@ -110,7 +110,7 @@ public class JsxResourceConverterTest {
 					}
 				});
 		EasyMock.replay(mockAggregator, mockPlatformServices);
-		JsxResourceConverter converter = new JsxResourceConverter() {
+		JsxResourceConverter converter = new JsxResourceConverter(new SynchronousExecutor(), 1) {
 			@Override protected IResourceConverterCache newCache(IConverter converter, String prefix, String suffix) {
 				Assert.assertTrue(converter instanceof JsxResourceConverter.JsxConverter);
 				Assert.assertTrue("jsx.".equals(prefix));
@@ -287,8 +287,8 @@ public class JsxResourceConverterTest {
 		URI converterUri = JsxResourceConverterTest.class.getClassLoader().getResource("JSXTransformer.js").toURI();
 		File tmpdir = Files.createTempDir();
 		File cacheFile = new File(tmpdir, "test.js");
-		JsxResourceConverter.JsxConverter jsxConverter = new JsxResourceConverter.JsxConverter(converterUri);
-		jsxConverter.initialize();
+		JsxResourceConverter.JsxConverter jsxConverter = new JsxResourceConverter.JsxConverter(1, null);
+		jsxConverter.initialize(new SynchronousExecutor(), converterUri);
 		IResource res = new StringResource(jsxSource, new URI("test.jsx"));
 		jsxConverter.generateCacheContent(res, cacheFile);
 		Assert.assertEquals(transpiledJs, FileUtils.readFileToString(cacheFile));
@@ -300,6 +300,7 @@ public class JsxResourceConverterTest {
 		os.close();
 		ObjectInputStream is = new ObjectInputStream(new FileInputStream(file));
 		jsxConverter = (JsxResourceConverter.JsxConverter)is.readObject();
+		jsxConverter.initialize(new SynchronousExecutor(), converterUri);
 		is.close();
 		jsxConverter.generateCacheContent(res, cacheFile);
 		Assert.assertEquals(transpiledJs, FileUtils.readFileToString(cacheFile));

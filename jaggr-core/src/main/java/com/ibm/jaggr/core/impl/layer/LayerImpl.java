@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import com.ibm.jaggr.core.cachekeygenerator.ICacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.KeyGenUtil;
 import com.ibm.jaggr.core.cachekeygenerator.ServerExpandLayersCacheKeyGenerator;
 import com.ibm.jaggr.core.cachekeygenerator.SourceMapsCacheKeyGenerator;
+import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.deps.ModuleDepInfo;
 import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.layer.ILayer;
@@ -834,7 +835,7 @@ public class LayerImpl implements ILayer {
 						}
 					}
 					if (RequestUtil.isServerExpandedLayers(request)) {
-						moduleList = new DependencyList(
+						moduleList = newDependencyList(
 								DEPSOURCE_MODULEDEPS,
 								requestedModuleNames.getModules(),
 								aggr,
@@ -876,7 +877,7 @@ public class LayerImpl implements ILayer {
 
 					// If there's a required module, then add it and its dependencies
 					// to the module list.
-					requiredList = new DependencyList(
+					requiredList = newDependencyList(
 							DEPSOURCE_REQDEPS,
 							requestedModuleNames.getDeps(),
 							aggr,
@@ -894,7 +895,7 @@ public class LayerImpl implements ILayer {
 					combined.addAll(requiredList.getExpandedDeps());
 				}
 				if (!requestedModuleNames.getPreloads().isEmpty()) {
-					preloadList = new DependencyList(
+					preloadList = newDependencyList(
 							DEPSOURCE_REQPRELOADS,
 							requestedModuleNames.getPreloads(),
 							aggr,
@@ -910,7 +911,7 @@ public class LayerImpl implements ILayer {
 					combined.addAll(preloadList.getExpandedDeps());
 				}
 				if (!requestedModuleNames.getExcludes().isEmpty()) {
-					excludeList = new DependencyList(
+					excludeList = newDependencyList(
 							DEPSOURCE_EXCLUDES,
 							requestedModuleNames.getExcludes(),
 							aggr,
@@ -1006,8 +1007,12 @@ public class LayerImpl implements ILayer {
 			mid = mid.substring(0, mid.length() - 2);
 		}
 		IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
+		IConfig config = aggr.getConfig();
 
-		URI uri = aggr.getConfig().locateModuleResource(new ModuleIdentifier(mid).getModuleName());
+		ModuleIdentifier ident = new ModuleIdentifier(mid);
+		String pluginName = ident.getPluginName();
+		boolean isJavaScript = pluginName == null || config.getJsPluginDelegators().contains(pluginName);
+		URI uri = config.locateModuleResource(ident.getModuleName(), isJavaScript);
 
 		return aggr.newModule(mid, uri);
 	}
@@ -1049,6 +1054,19 @@ public class LayerImpl implements ILayer {
 		return result;
 
 	}
+
+	protected DependencyList newDependencyList(
+		String source,
+		Iterable<String> names,
+		IAggregator aggr,
+		Features features,
+		boolean resolveAliases,
+		boolean includeDetails,
+		boolean includeRequireDeps
+	) {
+		return new DependencyList(source, names, aggr, features, resolveAliases, includeDetails, includeRequireDeps);
+	}
+
 
 	/**
 	 * Called by the layer cache manager when a layer build is evicted from the

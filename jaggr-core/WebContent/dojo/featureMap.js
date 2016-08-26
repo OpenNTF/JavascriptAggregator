@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 define([
-	"dojo/has", 
-	"dojo/has!dojo-combo-api?combo/featureList",    // not a physical module.  Resolved by JAGGR 
-                                                    //  to return array of dependent features 
+	"dojo/has",
+	"dojo/has!dojo-combo-api?combo/featureList",    // not a physical module.  Resolved by JAGGR
+                                                    //  to return array of dependent features
     "dojox/encoding/base64"
 ], function(has, featureList, base64) {
 	var result = {

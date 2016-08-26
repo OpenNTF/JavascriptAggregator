@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -40,8 +41,6 @@ import java.io.InputStream;
 import java.io.ObjectOutputStream;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
 
 public class CacheEntryTest {
 
@@ -105,7 +104,7 @@ public class CacheEntryTest {
 		in = entry.getInputStream(mockRequest, null);
 		Assert.assertEquals(TEST_LAYER_CONTENT.getBytes().length, entry.getSize());
 		Assert.assertEquals(TEST_LAYER_CONTENT, IOUtils.toString(in));
-		Assert.assertEquals(0,  Whitebox.getInternalState(entry, "sourceMapSize"));
+		Assert.assertEquals(0,  ((Integer)Whitebox.getInternalState(entry, "sourceMapSize")).intValue());
 
 		// with a source map reference
 		MutableObject<byte[]> sourceMap = new MutableObject<byte[]>();
@@ -119,7 +118,7 @@ public class CacheEntryTest {
 		Assert.assertEquals(TEST_LAYER_CONTENT, IOUtils.toString(in));
 		Assert.assertEquals(TEST_SOURCEMAP_CONTENT, new String(sourceMap.getValue()));
 		Assert.assertEquals(TEST_LAYER_CONTENT.getBytes().length, entry.getSize());
-		Assert.assertEquals(TEST_SOURCEMAP_CONTENT.getBytes().length,  Whitebox.getInternalState(entry, "sourceMapSize"));
+		Assert.assertEquals(TEST_SOURCEMAP_CONTENT.getBytes().length,  ((Integer)Whitebox.getInternalState(entry, "sourceMapSize")).intValue());
 	}
 
 	@Test

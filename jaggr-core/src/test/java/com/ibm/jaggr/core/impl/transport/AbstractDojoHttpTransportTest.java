@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -47,8 +48,6 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
 
 public class AbstractDojoHttpTransportTest {
 
@@ -222,9 +221,9 @@ public class AbstractDojoHttpTransportTest {
 		Assert.assertEquals("define(", result);
 		mockRequest.setAttribute(IHttpTransport.SERVEREXPANDLAYERS_REQATTRNAME, true);
 		result = transport.beforeModule(mockRequest, new ModuleInfo("module", true));
-		Assert.assertEquals("!require.combo.isDefined('module')&&", result);
+		Assert.assertEquals("", result);
 		result = transport.beforeModule(mockRequest, new ModuleInfo("textModule", false));
-		Assert.assertEquals("!require.combo.isDefined('textModule')&&define(", result);
+		Assert.assertEquals("define(", result);
 	}
 
 	@Test

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -145,6 +145,7 @@ public abstract class AbstractHttpTransport implements IHttpTransport, IConfigMo
 
 	public static final String FEATUREMAP_REQPARAM = "has"; //$NON-NLS-1$
 	public static final String FEATUREMAPHASH_REQPARAM = "hashash"; //$NON-NLS-1$
+	public static final String FAILONVERSIONERR_REQPARAM = "failOnVerErr"; //$NON-NLS-1$
 
 	public static final String[] INCLUDEREQUIREDEPS_REQPARAM = {"includeRequireDeps", "ird"};  //$NON-NLS-1$ //$NON-NLS-2$
 

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import com.ibm.jaggr.core.IServiceRegistration;
 import com.ibm.jaggr.core.NotFoundException;
 import com.ibm.jaggr.core.config.IConfigScopeModifier;
 
+import com.ibm.jaggr.service.IBundleResolver;
 import com.ibm.jaggr.service.impl.AggregatorImpl;
 import com.ibm.jaggr.service.util.BundleVersionsHashBase;
 
@@ -72,6 +73,14 @@ public class BundleVersionsHash extends BundleVersionsHashBase implements IExten
 
 
 	private String propName = null;		// the name of the function (specified by plugin.xml)
+
+	public BundleVersionsHash() {
+	}
+
+	// For unit tests
+	public BundleVersionsHash(IBundleResolver resolver) {
+		super(resolver);
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.config.IConfigScopeModifier#modifyScope(com.ibm.jaggr.core.IAggregator, org.mozilla.javascript.Context, org.mozilla.javascript.Scriptable)

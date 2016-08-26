@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,7 +32,6 @@ import com.ibm.jaggr.core.config.IConfigScopeModifier;
 import com.ibm.jaggr.core.deps.IDependencies;
 import com.ibm.jaggr.core.impl.AggregatorLayerListener;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
-import com.ibm.jaggr.core.impl.module.NotFoundModule;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayer;
 import com.ibm.jaggr.core.layer.ILayerListener;
@@ -59,12 +58,10 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -73,7 +70,6 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStreamWriter;
-import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.net.URI;
@@ -92,10 +88,6 @@ import java.util.zip.Deflater;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import junit.framework.Assert;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest(LayerImpl.class)
 public class LayerTest extends EasyMock {
 
 	static int id = 0;
@@ -283,7 +275,7 @@ public class LayerTest extends EasyMock {
 		// Add a text resource
 		requestAttributes.clear();
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		modules.setModules(Arrays.asList(new String[]{"p1/b","p1/a","p1/hello.txt"}));
+		modules.setModules(Arrays.asList(new String[]{"p1/b","p1/a","combo/text!p1/hello.txt"}));
 		requestAttributes.put(IHttpTransport.REQUESTEDMODULENAMES_REQATTRNAME, modules);
 		requestAttributes.put(LayerImpl.LAYERCACHEINFO_PROPNAME, layerCacheInfo);
 		layer = newLayerImpl(modules.toString(), mockAggregator);
@@ -296,7 +288,7 @@ public class LayerTest extends EasyMock {
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("add", moduleCacheInfo.get("p1/hello.txt"));
+		assertEquals("add", moduleCacheInfo.get("combo/text!p1/hello.txt"));
 		assertTrue(result.contains("\"hello from a.js\""));
 		assertTrue(result.contains("\"hello from b.js\""));
 		assertTrue(result.contains("Hello world text"));
@@ -321,7 +313,7 @@ public class LayerTest extends EasyMock {
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
+		assertEquals("hit", moduleCacheInfo.get("combo/text!p1/hello.txt"));
 		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/a.js").toURI())));
 		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/b.js").toURI())));
 		assertTrue(result.contains(String.format(AggregatorLayerListener.PREAMBLEFMT, new File(tmpdir, "p1/hello.txt").toURI())));
@@ -367,7 +359,7 @@ public class LayerTest extends EasyMock {
 		moduleCacheInfo = (Map<String, String>)requestAttributes.get(IModuleCache.MODULECACHEINFO_PROPNAME);
 		assertEquals("hit", moduleCacheInfo.get("p1/a"));
 		assertEquals("hit", moduleCacheInfo.get("p1/b"));
-		assertEquals("hit", moduleCacheInfo.get("p1/hello.txt"));
+		assertEquals("hit", moduleCacheInfo.get("combo/text!p1/hello.txt"));
 		assertEquals("weighted size error", totalSize, cacheMap.weightedSize());
 		assertEquals("cache file size error", totalSize, TestUtils.getDirListSize(cacheDir, layerFilter));
 		assertEquals(saveResult, result);
@@ -511,7 +503,7 @@ public class LayerTest extends EasyMock {
 	public void testGetResourceURI() throws IOException {
 		replay(mockAggregator, mockRequest, mockResponse, mockDependencies);
 		requestAttributes.put(IAggregator.AGGREGATOR_REQATTRNAME, mockAggregator);
-		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}]}";
+		String configJson = "{paths:{p1:'p1',p2:'p2'}, packages:[{name:'foo', location:'foo'}],jsPluginDelegators:['foo']}";
 		configRef.set(new ConfigImpl(mockAggregator, tmpdir.toURI(), configJson));
 
 		TestLayerImpl impl = new TestLayerImpl("");
@@ -521,7 +513,7 @@ public class LayerTest extends EasyMock {
 		assertEquals(uri, impl.newModule(mockRequest, "p1/a/.").getURI());
 		assertEquals(uri, impl.newModule(mockRequest, "foo!p1/a/.").getURI());
 		uri = new File(tmpdir, "p1/hello.txt").toURI();
-		assertEquals(uri, impl.newModule(mockRequest, "p1/hello.txt").getURI());
+		assertEquals(uri, impl.newModule(mockRequest, "combo/text!p1/hello.txt").getURI());
 
 	}
 

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -60,13 +60,10 @@ import org.apache.wink.json4j.JSONObject;
 import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.powermock.api.easymock.PowerMock;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -99,10 +96,6 @@ import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
 
-import junit.framework.Assert;
-
-@RunWith(PowerMockRunner.class)
-@PrepareForTest( JavaScriptModuleBuilder.class )
 public class JavaScriptModuleBuilderTest extends EasyMock {
 
 	File tmpdir = null;
@@ -559,11 +552,15 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertTrue(TypeUtil.asBoolean(mockRequest.getAttribute(IHttpTransport.EXPORTMODULENAMES_REQATTRNAME)));
 	}
 
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testLayerBeginEndNotifier_exportModuleNames() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
 		Set<String> dependentFeatures = new HashSet<String>();
-		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
+		JavaScriptModuleBuilder builder = EasyMock.createMockBuilder(TestJavaScriptModuleBuilder.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class)
+				.createMock();
+
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertEquals("", result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
@@ -604,10 +601,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExplicitDeps);
 		expectedDeps.addAll(layerExpandedDeps);
 
-		PowerMock.expectNew(DependencyList.class, isA(String.class), isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), eq(false))
+		EasyMock.expect(builder.newDependencyList(isA(String.class), isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), eq(false)))
 		.andAnswer(new IAnswer<DependencyList>() {
 			@Override public DependencyList answer() throws Throwable {
-				@SuppressWarnings("unchecked")
 				List<String> modules = (List<String>)getCurrentArguments()[1];
 				if (Arrays.asList(new String[]{"exclude"}).equals(modules)) {
 					return mockConfigDeps;
@@ -618,7 +614,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				return null;
 			}
 		}).anyTimes();
-		PowerMock.replay(mockConfigDeps, mockLayerDeps, DependencyList.class);
+		EasyMock.replay(mockConfigDeps, mockLayerDeps, builder);
 
 		modules = Arrays.asList(new IModule[]{
 				new ModuleImpl("foo", new URI("file://foo.js")),
@@ -648,11 +644,14 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 	}
 
 	private static final String loggingOutput = "console.log(\"%cEnclosing dependencies for require list expansion (these modules will be omitted from subsequent expanded require lists):\", \"color:blue;background-color:yellow\");console.log(\"%cExpanded dependencies for config deps:\", \"color:blue\");console.log(\"%c	exclude (exclude detail)\\r\\n	excludedep (excludedep detail)\\r\\n\", \"font-size:x-small\");console.log(\"%cExpanded dependencies for layer deps:\", \"color:blue\");console.log(\"%c	foo (foo detail)\\r\\n	bar (bar detail)\\r\\n	foodep (foodep detail)\\r\\n	bardep (bardep detail)\\r\\n\", \"font-size:x-small\");";
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testLayerBeginEndNotifier_exportModuleNamesWithDetails() throws Exception {
 		List<IModule> modules = new ArrayList<IModule>();
 		Set<String> dependentFeatures = new HashSet<String>();
-		JavaScriptModuleBuilder builder = new JavaScriptModuleBuilder();
+		JavaScriptModuleBuilder builder = EasyMock.createMockBuilder(TestJavaScriptModuleBuilder.class)
+				.addMockedMethod("newDependencyList", String.class, Iterable.class, IAggregator.class, Features.class, boolean.class, boolean.class)
+				.createMock();
 		String result = builder.layerBeginEndNotifier(EventType.BEGIN_LAYER, mockRequest, modules, dependentFeatures);
 		Assert.assertEquals("", result);
 		Assert.assertNull(mockRequest.getAttribute(JavaScriptModuleBuilder.EXPANDED_DEPENDENCIES));
@@ -694,10 +693,9 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		expectedDeps.addAll(layerExplicitDeps);
 		expectedDeps.addAll(layerExpandedDeps);
 
-		PowerMock.expectNew(DependencyList.class, isA(String.class), isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), anyBoolean())
+		EasyMock.expect(builder.newDependencyList(isA(String.class), isA(List.class), isA(IAggregator.class), eq(features), anyBoolean(), anyBoolean()))
 		.andAnswer(new IAnswer<DependencyList>() {
 			@Override public DependencyList answer() throws Throwable {
-				@SuppressWarnings("unchecked")
 				List<String> modules = (List<String>)getCurrentArguments()[1];
 				if (Arrays.asList(new String[]{"exclude"}).equals(modules)) {
 					return mockConfigDeps;
@@ -708,7 +706,7 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 				return null;
 			}
 		}).anyTimes();
-		PowerMock.replay(mockConfigDeps, mockLayerDeps, DependencyList.class);
+		EasyMock.replay(mockConfigDeps, mockLayerDeps, builder);
 
 		modules = Arrays.asList(new IModule[]{
 				new ModuleImpl("foo", new URI("file://foo.js")),

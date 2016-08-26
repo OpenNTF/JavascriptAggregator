@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -61,6 +61,7 @@ import org.easymock.EasyMock;
 import org.easymock.IAnswer;
 import org.junit.After;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -84,9 +85,6 @@ import java.util.concurrent.Future;
 import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpServletRequest;
-
-import junit.framework.Assert;
-import junit.framework.AssertionFailedError;
 
 public class LayerBuilderTest {
 	public static final Pattern moduleNamePat = Pattern.compile("^module[0-9]$");
@@ -114,7 +112,7 @@ public class LayerBuilderTest {
 				(LayerContributionType)EasyMock.anyObject(LayerContributionType.class),
 				EasyMock.anyObject()
 				)).andAnswer(new IAnswer<String>() {
-					@SuppressWarnings("unused")
+					@SuppressWarnings({ "unused", "unchecked" })
 					public String answer() throws Throwable {
 						HttpServletRequest request = (HttpServletRequest)EasyMock.getCurrentArguments()[0];
 						LayerContributionType type = (LayerContributionType)EasyMock.getCurrentArguments()[1];
@@ -711,7 +709,7 @@ public class LayerBuilderTest {
 		try {
 			result = builder.notifyLayerListeners(EventType.BEGIN_MODULE, mockRequest, module1);
 			Assert.fail();
-		} catch (AssertionFailedError e) {
+		} catch (AssertionError e) {
 		}
 		// verifies that bundleContext.getService()/ungetService()
 		// are matched even though exception was thrown by listener

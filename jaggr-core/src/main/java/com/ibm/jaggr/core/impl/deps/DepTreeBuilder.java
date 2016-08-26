@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,7 +22,10 @@ import com.ibm.jaggr.core.resource.IResourceVisitor;
 import com.ibm.jaggr.core.util.SignalUtil;
 
 import java.io.IOException;
+import java.lang.reflect.AccessibleObject;
 import java.net.URI;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletionService;
@@ -65,6 +68,8 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 
 	private final Set<String> nonJSExtensions;
 
+	private final Map<AccessibleObject, List<Object>> compilerOptionsMap;
+
 	/**
 	 * Counter to keep track of the number of parser threads started
 	 */
@@ -98,15 +103,19 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 	 *            The cached dependency tree. Used when validating dependencies
 	 * @param nonJSExtensions
 	 *            Set of non-JavaScript file extensions to include in the dependencies name list.
+	 * @param compilerOptionsMap
+	 *            Compiler options from config
 	 */
 	DepTreeBuilder(IAggregator aggregator, CompletionService<URI> parserCs,
-			URI path, DepTreeNode node, DepTreeNode cached, Set<String> nonJSExtensions) {
+			URI path, DepTreeNode node, DepTreeNode cached, Set<String> nonJSExtensions,
+			Map<AccessibleObject, List<Object>> compilerOptionsMap) {
 		this.aggregator = aggregator;
 		this.parserCs = parserCs;
 		this.uri = path;
 		this.root = node;
 		this.cached = cached;
 		this.nonJSExtensions = nonJSExtensions;
+		this.compilerOptionsMap = compilerOptionsMap;
 	}
 
 	/* (non-Javadoc)
@@ -167,7 +176,7 @@ final class DepTreeBuilder implements Callable<DepTreeBuilder.Result> {
 				 */
 				if (node.lastModified() != resource.lastModified()) {
 					// File has changed, or is new. Submit an async parser job.
-					parserCs.submit(new DepParser(node, resource.newResource(aggregator)));
+					parserCs.submit(new DepParser(node, resource.newResource(aggregator), compilerOptionsMap));
 					parserCount.incrementAndGet();
 				}
 				return true;

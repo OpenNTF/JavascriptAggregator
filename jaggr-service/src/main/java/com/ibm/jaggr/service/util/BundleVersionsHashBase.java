@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,6 +49,10 @@ public class BundleVersionsHashBase {
 		bundleResolver = BundleResolverFactory.getResolver(null);
 	}
 
+	public BundleVersionsHashBase(IBundleResolver bundleResolver) {
+		this.bundleResolver = bundleResolver;
+	}
+
 	/**
 	 * @param contributingBundle
 	 */
@@ -79,7 +83,7 @@ public class BundleVersionsHashBase {
 	 * @return the bundle headers for the bundle.
 	 * @throws NotFoundException if no matching bundle is found.
 	 */
-	private Dictionary<?, ?> getBundleHeaders(String bundleName) throws NotFoundException {
+	protected Dictionary<?, ?> getBundleHeaders(String bundleName) throws NotFoundException {
 		final String sourceMethod = "getBundleHeaders"; //$NON-NLS-1$
 		boolean isTraceLogging = log.isLoggable(Level.FINER);
 		if (isTraceLogging) {

@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -208,7 +208,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 				}
 				IAggregator aggr = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
 				Features features = (Features)request.getAttribute(IHttpTransport.FEATUREMAP_REQATTRNAME);
-				DependencyList excludeList = new DependencyList(
+				DependencyList excludeList = newDependencyList(
 						DEPSOURCE_REQEXPEXCLUDES,
 						excludeIds,
 						aggr,
@@ -216,7 +216,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 						true,	// resolveAliases
 						isReqExpLogging);
 
-				DependencyList layerDepList = new DependencyList(
+				DependencyList layerDepList = newDependencyList(
 						DEPSOURCE_LAYER,
 						moduleIds,
 						aggr,
@@ -352,7 +352,21 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		Set<String> hasFiltDiscoveredHasConditionals = new HashSet<String>();
 		String output = null;
 
-		Compiler compiler = new Compiler();
+		Compiler compiler = new Compiler() {
+			@Override
+			public void report(JSError error) {
+				/*
+				 * Silence Non-JSDoc parser errors.  These are mis-reported by the compiler as a JavaScript
+				 * parser error and are not filterable by the NON_STANDARD_JSDOC DiagnosticGroup.
+				 */
+				if ("JSC_PARSE_ERROR".equals(error.getType().key)) { //$NON-NLS-1$
+					if (error.description != null && error.description.contains("Non-JSDoc")) { //$NON-NLS-1$
+						return;
+					}
+				}
+				super.report(error);
+			}
+		};
 		CompilerOptions compiler_options = CompilerUtil.getDefaultOptions();
 		CompilerUtil.applyCompilerOptionsFromMap(compiler_options, compilerOptionsMap);
 		compiler_options.customPasses = HashMultimap.create();
@@ -463,6 +477,10 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 			if (level == null) {
 				output = source.toString()+ "\r\n"; //$NON-NLS-1$
+				if (isSourceMaps) {
+					IdentitySourceMapGenerator gen = new IdentitySourceMapGenerator(mid, output, compiler_options);
+					sourceMap = gen.generateSourceMap();
+				}
 			} else {
 				// Get the compiler output and set the data in the ModuleBuild
 				output = compiler.toSource();
@@ -498,7 +516,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 			}
 		}
 		Object build = expandedDepsList == null || expandedDepsList.size() == 0 ?
-				output : new JavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging);
+				output : newJavaScriptBuildRenderer(mid, output, expandedDepsList, isReqExpLogging);
 
 		if (isSourceMaps && sourceMap != null && !(build instanceof IModuleBuilder)) {
 			// If we need to include a source map in the build output, then return an
@@ -756,6 +774,13 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 		return sb.toString();
 	}
 
+	protected DependencyList newDependencyList(String source, Iterable<String> names, IAggregator aggr, Features features,  boolean resolveAliases, boolean includeDetails) {
+		return new DependencyList(source, names, aggr, features, resolveAliases, includeDetails);
+	}
+
+	protected JavaScriptBuildRenderer newJavaScriptBuildRenderer(String mid, String content, List<ModuleDeps> depsList, boolean isReqExpLogging) {
+		return new JavaScriptBuildRenderer(mid, content, depsList, isReqExpLogging);
+	}
 
 	/* (non-Javadoc)
 	 * @see com.ibm.jaggr.core.modulebuilder.IModuleBuilder#isScript(javax.servlet.http.HttpServletRequest)

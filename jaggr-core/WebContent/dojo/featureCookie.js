@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,13 @@
  */
 
 define([
-    'dojo/has',			// we use this 
-    'dojo/_base/lang',  // dojox/encoding/digests/_base.js requires this but doesn't 
+    'dojo/has',			// we use this
+    'dojo/_base/lang',  // dojox/encoding/digests/_base.js requires this but doesn't
                         //   explicitly list it in its dependency list, so we need to.
     'dojox/encoding/digests/MD5', // used to encode the feature set
     'dojo/cookie',		// used to set the cookie
     './sniff'           // initializes basic set of features used by dojo
-    ], 
+    ],
 function(has, lang, md5, cookie) {
 	// If we have an MD5 digest we can hash the has string, use the hash in the URL and put the has conditions in a cookie.
 	// This saves space in the URL for times when the number of has conditions is lengthy.
@@ -33,7 +33,7 @@ function(has, lang, md5, cookie) {
 					// Same domain, so adjust contextPath to remove the domain part
 					contextPath = (matches.length > 2) ? matches[2] : "/";
 				} else {
-					// Can't set cookie for a different domain, so specify feature 
+					// Can't set cookie for a different domain, so specify feature
 					// set using URL query arg instead.
 					return hasArg;
 				}

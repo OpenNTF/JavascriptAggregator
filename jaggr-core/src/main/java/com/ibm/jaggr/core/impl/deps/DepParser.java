@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,15 +20,22 @@ import com.ibm.jaggr.core.impl.deps.DepUtils.ParseResult;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.util.CompilerUtil;
 
+import com.google.javascript.jscomp.CheckLevel;
 import com.google.javascript.jscomp.Compiler;
+import com.google.javascript.jscomp.CompilerOptions;
+import com.google.javascript.jscomp.DiagnosticGroups;
+import com.google.javascript.jscomp.JSError;
 import com.google.javascript.jscomp.JSSourceFile;
 import com.google.javascript.rhino.Node;
 
 import java.io.InputStream;
+import java.lang.reflect.AccessibleObject;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.logging.Level;
@@ -49,6 +56,7 @@ final class DepParser implements Callable<URI> {
 
 	private final DepTreeNode treeNode;
 	private final IResource resource;
+	private final Map<AccessibleObject, List<Object>> compilerOptionsMap;
 
 	/**
 	 * Object constructor
@@ -58,10 +66,14 @@ final class DepParser implements Callable<URI> {
 	 *            from jsFile
 	 * @param resource
 	 *            The resource to be parsed for dependencies
+	 * @param compilerOptionsMap
+	 *            Compiler options from config
 	 */
-	DepParser(DepTreeNode treeNode, IResource resource) {
+	DepParser(DepTreeNode treeNode, IResource resource, Map<AccessibleObject, List<Object>> compilerOptionsMap) {
 		this.treeNode = treeNode;
 		this.resource = resource;
+		this.compilerOptionsMap = compilerOptionsMap;
+
 	}
 
 	/* (non-Javadoc)
@@ -73,11 +85,26 @@ final class DepParser implements Callable<URI> {
 		long lastModified = resource.lastModified();
 		// Parse the javascript code
 		Compiler compiler = new Compiler();
-		compiler.initOptions(CompilerUtil.getDefaultOptions());
+		CompilerOptions options = CompilerUtil.getDefaultOptions();
+		if (compilerOptionsMap != null) {
+			CompilerUtil.applyCompilerOptionsFromMap(options, compilerOptionsMap);
+		}
+		options.setWarningLevel(DiagnosticGroups.NON_STANDARD_JSDOC,
+				CheckLevel.OFF);
+
+		compiler.initOptions(options);
 		InputStream in = resource.getInputStream();
 		Node node = null;
 		try {
 			node = compiler.parse(JSSourceFile.fromInputStream(resource.getURI().toString(), in));
+			if (compiler.hasErrors()) {
+				if (log.isLoggable(Level.WARNING)) {
+					JSError[] errors = compiler.getErrors();
+					for (JSError error : errors) {
+						log.log(Level.WARNING, error.toString());
+					}
+				}
+			}
 		} catch (Throwable e) {
 			if (log.isLoggable(Level.WARNING)) {
 				log.log(Level.WARNING, "Error occurred parsing " + resource.getURI().toString() + ": " + e.getMessage(), e); //$NON-NLS-1$ //$NON-NLS-2$

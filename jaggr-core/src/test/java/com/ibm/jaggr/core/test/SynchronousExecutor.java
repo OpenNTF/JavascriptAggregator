@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,19 +16,113 @@
 
 package com.ibm.jaggr.core.test;
 
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import com.ibm.jaggr.core.impl.layer.CompletedFuture;
 
-public class SynchronousExecutor extends ThreadPoolExecutor {
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
+public class SynchronousExecutor implements ExecutorService {
+
+	private boolean isShutdown = false;
 
 	public SynchronousExecutor() {
-		super(0, 1, 0, TimeUnit.SECONDS, new LinkedBlockingQueue<Runnable>());
 	}
 
 	@Override
 	public void execute(Runnable command) {
 		command.run();
+	}
+
+	@Override
+	public void shutdown() {
+		isShutdown = true;
+	}
+
+	@Override
+	public List<Runnable> shutdownNow() {
+		isShutdown = true;
+		return Collections.emptyList();
+	}
+
+	@Override
+	public boolean isShutdown() {
+		return isShutdown;
+	}
+
+	@Override
+	public boolean isTerminated() {
+		return isShutdown;
+	}
+
+	@Override
+	public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
+		return true;
+	}
+
+	@Override
+	public <T> Future<T> submit(Callable<T> task) {
+		try {
+			T result = task.call();
+			return new CompletedFuture<T>(result);
+		} catch (Throwable t) {
+			return new CompletedFuture<T>(new ExecutionException(t));
+		}
+	}
+
+	@Override
+	public <T> Future<T> submit(Runnable task, T result) {
+		try {
+			task.run();
+			return new CompletedFuture<T>(result);
+		} catch (Throwable t) {
+			return new CompletedFuture<T>(new ExecutionException(t));
+		}
+	}
+
+	@Override
+	public Future<?> submit(Runnable task) {
+		try {
+			task.run();
+			return new CompletedFuture<Object>(null);
+		} catch (Throwable t) {
+			return new CompletedFuture<Object>(new ExecutionException(t));
+		}
+	}
+
+	@Override
+	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks)
+			throws InterruptedException {
+		List<Future<T>> results = new ArrayList<Future<T>>();
+		for (Callable<T> task : tasks) {
+			results.add(submit(task));
+		}
+		return results;
+	}
+
+	@Override
+	public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout,
+			TimeUnit unit) throws InterruptedException {
+		return invokeAll(tasks);
+	}
+
+	@Override
+	public <T> T invokeAny(Collection<? extends Callable<T>> tasks)
+			throws InterruptedException, ExecutionException {
+		throw new UnsupportedOperationException("Not supported");
+	}
+
+	@Override
+	public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit)
+			throws InterruptedException, ExecutionException, TimeoutException {
+		throw new UnsupportedOperationException("Not supported");
 	}
 
 }

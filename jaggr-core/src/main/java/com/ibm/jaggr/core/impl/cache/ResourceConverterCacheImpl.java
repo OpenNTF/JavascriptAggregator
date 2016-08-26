@@ -1,5 +1,5 @@
 /*
- * (C) Copyright 2012, IBM Corporation
+ * (C) Copyright IBM Corp. 2012, 2016 All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -69,9 +69,9 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 		volatile transient private IOException ex;
 
 		/**
-		 * Persistent {@link File} object referencing the cache file.
+		 * Persistent string referencing the cache file name.
 		 */
-		volatile private File file;
+		volatile private String filename;
 
 		/**
 		 * The reference uri from the original source resource.
@@ -120,16 +120,18 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 		}
 
 		IResource result = null;
+		String filename = null;
 		File cacheFile = null;
 		URI referenceUri = null;
 		CacheEntry tryCacheEntry = (CacheEntry) get(key);
+		File cacheDir = aggregator.getCacheManager().getCacheDir();
 
 		if (tryCacheEntry != null) {
 			// Make local copies of volatile CacheEntry fields
-			cacheFile = tryCacheEntry.file;
 			referenceUri = tryCacheEntry.referenceUri;
-			if (cacheFile != null) {
-
+			filename = tryCacheEntry.filename;
+			if (filename != null && referenceUri != null) {
+				cacheFile = new File(cacheDir, filename);
 				// Some platforms round file last modified times to nearest second.
 				if (source != null && Math.abs(source.lastModified() - cacheFile.lastModified()) >= 1000) {
 					// Stale cache entry, remove it and create a new one below
@@ -160,8 +162,8 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 				throw cacheEntry.ex;
 			}
 			// First, check to make sure that another thread didn't beat us to the punch.
-			if (cacheEntry.file != null) {
-				cacheFile = cacheEntry.file;
+			if (cacheEntry.filename != null) {
+				cacheFile = new File(cacheDir, cacheEntry.filename);
 				referenceUri = cacheEntry.referenceUri;
 			} else if (source != null) {
 				try {
@@ -169,10 +171,10 @@ public class ResourceConverterCacheImpl extends GenericCacheImpl<ResourceConvert
 					String path = source.getPath();
 					int idx = path.lastIndexOf("/"); //$NON-NLS-1$
 					String fname = (idx != -1) ? path.substring(idx + 1) : path;
-					cacheFile = File.createTempFile(prefix, "." + fname + suffix, aggregator.getCacheManager().getCacheDir()); //$NON-NLS-1$
+					cacheFile = File.createTempFile(prefix, "." + fname + suffix, cacheDir); //$NON-NLS-1$
 					converter.generateCacheContent(source, cacheFile);
 					cacheFile.setLastModified(source.lastModified());
-					cacheFile = cacheEntry.file = cacheFile;
+					cacheEntry.filename = cacheFile.getName();
 					referenceUri = cacheEntry.referenceUri = source.getReferenceURI();
 				} catch (Throwable t) {
 					cacheEntry.ex = (t instanceof IOException) ? (IOException) t
