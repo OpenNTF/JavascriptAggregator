@@ -24,17 +24,17 @@
 		packages: [
 				{
 					name: 'dojo',
-					location: 'dojo-1.8.0/dojo',
+					location: 'aggr/app/dojo-1.11.2/dojo',
 					lib: '.'
 				},
 				{
 					name: 'dijit',
-					location: 'dojo-1.8.0/dijit',
+					location: 'aggr/app/dojo-1.11.2/dijit',
 					lib: '.'
 				},
 				{
 					name: 'dojox',
-					location: 'dojo-1.8.0/dojox',
+					location: 'aggr/app/Wdojo-1.11.2/dojox',
 					lib: '.'
 				}
 			],
