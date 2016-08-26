@@ -105,9 +105,9 @@
 							<tasks>
 								<unzip src="${basedir}/dojo-release-1.11.2-src.zip" dest="${basedir}/WebContent" overwrite="false">
 									<patternset>
-						        <exclude name="**/tests/**"/>
-						        <exclude name="dojo*/util/**"/>
-						      </patternset>
+										<exclude name="**/tests/**"/>
+										<exclude name="dojo*/util/**"/>
+									</patternset>
 								</unzip>
 							</tasks>
 						</configuration>
