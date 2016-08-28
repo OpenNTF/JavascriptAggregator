@@ -15,17 +15,11 @@
  */
 package com.ibm.jaggr.core.impl;
 
-import com.ibm.jaggr.core.IAggregatorExtension;
 import com.ibm.jaggr.core.InitParams;
 import com.ibm.jaggr.core.InitParams.InitParam;
 import com.ibm.jaggr.core.config.IConfig;
 import com.ibm.jaggr.core.executors.IExecutors;
-import com.ibm.jaggr.core.impl.modulebuilder.css.CSSModuleBuilder;
-import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder;
-import com.ibm.jaggr.core.impl.modulebuilder.text.TextModuleBuilder;
-import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.impl.resource.NotFoundResource;
-import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.options.IOptions;
 import com.ibm.jaggr.core.resource.IResource;
 import com.ibm.jaggr.core.resource.StringResource;
@@ -47,9 +41,7 @@ import java.io.File;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -455,50 +447,6 @@ public class AbstractAggregatorImplTest {
 		EasyMock.replay(resp);
 		testAggregator.setResourceResponseCacheHeaders(req, resp, mockResource, true);
 		EasyMock.verify(resp);
-	}
-
-	@Test
-	public void testGetModuleBuilder() throws Exception {
-		final IHttpTransport mockTransport = EasyMock.createMock(IHttpTransport.class);
-		EasyMock.expect(mockTransport.getAggregatorTextPluginName()).andReturn("combo/text").anyTimes();
-		EasyMock.replay(mockTransport);
-		final LinkedList<IAggregatorExtension> extensions = new LinkedList<IAggregatorExtension>();
-		@SuppressWarnings("serial")
-		AbstractAggregatorImpl testAggregator = new TestAggregatorImpl() {
-			@Override public IHttpTransport getTransport() { return mockTransport; }
-			@Override public Iterable<IAggregatorExtension> getExtensions(String extensionPointId) { return extensions; }
-		};
-		Object jsBuilder = new JavaScriptModuleBuilder();
-		Properties props = new Properties();
-		props.setProperty("extension", "js");
-		extensions.add(new AggregatorExtension(jsBuilder, props, null, "com.ibm.jaggr.service.modulebuilder", null));
-		Object cssBuilder = new CSSModuleBuilder();
-		props = new Properties();
-		props.setProperty("extension", "css");
-		extensions.add(new AggregatorExtension(cssBuilder, props, null, "com.ibm.jaggr.service.modulebuilder", null));
-		Object textBuilder = new TextModuleBuilder();
-		props = new Properties();
-		props.setProperty("extension", "*");
-		extensions.add(new AggregatorExtension(textBuilder, props, null, "com.ibm.jaggr.service.modulebuilder", null));
-		IModuleBuilder builder = testAggregator.getModuleBuilder("foo.js", new FileResource(URI.create("file:///foo.js")));
-		Assert.assertSame(jsBuilder, builder);
-		builder = testAggregator.getModuleBuilder("foo.css", new FileResource(URI.create("file:///foo.css")));
-		Assert.assertSame(cssBuilder, builder);
-		builder = testAggregator.getModuleBuilder("foo.x", new FileResource(URI.create("file:///foo.x")));
-		Assert.assertSame(textBuilder, builder);
-		// Make sure that if text plugin is specified,
-		builder = testAggregator.getModuleBuilder("combo/text!foo.js", new FileResource(URI.create("file:///foo.js")));
-		Assert.assertSame(textBuilder, builder);
-
-		extensions.removeLast();
-		boolean exceptionThrown = false;
-		try {
-			builder = testAggregator.getModuleBuilder("combo/text!foo.js", new FileResource(URI.create("file:///foo.js")));
-		} catch (UnsupportedOperationException ex) {
-			exceptionThrown = true;
-		}
-		Assert.assertTrue(exceptionThrown);
-
 	}
 
 

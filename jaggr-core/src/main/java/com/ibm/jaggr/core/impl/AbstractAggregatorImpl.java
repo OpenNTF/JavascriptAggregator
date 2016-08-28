@@ -51,7 +51,6 @@ import com.ibm.jaggr.core.layer.ILayerCache;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
 import com.ibm.jaggr.core.module.IModuleCache;
-import com.ibm.jaggr.core.module.ModuleIdentifier;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilderExtensionPoint;
 import com.ibm.jaggr.core.options.IOptions;
@@ -820,10 +819,6 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		String ext = (idx == -1) ? "" : path.substring(idx+1); //$NON-NLS-1$
 		if (ext.contains("/")) { //$NON-NLS-1$
 			ext = ""; //$NON-NLS-1$
-		}
-		// If the text loader plugin is specified, then make sure we use the text builder.
-		if (getTransport().getAggregatorTextPluginName().equals(new ModuleIdentifier(mid).getPluginName())) {
-			ext = "*"; //$NON-NLS-1$
 		}
 
 		for (IAggregatorExtension extension : getExtensions(IModuleBuilderExtensionPoint.ID)) {
