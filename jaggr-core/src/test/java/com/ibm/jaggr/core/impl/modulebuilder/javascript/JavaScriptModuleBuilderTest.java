@@ -33,6 +33,7 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.config.ConfigImpl;
 import com.ibm.jaggr.core.impl.module.ModuleImpl;
 import com.ibm.jaggr.core.impl.modulebuilder.javascript.JavaScriptModuleBuilder.CacheKeyGenerator;
+import com.ibm.jaggr.core.impl.resource.FileResource;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener.EventType;
 import com.ibm.jaggr.core.module.IModule;
@@ -64,6 +65,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.powermock.reflect.Whitebox;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -957,6 +959,17 @@ public class JavaScriptModuleBuilderTest extends EasyMock {
 		Assert.assertEquals("js:S:1:0:1;has{}", keyGen.generateKey(mockRequest));
 		mockRequest.removeAttribute(AbstractHttpTransport.EXPANDREQUIRELISTS_REQATTRNAME);
 		Assert.assertEquals("js:S:0:0:1;has{}", keyGen.generateKey(mockRequest));
+	}
+
+	@Test
+	public void testHandles() {
+		TestJavaScriptModuleBuilder builder = new TestJavaScriptModuleBuilder();
+		Whitebox.setInternalState(builder, "textPluginName", "combo/text");
+		Assert.assertTrue(builder.handles("foo.js", new FileResource(URI.create("file:///foo.js"))));
+		Assert.assertFalse(builder.handles("foo.css", new FileResource(URI.create("file:///foo.css"))));
+		Assert.assertFalse(builder.handles("combo/text!foo.js", new FileResource(URI.create("file:///foo.js"))));
+		Whitebox.setInternalState(builder, "textPluginName", "null");
+		Assert.assertTrue(builder.handles("combo/text!foo.js", new FileResource(URI.create("file:///foo.js"))));
 	}
 
 	/**

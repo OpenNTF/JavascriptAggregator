@@ -33,6 +33,7 @@ import com.ibm.jaggr.core.deps.ModuleDeps;
 import com.ibm.jaggr.core.impl.transport.AbstractHttpTransport;
 import com.ibm.jaggr.core.layer.ILayerListener;
 import com.ibm.jaggr.core.module.IModule;
+import com.ibm.jaggr.core.module.ModuleIdentifier;
 import com.ibm.jaggr.core.modulebuilder.IModuleBuilder;
 import com.ibm.jaggr.core.modulebuilder.ModuleBuild;
 import com.ibm.jaggr.core.modulebuilder.SourceMap;
@@ -148,6 +149,8 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	private Map<AccessibleObject, List<Object>> compilerOptionsMap = new HashMap<AccessibleObject, List<Object>>();
 
+	private String textPluginName = null;
+
 	public static CompilationLevel getCompilationLevel(HttpServletRequest request) {
 		CompilationLevel level = CompilationLevel.SIMPLE_OPTIMIZATIONS;
 		IAggregator aggregator = (IAggregator)request.getAttribute(IAggregator.AGGREGATOR_REQATTRNAME);
@@ -169,6 +172,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 	public void initialize(IAggregator aggregator,
 			IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		Dictionary<String,String> props;
+		textPluginName = aggregator.getTransport().getAggregatorTextPluginName();
 		props = new Hashtable<String,String>();
 		props.put("name", aggregator.getName()); //$NON-NLS-1$
 		registrations.add(aggregator.getPlatformServices().registerService(ILayerListener.class.getName(), this, props));
@@ -566,7 +570,7 @@ public class JavaScriptModuleBuilder implements IModuleBuilder, IExtensionInitia
 
 	@Override
 	public boolean handles(String mid, IResource resource) {
-		return resource.getPath().endsWith(".js"); //$NON-NLS-1$
+		return resource.getPath().endsWith(".js") && (textPluginName == null || !textPluginName.equals(new ModuleIdentifier(mid).getPluginName())); //$NON-NLS-1$
 	}
 
 	protected List<ICacheKeyGenerator> getCacheKeyGenerators(Set<String> dependentFeatures, boolean hasExpandableRequires) {
