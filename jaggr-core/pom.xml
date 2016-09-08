@@ -67,6 +67,38 @@
         </plugins>
       </build>
     </profile>
+    <profile>
+      <id>java8</id>
+      <activation>
+        <jdk>1.8</jdk>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>java7</id>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+                <configuration>
+                  <source>1.7</source>
+                  <target>1.7</target>
+                  <excludes>
+                    <exclude>foo</exclude><!-- This replaces the exclude in the parent config -->
+                  </excludes>
+                  <includes>
+                    <include>com/ibm/jaggr/core/impl/resource/NIOFileResource.java</include>
+                  </includes>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 
   <build>

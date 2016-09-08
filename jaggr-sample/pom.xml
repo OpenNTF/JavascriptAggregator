@@ -141,7 +141,7 @@
                 <artifactItem>
                   <groupId>com.ibm.jaggr</groupId>
                   <artifactId>jaggr-sample-dojo</artifactId>
-                  <includes>**/source*/dojo/**,**/source*/dojox/encoding/**</includes>
+                  <includes>**/dojo-*-src/dojo/**,**/dojo-*-src/dojox/encoding/**</includes>
                   <overWrite>true</overWrite>
                   <outputDirectory>${project.build.directory}</outputDirectory>
                 </artifactItem>
@@ -198,7 +198,7 @@
               <target unless="skipTests">
                 <move todir="${basedir}/target/WebContent/dojo">
                   <fileset dir="${basedir}/target/WebContent">
-                    <include name="source_*_dojo/**" />
+                    <include name="dojo-*-src/**" />
                   </fileset>
                   <cutdirsmapper dirs="1" />
                 </move>
