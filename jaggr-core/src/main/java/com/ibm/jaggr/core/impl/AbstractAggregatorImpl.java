@@ -482,8 +482,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		} catch (NotFoundException e) {
 			logException(req, Level.INFO, sourceMethod, e);
 			resp.setStatus(HttpServletResponse.SC_NOT_FOUND);
-		} catch (Exception e) {
-			logException(req, Level.WARNING, sourceMethod, e);
+		} catch (Throwable t) {
+			logException(req, Level.WARNING, sourceMethod, t);
 			resp.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		}
 		if (isTraceLogging) {
@@ -627,8 +627,8 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 			exceptionResponse(req, resp, e, HttpServletResponse.SC_BAD_REQUEST);
 		} catch (NotFoundException e) {
 			exceptionResponse(req, resp, e, HttpServletResponse.SC_NOT_FOUND);
-		} catch (Exception e) {
-			exceptionResponse(req, resp, e, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+		} catch (Throwable t) {
+			exceptionResponse(req, resp, t, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
 		} finally {
 			concurrentMap.clear();
 		}
