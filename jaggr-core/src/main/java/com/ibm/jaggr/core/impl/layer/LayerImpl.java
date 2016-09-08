@@ -945,6 +945,9 @@ public class LayerImpl implements ILayer {
 								name = aggr.getTransport().getAggregatorTextPluginName() + name.substring(idx);
 							} else if (aggr.getConfig().getJsPluginDelegators().contains(plugin)) {
 								name = name.substring(idx+1);
+							} else {
+								// Don't know how to handle plugin, so ignore
+								continue;
 							}
 						}
 						Boolean includeStatus = info.getIncludeStatus();

@@ -854,11 +854,13 @@ public abstract class AbstractAggregatorImpl extends HttpServlet implements IAgg
 		if (extensionPointId == null || extensionPointId == IResourceConverterExtensionPoint.ID) {
 			result.addAll(resourceConverterExtensions);
 		}
-		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
-			result.addAll(moduleBuilderExtensions);
-		}
+		// Init transport before module builders so that module builders can query transport
+		// properties (e.g. text plugin name) in their init.
 		if (extensionPointId == null || extensionPointId == IHttpTransportExtensionPoint.ID) {
 			result.add(httpTransportExtension);
+		}
+		if (extensionPointId == null || extensionPointId == IModuleBuilderExtensionPoint.ID) {
+			result.addAll(moduleBuilderExtensions);
 		}
 		return result;
 	}
