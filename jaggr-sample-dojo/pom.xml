@@ -20,7 +20,7 @@
 		<groupId>com.ibm.jaggr</groupId>
 		<artifactId>jaggr</artifactId>
 		<relativePath>../pom.xml</relativePath>
-		<version>1.3.10-SNAPSHOT</version>
+		<version>1.3.10</version>
 	</parent>
 
 	<artifactId>jaggr-sample-dojo</artifactId>
@@ -105,8 +105,8 @@
 							<tasks>
 								<unzip src="${basedir}/dojo-release-1.11.2-src.zip" dest="${basedir}/WebContent" overwrite="false">
 									<patternset>
-										<exclude name="**/tests/**"/>
-										<exclude name="dojo*/util/**"/>
+										<exclude name="**/tests/**" />
+										<exclude name="dojo*/util/**" />
 									</patternset>
 								</unzip>
 							</tasks>
@@ -199,7 +199,7 @@
 										</goals>
 									</pluginExecutionFilter>
 									<action>
-										<ignore></ignore>
+										<ignore />
 									</action>
 								</pluginExecution>
 							</pluginExecutions>
