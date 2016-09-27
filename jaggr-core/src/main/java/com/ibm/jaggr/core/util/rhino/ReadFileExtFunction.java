@@ -156,8 +156,9 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 			}
 		}
 		if (res == null || !res.exists()) {
+			fileUri = URI.create(file);
 			// Not and AMD module or resource doesn't exist.  Try resolving against reference URI
-			if (ref != null && ref != Scriptable.NOT_FOUND && ref != Undefined.instance) {
+			if (!fileUri.isAbsolute() && ref != null && ref != Scriptable.NOT_FOUND && ref != Undefined.instance) {
 				URI refUri = URI.create(ref);
 				fileUri = refUri.resolve(file);
 			}
