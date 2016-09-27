@@ -245,7 +245,7 @@ public class LessModuleBuilder extends CSSModuleBuilder implements IExtensionSin
 			log.entering(sourceClass, sourceMethod, new Object[]{css, resource});
 		}
 		if (resource.getPath().toLowerCase().endsWith(LESS_SUFFIX)) {
-			css = processLess(resource.getURI().toString(), css);
+			css = processLess(resource.getReferenceURI().toString(), css);
 			if (inlineImports) {
 				css = _inlineImports(request, css, resource, ""); //$NON-NLS-1$
 			}
