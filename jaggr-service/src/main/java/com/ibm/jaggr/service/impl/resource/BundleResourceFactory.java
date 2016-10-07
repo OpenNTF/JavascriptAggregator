@@ -30,6 +30,7 @@ import com.ibm.jaggr.service.impl.Activator;
 import com.ibm.jaggr.service.impl.AggregatorImpl;
 import com.ibm.jaggr.service.util.BundleResolverFactory;
 
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.osgi.service.urlconversion.URLConverter;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
@@ -154,7 +155,9 @@ public class BundleResourceFactory extends FileResourceFactory implements IExten
 	@Override
 	public void initialize(IAggregator aggregator, IAggregatorExtension extension, IExtensionRegistrar registrar) {
 		contributingBundle = ((AggregatorImpl)aggregator).getContributingBundle();
-		urlConverterSR = Activator.getBundleContext().getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
+		if (Platform.getBundle("com.ibm.domino.osgi.core") == null) {		// URLConverter is unreliable on Domino
+			urlConverterSR = Activator.getBundleContext().getServiceReference(org.eclipse.osgi.service.urlconversion.URLConverter.class.getName());
+		}
 		bundleResolver = BundleResolverFactory.getResolver(contributingBundle);
 	}
 
