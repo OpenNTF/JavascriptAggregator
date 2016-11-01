@@ -121,11 +121,8 @@
             <Bundle-Activator>${project.groupId}.service.impl.Activator</Bundle-Activator>
             <Bundle-RequiredExecutionEnvironment>JavaSE-1.6</Bundle-RequiredExecutionEnvironment>
             <Export-Package>
-              ${project.groupId}.service.impl;version="${project.version}",
-              !${project.groupId}.service.impl.*;version="${project.version}",
               ${project.groupId}.service.*;version="${project.version}"
             </Export-Package>
-            <Private-Package>${project.groupId}.service.impl.*;version="${project.version}"</Private-Package>
             <Require-Bundle>org.eclipse.core.runtime</Require-Bundle>
             <Import-Package>
               ${project.groupId}.core;version="${project.version}",
