@@ -62,6 +62,8 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 	static final public String FUNCTION_NAME = "readFileExt"; //$NON-NLS-1$
 
 	static final private Pattern NON_AMD_PATH_PAT = Pattern.compile("^(?:[a-z-]+:|\\/|\\.)"); //$NON-NLS-1$
+	static final protected Pattern WEBPACK_MODULE_PAT = Pattern.compile("^~[^/]"); //$NON-NLS-1$
+
 
 	private final IAggregator aggregator;
 	private boolean isIncludeAMDPaths = false;
@@ -149,7 +151,17 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 		}
 		URI fileUri = null;
 		IResource res = null;
+		if (WEBPACK_MODULE_PAT.matcher(file).find()) {
+			// Leading tilde means that name is a module id and not a url
+			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file.substring(1), false);
+			if (fileUri != null) {
+				res = javaThis.aggregator.newResource(fileUri);
+			} else {
+				throw new FileNotFoundException(res != null ? res.getReferenceURI().toString() : file);
+			}
+		}
 		if (javaThis.isIncludeAMDPaths && !NON_AMD_PATH_PAT.matcher(file).find()) {
+			// TODO: Remove this in favor of using webpack style module id above
 			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file, false);
 			if (fileUri != null) {
 				res = javaThis.aggregator.newResource(fileUri);

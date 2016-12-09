@@ -183,6 +183,11 @@ define([
 				}
 				// only fix relative URLs.
 				if (isRelative(url)) {
+					// Support webpack style module name indicator
+					if (/^~[^/]/.test(url)) {
+						// leading tilde means url is a module name, not a relative url
+						return require.toUrl(url.substring(1));
+					}
 					url = resolve(filePath, url);
 					if (lessImportsOnly && isLessUrl(url)) {
 						// LESS compiler fails to locate imports using relative urls when

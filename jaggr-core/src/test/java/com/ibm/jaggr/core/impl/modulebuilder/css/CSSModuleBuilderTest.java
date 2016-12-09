@@ -601,6 +601,29 @@ public class CSSModuleBuilderTest extends EasyMock {
 	}
 
 	@Test
+	public void testWebpackModuleImports() throws Exception {
+		String css, output;
+
+		//create a subdirectory and put a css file in it
+		File subdir = new File(testdir, "randomDir");
+		File imported = new File(subdir, "randomFile.css");
+		subdir.mkdir();
+		String importedCss = "/* Importe file */\r\n\r\n.imported {\r\n\tcolor : black;\r\n}";
+		CopyUtil.copy(importedCss, new FileWriter(imported));
+
+		//test that webpack style module id (leading tilde) imports work
+		IConfig config = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{paths: {AMDDir:'" + subdir.toURI() + "'}}");
+		configRef.set(config);
+		builder.configLoaded(config, seq++);
+		css = "/* importing file */\n\r@import '~AMDDir/randomFile.css'";
+		File importingFile = new File(subdir, "importingFile.css");
+		CopyUtil.copy(css, new FileWriter(importingFile));
+		output = buildCss(new FileResource(importingFile.toURI()));
+		Assert.assertEquals(".imported{color:black}", output);
+	}
+
+
+	@Test
 	public void testNonRelativeImports() throws Exception {
 		String css, output;
 
