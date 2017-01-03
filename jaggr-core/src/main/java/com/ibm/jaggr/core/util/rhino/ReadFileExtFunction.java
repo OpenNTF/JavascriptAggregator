@@ -62,7 +62,7 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 	static final public String FUNCTION_NAME = "readFileExt"; //$NON-NLS-1$
 
 	static final private Pattern NON_AMD_PATH_PAT = Pattern.compile("^(?:[a-z-]+:|\\/|\\.)"); //$NON-NLS-1$
-	static final protected Pattern WEBPACK_MODULE_PAT = Pattern.compile("^~[^/]"); //$NON-NLS-1$
+	static final public Pattern WEBPACK_MODULE_PAT = Pattern.compile("^~[^/]"); //$NON-NLS-1$
 
 
 	private final IAggregator aggregator;

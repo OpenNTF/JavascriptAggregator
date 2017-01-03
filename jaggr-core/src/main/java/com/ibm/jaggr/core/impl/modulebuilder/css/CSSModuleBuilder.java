@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.rhino.ReadFileExtFunction;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -234,7 +235,6 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 	static final protected Pattern urlPattern = Pattern.compile("url\\((\\s*(('[^']*')|(\"[^\"]*\")|([^)]*))\\s*)\\)?"); //$NON-NLS-1$
 	static final protected Pattern protocolPattern = Pattern.compile("^[a-zA-Z]*:"); //$NON-NLS-1$
-	static final protected Pattern webpackModulePattern = Pattern.compile("^~[^/]"); //$NON-NLS-1$
 
 	static final protected Collection<String> s_inlineableImageTypes;
 
@@ -494,7 +494,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			IResource importRes = aggregator.newResource(res.resolve(importNameMatch));
 			URI uri = null;
-			if (webpackModulePattern.matcher(importRes.getURI().toString()).find()) {
+			if (ReadFileExtFunction.WEBPACK_MODULE_PAT.matcher(importRes.getURI().toString()).find()) {
 				// leading tilde means name is a module identifier, not a url
 				uri = aggregator.getConfig().locateModuleResource(importNameMatch.substring(1), false);
 				if (uri != null) {
