@@ -197,6 +197,22 @@ public class LessModuleBuilderTest extends EasyMock {
 	}
 
 	@Test
+	public void testLessCompilationWithWebpackModuleImport() throws Exception {
+		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'\"~pkg/colors\"'},packages:[{name:'pkg', location:'" + testdir.toURI().toString() + "'}]}");
+		configRef.set(cfg);
+		configScript = (Scriptable)cfg.getRawConfig();
+		builder.configLoaded(cfg, seq++);
+		List<ICacheKeyGenerator> keyGens = builder.getCacheKeyGenerators
+				(mockAggregator);
+		URI resUri = new File(testdir, "test.less").toURI();
+		ModuleBuild mb = builder.build("test.less", new StringResource(LESS_VAR_IMPORT2, resUri), mockRequest, keyGens);
+		String output = (String)mb.getBuildOutput();
+		Assert.assertEquals("define('body{background:#ff0000}');", output);
+		Assert.assertEquals("txt;css", KeyGenUtil.toString(mb.getCacheKeyGenerators()));
+	}
+
+
+	@Test
 	public void testLessCompilationWithAMDImport() throws Exception {
 		IConfig cfg = new ConfigImpl(mockAggregator, tmpdir.toURI(), "{lessGlobals:{mixin:'\"pkg/colors\"'},packages:[{name:'pkg', location:'" + testdir.toURI().toString() + "'}],cssEnableAMDIncludePaths:true}");
 		configRef.set(cfg);

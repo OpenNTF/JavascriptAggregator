@@ -36,6 +36,7 @@ import com.ibm.jaggr.core.util.CopyUtil;
 import com.ibm.jaggr.core.util.PathUtil;
 import com.ibm.jaggr.core.util.SignalUtil;
 import com.ibm.jaggr.core.util.TypeUtil;
+import com.ibm.jaggr.core.util.rhino.ReadFileExtFunction;
 
 import com.google.common.collect.ImmutableMap;
 
@@ -493,11 +494,19 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			IResource importRes = aggregator.newResource(res.resolve(importNameMatch));
 			URI uri = null;
-			if (importRes.exists()) {
+			if (ReadFileExtFunction.WEBPACK_MODULE_PAT.matcher(importRes.getURI().toString()).find()) {
+				// leading tilde means name is a module identifier, not a url
+				uri = aggregator.getConfig().locateModuleResource(importNameMatch.substring(1), false);
+				if (uri != null) {
+					importRes = aggregator.newResource(uri);
+					uri = importRes.getURI();
+				}
+			} else if (importRes.exists()) {
 				uri = importRes.getURI();
 			} else if (includeAMDPaths && importNameMatch.contains("/") && !importNameMatch.startsWith(".")) { //$NON-NLS-1$ //$NON-NLS-2$
 				// Resource not found using relative path to res.  If path is not relative (starts with .)
 				// then try to find the resource using config paths and packages.
+				// TODO: remove this in favor of using the webpack module pattern identifier above.
 				uri = aggregator.getConfig().locateModuleResource(importNameMatch, false);
 				if (uri != null) {
 					importRes = aggregator.newResource(uri);
