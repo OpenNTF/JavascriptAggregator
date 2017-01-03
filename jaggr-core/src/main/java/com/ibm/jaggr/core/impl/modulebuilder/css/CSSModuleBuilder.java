@@ -494,7 +494,7 @@ public class CSSModuleBuilder extends TextModuleBuilder implements  IExtensionIn
 
 			IResource importRes = aggregator.newResource(res.resolve(importNameMatch));
 			URI uri = null;
-			if (ReadFileExtFunction.WEBPACK_MODULE_PAT.matcher(importRes.getURI().toString()).find()) {
+			if (ReadFileExtFunction.WEBPACK_MODULE_PAT.matcher(importNameMatch).find()) {
 				// leading tilde means name is a module identifier, not a url
 				uri = aggregator.getConfig().locateModuleResource(importNameMatch.substring(1), false);
 				if (uri != null) {
