@@ -159,8 +159,7 @@ public class ReadFileExtFunction extends FunctionObject implements IConfigListen
 			} else {
 				throw new FileNotFoundException(res != null ? res.getReferenceURI().toString() : file);
 			}
-		}
-		if (javaThis.isIncludeAMDPaths && !NON_AMD_PATH_PAT.matcher(file).find()) {
+		} else if (javaThis.isIncludeAMDPaths && !NON_AMD_PATH_PAT.matcher(file).find()) {
 			// TODO: Remove this in favor of using webpack style module id above
 			fileUri = javaThis.aggregator.getConfig().locateModuleResource(file, false);
 			if (fileUri != null) {
