@@ -35,93 +35,93 @@ define([
 	 * summary:
 	 *    This plugin handles AMD module requests for CSS files.  Required modules are
 	 *    loaded by delegating to the dojo/text plugin and then inserting the CSS into
-	 *    a style sheet element that is appended to the HEAD element in the DOM, and 
+	 *    a style sheet element that is appended to the HEAD element in the DOM, and
 	 *    the style element is returned as the value of the module.
-	 * 
-	 *    URLs for url(...) and @import statements in the CSS are fixed up to make them 
+	 *
+	 *    URLs for url(...) and @import statements in the CSS are fixed up to make them
 	 *    relative to the requested module's path.
-	 * 
-	 *    This plugin guarantees that style elements will be inserted into the DOM in 
+	 *
+	 *    This plugin guarantees that style elements will be inserted into the DOM in
 	 *    the same order that the associated CSS modules are requested, except when a
-	 *    previously requested module is requested again.  In other words, if 
+	 *    previously requested module is requested again.  In other words, if
 	 *    stylesA.css is required before stylesB.css, then the styles for stylesA.css
 	 *    will be inserted into the DOM ahead of the styles for stylesB.css.  This
 	 *    behavior ensures proper cascading of styles based on order of request.
-	 *    
+	 *
 	 *    This plugin supports two modes of operation.  In the default mode, style
 	 *    elements are injected into the DOM when the plugin's load method is called
 	 *    for the resource.  This ensures that styles will be inserted into the DOM
-	 *    in the order that they appear in the dependency list, but the order of 
+	 *    in the order that they appear in the dependency list, but the order of
 	 *    insertion for styles loaded by different modules is undefined.
-	 *    
+	 *
 	 *    The second mode of operation is enabled by the 'css-inject-api' feature.
-	 *    In this mode, CSS is not injected into the DOM directly by the plugin.  Instead, 
+	 *    In this mode, CSS is not injected into the DOM directly by the plugin.  Instead,
 	 *    the application calls the inject() method to inject the CSS in the dependency
 	 *    list from within the require() or define() callback.  For example:
-	 *    
+	 *
 	 *    <code>
 	 *    	define(['app/foo', 'js/css!app/styles/foo.css'], function(foo) {
 	 *        require('js/css').inject.apply(this, arguments);
 	 *    </code>
-	 *    
-	 *    The inject() function iterates over the arguments passed and injects into 
-	 *    the DOM any style elements that have not previously been injected.  This mode 
-	 *    provides for more predictable order of injection of styles since the order 
-	 *    for styles injected from different modules corresponds to the define order 
+	 *
+	 *    The inject() function iterates over the arguments passed and injects into
+	 *    the DOM any style elements that have not previously been injected.  This mode
+	 *    provides for more predictable order of injection of styles since the order
+	 *    for styles injected from different modules corresponds to the define order
 	 *    of the JavaScript modules doing the injecting.
-	 *    
+	 *
 	 *    The task of calling inject() at the beginning of every require() or define()
 	 *    callback can be automated by calling installAutoInjectHooks().  This method
-	 *    installs intercepts for the global require() and define() functions.  The 
-	 *    intercepts hook the callback functions passed to require() and define() 
-	 *    for the purpose of automatically invoking the inject() method before the 
+	 *    installs intercepts for the global require() and define() functions.  The
+	 *    intercepts hook the callback functions passed to require() and define()
+	 *    for the purpose of automatically invoking the inject() method before the
 	 *    callback function is executed.  These hooks also watch for context require()
 	 *    instances and install intercepts for the context require() callbacks as well.
-	 * 
-	 *    The only caveat is that installAutoInjectHooks() must be called before any 
-	 *    require() or define() functions that use this plugin to load css, or that 
-	 *    reference a context require which uses this plugin to load css, are called, 
+	 *
+	 *    The only caveat is that installAutoInjectHooks() must be called before any
+	 *    require() or define() functions that use this plugin to load css, or that
+	 *    reference a context require which uses this plugin to load css, are called,
 	 *    otherwise the inject api will not automatically be invoked for those cases.
 	 */
 	var
 		head = dwindow.doc.getElementsByTagName('head')[0],
-	
+
 		urlPattern = /(^[^:\/]+:\/\/[^\/\?]*)([^\?]*)(\??.*)/,
-	
+
 		isLessUrl = function(url) {
 			return /\.less(?:$|\?)/i.test(url);
 		},
-	
+
 		isRelative = function(url) {
-			return !/^[^:\/]+:\/\/|^\//.test(url); 
-		},    
-	
+			return !/^[^:\/]+:\/\/|^\//.test(url);
+		},
+
 		dequote = function(url) {
 			// remove surrounding quotes and normalize slashes
 			return url.replace(/^\s\s*|\s*\s$|[\'\"]|\\/g, function(s) {
 				return s === '\\' ? '/' : '';
 			});
 		},
-	
+
 		joinParts = function(parts) {
 			// joins URL parts into a single string, handling insertion of '/' were needed
 			var result = '';
 			arrays.forEach(parts, function(part) {
-				result = result + 
+				result = result +
 					(result && result.charAt(result.length-1) !== '/' && part && part.charAt(0) !== '/' ? '/' : '') +
 				part;
 			});
 			return result;
 		},
-	
-	
+
+
 		normalize = function(url) {
 			// Collapse .. and . in url paths
 			var match = urlPattern.exec(url) || [url, '', url, ''],
 			    host = match[1], path = match[2], queryArgs = match[3];
-	
+
 			if (!path || path === '/') return url;
-	
+
 			var parts = [];
 			arrays.forEach(path.split('/'), function(part, i, ary) {
 				if (part === '.') {
@@ -140,10 +140,10 @@ define([
 				}
 			});
 			var result = parts.join('/');
-	
+
 			return joinParts([host, result]) + queryArgs;
 		},
-	
+
 		resolve = function(base, relative) {
 			// Based on behavior of the Java URI.resolve() method.
 			if (!base || !isRelative(relative)) {
@@ -154,16 +154,16 @@ define([
 			}
 			var match = urlPattern.exec(base) || [base, '', base, ''],
 			host = match[1], path = match[2], queryArgs = match[3];
-	
+
 			// remove last path component from base before appending relative
 			if (path.indexOf('/') !== -1 && path.charAt(path.length) !== '/') {
 				// remove last path component
 				path = path.split('/').slice(0, -1).join('/') + '/';
-			} 
-	
+			}
+
 			return normalize(joinParts([host, path, relative]));
-		}, 
-	
+		},
+
 		addArgs = function(url, queryArgs) {
 			// Mix in the query args specified by queryArgs to the URL
 			if (queryArgs) {
@@ -173,10 +173,10 @@ define([
 			}
 			return url;
 		},
-	
-		fixUrlsInCssFile = function(/*String*/filePath, /*String*/content, /*boolean*/lessImportsOnly){  
+
+		fixUrlsInCssFile = function(/*String*/filePath, /*String*/content, /*boolean*/lessImportsOnly){
 			var queryArgs = filePath.split('?')[1] || '';
-	
+
 			var rewriteUrl = function(url) {
 				if (lessImportsOnly && url.charAt(0) === '@') {
 					return url;
@@ -186,9 +186,10 @@ define([
 					// Support webpack style module name indicator
 					if (/^~[^/]/.test(url)) {
 						// leading tilde means url is a module name, not a relative url
-						return require.toUrl(url.substring(1));
+						url = require.toUrl(url.substring(1));
+					} else {
+						url = resolve(filePath, url);
 					}
-					url = resolve(filePath, url);
 					if (lessImportsOnly && isLessUrl(url)) {
 						// LESS compiler fails to locate imports using relative urls when
 						// the document base has been modified (e.g. via a <base> tag),
@@ -204,7 +205,7 @@ define([
 				}
 				return addArgs(url, queryArgs);		// add cachebust arg from including file
 			};
-	
+
 			if (lessImportsOnly) {
 				// Only modify urls for less imports.  We need to do it this way because the LESS compiler
 				// needs to be able to find the imports, but we don't want to do non-less imports because
@@ -217,22 +218,22 @@ define([
 				content = content.replace(/url\s*\(([^#\n\);]+)\)/gi, function(match, url){
 					return 'url(\'' + rewriteUrl(dequote(url)) + '\')';
 				});
-				// handle @imports that don't use url(...) 
+				// handle @imports that don't use url(...)
 				content = content.replace(/@import\s+(url\()?([^\s;]+)(\))?/gi, function(match, prefix, url) {
 					return (prefix == 'url(' ? match : ('@import \'' + rewriteUrl(dequote(url)) + '\''));
 				});
 			}
 			return content;
 		},
-		
+
 		postcssProcessor,
-		
+
 		postcssPromise,
-		
+
 		/*
-		 * Initialize PostCSS and configured plugins.  Plugins are configured with the postcssPlugins 
+		 * Initialize PostCSS and configured plugins.  Plugins are configured with the postcssPlugins
 		 * property in dojoConfig or the global require object.
-		 * 
+		 *
 		 * Plugins are configured using an array of two element arrays as in the following example:
 		 * <code><pre>
 		 * postcss: {
@@ -240,7 +241,7 @@ define([
 		 *       [
 		 *          'autoprefixer',  // Name of the plugin resource
 		 *                           // Can be an AMD module id or an absolute URI to a server resource
-		 *          function(autoprefixer) { 
+		 *          function(autoprefixer) {
 		 *             return autoprefixer({browsers: '> 1%'}).postcss; // the init function
 		 *          }
 		 *       ]
@@ -294,19 +295,23 @@ define([
 					}
 				}
 			}
-				
+
 			if (!postcssPromise) {
-				// Not using PostCSS or there were no plugins configured.  Just create a 
+				// Not using PostCSS or there were no plugins configured.  Just create a
 				// resolved promise.
 				deferred = new Deferred();
 				postcssPromise = deferred.promise;
 				deferred.resolve();
 			}
 		};
-		
+
 		postcssInitialize();
-		
-		
+
+
+	var test = require.toUrl("test");
+	var idx = test.indexOf("?");
+	var urlArgs = (idx === -1 ? "" : test.substring(idx));
+
 	return {
 		load: function (/*String*/id, /*Function*/parentRequire, /*Function*/load) {
 			if (has('no-css')) {
@@ -356,6 +361,17 @@ define([
 						filename: pathParts.pop(),
 						paths: [pathParts.join('/')]  // the compiler seems to ignore this
 					});
+					// Override the parser's fileLoader method so we can add urlArgs to less modules loaded by the parser
+					if (!lesspp.__originalFileLoader) {
+						lesspp.__originalFileLoader = lesspp.Parser.fileLoader;
+						lesspp.Parser.fileLoader = function() {
+							// add query args if needed
+							if (!/\?/.test(arguments[0])) {
+								arguments[0] += urlArgs;
+							}
+							return lesspp.__originalFileLoader.apply(this, arguments);
+						}
+					}
 					parser.parse(fixUrlsInCssFile(url, lessText, true), function (err, tree) {
 						if (err) {
 							console.error('LESS Parser Error!');
@@ -392,9 +408,9 @@ define([
 				});
 			}
 		},
-		
+
 		/*
-		 * Iterates through the function arguments and for any style node arguments that 
+		 * Iterates through the function arguments and for any style node arguments that
 		 * are not already in the DOM, appends them to the HEAD element of the DOM.  Used
 		 * when the 'css-injet-api' feature is true.
 		 */
@@ -408,18 +424,18 @@ define([
 				});
 			}
 		},
-		
+
 		/*
-		 * Installs the global require() and define() function intercepts.  
-		 * 
+		 * Installs the global require() and define() function intercepts.
+		 *
 		 * @return An object with a remove() function that can be called to cancel the intercepts
 		 *         (useful for unit testing).
 		 */
 		installAutoInjectHooks: function() {
 			if (has('css-inject-api')) {
 				var self = this,
-				
-				// The return value from this function replaces the callback passed 
+
+				// The return value from this function replaces the callback passed
 				// to require() or define().  The callback replacement scans the arguments
 				// for context require instances that need to be intercepted, and invokes
 				// our inject() api before calling the original callback.
@@ -433,7 +449,7 @@ define([
 						return callbackFn.apply(this, newArgValues);
 					};
 				},
-				
+
 				// The return value from this function replaces the context require passed
 				// in a require() or define() callback with a function that invokes our
 				// intercept.
@@ -442,7 +458,7 @@ define([
 						return contextRequire.apply(this, reqDefIntercept.apply(this, arguments));
 					}, contextRequire);
 				},
-				
+
 				// The require()/define() intercept.  This function scans the require()/define()
 				// arguments and replaces the callback function with our calback intercept
 				// function.
@@ -461,9 +477,9 @@ define([
 					});
 					return newArgs;
 				},
-				
+
 				result;
-				
+
 				// install our intercepts for the global require() and define() functions
 				(function(){
 					// Make sure we're looking at the global require/define
