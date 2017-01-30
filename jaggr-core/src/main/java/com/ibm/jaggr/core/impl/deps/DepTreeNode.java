@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -587,10 +588,12 @@ public class DepTreeNode implements Cloneable, Serializable {
 	 */
 	void normalizeDependencies() {
 		if (defineDependencies != null) {
-			defineDependencies = PathUtil.normalizePaths(getParentPath(), defineDependencies);
+			LinkedHashSet<String> temp =  new LinkedHashSet<String>(Arrays.asList(PathUtil.normalizePaths(getParentPath(), defineDependencies)));		// normalize and remove dups
+			defineDependencies = temp.toArray(new String[temp.size()]);
 		}
 		if (requireDependencies != null) {
-			requireDependencies = PathUtil.normalizePaths(getParentPath(), requireDependencies);
+			LinkedHashSet<String> temp =  new LinkedHashSet<String>(Arrays.asList(PathUtil.normalizePaths(getParentPath(), requireDependencies)));		// normalize and remove dups
+			requireDependencies = temp.toArray(new String[temp.size()]);
 		}
 		if (children != null) {
 			for (Entry<String, DepTreeNode> entry : children.entrySet()) {
